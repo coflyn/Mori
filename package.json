@@ -12,9 +12,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@capacitor-community/media": "^9.1.0",
     "@capacitor/android": "^8.3.3",
     "@capacitor/cli": "^8.3.3",
+    "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "^8.3.3",
     "@capacitor/filesystem": "^8.1.2",
     "axios": "^1.16.0",

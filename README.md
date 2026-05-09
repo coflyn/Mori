@@ -1,25 +1,25 @@
 # Mori - Minimalist Media Downloader
 
-Mori is a high-performance, minimalist application designed to download media from TikTok, Instagram, and YouTube. It features a clean, brutalist design and focuses on a "native-first" experience where files are saved directly to your device gallery.
+Mori is a high-performance, minimalist application designed to download media from TikTok, Instagram, and YouTube. It features a clean, brutalist design and focuses on a "native-first" experience where files are managed within a private internal history.
 
 ## Key Features
 
 - TikTok Support: High-quality video downloads (no watermark) and MP3 extraction.
 - Instagram Support: Seamlessly download Reels and Photos (smart thumbnail detection).
 - YouTube Support: Support for various video resolutions and high-bitrate audio (M4A/MP3).
-- Native Gallery Integration: Files are automatically saved to your phone's Photo/Video gallery.
+- Private History Manager: Downloaded files are managed internally within the app for privacy and fast access.
+- Native Clipboard: Seamlessly paste links directly from your system clipboard.
 - Intelligent Error Handling: Real-time feedback for IP blocks (VPN detection), outdated scrapers, or network issues via custom Toast notifications.
-- Download History: A built-in manager to track, re-download, or clear your previous activity.
 - Minimalist Brutalist UI: A distraction-free monochrome interface with a premium dark mode.
 - Privacy Focused: No tracking, no ads, and lightweight performance.
 
 ## How to Use
 
 1. Copy a link from TikTok, Instagram, or YouTube.
-2. Open Mori and the link will be ready to paste.
+2. Open Mori and use the Paste button to quickly insert your link.
 3. Tap Configure and wait for the platform detection.
 4. Choose your preferred format and tap Download.
-5. A toast notification will appear once the file is safely in your gallery.
+5. The file will be saved to your internal history and you will be automatically redirected to your browser to complete the download.
 
 ## Development and Build
 

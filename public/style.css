@@ -26,6 +26,13 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+    overscroll-behavior-x: none;
+}
+
 body {
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg-color);
@@ -38,9 +45,10 @@ body {
 .app-container {
     width: 100%;
     max-width: 500px;
-    padding: calc(40px + env(safe-area-inset-top)) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
+    padding: calc(40px + env(safe-area-inset-top)) 20px calc(110px + env(safe-area-inset-bottom)) 20px;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 header {
@@ -99,7 +107,7 @@ input[type="text"]:focus {
     box-shadow: 4px 4px 0px var(--primary);
 }
 
-#clearBtn {
+.input-action-btn {
     position: absolute;
     right: 12px;
     background: none;
@@ -109,6 +117,11 @@ input[type="text"]:focus {
     cursor: pointer;
     display: flex;
     align-items: center;
+    transition: var(--transition);
+}
+
+.input-action-btn:hover {
+    color: var(--primary);
 }
 
 #downloadBtn {
@@ -164,12 +177,21 @@ input[type="text"]:focus {
 /* Result Section */
 #resultSection {
     margin-top: 40px;
-    animation: slideUp 0.5s ease-out;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes moriEntrance {
+    0% { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(5px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.page-content:not(.hidden) {
+    animation: moriEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .media-card {
@@ -226,15 +248,86 @@ input[type="text"]:focus {
     z-index: 1;
 }
 
-.thumbnail-wrapper img {
+#slidesWrapper {
+    width: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.preview-slide {
+    width: 100%;
+    position: absolute;
+    top: 0; left: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.preview-slide.active {
+    position: relative;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 3;
+}
+
+.preview-slide img, .preview-slide video {
     width: 100%;
     height: auto;
-    display: block;
-    object-fit: cover;
-    filter: grayscale(1);
-    position: relative;
-    z-index: 2;
+    max-height: 500px;
+    object-fit: contain;
     background-color: var(--surface);
+    display: block;
+}
+
+.slider-nav {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0,0,0,0.7);
+    padding: 6px 16px;
+    border-radius: 20px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
+
+.slide-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: var(--transition);
+}
+
+.slide-btn:hover {
+    color: #ccc;
+}
+
+.slide-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.slide-indicator {
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
 }
 
 .info-wrapper {
@@ -362,8 +455,9 @@ input[type="text"]:focus {
 .bottom-nav {
     position: fixed;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
     width: 100%;
     max-width: 500px;
     background-color: var(--bg-color);
@@ -408,8 +502,9 @@ input[type="text"]:focus {
     transform: translateY(-2px);
 }
 
+/* Remove redundant padding override */
 .app-container {
-    padding-bottom: 100px; /* Space for bottom nav */
+    /* Padding handled above */
 }
 
 .history-list {
@@ -510,7 +605,12 @@ input[type="text"]:focus {
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    animation: fadeIn 0.3s ease;
+    animation: popInBtn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popInBtn {
+    0% { opacity: 0; transform: translateY(-50%) scale(0.5); }
+    100% { opacity: 1; transform: translateY(-50%) scale(1); }
 }
 
 .history-thumb-container {
@@ -666,6 +766,7 @@ input[type="text"]:focus {
     border: 1px solid var(--primary);
     border-radius: var(--radius-xl);
     overflow: hidden;
+    animation: moriEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-header {
@@ -680,6 +781,10 @@ input[type="text"]:focus {
     font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
 }
 
 .modal-header button {
@@ -695,16 +800,20 @@ input[type="text"]:focus {
 
 .modal-thumb-container {
     width: 100%;
-    height: 200px;
+    min-height: 200px;
+    height: auto;
+    max-height: 500px;
     background-color: var(--surface);
     border: 1px solid var(--primary);
     border-radius: var(--radius-l);
     margin-bottom: 16px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     overflow: hidden;
     position: relative;
+    padding: 10px;
 }
 
 .modal-thumb-container::before {
@@ -714,15 +823,18 @@ input[type="text"]:focus {
     letter-spacing: 5px;
     opacity: 0.1;
     position: absolute;
+    z-index: 1;
 }
 
-#modalThumb {
+.modal-thumb-container video, 
+.modal-thumb-container img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    filter: grayscale(1);
+    max-height: 400px;
+    object-fit: contain;
     position: relative;
-    z-index: 2;
+    z-index: 5;
+    background-color: var(--bg-color); /* Cover placeholder */
 }
 
 .url-text {
@@ -914,7 +1026,7 @@ input[type="text"]:focus {
 /* Custom Toast Styles */
 .custom-toast {
     position: fixed;
-    bottom: -100px;
+    bottom: -150px;
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--primary);
@@ -928,7 +1040,10 @@ input[type="text"]:focus {
     box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
     z-index: 10000;
     transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    white-space: nowrap;
+    white-space: normal;
+    text-align: center;
+    width: 90%;
+    max-width: 380px;
 }
 
 .custom-toast.show {

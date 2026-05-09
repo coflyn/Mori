@@ -71,11 +71,20 @@ async function snaptik(url) {
         let label = "VIDEO";
         if (text.includes("music") || text.includes("mp3")) label = "MP3";
         if (text.includes("photo")) label = "PHOTO";
-        downloads.push({ type: label, url: link });
+        
+        const isMirror = (label === "VIDEO" && downloads.some(d => d.type === "VIDEO")) || 
+                         (label === "MP3" && downloads.some(d => d.type === "MP3"));
+        
+        downloads.push({ type: label, url: link, isMirror });
       }
     });
 
-    return { status: true, result: { title: $(".video-title").text().trim() || "TikTok Content", thumbnail: $("#thumbnail").attr("src"), downloads } };
+    const titleEl = $(".video-title").first();
+    if (titleEl.length) {
+        titleEl.find("a").remove();
+    }
+    const title = titleEl.text().trim() || "TikTok Content";
+    return { status: true, result: { title, thumbnail: $("#thumbnail").attr("src"), downloads } };
   } catch (error) {
     return { status: false, message: error.message };
   }
@@ -97,9 +106,15 @@ async function instagram(url) {
         let downloads = [];
         $2('.container .row .col-md-4').each((i, el) => {
             const link = $2(el).find('a').attr('href');
+            const img = $2(el).find('img').attr('src');
             if (link && link.includes('fetch?url=')) {
                 const decoded = decodeURIComponent(link);
-                downloads.push({ type: decoded.includes('.mp4') ? 'VIDEO' : 'IMAGE', url: link });
+                const type = decoded.includes('.mp4') ? 'VIDEO' : 'IMAGE';
+                const thumb = img && !img.includes('logo') ? img : null;
+                
+                const isMirror = (type === "VIDEO" && downloads.some(d => d.type === "VIDEO"));
+                
+                downloads.push({ type, url: link, thumbnail: thumb, isMirror });
             }
         });
 
@@ -108,12 +123,17 @@ async function instagram(url) {
                 const link = $2(el).attr('href');
                 if (link && link.includes('fetch?url=')) {
                     const decoded = decodeURIComponent(link);
-                    downloads.push({ type: decoded.includes('.mp4') ? 'VIDEO' : 'IMAGE', url: link });
+                    downloads.push({ type: decoded.includes('.mp4') ? 'VIDEO' : 'IMAGE', url: link, thumbnail: null });
                 }
             });
         }
 
-        return { status: true, result: { title: $2('h5').first().text().trim() || "Instagram Content", thumbnail: $2('img').first().attr('src'), downloads } };
+        const titleEl = $2('h5').first();
+        if (titleEl.length) {
+            titleEl.find('a').remove();
+        }
+        const title = titleEl.text().trim() || "Instagram Content";
+        return { status: true, result: { title, thumbnail: $2('img').first().attr('src'), downloads } };
     } catch (e) {
         return { status: false, message: e.message };
     }
