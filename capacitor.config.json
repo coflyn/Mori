@@ -1,0 +1,10 @@
+{
+  "appId": "com.mori.downloader",
+  "appName": "Mori",
+  "webDir": "public",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

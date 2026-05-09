@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mori - Minimalist Downloader</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Mori</h1>
+            <p>Minimalist Media Downloader</p>
+        </header>
+
+        <main>
+            <!-- Home Page -->
+            <div id="homePage" class="page-content">
+                <div class="input-section">
+                    <div class="input-wrapper">
+                        <span class="search-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </span>
+                        <input type="text" id="urlInput" placeholder="Paste link here..." autocomplete="off">
+                        <button id="clearBtn" class="hidden">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
+                    </div>
+                    <button id="downloadBtn">Configure</button>
+                </div>
+
+                <div id="loader" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Analyzing link...</p>
+                </div>
+
+                <div id="resultSection" class="hidden">
+                    <div class="media-card">
+                        <button id="closeResult" class="close-card">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
+                        <div class="thumbnail-wrapper">
+                            <img id="resultThumb" src="" alt="Thumbnail">
+                        </div>
+                        <div class="info-wrapper">
+                            <h2 id="resultTitle">TikTok Content</h2>
+                            <div id="downloadList" class="download-options"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="supported-section">
+                    <span class="section-label">Supported Platforms</span>
+                    <div class="platform-chips">
+                        <div class="chip">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.525.02c1.31-.03 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47-1.26-.88-2.22-2.19-2.68-3.64-.03 1.53-.02 3.06-.02 4.59-.01 2.34.01 4.67-.01 7.01-.03 1.08-.22 2.15-.62 3.16-.48 1.25-1.33 2.36-2.4 3.2-1.28.98-2.88 1.55-4.5 1.68-1.58.15-3.26-.06-4.71-.82-1.51-.76-2.73-2.1-3.32-3.65-.58-1.52-.61-3.23-.23-4.81.42-1.63 1.52-3.08 3-3.92 1.13-.67 2.44-1.01 3.75-1.01.53.01 1.06.07 1.58.19v4.13c-.6-.18-1.25-.26-1.88-.21-1.07.09-2.09.58-2.8 1.4-.73.87-1.04 2.05-.82 3.17.22 1.01.88 1.91 1.76 2.43.91.54 2.02.66 3.02.34.91-.29 1.66-.99 2.05-1.86.29-.64.41-1.35.4-2.05-.01-3.25 0-6.5-.01-9.75-.01-2.75-.01-5.5-.01-8.25z"/></svg>
+                            <span>TikTok</span>
+                        </div>
+                        <div class="chip">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2m-.2 2A3.6 3.6 0 004 7.6v8.8A3.6 3.6 0 007.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6A3.6 3.6 0 0016.4 4H7.6m9.65 1.5a1.25 1.25 0 011.25 1.25A1.25 1.25 0 0117.25 8 1.25 1.25 0 0116 6.75a1.25 1.25 0 011.25-1.25M12 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5m0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3z"/></svg>
+                            <span>Instagram</span>
+                        </div>
+                        <div class="chip">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 4-8 4z"/></svg>
+                            <span>YouTube</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="historyPage" class="page-content hidden">
+                <div class="page-header history-header">
+                    <div class="header-main">
+                        <h2>History</h2>
+                        <p>Your recent downloads</p>
+                    </div>
+                    <button id="editHistoryBtn" class="edit-btn">EDIT</button>
+                </div>
+                <div id="historyActions" class="history-actions hidden">
+                    <button id="clearAllBtn" class="clear-all-btn">CLEAR ALL</button>
+                    <button id="doneEditBtn" class="done-btn">DONE</button>
+                </div>
+                <div class="empty-state">
+                    <p>No history yet.</p>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settingsPage" class="page-content hidden">
+                <div class="page-header">
+                    <h2>Settings</h2>
+                    <p>Configure your experience</p>
+                </div>
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <div class="item-label">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                            <span>Dark Mode</span>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <label for="darkModeToggle"></label>
+                        </div>
+                    </div>
+                    <div class="settings-item action-item" id="clearCacheBtn">
+                        <div class="item-label">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            <span>Clear Cache</span>
+                        </div>
+                        <span class="action-label">RESET</span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <span class="section-label">About App</span>
+                    <div class="settings-list">
+                        <div class="settings-item info-only">
+                            <div class="item-label">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                                <span>Version</span>
+                            </div>
+                            <span class="info-val">1.0.0</span>
+                        </div>
+                        <a href="https://github.com/coflyn" class="settings-item link-item" target="_blank">
+                            <div class="item-label">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.419 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.341-3.369-1.341-.454-1.152-1.11-1.459-1.11-1.459-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                                <span>GitHub</span>
+                            </div>
+                            <span class="info-val">coflyn</span>
+                        </a>
+                        <a href="https://instagram.com/_coflyn" class="settings-item link-item" target="_blank">
+                            <div class="item-label">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2m-.2 2A3.6 3.6 0 004 7.6v8.8A3.6 3.6 0 007.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6A3.6 3.6 0 0016.4 4H7.6m9.65 1.5a1.25 1.25 0 011.25 1.25A1.25 1.25 0 0117.25 8 1.25 1.25 0 0116 6.75a1.25 1.25 0 011.25-1.25M12 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5m0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3z"/></svg>
+                                <span>Instagram</span>
+                            </div>
+                            <span class="info-val">_coflyn</span>
+                        </a>
+                    </div>
+                </div>
+
+                    <div class="about-quote">
+                        "Simplicity is the ultimate sophistication."
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal -->
+        <div id="modalOverlay" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">History Detail</h3>
+                    <button id="closeModal">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-thumb-container">
+                        <img id="modalThumb" src="" alt="Thumbnail">
+                    </div>
+                    <div class="modal-info">
+                        <p id="modalUrl" class="url-text"></p>
+                        <button id="redownloadBtn">RE-DOWNLOAD</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active" data-page="home">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item" data-page="history">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                <span>History</span>
+            </a>
+            <a href="#" class="nav-item" data-page="settings">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>Settings</span>
+            </a>
+        </nav>
+        <!-- Custom Confirm Modal -->
+        <div id="confirmOverlay" class="modal-overlay hidden">
+            <div class="modal-content confirm-modal">
+                <div class="confirm-body">
+                    <h2 id="confirmTitle">Confirm Action</h2>
+                    <p id="confirmMessage">Are you sure you want to proceed?</p>
+                </div>
+                <div class="confirm-actions">
+                    <button id="cancelConfirmBtn" class="cancel-btn">CANCEL</button>
+                    <button id="okConfirmBtn" class="ok-btn">CONFIRM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

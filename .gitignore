@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+android/app/build
+android/.gradle
+android/local.properties
+android/capturing
+*.apk
+
+# Capacitor specific
+android/app/src/main/assets/public
+platforms/
+plugins/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# AI/Assistant
+.gemini/
