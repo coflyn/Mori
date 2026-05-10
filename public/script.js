@@ -41,6 +41,12 @@ const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
 
 // Settings Elements
 const clearCacheBtn = document.getElementById("clearCacheBtn");
+const wipeDataBtn = document.getElementById("wipeDataBtn");
+const platformVal = document.getElementById("platformVal");
+const languageDropdown = document.getElementById("languageDropdown");
+const languageTrigger = document.getElementById("languageTrigger");
+const languageOptions = document.getElementById("languageOptions");
+const currentLangDisplay = document.getElementById("currentLangDisplay");
 const darkModeToggle = document.getElementById("darkModeToggle");
 
 // Capacitor Plugins
@@ -66,6 +72,61 @@ function serializeData(obj) {
     .join("&");
 }
 
+function decodeSnapSave(data) {
+  try {
+    const regex =
+      /eval\(function\(h,u,n,t,e,r\)\{.*?\}\("(.*?)",(\d+),"(.*?)",(\d+),(\d+),(\d+)\)\)/;
+    const match = data.match(regex);
+    if (match) {
+      const h = match[1],
+        u = parseInt(match[2]),
+        n = match[3],
+        t = parseInt(match[4]),
+        e = parseInt(match[5]);
+      const delimiter = n[e],
+        parts = h.split(delimiter);
+      let decoded = "";
+      for (let s of parts) {
+        if (s === "") continue;
+        let val = 0;
+        for (let j = 0; j < s.length; j++)
+          val += n.indexOf(s[j]) * Math.pow(e, s.length - 1 - j);
+        decoded += String.fromCharCode(val - t);
+      }
+      return decodeURIComponent(escape(decoded));
+    }
+    return data;
+  } catch (err) {
+    return data;
+  }
+}
+
+function extractFinalUrl(input) {
+  if (!input) return null;
+  let raw = input.trim().replace(/^["'\\]+|["'\\]+$/g, ""),
+    isRender = false;
+  if (raw.includes("get_progressApi")) {
+    isRender = true;
+    const tokenMatch = raw.match(/token=([^&'"]+)/);
+    if (tokenMatch) raw = tokenMatch[1];
+  }
+  if (raw.includes(".") && !raw.startsWith("http")) {
+    try {
+      const payloadPart = raw.split(".")[1];
+      if (payloadPart) {
+        const payload = JSON.parse(atob(payloadPart));
+        if (payload.video_url)
+          return { url: payload.video_url, isRender: true };
+        if (payload.url) return { url: payload.url, isRender: false };
+      }
+    } catch (e) {}
+  }
+  if (raw.startsWith("//")) return { url: "https:" + raw, isRender };
+  if (raw.startsWith("/"))
+    return { url: "https://snapsave.app" + raw, isRender };
+  return { url: raw, isRender };
+}
+
 const progressBar = document.getElementById("progressBar");
 const progressContainer = document.getElementById("progressContainer");
 const loaderText = document.getElementById("loaderText");
@@ -79,6 +140,327 @@ darkModeToggle?.addEventListener("change", (e) => {
   const theme = e.target.checked ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("mori_theme", theme);
+});
+
+// Language Logic
+const translations = {
+  en: {
+    "app-desc": "Minimalist Media Downloader",
+    "input-placeholder": "Paste link here...",
+    "btn-configure": "Configure",
+    "loader-analyzing": "Analyzing link...",
+    "greeting-ready": "Ready to save?",
+    "greeting-morning": "Good Morning!",
+    "greeting-afternoon": "Good Afternoon!",
+    "greeting-evening": "Good Evening!",
+    "greeting-night": "Good Night!",
+    "label-platforms": "Supported Platforms",
+    "nav-home": "Home",
+    "nav-history": "History",
+    "nav-settings": "Settings",
+    "history-desc": "Your recent downloads",
+    "settings-desc": "Configure your experience",
+    "items-history": "items in your history",
+    "label-general": "General Settings",
+    "label-language": "Language",
+    "label-darkmode": "Dark Mode",
+    "label-storage": "Storage & Data",
+    "label-storagesize": "Total Media Size",
+    "label-clearcache": "Clear Cache",
+    "label-wipedata": "Wipe All Data",
+    "label-appinfo": "App Info",
+    "label-version": "Version",
+    "label-platform": "Platform",
+    "label-developer": "Developer",
+    "quote-simplicity": '"Simplicity is the ultimate sophistication."',
+    "btn-edit": "EDIT",
+    "btn-clear-all": "CLEAR ALL",
+    "btn-done": "DONE",
+    "btn-clear": "CLEAR",
+    "btn-reset": "RESET",
+    "btn-processing": "Processing...",
+    "btn-downloading": "Downloading...",
+    "label-content": "Content",
+    "label-download": "Download",
+    "label-error": "Error",
+    "label-fatal": "Fatal",
+    "loader-phrases": [
+      "Analyzing link...",
+      "Fetching media...",
+      "Extracting data...",
+      "Scraping content...",
+      "Hunting for pixels...",
+      "Processing request...",
+      "Almost there...",
+    ],
+  },
+  id: {
+    "app-desc": "Pengunduh Media Minimalis",
+    "input-placeholder": "Tempel tautan di sini...",
+    "btn-configure": "Konfigurasi",
+    "loader-analyzing": "Menganalisis tautan...",
+    "greeting-ready": "Siap menyimpan?",
+    "greeting-morning": "Selamat Pagi!",
+    "greeting-afternoon": "Selamat Siang!",
+    "greeting-sore": "Selamat Sore!",
+    "greeting-evening": "Selamat Malam!",
+    "greeting-night": "Selamat Malam!",
+    "label-platforms": "Platform Didukung",
+    "nav-home": "Beranda",
+    "nav-history": "Riwayat",
+    "nav-settings": "Pengaturan",
+    "history-desc": "Unduhan terakhir Anda",
+    "settings-desc": "Konfigurasi pengalaman Anda",
+    "items-history": "item dalam riwayat",
+    "label-general": "Pengaturan Umum",
+    "label-language": "Bahasa",
+    "label-darkmode": "Mode Gelap",
+    "label-storage": "Penyimpanan & Data",
+    "label-storagesize": "Total Ukuran Media",
+    "label-clearcache": "Hapus Cache",
+    "label-wipedata": "Hapus Semua Data",
+    "label-appinfo": "Info Aplikasi",
+    "label-version": "Versi",
+    "label-platform": "Platform",
+    "label-developer": "Pengembang",
+    "quote-simplicity": '"Kesederhanaan adalah kecanggihan tertinggi."',
+    "btn-edit": "UBAH",
+    "btn-clear-all": "HAPUS SEMUA",
+    "btn-done": "SELESAI",
+    "btn-clear": "BERSIHKAN",
+    "btn-reset": "RESET",
+    "btn-processing": "Memproses...",
+    "btn-downloading": "Mengunduh...",
+    "label-content": "Konten",
+    "label-download": "Unduh",
+    "label-error": "Kesalahan",
+    "label-fatal": "Fatal",
+    "loader-phrases": [
+      "Menganalisis tautan...",
+      "Mengambil media...",
+      "Mengekstrak data...",
+      "Scraping konten...",
+      "Mencari piksel...",
+      "Memproses permintaan...",
+      "Hampir selesai...",
+    ],
+  },
+  ja: {
+    "app-desc": "ミニマリストメディアダウンローダー",
+    "input-placeholder": "リンクをここに貼り付け...",
+    "btn-configure": "解析する",
+    "loader-analyzing": "リンクを解析中...",
+    "greeting-ready": "保存する准备はいい？",
+    "greeting-morning": "おはよう！",
+    "greeting-afternoon": "こんにちは！",
+    "greeting-evening": "こんばんは！",
+    "greeting-night": "おやすみなさい！",
+    "label-platforms": "対応プラットフォーム",
+    "nav-home": "ホーム",
+    "nav-history": "履歴",
+    "nav-settings": "設定",
+    "history-desc": "最近のダウンロード",
+    "settings-desc": "アプリの設定",
+    "items-history": "件の履歴があります",
+    "label-general": "一般設定",
+    "label-language": "言語",
+    "label-darkmode": "ダークモード",
+    "label-storage": "ストレージとデータ",
+    "label-storagesize": "合計メディアサイズ",
+    "label-clearcache": "キャッシュを消去",
+    "label-wipedata": "すべてのデータを消去",
+    "label-appinfo": "アプリ情報",
+    "label-version": "バージョン",
+    "label-platform": "プラットフォーム",
+    "label-developer": "開発者",
+    "quote-simplicity": '"シンプルさは究極の洗練である。"',
+    "btn-edit": "編集",
+    "btn-clear-all": "すべて削除",
+    "btn-done": "完了",
+    "btn-clear": "クリア",
+    "btn-reset": "リセット",
+    "btn-processing": "処理中...",
+    "btn-downloading": "ダウンロード中...",
+    "label-content": "コンテンツ",
+    "label-download": "ダウンロード",
+    "label-error": "エラー",
+    "label-fatal": "致命的",
+    "loader-phrases": [
+      "リンクを解析中...",
+      "メディアを取得中...",
+      "データを抽出中...",
+      "コンテンツを収集中...",
+      "ピクセルを探しています...",
+      "リクエストを処理中...",
+      "もうすぐ完了です...",
+    ],
+  },
+};
+
+let currentLang = localStorage.getItem("mori_lang") || "en";
+
+function updateLanguageUI() {
+  const lang = translations[currentLang];
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (lang[key]) el.textContent = lang[key];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (lang[key]) el.placeholder = lang[key];
+  });
+
+  if (currentLangDisplay) {
+    const langNames = { en: "English", id: "Indonesia", ja: "日本語" };
+    currentLangDisplay.textContent = langNames[currentLang] || "English";
+  }
+
+  // Highlight selected option
+  document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
+    opt.classList.toggle(
+      "selected",
+      opt.getAttribute("data-value") === currentLang,
+    );
+  });
+
+  document.documentElement.lang = currentLang;
+
+  updateGreeting();
+}
+
+const dynamicGreeting = document.getElementById("dynamicGreeting");
+function updateGreeting() {
+  const greetingText = document.getElementById("greetingText");
+  const greetingStats = document.getElementById("greetingStats");
+  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const lang = translations[currentLang];
+
+  if (!greetingText || !greetingStats) return;
+
+  const hours = new Date().getHours();
+  let greeting = lang["greeting-ready"];
+  if (hours >= 5 && hours < 12) greeting = lang["greeting-morning"];
+  else if (hours >= 12 && hours < 15) greeting = lang["greeting-afternoon"];
+  else if (hours >= 15 && hours < 18)
+    greeting = lang["greeting-sore"] || lang["greeting-afternoon"];
+  else if (hours >= 18 && hours < 21) greeting = lang["greeting-evening"];
+  else greeting = lang["greeting-night"] || lang["greeting-evening"];
+
+  greetingText.textContent = greeting;
+
+  if (currentLang === "ja") {
+    greetingStats.textContent = `履歴に ${history.length} ${lang["items-history"]}`;
+  } else {
+    greetingStats.textContent = `${history.length} ${lang["items-history"]}`;
+  }
+}
+
+// Initial calls
+updateLanguageUI();
+updateStorageInfo();
+
+async function updateStorageInfo() {
+  const storageVal = document.getElementById("storageSizeVal");
+  if (!storageVal || !Filesystem) return;
+
+  try {
+    let totalSize = 0;
+
+    // Check CACHE
+    try {
+      const cacheDir = await Filesystem.readdir({
+        path: "",
+        directory: "CACHE",
+      });
+      for (const file of cacheDir.files) {
+        if (file.type === "file") {
+          const stats = await Filesystem.stat({
+            path: file.name,
+            directory: "CACHE",
+          });
+          totalSize += stats.size;
+        }
+      }
+    } catch (e) {}
+
+    // Check Mori in DOCUMENTS
+    try {
+      const docDir = await Filesystem.readdir({
+        path: "",
+        directory: "DOCUMENTS",
+      });
+      if (docDir.files.find((f) => f.name === "Mori")) {
+        const moriFiles = await Filesystem.readdir({
+          path: "Mori",
+          directory: "DOCUMENTS",
+        });
+        for (const file of moriFiles.files) {
+          if (file.type === "file") {
+            const stats = await Filesystem.stat({
+              path: "Mori/" + file.name,
+              directory: "DOCUMENTS",
+            });
+            totalSize += stats.size;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+    storageVal.textContent = `${sizeInMB} MB`;
+  } catch (e) {
+    console.error("Storage size error:", e);
+    storageVal.textContent = "0.00 MB";
+  }
+}
+
+languageTrigger?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isActive = languageDropdown?.classList.toggle("active");
+  languageOptions?.classList.toggle("hidden");
+
+  // Manage parent z-index
+  const parentItem = languageDropdown?.closest(".settings-item");
+  const parentSection = languageDropdown?.closest(".settings-section");
+  if (parentItem) {
+    parentItem.classList.toggle("active-dropdown", isActive);
+  }
+  if (parentSection) {
+    parentSection.classList.toggle("active-section", isActive);
+  }
+});
+
+document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
+  opt.addEventListener("click", (e) => {
+    e.stopPropagation();
+    currentLang = opt.getAttribute("data-value");
+    localStorage.setItem("mori_lang", currentLang);
+    updateLanguageUI();
+    languageOptions?.classList.add("hidden");
+    languageDropdown?.classList.remove("active");
+    languageDropdown
+      ?.closest(".settings-item")
+      ?.classList.remove("active-dropdown");
+    languageDropdown
+      ?.closest(".settings-section")
+      ?.classList.remove("active-section");
+
+    let msg = "Language updated";
+    if (currentLang === "id") msg = "Bahasa diperbarui";
+    if (currentLang === "ja") msg = "言語を更新しました";
+    showToast(msg);
+  });
+});
+
+document.addEventListener("click", () => {
+  languageOptions?.classList.add("hidden");
+  languageDropdown?.classList.remove("active");
+  languageDropdown
+    ?.closest(".settings-item")
+    ?.classList.remove("active-dropdown");
+  languageDropdown
+    ?.closest(".settings-section")
+    ?.classList.remove("active-section");
 });
 
 pasteBtn?.addEventListener("click", async () => {
@@ -131,36 +513,57 @@ closeResult?.addEventListener("click", () => {
   resultSection.classList.add("hidden");
   const supportedSection = document.querySelector(".supported-section");
   if (supportedSection) supportedSection.classList.remove("hidden");
+  if (dynamicGreeting) dynamicGreeting.classList.remove("hidden");
+  updateGreeting();
 });
+
+// Function to process shared text
+function processSharedText(text) {
+  if (!text) return;
+  // Find a URL in the text
+  const urlMatch = text.match(/https?:\/\/[^\s]+/);
+  const finalUrl = urlMatch ? urlMatch[0] : text;
+
+  urlInput.value = finalUrl;
+  urlInput.dispatchEvent(new Event("input"));
+
+  // Highlight the input
+  urlInput.focus();
+  showToast("Link Pasted from Share");
+
+  // Auto-download after a short delay
+  setTimeout(() => {
+    if (urlInput.value === finalUrl) {
+      downloadBtn.click();
+    }
+  }, 800);
+}
 
 // Handle Shared Intent from Native Android
 window.addEventListener("moriShareIntent", (e) => {
   try {
-    const data = typeof e.detail === "string" ? JSON.parse(e.detail) : e.detail;
-    const text = data.text;
-    if (text) {
-      // Find a URL in the text
-      const urlMatch = text.match(/https?:\/\/[^\s]+/);
-      const finalUrl = urlMatch ? urlMatch[0] : text;
-
-      urlInput.value = finalUrl;
-      urlInput.dispatchEvent(new Event("input"));
-
-      // Highlight the input
-      urlInput.focus();
-      showToast("Link Pasted from Share");
-
-      // Auto-download after a short delay
-      setTimeout(() => {
-        if (urlInput.value === finalUrl) {
-          downloadBtn.click();
-        }
-      }, 800);
+    let data = e.detail;
+    if (typeof data === "string") {
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        data = { text: data };
+      }
     }
+    const text = data?.text || data;
+    if (typeof text === "string") processSharedText(text);
   } catch (err) {
     console.error("Share Intent Error:", err);
   }
 });
+
+// Startup check for shared text (fallback for cold starts)
+setTimeout(() => {
+  if (window.moriShareText) {
+    processSharedText(window.moriShareText);
+    window.moriShareText = null; // Clear it
+  }
+}, 1500);
 
 // Handle Shared Intent / Deep Links (Standard URLs)
 if (App) {
@@ -295,37 +698,200 @@ clearAllBtn?.addEventListener("click", () => {
 });
 
 // Clear Cache Logic
+// Detect Platform
+if (platformVal) {
+  platformVal.textContent = window.Capacitor?.isNativePlatform()
+    ? "Android"
+    : "Web Browser";
+}
+
 clearCacheBtn?.addEventListener("click", () => {
   showConfirm(
     "Clear Cache",
-    "This will delete temporary files and reset history. Continue?",
+    "This will delete temporary app data (thumbnails, etc.) but keep your downloads safe. Continue?",
     async () => {
       try {
-        localStorage.removeItem("mori_history");
         if (Filesystem) {
-          const files = await Filesystem.readdir({
-            path: "",
-            directory: "CACHE",
-          });
-          for (const file of files.files) {
-            await Filesystem.deleteFile({
-              path: file.name,
+          // Clear only CACHE, keep DOCUMENTS/Mori safe
+          try {
+            const files = await Filesystem.readdir({
+              path: "",
               directory: "CACHE",
             });
-          }
+            for (const file of files.files) {
+              await Filesystem.deleteFile({
+                path: file.name,
+                directory: "CACHE",
+              });
+            }
+          } catch (e) {}
         }
-        renderHistory();
+        await updateStorageInfo();
         showToast("Cache cleared.");
       } catch (e) {
-        console.error(e);
-        showToast("Cache cleared.");
+        showToast("Error clearing cache.");
+      }
+    },
+  );
+});
+
+wipeDataBtn?.addEventListener("click", () => {
+  showConfirm(
+    "Wipe All Data",
+    "This will permanently delete your history and all saved files. Continue?",
+    async () => {
+      try {
+        localStorage.clear();
+        if (Filesystem) {
+          // Clear CACHE
+          try {
+            const cacheFiles = await Filesystem.readdir({
+              path: "",
+              directory: "CACHE",
+            });
+            for (const file of cacheFiles.files) {
+              await Filesystem.deleteFile({
+                path: file.name,
+                directory: "CACHE",
+              });
+            }
+          } catch (e) {}
+
+          // Clear Mori folder in Documents
+          try {
+            const docDir = await Filesystem.readdir({
+              path: "",
+              directory: "DOCUMENTS",
+            });
+            if (docDir.files.find((f) => f.name === "Mori")) {
+              const docFiles = await Filesystem.readdir({
+                path: "Mori",
+                directory: "DOCUMENTS",
+              });
+              for (const file of docFiles.files) {
+                await Filesystem.deleteFile({
+                  path: "Mori/" + file.name,
+                  directory: "DOCUMENTS",
+                });
+              }
+            }
+          } catch (e) {}
+        }
+        await updateStorageInfo();
         renderHistory();
+        showToast("All data wiped. Restarting...");
+        setTimeout(() => location.reload(), 1500);
+      } catch (e) {
+        localStorage.clear();
+        location.reload();
       }
     },
   );
 });
 
 // SCRAPERS
+async function scrapeSoundCloud(url) {
+  try {
+    // Klickaud logic directly in native
+    const r1 = await CapacitorHttp.get({
+      url: "https://www.klickaud.org/en14",
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    const parser = new DOMParser();
+    const doc1 = parser.parseFromString(r1.data, "text/html");
+
+    // Klickaud often needs a CSRF token or just the session cookies
+    const cookies = getCookiesFromHeaders(r1.headers);
+
+    await CapacitorHttp.post({
+      url: "https://www.klickaud.org/download.php",
+      data: serializeData({ value: url }),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: cookies,
+        "User-Agent": "Mozilla/5.0",
+      },
+    });
+
+    // Klickaud uses SSE for the worker. Since CapacitorHttp doesn't support streaming,
+    // we try to poll the worker endpoint or fallback to proxy.
+    // However, the user wants the code here.
+    const sseUrl = `https://www.klickaud.org/worker_sse.php?url=${encodeURIComponent(url)}`;
+
+    // Fallback to proxy because SSE is mandatory for Klickaud's worker to trigger
+    console.warn(
+      "[NATIVE] Klickaud SSE detected. Attempting proxy fallback for stability.",
+    );
+    const proxyData = await scrapeProxy(url);
+    if (proxyData.status) return proxyData;
+
+    throw new Error(
+      "Klickaud requires Server-Sent Events which is not supported natively.",
+    );
+  } catch (e) {
+    console.error("[NATIVE] SoundCloud failed:", e);
+    return await scrapeProxy(url);
+  }
+}
+
+async function scrapeThreads(url) {
+  try {
+    const mainRes = await CapacitorHttp.get({
+      url: "https://threadster.app/",
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    const cookies = mainRes.headers["set-cookie"] || "";
+
+    const dlRes = await CapacitorHttp.post({
+      url: "https://threadster.app/download",
+      data: { url },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: cookies,
+      },
+    });
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(dlRes.data, "text/html");
+    const downloads = [];
+    doc.querySelectorAll("a").forEach((a) => {
+      const href = a.getAttribute("href");
+      if (href && (href.includes("token=") || href.includes("acxcdn.com"))) {
+        let finalUrl = href;
+        let type = "VIDEO";
+        try {
+          const urlObj = new URL(href);
+          const token = urlObj.searchParams.get("token");
+          if (token) {
+            const payloadPart = token.split(".")[1];
+            if (payloadPart) {
+              const payload = JSON.parse(atob(payloadPart));
+              if (payload.url) {
+                finalUrl = payload.url;
+                const lowerUrl = finalUrl.toLowerCase();
+                if (
+                  lowerUrl.includes(".jpg") ||
+                  lowerUrl.includes(".jpeg") ||
+                  lowerUrl.includes(".png") ||
+                  lowerUrl.includes(".webp")
+                ) {
+                  type = "IMAGE";
+                }
+              }
+            }
+          }
+        } catch (e) {}
+        downloads.push({ type, url: finalUrl });
+      }
+    });
+
+    if (downloads.length === 0) throw new Error("No download links found.");
+    return { status: true, result: { title: "Threads Media", downloads } };
+  } catch (e) {
+    return { status: false, message: e.message };
+  }
+}
+
 async function scrapeTikTok(url) {
   let currentStatus = null;
   try {
@@ -600,6 +1166,7 @@ async function scrapeYouTube(url) {
         title: title || "YouTube Content",
         thumbnail: imagePreviewUrl,
         downloads,
+        sourceUrl: url,
       },
     };
   } catch (err) {
@@ -826,6 +1393,270 @@ async function scrapeSpotify(url) {
   }
 }
 
+async function scrapePinterest(url) {
+  let currentStatus = null;
+  try {
+    const r1 = await CapacitorHttp.get({
+      url: "https://pindown.io/",
+      headers: { "User-Agent": CHROME_UA },
+    });
+    currentStatus = r1.status;
+
+    const cookies = getCookiesFromHeaders(r1.headers);
+    const parser = new DOMParser();
+    const doc1 = parser.parseFromString(r1.data, "text/html");
+
+    const tokenInput = doc1.querySelector(
+      'input[type="hidden"]:not([name="lang"])',
+    );
+    const tokenName = tokenInput?.getAttribute("name");
+    const tokenValue = tokenInput?.getAttribute("value");
+
+    if (!tokenName || !tokenValue)
+      throw new Error("Pinterest token not found.");
+
+    const r2 = await CapacitorHttp.post({
+      url: "https://pindown.io/action",
+      data: serializeData({ url, [tokenName]: tokenValue, lang: "en" }),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        Cookie: cookies,
+        "User-Agent": CHROME_UA,
+      },
+    });
+    currentStatus = r2.status;
+
+    let r2Data = r2.data;
+    if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
+
+    if (!r2Data.success || !r2Data.html)
+      throw new Error(r2Data.message || "Pinterest extract failed.");
+
+    const doc2 = parser.parseFromString(r2Data.html, "text/html");
+    const downloads = [];
+
+    doc2.querySelectorAll(".columns .column").forEach((el) => {
+      const title = el.querySelector(".is-size-6")?.textContent?.trim();
+      const btn = el.querySelector(".button");
+      let dlUrl = btn?.getAttribute("href");
+      const onclick = btn?.getAttribute("onclick");
+      const isApi = onclick && onclick.includes("fetchVideoUrl");
+
+      if (isApi) {
+        const match = onclick.match(/'([^']+)'/);
+        if (match) dlUrl = "https://pindown.io" + match[1];
+      }
+
+      if (dlUrl) {
+        downloads.push({
+          type: title || "DOWNLOAD",
+          url: dlUrl,
+          isApi: !!isApi,
+        });
+      }
+    });
+
+    for (let dl of downloads) {
+      if (dl.isApi) {
+        try {
+          const apiRes = await CapacitorHttp.get({
+            url: dl.url,
+            headers: { Cookie: cookies },
+          });
+          let apiData = apiRes.data;
+          if (typeof apiData === "string") apiData = JSON.parse(apiData);
+          if (apiData.success && apiData.url) dl.url = apiData.url;
+        } catch (e) {}
+      }
+    }
+
+    return {
+      status: true,
+      result: {
+        title:
+          doc2.querySelector("h3")?.textContent?.trim() || "Pinterest Content",
+        thumbnail: doc2.querySelector(".image img")?.getAttribute("src"),
+        downloads,
+        sourceUrl: url,
+      },
+    };
+  } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
+async function scrapeAppleMusic(url) {
+  let currentStatus = null;
+  try {
+    const headers = {
+      "User-Agent": CHROME_UA,
+      Accept: "application/json, text/javascript, */*; q=0.01",
+      "X-Requested-With": "XMLHttpRequest",
+    };
+
+    const r1 = await CapacitorHttp.get({
+      url: "https://aplmate.com/",
+      headers: { ...headers, Accept: "text/html" },
+    });
+    currentStatus = r1.status;
+    const cookies = getCookiesFromHeaders(r1.headers);
+
+    const r2 = await CapacitorHttp.post({
+      url: "https://aplmate.com/action/userverify",
+      data: serializeData({ url }),
+      headers: {
+        ...headers,
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        Cookie: cookies,
+      },
+    });
+
+    let r2Data = r2.data;
+    if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
+    const token = r2Data.success ? r2Data.token : null;
+    if (!token) throw new Error(r2Data.message || "Verification failed.");
+
+    const r3 = await CapacitorHttp.post({
+      url: "https://aplmate.com/action",
+      data: serializeData({ url, "cf-turnstile-response": token }),
+      headers: {
+        ...headers,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: cookies,
+      },
+    });
+
+    let r3Data = r3.data;
+    if (typeof r3Data === "string") r3Data = JSON.parse(r3Data);
+    if (r3Data.error) throw new Error(r3Data.message || "Action failed.");
+
+    const parser = new DOMParser();
+    let finalHtml = r3Data.html;
+    const doc2 = parser.parseFromString(finalHtml, "text/html");
+    const form2 = doc2.querySelector('form[name="submitapurl"]');
+
+    if (form2) {
+      const data2 = {};
+      form2.querySelectorAll("input").forEach((input) => {
+        const name = input.getAttribute("name");
+        const value = input.getAttribute("value") || "";
+        if (name) data2[name] = value;
+      });
+
+      const r4 = await CapacitorHttp.post({
+        url: "https://aplmate.com/action/track",
+        data: serializeData(data2),
+        headers: {
+          ...headers,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Cookie: cookies,
+        },
+      });
+      let r4Data = r4.data;
+      if (typeof r4Data === "string") r4Data = JSON.parse(r4Data);
+      finalHtml = r4Data.data || r4Data;
+    }
+
+    const doc3 = parser.parseFromString(finalHtml, "text/html");
+    const title =
+      doc3.querySelector(".hover-underline")?.textContent?.trim() ||
+      doc3.querySelector("h3")?.textContent?.trim() ||
+      "Apple Music Content";
+    const artist = doc3.querySelector("p")?.textContent?.trim();
+    const thumbnail = doc3.querySelector("img")?.getAttribute("src");
+    const downloads = [];
+
+    doc3.querySelectorAll("a").forEach((a) => {
+      const href = a.getAttribute("href");
+      const text = a.textContent.trim();
+      if (
+        href &&
+        (href.includes("/dl?token=") || a.classList.contains("abutton"))
+      ) {
+        if (href.includes("ko-fi.com") || href.includes("premium.html")) return;
+        if (text.toLowerCase().includes("another song")) return;
+        downloads.push({
+          type: text || "MP3",
+          url: href.startsWith("http") ? href : "https://aplmate.com" + href,
+        });
+      }
+    });
+
+    return {
+      status: true,
+      result: {
+        title: artist ? `${artist} - ${title}` : title,
+        thumbnail,
+        downloads,
+        sourceUrl: url,
+      },
+    };
+  } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
+async function scrapeFacebook(url) {
+  let currentStatus = null;
+  try {
+    const headers = {
+      "User-Agent": CHROME_UA,
+      Origin: "https://snapsave.app",
+      Referer: "https://snapsave.app/id",
+    };
+
+    const r1 = await CapacitorHttp.get({
+      url: "https://snapsave.app/id",
+      headers: { ...headers, Accept: "text/html" },
+    });
+    currentStatus = r1.status;
+    const cookies = getCookiesFromHeaders(r1.headers);
+
+    const r2 = await CapacitorHttp.post({
+      url: "https://snapsave.app/action.php?lang=id",
+      data: serializeData({ url }),
+      headers: {
+        ...headers,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: cookies,
+      },
+    });
+    currentStatus = r2.status;
+
+    const decodedHtml = decodeSnapSave(r2.data);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(decodedHtml, "text/html");
+    const downloads = [];
+
+    doc.querySelectorAll("table tbody tr").forEach((tr) => {
+      const qTd = tr.querySelector("td.video-quality");
+      const quality = qTd
+        ? qTd.textContent.trim()
+        : tr.querySelectorAll("td")[0]?.textContent?.trim();
+      const btn =
+        tr.querySelector("a.btn-download") ||
+        tr.querySelector("button") ||
+        tr.querySelector("a");
+      let linkAttr = btn?.getAttribute("href") || btn?.getAttribute("onclick");
+
+      const extracted = extractFinalUrl(linkAttr);
+      if (extracted && extracted.url.startsWith("http")) {
+        downloads.push({ type: quality || "VIDEO", url: extracted.url });
+      }
+    });
+
+    if (downloads.length === 0)
+      throw new Error("Could not extract download links.");
+    return {
+      status: true,
+      result: { title: "Facebook Media", downloads, sourceUrl: url },
+    };
+  } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
 async function scrapeProxy(url) {
   try {
     const res = await fetch("/api/scrape", {
@@ -843,18 +1674,8 @@ downloadBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
   if (!url) return;
 
-  const loadingPhrases = [
-    "Analyzing link...",
-    "Fetching media...",
-    "Extracting data...",
-    "Scraping content...",
-    "Hunting for pixels...",
-    "Processing request...",
-    "Almost there...",
-  ];
-
-  const randomPhrase =
-    loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)];
+  const phrases = translations[currentLang]["loader-phrases"];
+  const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
   const loaderText = loader.querySelector("p");
   if (loaderText) loaderText.textContent = randomPhrase;
 
@@ -862,6 +1683,7 @@ downloadBtn.addEventListener("click", async () => {
   resultSection.classList.add("hidden");
   // Hide supportedSection when starting a download/preview
   if (supportedSection) supportedSection.classList.add("hidden");
+  if (dynamicGreeting) dynamicGreeting.classList.add("hidden");
 
   // Stop any previous media playing in background
   document.querySelectorAll("video").forEach((v) => {
@@ -872,7 +1694,7 @@ downloadBtn.addEventListener("click", async () => {
 
   loader.classList.remove("hidden");
   downloadBtn.disabled = true;
-  downloadBtn.textContent = "Processing...";
+  downloadBtn.textContent = translations[currentLang]["btn-processing"];
 
   try {
     let data;
@@ -888,6 +1710,16 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeTwitter(url);
       } else if (url.includes("spotify.com")) {
         data = await scrapeSpotify(url);
+      } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
+        data = await scrapePinterest(url);
+      } else if (url.includes("music.apple.com")) {
+        data = await scrapeAppleMusic(url);
+      } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
+        data = await scrapeFacebook(url);
+      } else if (url.includes("soundcloud.com")) {
+        data = await scrapeSoundCloud(url);
+      } else if (url.includes("threads.net") || url.includes("threads.com")) {
+        data = await scrapeThreads(url);
       } else {
         data = { status: false, message: "URL not supported yet." };
       }
@@ -898,25 +1730,29 @@ downloadBtn.addEventListener("click", async () => {
 
     if (data && data.status) {
       saveToHistory(data.result, url);
-      renderResult(data.result);
+      renderResult(data.result, url);
       loader.classList.add("hidden");
     } else {
       const errMsg = data?.message || "Unknown error occurred.";
       handleScrapeError(data, data?.statusCode);
-      if (loaderText) loaderText.textContent = "Error: " + errMsg;
+      if (loaderText)
+        loaderText.textContent =
+          translations[currentLang]["label-error"] + ": " + errMsg;
       setTimeout(() => loader.classList.add("hidden"), 3000);
       if (supportedSection) supportedSection.classList.remove("hidden");
     }
   } catch (err) {
     console.error("[CRITICAL] Download Flow Error:", err);
-    if (loaderText) loaderText.textContent = "Fatal: " + err.message;
+    if (loaderText)
+      loaderText.textContent =
+        translations[currentLang]["label-fatal"] + ": " + err.message;
     showToast("Fatal error: " + err.message);
     setTimeout(() => loader.classList.add("hidden"), 5000);
     if (supportedSection) supportedSection.classList.remove("hidden");
   }
 
   downloadBtn.disabled = false;
-  downloadBtn.textContent = "Configure";
+  downloadBtn.textContent = translations[currentLang]["btn-configure"];
 });
 
 function updateSliderUI() {
@@ -959,7 +1795,7 @@ slideNextBtn?.addEventListener("click", () => {
   }
 });
 
-function renderResult(result) {
+function renderResult(result, originalUrl) {
   slideData = result.downloads;
   currentSlideIndex = 0;
 
@@ -968,27 +1804,42 @@ function renderResult(result) {
   if (slidesWrapper) {
     slidesWrapper.innerHTML = "";
 
-    // For YouTube, always show only the main thumbnail, don't slide formats
-    const isYouTube =
-      /youtube\.com|youtu\.be/i.test(urlInput.value) ||
-      (result.title && /youtube/i.test(result.title));
+    const isSinglePreview =
+      /youtube\.com|youtu\.be|soundcloud\.com|spotify\.com|music\.apple\.com/i.test(
+        urlInput.value,
+      ) ||
+      (result.title &&
+        /youtube|soundcloud|spotify|apple music/i.test(
+          result.title.toLowerCase(),
+        ));
 
-    if (sliderItems.length > 0 && !isYouTube) {
+    if (sliderItems.length > 0 && !isSinglePreview) {
       sliderItems.forEach((dl, index) => {
         const slide = document.createElement("div");
         slide.className = "preview-slide" + (index === 0 ? " active" : "");
 
+        const lowerUrl = dl.url.toLowerCase();
+        const upperType = dl.type.toUpperCase();
+
+        const isImage =
+          lowerUrl.includes(".jpg") ||
+          lowerUrl.includes(".jpeg") ||
+          lowerUrl.includes(".png") ||
+          lowerUrl.includes(".webp") ||
+          upperType.includes("IMAGE") ||
+          upperType.includes("PHOTO");
+
         const isVideo =
-          dl.url.toLowerCase().includes(".mp4") ||
-          dl.url.toLowerCase().includes(".m3u8") ||
-          dl.url.toLowerCase().includes("video") ||
-          dl.url.toLowerCase().includes("tweeload.com/download") ||
-          dl.type.toUpperCase().includes("VIDEO") ||
-          dl.type.toUpperCase().includes("MP4") ||
-          /^\d+p/.test(dl.type) ||
-          (dl.type.toUpperCase() === "DOWNLOAD" &&
-            (dl.url.toLowerCase().includes(".mp4") ||
-              dl.url.toLowerCase().includes("video")));
+          !isImage &&
+          (lowerUrl.includes(".mp4") ||
+            lowerUrl.includes(".m3u8") ||
+            lowerUrl.includes("video") ||
+            lowerUrl.includes("tweeload.com/download") ||
+            upperType.includes("VIDEO") ||
+            upperType.includes("MP4") ||
+            /^\d+p/.test(dl.type) ||
+            (upperType === "DOWNLOAD" &&
+              (lowerUrl.includes(".mp4") || lowerUrl.includes("video"))));
 
         if (isVideo) {
           const video = document.createElement("video");
@@ -1079,7 +1930,8 @@ function renderResult(result) {
     }
   }
 
-  let cleanTitleText = result.title || "Content";
+  let cleanTitleText =
+    result.title || translations[currentLang]["label-content"];
   // Regex to remove hashtags but preserve text around them:
   cleanTitleText = cleanTitleText
     .replace(/#[^\s#]+/g, "")
@@ -1091,14 +1943,14 @@ function renderResult(result) {
   result.downloads.forEach((dl, index) => {
     const btn = document.createElement("button");
     btn.className = "dl-item";
-    btn.innerHTML = `<div>Download ${index + 1}</div><span>${dl.type}</span>`;
+    btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${dl.type}</span>`;
     btn.addEventListener("click", (e) =>
       startNativeDownload(
         dl.url,
         dl.type,
         result.title,
         e.currentTarget,
-        result.sourceUrl || urlInput.value.trim(),
+        result.sourceUrl || originalUrl || urlInput.value.trim(),
       ),
     );
     downloadList.appendChild(btn);
@@ -1115,7 +1967,10 @@ async function startNativeDownload(url, type, title, btn, sourceUrl) {
     return;
   }
 
-  const finalUrl = url.startsWith("/") ? "https://snaptik.app" + url : url;
+  const finalUrl =
+    url.startsWith("/") && !url.startsWith("/api/")
+      ? "https://snaptik.app" + url
+      : url;
   const originalContent = btn.innerHTML;
 
   try {
@@ -1124,7 +1979,7 @@ async function startNativeDownload(url, type, title, btn, sourceUrl) {
     // Show progress UI
     progressContainer.classList.remove("hidden");
     progressBar.style.width = "0%";
-    btn.innerHTML = `<div>Downloading...</div>`;
+    btn.innerHTML = `<div>${translations[currentLang]["btn-downloading"]}</div>`;
 
     const isAudio =
       type.toLowerCase().includes("mp3") ||
@@ -1132,7 +1987,21 @@ async function startNativeDownload(url, type, title, btn, sourceUrl) {
       type.toLowerCase().includes("128k") ||
       type.toLowerCase().includes("48k") ||
       type.toLowerCase().includes("m4a");
-    const ext = isAudio ? "mp3" : "mp4";
+
+    const isImage =
+      type.toLowerCase().includes("image") ||
+      type.toLowerCase().includes("photo") ||
+      type.toLowerCase().includes("jpg") ||
+      type.toLowerCase().includes("png") ||
+      url.toLowerCase().includes(".jpg") ||
+      url.toLowerCase().includes(".jpeg") ||
+      url.toLowerCase().includes(".png") ||
+      url.toLowerCase().includes(".webp");
+
+    let ext = "mp4";
+    if (isAudio) ext = "mp3";
+    else if (isImage) ext = "jpg";
+
     const fileName = `MORI_${Date.now()}.${ext}`;
 
     let actualDownloadUrl = finalUrl;
@@ -1158,11 +2027,20 @@ async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     const downloadOptions = {
       url: actualDownloadUrl,
-      path: fileName,
-      directory: "CACHE",
+      path: "Mori/" + fileName,
+      directory: "DOCUMENTS",
       headers: { "User-Agent": "Mozilla/5.0" },
       progress: true,
     };
+
+    // Ensure Mori directory exists
+    try {
+      await Filesystem.mkdir({
+        path: "Mori",
+        directory: "DOCUMENTS",
+        recursive: true,
+      });
+    } catch (e) {}
 
     let fakeProgress = 0;
     const progressInterval = setInterval(() => {
@@ -1215,6 +2093,7 @@ function updateHistoryLocalPath(url, localUri) {
   });
   localStorage.setItem("mori_history", JSON.stringify(history));
   renderHistory();
+  updateGreeting();
 }
 
 // History Management
@@ -1238,6 +2117,7 @@ function saveToHistory(result, url) {
   history.unshift(newItem);
   localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 50)));
   renderHistory();
+  updateGreeting();
 }
 
 function deleteHistoryItem(url) {
@@ -1280,7 +2160,7 @@ function renderHistory() {
             </div>
             <div class="history-info">
                 <h3>${truncate(item.title, 60)}</h3>
-                <p>${new Date(item.timestamp).toLocaleDateString()}</p>
+                <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
             </div>
             ${isEditingHistory ? `<button class="delete-item-btn" data-url="${item.url}">×</button>` : ""}
         `;

@@ -321,6 +321,399 @@ async function spotidown(url) {
     }
 }
 
+async function pindown(url) {
+    try {
+        const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+        const client = axios.create({
+            baseURL: "https://pindown.io",
+            headers: {
+                "User-Agent": userAgent,
+                Referer: "https://pindown.io/",
+                Origin: "https://pindown.io",
+            },
+        });
+
+        const { data: homeHtml, headers: homeHeaders } = await client.get("/");
+        const $home = cheerio.load(homeHtml);
+        const tokenInput = $home('input[type="hidden"]').not('[name="lang"]');
+        const tokenName = tokenInput.attr("name");
+        const tokenValue = tokenInput.attr("value");
+
+        if (!tokenName || !tokenValue) throw new Error("Could not find session token on pindown.io");
+
+        const cookies = homeHeaders["set-cookie"];
+        const cookieHeader = cookies ? cookies.map(c => c.split(';')[0]).join('; ') : '';
+
+        const formData = new URLSearchParams();
+        formData.append("url", url);
+        formData.append(tokenName, tokenValue);
+        formData.append("lang", "en");
+
+        const { data: actionData } = await client.post("/action", formData.toString(), {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+                Cookie: cookieHeader,
+            },
+        });
+
+        if (!actionData.success || !actionData.html) throw new Error(actionData.message || "Failed to fetch download links from pindown.io");
+
+        const $ = cheerio.load(actionData.html);
+        const downloads = [];
+        
+        $(".columns .column").each((i, el) => {
+            const $el = $(el);
+            const title = $el.find(".is-size-6").text().trim();
+            const $btn = $el.find(".button");
+            let downloadUrl = $btn.attr("href");
+            const isApi = $btn.attr("onclick") && $btn.attr("onclick").includes("fetchVideoUrl");
+
+            if (isApi) {
+                const match = $btn.attr("onclick").match(/'([^']+)'/);
+                if (match) downloadUrl = "https://pindown.io" + match[1];
+            }
+
+            if (downloadUrl) {
+                downloads.push({
+                    type: title || "DOWNLOAD",
+                    url: downloadUrl,
+                    isApi: !!isApi
+                });
+            }
+        });
+
+        for (let dl of downloads) {
+            if (dl.isApi) {
+                try {
+                    const { data: apiData } = await client.get(dl.url, { headers: { Cookie: cookieHeader } });
+                    if (apiData.success && apiData.url) dl.url = apiData.url;
+                } catch (e) {}
+            }
+        }
+
+        return {
+            status: true,
+            result: {
+                title: $("h3").first().text().trim() || "Pinterest Content",
+                thumbnail: $(".image img").attr("src"),
+                downloads
+            }
+        };
+    } catch (error) {
+        return { status: false, message: error.message };
+    }
+}
+
+async function aplmate(url) {
+    try {
+        const headers = {
+            "User-Agent": userAgents[0],
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "https://aplmate.com/",
+            "Origin": "https://aplmate.com",
+        };
+
+        const r1 = await axios.get("https://aplmate.com/", { headers: { ...headers, "Accept": "text/html" } });
+        const cookies = r1.headers["set-cookie"];
+        const cookieStr = cookies ? cookies.map(c => c.split(';')[0]).join('; ') : "";
+
+        const r2 = await axios.post('https://aplmate.com/action/userverify', `url=${encodeURIComponent(url)}`, {
+            headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Cookie': cookieStr }
+        });
+
+        const token = r2.data && r2.data.success ? r2.data.token : null;
+        if (!token) throw new Error(r2.data.message || "Failed to get verification token from Aplmate.");
+
+        const fd1 = new URLSearchParams();
+        fd1.append("url", url);
+        fd1.append("cf-turnstile-response", token);
+
+        const r3 = await axios.post("https://aplmate.com/action", fd1.toString(), {
+            headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", "Cookie": cookieStr },
+        });
+
+        if (r3.data.error) throw new Error(r3.data.message || "Error during initial action.");
+
+        const $2 = cheerio.load(r3.data.html);
+        const $form2 = $2('form[name="submitapurl"]');
+        let finalHtml = r3.data.html;
+
+        if ($form2.length) {
+            const fd2 = new URLSearchParams();
+            $form2.find('input').each((i, el) => {
+                const name = $2(el).attr('name');
+                const value = $2(el).attr('value') || "";
+                if (name) fd2.append(name, value);
+            });
+
+            const r4 = await axios.post("https://aplmate.com/action/track", fd2.toString(), {
+                headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", "Cookie": cookieStr },
+            });
+
+            if (r4.data.error) throw new Error(r4.data.message || "Error during track action.");
+            finalHtml = r4.data.data;
+        }
+        
+        const $ = cheerio.load(finalHtml);
+        const title = $(".hover-underline").first().text().trim() || $("h3").first().text().trim() || "Apple Music Content";
+        const artist = $("p").first().text().trim();
+        const thumbnail = $("img").first().attr("src");
+        const downloads = [];
+        
+        $("a").each((i, el) => {
+            const $el = $(el);
+            const link = $el.attr("href");
+            const text = $el.text().trim();
+            if (link && (link.includes("/dl?token=") || $el.hasClass("abutton"))) {
+                if (link.includes("ko-fi.com") || link.includes("premium.html")) return;
+                if (text.toLowerCase().includes("another song")) return;
+                downloads.push({ type: text || "MP3", url: link.startsWith("http") ? link : "https://aplmate.com" + link });
+            }
+        });
+
+        return {
+            status: true,
+            result: {
+                title: artist ? `${artist} - ${title}` : title,
+                thumbnail,
+                downloads
+            }
+        };
+    } catch (error) {
+        return { status: false, message: error.message };
+    }
+}
+
+function decodeSnapSave(data) {
+    try {
+        const regex = /eval\(function\(h,u,n,t,e,r\)\{.*?\}\("(.*?)",(\d+),"(.*?)",(\d+),(\d+),(\d+)\)\)/;
+        const match = data.match(regex);
+        if (match) {
+            const h = match[1], u = parseInt(match[2]), n = match[3], t = parseInt(match[4]), e = parseInt(match[5]);
+            const delimiter = n[e], parts = h.split(delimiter);
+            let decoded = "";
+            for (let s of parts) {
+                if (s === "") continue;
+                let val = 0;
+                for (let j = 0; j < s.length; j++) val += n.indexOf(s[j]) * Math.pow(e, s.length - 1 - j);
+                decoded += String.fromCharCode(val - t);
+            }
+            return decodeURIComponent(escape(decoded));
+        }
+        return data;
+    } catch (err) { return data; }
+}
+
+function extractFinalUrl(input) {
+    if (!input) return null;
+    let raw = input.trim().replace(/^["'\\]+|["'\\]+$/g, ''), isRender = false;
+    if (raw.includes("get_progressApi")) {
+        isRender = true;
+        const tokenMatch = raw.match(/token=([^&'"]+)/);
+        if (tokenMatch) raw = tokenMatch[1];
+    }
+    if (raw.includes(".") && !raw.startsWith("http")) {
+        try {
+            const payloadPart = raw.split('.')[1];
+            if (payloadPart) {
+                const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString());
+                if (payload.video_url) return { url: payload.video_url, isRender: true };
+                if (payload.url) return { url: payload.url, isRender: false };
+            }
+        } catch (e) {}
+    }
+    if (raw.startsWith("//")) return { url: "https:" + raw, isRender };
+    if (raw.startsWith("/")) return { url: "https://snapsave.app" + raw, isRender };
+    return { url: raw, isRender };
+}
+
+async function snapsave(url) {
+    try {
+        const headers = {
+            "User-Agent": userAgents[0],
+            "Origin": "https://snapsave.app",
+            "Referer": "https://snapsave.app/id",
+        };
+        const r1 = await axios.get("https://snapsave.app/id", { headers });
+        const cookies = r1.headers["set-cookie"];
+        const cookieStr = cookies ? cookies.map(c => c.split(';')[0]).join('; ') : "";
+        const params = new URLSearchParams();
+        params.append("url", url);
+
+        const response = await axios.post("https://snapsave.app/action.php?lang=id", params.toString(), {
+            headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", "Cookie": cookieStr },
+        });
+
+        const decodedHtml = decodeSnapSave(response.data);
+        const $ = cheerio.load(decodedHtml);
+        const downloads = [];
+        
+        $("table tbody tr").each((i, el) => {
+            const quality = $(el).find("td.video-quality").length ? $(el).find("td.video-quality").text().trim() : $(el).find("td").eq(0).text().trim();
+            const linkAttr = $(el).find("a.btn-download").attr("href") || $(el).find("button").attr("onclick") || $(el).find("a").attr("href");
+            const extracted = extractFinalUrl(linkAttr);
+            if (extracted && extracted.url.startsWith("http")) {
+                downloads.push({ type: quality || "VIDEO", url: extracted.url });
+            }
+        });
+
+        if (downloads.length === 0) throw new Error("Could not extract download links.");
+        return { status: true, result: { title: "Facebook Media", downloads } };
+    } catch (error) {
+        return { status: false, message: error.message };
+    }
+}
+
+async function klickaud(url) {
+  try {
+    const headers = {
+      "User-Agent": userAgents[0],
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "Referer": "https://www.klickaud.org/en14",
+      "Origin": "https://www.klickaud.org",
+    };
+
+    const r1 = await axios.get("https://www.klickaud.org/en14", { headers });
+    const cookies = r1.headers["set-cookie"];
+    const cookieStr = cookies ? cookies.map(c => c.split(';')[0]).join('; ') : "";
+
+    let csrfToken = "";
+    try {
+        const rToken = await axios.get("https://www.klickaud.org/csrf-token-endpoint.php", {
+            headers: { ...headers, "Cookie": cookieStr }
+        });
+        csrfToken = rToken.data && rToken.data.csrf_token;
+    } catch (e) {}
+
+    const params = new URLSearchParams();
+    params.append("value", url);
+    if (csrfToken) params.append("csrf_token", csrfToken);
+
+    await axios.post("https://www.klickaud.org/download.php", params.toString(), {
+      headers: {
+        ...headers,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": cookieStr
+      },
+    });
+
+    const sseUrl = `https://www.klickaud.org/worker_sse.php?url=${encodeURIComponent(url)}`;
+    
+    return new Promise((resolve, reject) => {
+        axios({
+            method: 'get',
+            url: sseUrl,
+            responseType: 'stream',
+            headers: {
+                ...headers,
+                "Referer": "https://www.klickaud.org/download.php",
+                "Cookie": cookieStr,
+                "Accept": "text/event-stream"
+            },
+            timeout: 30000
+        }).then(response => {
+            let buffer = "";
+            let found = false;
+
+            response.data.on('data', (chunk) => {
+                if (found) return;
+                buffer += chunk.toString();
+                if (buffer.includes('event: ready')) {
+                    const lines = buffer.split('\n');
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].trim() === 'event: ready' && lines[i+1] && lines[i+1].startsWith('data:')) {
+                            try {
+                                const dataStr = lines[i+1].replace('data:', '').trim();
+                                const data = JSON.parse(dataStr);
+                                if (data.download_url) {
+                                    found = true;
+                                    resolve({
+                                        status: true,
+                                        result: {
+                                            title: data.file_name ? data.file_name.replace('_KLICKAUD.mp3', '').replace(/_/g, ' ') : "SoundCloud Track",
+                                            thumbnail: null,
+                                            type: "AUDIO",
+                                            downloads: [{ type: "MP3 (128kbps)", url: `/api/download-proxy?url=${encodeURIComponent(data.download_url)}&filename=${encodeURIComponent(data.file_name || 'track.mp3')}` }],
+                                        }
+                                    });
+                                    response.data.destroy();
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+                if (buffer.includes('event: failed')) {
+                    found = true;
+                    reject(new Error("Worker failed."));
+                    response.data.destroy();
+                }
+            });
+            response.data.on('end', () => { if (!found) reject(new Error("Timeout.")); });
+        }).catch(err => reject(err));
+    });
+  } catch (error) {
+    return { status: false, message: error.message };
+  }
+}
+
+async function threadster(url) {
+  try {
+    const headers = {
+      "User-Agent": userAgents[0],
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "Origin": "https://threadster.app",
+      "Referer": "https://threadster.app/",
+    };
+
+    const r1 = await axios.get("https://threadster.app/", { headers });
+    const cookies = r1.headers["set-cookie"];
+    const cookieStr = cookies ? cookies.map(c => c.split(';')[0]).join('; ') : "";
+
+    const params = new URLSearchParams();
+    params.append("url", url);
+
+    const response = await axios.post("https://threadster.app/download", params.toString(), { 
+        headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", "Cookie": cookieStr }
+    });
+    
+    const $ = cheerio.load(response.data);
+    const downloads = [];
+    
+    $("a").each((i, el) => {
+        const href = $(el).attr("href");
+        if (href && (href.includes("token=") || href.includes("acxcdn.com"))) {
+            let finalUrl = href;
+            let type = "VIDEO";
+            try {
+                const urlObj = new URL(href);
+                const token = urlObj.searchParams.get("token");
+                if (token) {
+                    const payloadPart = token.split('.')[1];
+                    if (payloadPart) {
+                        const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString());
+                        if (payload.url) {
+                            finalUrl = payload.url;
+                            const lowerUrl = finalUrl.toLowerCase();
+                            if (lowerUrl.includes(".jpg") || lowerUrl.includes(".jpeg") || lowerUrl.includes(".png") || lowerUrl.includes(".webp")) {
+                                type = "IMAGE";
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+            downloads.push({ type, url: finalUrl });
+        }
+    });
+
+    if (downloads.length === 0) throw new Error("No download links found.");
+    return { status: true, result: { title: "Threads Media", downloads } };
+  } catch (error) {
+    return { status: false, message: error.message };
+  }
+}
+
 const express = require("express");
 const cors = require("cors");
 const app = express();
@@ -340,9 +733,38 @@ app.post("/api/scrape", async (req, res) => {
   else if (url.includes('youtube.com') || url.includes('youtu.be')) data = await youtube(url);
   else if (url.includes('twitter.com') || url.includes('x.com')) data = await tweeload(url);
   else if (url.includes('spotify.com')) data = await spotidown(url);
+  else if (url.includes('pinterest.com') || url.includes('pin.it')) data = await pindown(url);
+  else if (url.includes('music.apple.com')) data = await aplmate(url);
+  else if (url.includes('facebook.com') || url.includes('fb.watch')) data = await snapsave(url);
+  else if (url.includes('soundcloud.com')) data = await klickaud(url);
+  else if (url.includes('threads.net') || url.includes('threads.com')) data = await threadster(url);
   else data = { status: false, message: "URL not supported yet." };
 
   res.json(data);
+});
+
+app.get("/api/download-proxy", async (req, res) => {
+    const { url, filename } = req.query;
+    if (!url) return res.status(400).send("URL required");
+    
+    try {
+        const response = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'stream',
+            headers: {
+                "User-Agent": userAgents[0],
+                "Referer": "https://www.klickaud.org/",
+            }
+        });
+        
+        const cleanName = (filename || 'download.mp3').replace(/[/\\?%*:|"<>]/g, '-');
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanName}"`);
+        res.setHeader('Content-Type', 'audio/mpeg');
+        response.data.pipe(res);
+    } catch (e) {
+        res.status(500).send("Proxy failed: " + e.message);
+    }
 });
 
 app.listen(port, () => console.log(`Mori Server running at http://localhost:${port}`));

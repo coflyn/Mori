@@ -25,8 +25,17 @@ public class MainActivity extends BridgeActivity {
             if ("text/plain".equals(type)) {
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
-                    String escapedText = sharedText.replace("\"", "\\\"").replace("\n", " ");
-                    getBridge().triggerWindowJSEvent("moriShareIntent", "{ \"text\": \"" + escapedText + "\" }");
+                    final String escapedText = sharedText.replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ");
+                    // Use a small delay to ensure the bridge and listeners are ready
+                    getBridge().getWebView().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Set a global variable as a fallback
+                            getBridge().getWebView().evaluateJavascript("window.moriShareText = '" + escapedText + "';", null);
+                            // Trigger the event
+                            getBridge().triggerWindowJSEvent("moriShareIntent", "{ \"text\": \"" + escapedText + "\" }");
+                        }
+                    }, 1000);
                 }
             }
         }
