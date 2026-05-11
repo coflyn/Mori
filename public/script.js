@@ -1,3 +1,7 @@
+const APP_VERSION = "3.0.0";
+const UPDATE_CHECK_URL =
+  "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
+
 const urlInput = document.getElementById("urlInput");
 const clearBtn = document.getElementById("clearBtn");
 const pasteBtn = document.getElementById("pasteBtn");
@@ -7,6 +11,8 @@ const resultSection = document.getElementById("resultSection");
 const resultTitle = document.getElementById("resultTitle");
 const downloadList = document.getElementById("downloadList");
 const closeResult = document.getElementById("closeResult");
+const appVersionVal = document.querySelector("#checkUpdateBtn .info-val");
+if (appVersionVal) appVersionVal.textContent = " " + APP_VERSION;
 
 // Slider Elements
 const slidesWrapper = document.getElementById("slidesWrapper");
@@ -42,90 +48,51 @@ const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
 // Settings Elements
 const clearCacheBtn = document.getElementById("clearCacheBtn");
 const wipeDataBtn = document.getElementById("wipeDataBtn");
+const reportBugBtn = document.getElementById("reportBugBtn");
+const checkUpdateBtn = document.getElementById("checkUpdateBtn");
 const platformVal = document.getElementById("platformVal");
 const languageDropdown = document.getElementById("languageDropdown");
 const languageTrigger = document.getElementById("languageTrigger");
 const languageOptions = document.getElementById("languageOptions");
 const currentLangDisplay = document.getElementById("currentLangDisplay");
 const darkModeToggle = document.getElementById("darkModeToggle");
+import {
+  scrapeSoundCloud,
+  scrapeThreads,
+  scrapeTikTok,
+  scrapeInstagram,
+  scrapeYouTube,
+  scrapeTwitter,
+  scrapeSpotify,
+  scrapePinterest,
+  scrapeAppleMusic,
+  scrapeFacebook,
+  scrapeProxy,
+} from "./scrapers.js";
 
-// Capacitor Plugins
-const { CapacitorHttp, Filesystem, Toast, Clipboard, App } =
-  window.Capacitor?.Plugins || {};
+import { translations } from "./i18n.js";
+import {
+  setUIState,
+  renderResult,
+  renderHistory,
+  showModal,
+  updateSliderUI,
+} from "./ui.js";
 
-const CHROME_UA =
-  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36";
-
-function getCookiesFromHeaders(headers) {
-  const raw = headers["Set-Cookie"] || headers["set-cookie"] || "";
-  if (!raw) return "";
-  if (Array.isArray(raw)) return raw.map((c) => c.split(";")[0]).join("; ");
-  return raw
-    .split(",")
-    .map((c) => c.trim().split(";")[0])
-    .join("; ");
-}
-
-function serializeData(obj) {
-  return Object.keys(obj)
-    .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]))
-    .join("&");
-}
-
-function decodeSnapSave(data) {
-  try {
-    const regex =
-      /eval\(function\(h,u,n,t,e,r\)\{.*?\}\("(.*?)",(\d+),"(.*?)",(\d+),(\d+),(\d+)\)\)/;
-    const match = data.match(regex);
-    if (match) {
-      const h = match[1],
-        u = parseInt(match[2]),
-        n = match[3],
-        t = parseInt(match[4]),
-        e = parseInt(match[5]);
-      const delimiter = n[e],
-        parts = h.split(delimiter);
-      let decoded = "";
-      for (let s of parts) {
-        if (s === "") continue;
-        let val = 0;
-        for (let j = 0; j < s.length; j++)
-          val += n.indexOf(s[j]) * Math.pow(e, s.length - 1 - j);
-        decoded += String.fromCharCode(val - t);
-      }
-      return decodeURIComponent(escape(decoded));
-    }
-    return data;
-  } catch (err) {
-    return data;
-  }
-}
-
-function extractFinalUrl(input) {
-  if (!input) return null;
-  let raw = input.trim().replace(/^["'\\]+|["'\\]+$/g, ""),
-    isRender = false;
-  if (raw.includes("get_progressApi")) {
-    isRender = true;
-    const tokenMatch = raw.match(/token=([^&'"]+)/);
-    if (tokenMatch) raw = tokenMatch[1];
-  }
-  if (raw.includes(".") && !raw.startsWith("http")) {
-    try {
-      const payloadPart = raw.split(".")[1];
-      if (payloadPart) {
-        const payload = JSON.parse(atob(payloadPart));
-        if (payload.video_url)
-          return { url: payload.video_url, isRender: true };
-        if (payload.url) return { url: payload.url, isRender: false };
-      }
-    } catch (e) {}
-  }
-  if (raw.startsWith("//")) return { url: "https:" + raw, isRender };
-  if (raw.startsWith("/"))
-    return { url: "https://snapsave.app" + raw, isRender };
-  return { url: raw, isRender };
-}
+import {
+  CapacitorHttp,
+  Filesystem,
+  Toast,
+  Clipboard,
+  App,
+  CHROME_UA,
+  cleanUrl,
+  truncate,
+  showToast,
+  copyToClipboard,
+  handleScrapeError,
+  getVideoThumbnail,
+} from "./utils.js";
 
 const progressBar = document.getElementById("progressBar");
 const progressContainer = document.getElementById("progressContainer");
@@ -143,159 +110,6 @@ darkModeToggle?.addEventListener("change", (e) => {
 });
 
 // Language Logic
-const translations = {
-  en: {
-    "app-desc": "Minimalist Media Downloader",
-    "input-placeholder": "Paste link here...",
-    "btn-configure": "Configure",
-    "loader-analyzing": "Analyzing link...",
-    "greeting-ready": "Ready to save?",
-    "greeting-morning": "Good Morning!",
-    "greeting-afternoon": "Good Afternoon!",
-    "greeting-evening": "Good Evening!",
-    "greeting-night": "Good Night!",
-    "label-platforms": "Supported Platforms",
-    "nav-home": "Home",
-    "nav-history": "History",
-    "nav-settings": "Settings",
-    "history-desc": "Your recent downloads",
-    "settings-desc": "Configure your experience",
-    "items-history": "items in your history",
-    "label-general": "General Settings",
-    "label-language": "Language",
-    "label-darkmode": "Dark Mode",
-    "label-storage": "Storage & Data",
-    "label-storagesize": "Total Media Size",
-    "label-clearcache": "Clear Cache",
-    "label-wipedata": "Wipe All Data",
-    "label-appinfo": "App Info",
-    "label-version": "Version",
-    "label-platform": "Platform",
-    "label-developer": "Developer",
-    "quote-simplicity": '"Simplicity is the ultimate sophistication."',
-    "btn-edit": "EDIT",
-    "btn-clear-all": "CLEAR ALL",
-    "btn-done": "DONE",
-    "btn-clear": "CLEAR",
-    "btn-reset": "RESET",
-    "btn-processing": "Processing...",
-    "btn-downloading": "Downloading...",
-    "label-content": "Content",
-    "label-download": "Download",
-    "label-error": "Error",
-    "label-fatal": "Fatal",
-    "loader-phrases": [
-      "Analyzing link...",
-      "Fetching media...",
-      "Extracting data...",
-      "Scraping content...",
-      "Hunting for pixels...",
-      "Processing request...",
-      "Almost there...",
-    ],
-  },
-  id: {
-    "app-desc": "Pengunduh Media Minimalis",
-    "input-placeholder": "Tempel tautan di sini...",
-    "btn-configure": "Konfigurasi",
-    "loader-analyzing": "Menganalisis tautan...",
-    "greeting-ready": "Siap menyimpan?",
-    "greeting-morning": "Selamat Pagi!",
-    "greeting-afternoon": "Selamat Siang!",
-    "greeting-sore": "Selamat Sore!",
-    "greeting-evening": "Selamat Malam!",
-    "greeting-night": "Selamat Malam!",
-    "label-platforms": "Platform Didukung",
-    "nav-home": "Beranda",
-    "nav-history": "Riwayat",
-    "nav-settings": "Pengaturan",
-    "history-desc": "Unduhan terakhir Anda",
-    "settings-desc": "Konfigurasi pengalaman Anda",
-    "items-history": "item dalam riwayat",
-    "label-general": "Pengaturan Umum",
-    "label-language": "Bahasa",
-    "label-darkmode": "Mode Gelap",
-    "label-storage": "Penyimpanan & Data",
-    "label-storagesize": "Total Ukuran Media",
-    "label-clearcache": "Hapus Cache",
-    "label-wipedata": "Hapus Semua Data",
-    "label-appinfo": "Info Aplikasi",
-    "label-version": "Versi",
-    "label-platform": "Platform",
-    "label-developer": "Pengembang",
-    "quote-simplicity": '"Kesederhanaan adalah kecanggihan tertinggi."',
-    "btn-edit": "UBAH",
-    "btn-clear-all": "HAPUS SEMUA",
-    "btn-done": "SELESAI",
-    "btn-clear": "BERSIHKAN",
-    "btn-reset": "RESET",
-    "btn-processing": "Memproses...",
-    "btn-downloading": "Mengunduh...",
-    "label-content": "Konten",
-    "label-download": "Unduh",
-    "label-error": "Kesalahan",
-    "label-fatal": "Fatal",
-    "loader-phrases": [
-      "Menganalisis tautan...",
-      "Mengambil media...",
-      "Mengekstrak data...",
-      "Scraping konten...",
-      "Mencari piksel...",
-      "Memproses permintaan...",
-      "Hampir selesai...",
-    ],
-  },
-  ja: {
-    "app-desc": "ミニマリストメディアダウンローダー",
-    "input-placeholder": "リンクをここに貼り付け...",
-    "btn-configure": "解析する",
-    "loader-analyzing": "リンクを解析中...",
-    "greeting-ready": "保存する准备はいい？",
-    "greeting-morning": "おはよう！",
-    "greeting-afternoon": "こんにちは！",
-    "greeting-evening": "こんばんは！",
-    "greeting-night": "おやすみなさい！",
-    "label-platforms": "対応プラットフォーム",
-    "nav-home": "ホーム",
-    "nav-history": "履歴",
-    "nav-settings": "設定",
-    "history-desc": "最近のダウンロード",
-    "settings-desc": "アプリの設定",
-    "items-history": "件の履歴があります",
-    "label-general": "一般設定",
-    "label-language": "言語",
-    "label-darkmode": "ダークモード",
-    "label-storage": "ストレージとデータ",
-    "label-storagesize": "合計メディアサイズ",
-    "label-clearcache": "キャッシュを消去",
-    "label-wipedata": "すべてのデータを消去",
-    "label-appinfo": "アプリ情報",
-    "label-version": "バージョン",
-    "label-platform": "プラットフォーム",
-    "label-developer": "開発者",
-    "quote-simplicity": '"シンプルさは究極の洗練である。"',
-    "btn-edit": "編集",
-    "btn-clear-all": "すべて削除",
-    "btn-done": "完了",
-    "btn-clear": "クリア",
-    "btn-reset": "リセット",
-    "btn-processing": "処理中...",
-    "btn-downloading": "ダウンロード中...",
-    "label-content": "コンテンツ",
-    "label-download": "ダウンロード",
-    "label-error": "エラー",
-    "label-fatal": "致命的",
-    "loader-phrases": [
-      "リンクを解析中...",
-      "メディアを取得中...",
-      "データを抽出中...",
-      "コンテンツを収集中...",
-      "ピクセルを探しています...",
-      "リクエストを処理中...",
-      "もうすぐ完了です...",
-    ],
-  },
-};
 
 let currentLang = localStorage.getItem("mori_lang") || "en";
 
@@ -359,52 +173,33 @@ function updateGreeting() {
 updateLanguageUI();
 updateStorageInfo();
 
+async function getFolderSize(path, directory) {
+  let size = 0;
+  try {
+    const readdir = await Filesystem.readdir({ path, directory });
+    for (const file of readdir.files) {
+      const filePath = path ? `${path}/${file.name}` : file.name;
+      if (file.type === "file") {
+        const stats = await Filesystem.stat({ path: filePath, directory });
+        size += stats.size;
+      } else if (file.type === "directory") {
+        size += await getFolderSize(filePath, directory);
+      }
+    }
+  } catch (e) {}
+  return size;
+}
+
 async function updateStorageInfo() {
   const storageVal = document.getElementById("storageSizeVal");
   if (!storageVal || !Filesystem) return;
 
   try {
     let totalSize = 0;
-
-    // Check CACHE
-    try {
-      const cacheDir = await Filesystem.readdir({
-        path: "",
-        directory: "CACHE",
-      });
-      for (const file of cacheDir.files) {
-        if (file.type === "file") {
-          const stats = await Filesystem.stat({
-            path: file.name,
-            directory: "CACHE",
-          });
-          totalSize += stats.size;
-        }
-      }
-    } catch (e) {}
-
-    // Check Mori in DOCUMENTS
-    try {
-      const docDir = await Filesystem.readdir({
-        path: "",
-        directory: "DOCUMENTS",
-      });
-      if (docDir.files.find((f) => f.name === "Mori")) {
-        const moriFiles = await Filesystem.readdir({
-          path: "Mori",
-          directory: "DOCUMENTS",
-        });
-        for (const file of moriFiles.files) {
-          if (file.type === "file") {
-            const stats = await Filesystem.stat({
-              path: "Mori/" + file.name,
-              directory: "DOCUMENTS",
-            });
-            totalSize += stats.size;
-          }
-        }
-      }
-    } catch (e) {}
+    totalSize += await getFolderSize("", "CACHE");
+    totalSize += await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
+    // Also check old location for compatibility
+    totalSize += await getFolderSize("Download/Mori", "EXTERNAL");
 
     const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
     storageVal.textContent = `${sizeInMB} MB`;
@@ -430,12 +225,24 @@ languageTrigger?.addEventListener("click", (e) => {
   }
 });
 
+function switchLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("mori_lang", lang);
+  setUIState({ currentLang });
+  updateLanguageUI();
+  updateGreeting();
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+
+  let msg = "Language updated";
+  if (currentLang === "id") msg = "Bahasa diperbarui";
+  if (currentLang === "ja") msg = "言語を更新しました";
+  showToast(msg);
+}
+
 document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
   opt.addEventListener("click", (e) => {
     e.stopPropagation();
-    currentLang = opt.getAttribute("data-value");
-    localStorage.setItem("mori_lang", currentLang);
-    updateLanguageUI();
+    switchLanguage(opt.getAttribute("data-value"));
     languageOptions?.classList.add("hidden");
     languageDropdown?.classList.remove("active");
     languageDropdown
@@ -444,11 +251,6 @@ document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
     languageDropdown
       ?.closest(".settings-section")
       ?.classList.remove("active-section");
-
-    let msg = "Language updated";
-    if (currentLang === "id") msg = "Bahasa diperbarui";
-    if (currentLang === "ja") msg = "言語を更新しました";
-    showToast(msg);
   });
 });
 
@@ -584,74 +386,6 @@ if (App) {
   });
 }
 
-function cleanUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.origin + u.pathname;
-  } catch (e) {
-    return url.split("?")[0].replace(/\/$/, "");
-  }
-}
-
-function truncate(str, num = 80) {
-  if (!str) return "";
-  return str.length > num ? str.slice(0, num) + "..." : str;
-}
-
-// Clipboard Helper
-async function copyToClipboard(text) {
-  try {
-    if (window.Capacitor?.isNativePlatform() && Clipboard) {
-      await Clipboard.write({ string: text });
-    } else {
-      await navigator.clipboard.writeText(text);
-    }
-    showToast("Copied to clipboard");
-  } catch (err) {
-    console.error("Copy failed", err);
-    showToast("Copy failed");
-  }
-}
-
-// Toast Function
-async function showToast(message) {
-  console.log("[TOAST]", message);
-  if (Toast) {
-    await Toast.show({ text: message, duration: "short", position: "bottom" });
-  } else {
-    const toastEl = document.createElement("div");
-    toastEl.className = "custom-toast";
-    toastEl.textContent = message;
-    document.body.appendChild(toastEl);
-    setTimeout(() => toastEl.classList.add("show"), 10);
-    setTimeout(() => {
-      toastEl.classList.remove("show");
-      setTimeout(() => toastEl.remove(), 300);
-    }, 3000);
-  }
-}
-
-// Error Handling Helper
-function handleScrapeError(err, status = null) {
-  let msg = "Something went wrong.";
-  if (status === 403 || status === 429) {
-    msg = "IP Blocked! Please use a VPN or mobile data.";
-  } else if (
-    err.message?.includes("Token") ||
-    err.message?.includes("selector")
-  ) {
-    msg = "Scraper outdated. Please wait for an update.";
-  } else if (
-    err.message?.includes("Network") ||
-    err.message?.includes("fetch")
-  ) {
-    msg = "Network error. Check your connection.";
-  } else if (err.message) {
-    msg = err.message;
-  }
-  showToast(msg);
-}
-
 // Custom Confirm Function
 function showConfirm(title, message, onConfirm) {
   confirmTitle.textContent = title;
@@ -671,16 +405,18 @@ function showConfirm(title, message, onConfirm) {
 // History Edit Handlers
 editHistoryBtn?.addEventListener("click", () => {
   isEditingHistory = true;
+  setUIState({ isEditingHistory });
   editHistoryBtn.classList.add("hidden");
   historyActions.classList.remove("hidden");
-  renderHistory();
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 });
 
 doneEditBtn?.addEventListener("click", () => {
   isEditingHistory = false;
+  setUIState({ isEditingHistory });
   editHistoryBtn.classList.remove("hidden");
   historyActions.classList.add("hidden");
-  renderHistory();
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 });
 
 clearAllBtn?.addEventListener("click", () => {
@@ -690,15 +426,14 @@ clearAllBtn?.addEventListener("click", () => {
     () => {
       localStorage.removeItem("mori_history");
       isEditingHistory = false;
+      setUIState({ isEditingHistory });
       editHistoryBtn.classList.remove("hidden");
       historyActions.classList.add("hidden");
-      renderHistory();
+      renderHistory(onHistoryItemClick, onHistoryDeleteClick);
     },
   );
 });
 
-// Clear Cache Logic
-// Detect Platform
 if (platformVal) {
   platformVal.textContent = window.Capacitor?.isNativePlatform()
     ? "Android"
@@ -707,27 +442,34 @@ if (platformVal) {
 
 clearCacheBtn?.addEventListener("click", () => {
   showConfirm(
-    "Clear Cache",
-    "This will delete temporary app data (thumbnails, etc.) but keep your downloads safe. Continue?",
+    translations[currentLang]["label-clearcache"],
+    translations[currentLang]["desc-clearcache"],
     async () => {
       try {
         if (Filesystem) {
-          // Clear only CACHE, keep DOCUMENTS/Mori safe
           try {
             const files = await Filesystem.readdir({
               path: "",
               directory: "CACHE",
             });
             for (const file of files.files) {
-              await Filesystem.deleteFile({
-                path: file.name,
-                directory: "CACHE",
-              });
+              if (file.type === "directory") {
+                await Filesystem.rmdir({
+                  path: file.name,
+                  directory: "CACHE",
+                  recursive: true,
+                });
+              } else {
+                await Filesystem.deleteFile({
+                  path: file.name,
+                  directory: "CACHE",
+                });
+              }
             }
           } catch (e) {}
         }
         await updateStorageInfo();
-        showToast("Cache cleared.");
+        showToast(translations[currentLang]["label-cache-cleared"]);
       } catch (e) {
         showToast("Error clearing cache.");
       }
@@ -737,13 +479,12 @@ clearCacheBtn?.addEventListener("click", () => {
 
 wipeDataBtn?.addEventListener("click", () => {
   showConfirm(
-    "Wipe All Data",
-    "This will permanently delete your history and all saved files. Continue?",
+    translations[currentLang]["label-wipedata"],
+    translations[currentLang]["desc-wipedata"],
     async () => {
       try {
         localStorage.clear();
         if (Filesystem) {
-          // Clear CACHE
           try {
             const cacheFiles = await Filesystem.readdir({
               path: "",
@@ -757,29 +498,25 @@ wipeDataBtn?.addEventListener("click", () => {
             }
           } catch (e) {}
 
-          // Clear Mori folder in Documents
           try {
-            const docDir = await Filesystem.readdir({
-              path: "",
-              directory: "DOCUMENTS",
+            await Filesystem.rmdir({
+              path: "Download/Mori",
+              directory: "EXTERNAL_STORAGE",
+              recursive: true,
             });
-            if (docDir.files.find((f) => f.name === "Mori")) {
-              const docFiles = await Filesystem.readdir({
-                path: "Mori",
-                directory: "DOCUMENTS",
-              });
-              for (const file of docFiles.files) {
-                await Filesystem.deleteFile({
-                  path: "Mori/" + file.name,
-                  directory: "DOCUMENTS",
-                });
-              }
-            }
+          } catch (e) {}
+
+          try {
+            await Filesystem.rmdir({
+              path: "Download/Mori",
+              directory: "EXTERNAL",
+              recursive: true,
+            });
           } catch (e) {}
         }
         await updateStorageInfo();
-        renderHistory();
-        showToast("All data wiped. Restarting...");
+        renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+        showToast(translations[currentLang]["label-data-wiped"]);
         setTimeout(() => location.reload(), 1500);
       } catch (e) {
         localStorage.clear();
@@ -789,886 +526,56 @@ wipeDataBtn?.addEventListener("click", () => {
   );
 });
 
-// SCRAPERS
-async function scrapeSoundCloud(url) {
+reportBugBtn?.addEventListener("click", () => {
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 2.0.0`;
+  const text = encodeURIComponent(
+    `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
+  );
+  const whatsappUrl = `https://wa.me/6282399408885?text=${text}`;
+  showToast(translations[currentLang]["label-opening-wa"]);
+  window.open(whatsappUrl, "_blank");
+});
+
+async function checkUpdate() {
+  const actionLabel = checkUpdateBtn.querySelector(".action-label");
+
+  if (actionLabel.textContent === translations[currentLang]["btn-update"]) {
+    const text = encodeURIComponent(
+      `Hi coflyn, I want to update Mori to the latest version. I'm currently on v${APP_VERSION}.`,
+    );
+    const whatsappUrl = `https://wa.me/6282399408885?text=${text}`;
+    showToast(translations[currentLang]["label-opening-wa"]);
+    window.open(whatsappUrl, "_blank");
+    return;
+  }
+
+  actionLabel.textContent = translations[currentLang]["btn-processing"];
+  showToast(translations[currentLang]["label-checking-update"]);
+
   try {
-    // Klickaud logic directly in native
-    const r1 = await CapacitorHttp.get({
-      url: "https://www.klickaud.org/en14",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
+    const res = await fetch(UPDATE_CHECK_URL + "?t=" + Date.now());
+    const data = await res.json();
 
-    // Klickaud often needs a CSRF token or just the session cookies
-    const cookies = getCookiesFromHeaders(r1.headers);
-
-    await CapacitorHttp.post({
-      url: "https://www.klickaud.org/download.php",
-      data: serializeData({ value: url }),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: cookies,
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-
-    // Klickaud uses SSE for the worker. Since CapacitorHttp doesn't support streaming,
-    // we try to poll the worker endpoint or fallback to proxy.
-    // However, the user wants the code here.
-    const sseUrl = `https://www.klickaud.org/worker_sse.php?url=${encodeURIComponent(url)}`;
-
-    // Fallback to proxy because SSE is mandatory for Klickaud's worker to trigger
-    console.warn(
-      "[NATIVE] Klickaud SSE detected. Attempting proxy fallback for stability.",
-    );
-    const proxyData = await scrapeProxy(url);
-    if (proxyData.status) return proxyData;
-
-    throw new Error(
-      "Klickaud requires Server-Sent Events which is not supported natively.",
-    );
+    if (data.version && data.version !== APP_VERSION) {
+      actionLabel.textContent = translations[currentLang]["btn-update"];
+      showToast(
+        translations[currentLang]["label-update-available"] +
+          " (v" +
+          data.version +
+          ")",
+      );
+    } else {
+      actionLabel.textContent = translations[currentLang]["btn-check"];
+      showToast(translations[currentLang]["label-up-to-date"]);
+    }
   } catch (e) {
-    console.error("[NATIVE] SoundCloud failed:", e);
-    return await scrapeProxy(url);
+    console.error("Update check failed:", e);
+    showToast("Failed to check update.");
+    actionLabel.textContent = translations[currentLang]["btn-check"];
   }
 }
 
-async function scrapeThreads(url) {
-  try {
-    const mainRes = await CapacitorHttp.get({
-      url: "https://threadster.app/",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    const cookies = mainRes.headers["set-cookie"] || "";
-
-    const dlRes = await CapacitorHttp.post({
-      url: "https://threadster.app/download",
-      data: { url },
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: cookies,
-      },
-    });
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(dlRes.data, "text/html");
-    const downloads = [];
-    doc.querySelectorAll("a").forEach((a) => {
-      const href = a.getAttribute("href");
-      if (href && (href.includes("token=") || href.includes("acxcdn.com"))) {
-        let finalUrl = href;
-        let type = "VIDEO";
-        try {
-          const urlObj = new URL(href);
-          const token = urlObj.searchParams.get("token");
-          if (token) {
-            const payloadPart = token.split(".")[1];
-            if (payloadPart) {
-              const payload = JSON.parse(atob(payloadPart));
-              if (payload.url) {
-                finalUrl = payload.url;
-                const lowerUrl = finalUrl.toLowerCase();
-                if (
-                  lowerUrl.includes(".jpg") ||
-                  lowerUrl.includes(".jpeg") ||
-                  lowerUrl.includes(".png") ||
-                  lowerUrl.includes(".webp")
-                ) {
-                  type = "IMAGE";
-                }
-              }
-            }
-          }
-        } catch (e) {}
-        downloads.push({ type, url: finalUrl });
-      }
-    });
-
-    if (downloads.length === 0) throw new Error("No download links found.");
-    return { status: true, result: { title: "Threads Media", downloads } };
-  } catch (e) {
-    return { status: false, message: e.message };
-  }
-}
-
-async function scrapeTikTok(url) {
-  let currentStatus = null;
-  try {
-    const mainRes = await CapacitorHttp.get({
-      url: "https://snaptik.app/en",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    currentStatus = mainRes.status;
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(mainRes.data, "text/html");
-    const token = doc.querySelector('input[name="token"]')?.value;
-    if (!token) throw new Error("Scraper outdated (token missing).");
-
-    const abcRes = await CapacitorHttp.post({
-      url: "https://snaptik.app/abc2.php",
-      data: { token, url },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
-    currentStatus = abcRes.status;
-
-    const script1 = abcRes.data;
-    const script2 = await new Promise((resolve, reject) => {
-      try {
-        const mockEval = (s) => resolve(s);
-        const fn = new Function("eval", script1);
-        fn(mockEval);
-      } catch (e) {
-        reject(new Error("Scraper outdated (eval failed)."));
-      }
-    });
-
-    const capturedHtml = await new Promise((resolve, reject) => {
-      let html = "";
-      const context = {
-        $: () => ({
-          set innerHTML(t) {
-            html = t;
-          },
-          remove: () => {},
-          style: { display: "" },
-        }),
-        app: { showAlert: (msg) => reject(new Error(msg)) },
-        document: { getElementById: () => ({ src: "" }) },
-        fetch: () => {
-          resolve(html);
-          return { json: () => Promise.resolve({ thumbnail_url: "" }) };
-        },
-        gtag: () => {},
-        Math: { round: () => 0 },
-        XMLHttpRequest: function () {
-          return { open: () => {}, send: () => {} };
-        },
-        window: { location: { hostname: "snaptik.app" } },
-        setTimeout: () => {},
-        setInterval: () => {},
-        console: { log: () => {} },
-      };
-      try {
-        const keys = Object.keys(context);
-        const values = Object.values(context);
-        const fn = new Function(...keys, script2);
-        fn(...values);
-        setTimeout(() => {
-          if (html) resolve(html);
-          else reject(new Error("Request timeout."));
-        }, 1000);
-      } catch (e) {
-        reject(new Error("Execution failed."));
-      }
-    });
-
-    const resDoc = parser.parseFromString(capturedHtml, "text/html");
-    const downloads = [];
-    const seenVideo = false;
-    resDoc.querySelectorAll("a").forEach((a) => {
-      let href = a.getAttribute("href");
-      let text = a.textContent.trim().toLowerCase();
-      if (href) {
-        if (href.startsWith("/")) href = "https://snaptik.app" + href;
-
-        // Filter out links that are not direct media downloads (acxcdn or token-based)
-        const isCdnLink =
-          href.includes("acxcdn.com") ||
-          href.includes("token=") ||
-          href.includes("download.php");
-        const isWebRedirect =
-          href.includes("/en/download") ||
-          href.includes("/id/download") ||
-          (href.includes("snaptik.app") &&
-            !href.includes("token=") &&
-            !href.includes(".php"));
-
-        if (isCdnLink && !isWebRedirect) {
-          if (text.includes("app")) return;
-
-          let label = "VIDEO";
-          if (text.includes("music") || text.includes("mp3")) label = "MP3";
-          if (text.includes("photo")) label = "PHOTO";
-
-          // Detect mirrors
-          const isMirror =
-            (label === "VIDEO" && downloads.some((d) => d.type === "VIDEO")) ||
-            (label === "MP3" && downloads.some((d) => d.type === "MP3"));
-
-          downloads.push({ type: label, url: href, isMirror });
-        }
-      }
-    });
-
-    const titleEl =
-      resDoc.querySelector(".video-title") || resDoc.querySelector("h3");
-    if (titleEl) {
-      titleEl.querySelectorAll("a").forEach((a) => a.remove());
-    }
-    const title = titleEl?.textContent?.trim() || "TikTok Content";
-    const thumbEl = resDoc.querySelector("img");
-    const thumb = thumbEl
-      ? thumbEl.getAttribute("src")?.startsWith("/")
-        ? "https://snaptik.app" + thumbEl.getAttribute("src")
-        : thumbEl.getAttribute("src")
-      : null;
-
-    return {
-      status: true,
-      result: { title, thumbnail: thumb, downloads, sourceUrl: url },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeInstagram(url) {
-  let currentStatus = null;
-  try {
-    const cleanUrl = url.split("?")[0];
-    const res1 = await CapacitorHttp.get({
-      url: "https://indown.io/",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    currentStatus = res1.status;
-
-    const cookies =
-      res1.headers["Set-Cookie"] || res1.headers["set-cookie"] || "";
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(res1.data, "text/html");
-    const token = doc1.querySelector('input[name="_token"]')?.value;
-
-    if (!token) throw new Error("Scraper outdated (token missing).");
-
-    const res2 = await CapacitorHttp.post({
-      url: "https://indown.io/download",
-      data: { link: cleanUrl, _token: token },
-      headers: {
-        Cookie: cookies,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-    currentStatus = res2.status;
-
-    const doc2 = parser.parseFromString(res2.data, "text/html");
-    const downloads = [];
-    let thumbnail = null;
-
-    doc2.querySelectorAll(".container .row .col-md-4").forEach((el) => {
-      const a = el.querySelector("a");
-      const img = el.querySelector("img");
-      let href = a?.getAttribute("href");
-      let imgSrc = img?.getAttribute("src");
-
-      if (imgSrc && !imgSrc.includes("logo")) {
-        imgSrc = imgSrc.startsWith("/") ? "https://indown.io" + imgSrc : imgSrc;
-        if (!thumbnail) thumbnail = imgSrc;
-      }
-
-      if (href && href.includes("fetch?url=")) {
-        if (href.startsWith("/")) href = "https://indown.io" + href;
-
-        // Extract real URL for preview
-        let realUrl = href;
-        if (href.includes("fetch?url=")) {
-          try {
-            // Get everything after fetch?url= and decode it
-            realUrl = decodeURIComponent(href.split("fetch?url=")[1]);
-          } catch (e) {}
-        }
-
-        const type =
-          href.includes(".mp4") ||
-          href.includes("video") ||
-          realUrl.includes(".mp4")
-            ? "VIDEO"
-            : "IMAGE";
-
-        // Detect mirror: if same URL already exists
-        const isMirror = downloads.some((d) => d.url === href);
-
-        downloads.push({
-          type,
-          url: href,
-          thumbnail: realUrl, // Use real URL as thumbnail/preview
-          isMirror,
-        });
-      }
-    });
-
-    if (downloads.length === 0) {
-      doc2.querySelectorAll("a").forEach((a) => {
-        let href = a.getAttribute("href");
-        if (href && href.includes("fetch?url=")) {
-          if (href.startsWith("/")) href = "https://indown.io" + href;
-          const type =
-            href.includes(".mp4") || href.includes("video") ? "VIDEO" : "IMAGE";
-          const isMirror = downloads.some((d) => d.url === href);
-          downloads.push({ type, url: href, isMirror });
-        }
-      });
-    }
-
-    if (downloads.length === 0)
-      throw new Error("Media links not found. Post might be private.");
-
-    const title =
-      doc2.querySelector("h5")?.textContent?.trim() || "Instagram Content";
-    if (!thumbnail) {
-      const img = doc2.querySelector('.row img:not([src*="logo"])');
-      if (img) {
-        thumbnail = img.src.startsWith("/")
-          ? "https://indown.io" + img.src
-          : img.src;
-      }
-    }
-
-    return {
-      status: true,
-      result: { title, thumbnail, downloads, sourceUrl: url },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeYouTube(url) {
-  let currentStatus = null;
-  try {
-    const res = await CapacitorHttp.post({
-      url: "https://app.ytdown.to/proxy.php",
-      data: { url: url },
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-    currentStatus = res.status;
-
-    const data = res.data;
-    if (!data || !data.api || data.api.status !== "ok") {
-      throw new Error(data?.api?.message || "YouTube scraper error.");
-    }
-
-    const { title, imagePreviewUrl, mediaItems } = data.api;
-    const downloads = mediaItems.map((item) => ({
-      type: `${item.mediaExtension.toUpperCase()} ${item.mediaQuality}`,
-      url: item.mediaUrl,
-    }));
-
-    return {
-      status: true,
-      result: {
-        title: title || "YouTube Content",
-        thumbnail: imagePreviewUrl,
-        downloads,
-        sourceUrl: url,
-      },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeTwitter(url) {
-  let currentStatus = null;
-  try {
-    const twitterUrl = url.replace(
-      /https:\/\/(fixupx|fxtwitter|vxtwitter|nitter|twitter)\.com/g,
-      "https://x.com",
-    );
-    const r1 = await CapacitorHttp.get({
-      url: "https://tweeload.com/en",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    currentStatus = r1.status;
-
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://tweeload.com/en/download",
-      data: serializeData({ url: twitterUrl }),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-    currentStatus = r2.status;
-
-    const doc2 = parser.parseFromString(r2.data, "text/html");
-    const downloads = [];
-
-    doc2
-      .querySelectorAll(".download__item__info__actions tbody tr")
-      .forEach((tr) => {
-        const tds = tr.querySelectorAll("td");
-        const quality = tds[0]?.textContent?.trim();
-        let dlUrl = tr
-          .querySelector("a.download__item__info__actions__button")
-          ?.getAttribute("href");
-        if (dlUrl) {
-          if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
-
-          const label = quality ? quality + " VIDEO" : "VIDEO";
-          const isMirror = downloads.some((d) => d.type.includes("VIDEO"));
-
-          downloads.push({ type: label, url: dlUrl, isMirror });
-        }
-      });
-
-    if (downloads.length === 0) {
-      doc2.querySelectorAll("a.btn").forEach((a) => {
-        let href = a.getAttribute("href");
-        if (
-          href &&
-          (href.includes("downloads.acxcdn.com") ||
-            href.includes("twimg.com") ||
-            href.includes("tweeload"))
-        ) {
-          const text = a.textContent.trim();
-          if (text.toLowerCase() !== "download via the mobile app") {
-            // Be more aggressive: everything is a video unless it specifically says image
-            const isImage =
-              href.includes("/image?") || text.toLowerCase().includes("image");
-            const isVideo = !isImage;
-
-            const label = isVideo
-              ? text.includes("HD")
-                ? "HD VIDEO"
-                : "VIDEO"
-              : "IMAGE";
-            const isMirror =
-              isVideo && downloads.some((d) => d.type.includes("VIDEO"));
-
-            downloads.push({ type: label, url: href, isMirror });
-          }
-        }
-      });
-    }
-
-    if (downloads.length === 0) throw new Error("Twitter links not found.");
-
-    const name = doc2
-      .querySelector(".download__item__info__user__name")
-      ?.textContent?.trim();
-    const handle = doc2
-      .querySelector(".download__item__info__user__handle")
-      ?.textContent?.trim();
-
-    return {
-      status: true,
-      result: {
-        title: name ? `${name} (${handle})` : "Twitter Content",
-        thumbnail: null,
-        downloads,
-        sourceUrl: url,
-      },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeSpotify(url) {
-  let currentStatus = null;
-  try {
-    const r1 = await CapacitorHttp.get({
-      url: "https://spotidown.app/",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    currentStatus = r1.status;
-
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
-
-    const form = doc1.querySelector('form[name="spotifyurl"]');
-    const data = { url: url };
-    form?.querySelectorAll("input").forEach((input) => {
-      const name = input.getAttribute("name");
-      const value = input.getAttribute("value") || "";
-      if (name && name !== "url") data[name] = value;
-    });
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://spotidown.app/action",
-      data: serializeData(data),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": CHROME_UA,
-        Origin: "https://spotidown.app",
-        Referer: "https://spotidown.app/",
-        "X-Requested-With": "",
-      },
-    });
-
-    let r2Data = r2.data;
-    if (
-      typeof r2Data === "string" &&
-      (r2Data.trim().startsWith("{") || r2Data.trim().startsWith("["))
-    ) {
-      try {
-        r2Data = JSON.parse(r2Data);
-      } catch (e) {}
-    }
-
-    if (r2Data.error)
-      throw new Error("Step 2: " + (r2Data.message || "Spotify error"));
-
-    let finalHtml = r2Data.data;
-    const doc2 = parser.parseFromString(finalHtml, "text/html");
-    const form2 = doc2.querySelector('form[name="submitspurl"]');
-
-    if (form2) {
-      const data2 = {};
-      form2.querySelectorAll("input").forEach((input) => {
-        const name = input.getAttribute("name");
-        const value = input.getAttribute("value") || "";
-        if (name) data2[name] = value;
-      });
-
-      const r3 = await CapacitorHttp.post({
-        url: "https://spotidown.app/action/track",
-        data: serializeData(data2),
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": CHROME_UA,
-          Origin: "https://spotidown.app",
-          Referer: "https://spotidown.app/",
-          "X-Requested-With": "",
-        },
-      });
-
-      let r3Data = r3.data;
-      if (
-        typeof r3Data === "string" &&
-        (r3Data.trim().startsWith("{") || r3Data.trim().startsWith("["))
-      ) {
-        try {
-          r3Data = JSON.parse(r3Data);
-        } catch (e) {}
-      }
-      finalHtml = r3Data.data || r3Data;
-    }
-
-    const doc3 = parser.parseFromString(finalHtml, "text/html");
-    const title =
-      doc3.querySelector("h3")?.textContent?.trim() ||
-      doc3.querySelector("h1")?.textContent?.trim() ||
-      "Spotify Track";
-    const artist = doc3.querySelector("p")?.textContent?.trim();
-    const thumbnail = doc3.querySelector("img")?.getAttribute("src");
-    const downloads = [];
-
-    doc3.querySelectorAll("a").forEach((a) => {
-      const link = a.getAttribute("href");
-      const text = a.textContent.trim();
-      if (
-        link &&
-        link.startsWith("http") &&
-        !link.includes("premium.html") &&
-        text !== "Download Another Song"
-      ) {
-        downloads.push({ type: text || "MP3", url: link });
-      }
-    });
-
-    if (downloads.length === 0) throw new Error("Spotify links not found.");
-
-    return {
-      status: true,
-      result: {
-        title: artist ? `${artist} - ${title}` : title,
-        thumbnail,
-        downloads,
-        sourceUrl: url,
-      },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapePinterest(url) {
-  let currentStatus = null;
-  try {
-    const r1 = await CapacitorHttp.get({
-      url: "https://pindown.io/",
-      headers: { "User-Agent": CHROME_UA },
-    });
-    currentStatus = r1.status;
-
-    const cookies = getCookiesFromHeaders(r1.headers);
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
-
-    const tokenInput = doc1.querySelector(
-      'input[type="hidden"]:not([name="lang"])',
-    );
-    const tokenName = tokenInput?.getAttribute("name");
-    const tokenValue = tokenInput?.getAttribute("value");
-
-    if (!tokenName || !tokenValue)
-      throw new Error("Pinterest token not found.");
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://pindown.io/action",
-      data: serializeData({ url, [tokenName]: tokenValue, lang: "en" }),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        Cookie: cookies,
-        "User-Agent": CHROME_UA,
-      },
-    });
-    currentStatus = r2.status;
-
-    let r2Data = r2.data;
-    if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
-
-    if (!r2Data.success || !r2Data.html)
-      throw new Error(r2Data.message || "Pinterest extract failed.");
-
-    const doc2 = parser.parseFromString(r2Data.html, "text/html");
-    const downloads = [];
-
-    doc2.querySelectorAll(".columns .column").forEach((el) => {
-      const title = el.querySelector(".is-size-6")?.textContent?.trim();
-      const btn = el.querySelector(".button");
-      let dlUrl = btn?.getAttribute("href");
-      const onclick = btn?.getAttribute("onclick");
-      const isApi = onclick && onclick.includes("fetchVideoUrl");
-
-      if (isApi) {
-        const match = onclick.match(/'([^']+)'/);
-        if (match) dlUrl = "https://pindown.io" + match[1];
-      }
-
-      if (dlUrl) {
-        downloads.push({
-          type: title || "DOWNLOAD",
-          url: dlUrl,
-          isApi: !!isApi,
-        });
-      }
-    });
-
-    for (let dl of downloads) {
-      if (dl.isApi) {
-        try {
-          const apiRes = await CapacitorHttp.get({
-            url: dl.url,
-            headers: { Cookie: cookies },
-          });
-          let apiData = apiRes.data;
-          if (typeof apiData === "string") apiData = JSON.parse(apiData);
-          if (apiData.success && apiData.url) dl.url = apiData.url;
-        } catch (e) {}
-      }
-    }
-
-    return {
-      status: true,
-      result: {
-        title:
-          doc2.querySelector("h3")?.textContent?.trim() || "Pinterest Content",
-        thumbnail: doc2.querySelector(".image img")?.getAttribute("src"),
-        downloads,
-        sourceUrl: url,
-      },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeAppleMusic(url) {
-  let currentStatus = null;
-  try {
-    const headers = {
-      "User-Agent": CHROME_UA,
-      Accept: "application/json, text/javascript, */*; q=0.01",
-      "X-Requested-With": "XMLHttpRequest",
-    };
-
-    const r1 = await CapacitorHttp.get({
-      url: "https://aplmate.com/",
-      headers: { ...headers, Accept: "text/html" },
-    });
-    currentStatus = r1.status;
-    const cookies = getCookiesFromHeaders(r1.headers);
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://aplmate.com/action/userverify",
-      data: serializeData({ url }),
-      headers: {
-        ...headers,
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        Cookie: cookies,
-      },
-    });
-
-    let r2Data = r2.data;
-    if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
-    const token = r2Data.success ? r2Data.token : null;
-    if (!token) throw new Error(r2Data.message || "Verification failed.");
-
-    const r3 = await CapacitorHttp.post({
-      url: "https://aplmate.com/action",
-      data: serializeData({ url, "cf-turnstile-response": token }),
-      headers: {
-        ...headers,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: cookies,
-      },
-    });
-
-    let r3Data = r3.data;
-    if (typeof r3Data === "string") r3Data = JSON.parse(r3Data);
-    if (r3Data.error) throw new Error(r3Data.message || "Action failed.");
-
-    const parser = new DOMParser();
-    let finalHtml = r3Data.html;
-    const doc2 = parser.parseFromString(finalHtml, "text/html");
-    const form2 = doc2.querySelector('form[name="submitapurl"]');
-
-    if (form2) {
-      const data2 = {};
-      form2.querySelectorAll("input").forEach((input) => {
-        const name = input.getAttribute("name");
-        const value = input.getAttribute("value") || "";
-        if (name) data2[name] = value;
-      });
-
-      const r4 = await CapacitorHttp.post({
-        url: "https://aplmate.com/action/track",
-        data: serializeData(data2),
-        headers: {
-          ...headers,
-          "Content-Type": "application/x-www-form-urlencoded",
-          Cookie: cookies,
-        },
-      });
-      let r4Data = r4.data;
-      if (typeof r4Data === "string") r4Data = JSON.parse(r4Data);
-      finalHtml = r4Data.data || r4Data;
-    }
-
-    const doc3 = parser.parseFromString(finalHtml, "text/html");
-    const title =
-      doc3.querySelector(".hover-underline")?.textContent?.trim() ||
-      doc3.querySelector("h3")?.textContent?.trim() ||
-      "Apple Music Content";
-    const artist = doc3.querySelector("p")?.textContent?.trim();
-    const thumbnail = doc3.querySelector("img")?.getAttribute("src");
-    const downloads = [];
-
-    doc3.querySelectorAll("a").forEach((a) => {
-      const href = a.getAttribute("href");
-      const text = a.textContent.trim();
-      if (
-        href &&
-        (href.includes("/dl?token=") || a.classList.contains("abutton"))
-      ) {
-        if (href.includes("ko-fi.com") || href.includes("premium.html")) return;
-        if (text.toLowerCase().includes("another song")) return;
-        downloads.push({
-          type: text || "MP3",
-          url: href.startsWith("http") ? href : "https://aplmate.com" + href,
-        });
-      }
-    });
-
-    return {
-      status: true,
-      result: {
-        title: artist ? `${artist} - ${title}` : title,
-        thumbnail,
-        downloads,
-        sourceUrl: url,
-      },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeFacebook(url) {
-  let currentStatus = null;
-  try {
-    const headers = {
-      "User-Agent": CHROME_UA,
-      Origin: "https://snapsave.app",
-      Referer: "https://snapsave.app/id",
-    };
-
-    const r1 = await CapacitorHttp.get({
-      url: "https://snapsave.app/id",
-      headers: { ...headers, Accept: "text/html" },
-    });
-    currentStatus = r1.status;
-    const cookies = getCookiesFromHeaders(r1.headers);
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://snapsave.app/action.php?lang=id",
-      data: serializeData({ url }),
-      headers: {
-        ...headers,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: cookies,
-      },
-    });
-    currentStatus = r2.status;
-
-    const decodedHtml = decodeSnapSave(r2.data);
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(decodedHtml, "text/html");
-    const downloads = [];
-
-    doc.querySelectorAll("table tbody tr").forEach((tr) => {
-      const qTd = tr.querySelector("td.video-quality");
-      const quality = qTd
-        ? qTd.textContent.trim()
-        : tr.querySelectorAll("td")[0]?.textContent?.trim();
-      const btn =
-        tr.querySelector("a.btn-download") ||
-        tr.querySelector("button") ||
-        tr.querySelector("a");
-      let linkAttr = btn?.getAttribute("href") || btn?.getAttribute("onclick");
-
-      const extracted = extractFinalUrl(linkAttr);
-      if (extracted && extracted.url.startsWith("http")) {
-        downloads.push({ type: quality || "VIDEO", url: extracted.url });
-      }
-    });
-
-    if (downloads.length === 0)
-      throw new Error("Could not extract download links.");
-    return {
-      status: true,
-      result: { title: "Facebook Media", downloads, sourceUrl: url },
-    };
-  } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-async function scrapeProxy(url) {
-  try {
-    const res = await fetch("/api/scrape", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    return await res.json();
-  } catch (e) {
-    return { status: false, message: "Local server not available." };
-  }
-}
+checkUpdateBtn?.addEventListener("click", checkUpdate);
 
 downloadBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
@@ -1730,7 +637,9 @@ downloadBtn.addEventListener("click", async () => {
 
     if (data && data.status) {
       saveToHistory(data.result, url);
-      renderResult(data.result, url);
+      const state = renderResult(data.result, url);
+      slideData = state.slideData;
+      currentSlideIndex = state.currentSlideIndex;
       loader.classList.add("hidden");
     } else {
       const errMsg = data?.message || "Unknown error occurred.";
@@ -1752,37 +661,14 @@ downloadBtn.addEventListener("click", async () => {
   }
 
   downloadBtn.disabled = false;
-  downloadBtn.textContent = translations[currentLang]["btn-configure"];
+  downloadBtn.textContent = translations[currentLang]["btn-analyze"];
 });
 
-function updateSliderUI() {
-  const slides = document.querySelectorAll(".preview-slide");
-  const sliderItems = slideData.filter((dl) => !dl.isMirror);
-
-  slides.forEach((slide, index) => {
-    const video = slide.querySelector("video");
-    if (index === currentSlideIndex) {
-      slide.classList.add("active");
-      if (video) {
-        if (video.readyState < 1) video.load(); // Ensure it's loading if not yet
-        video.currentTime = 0;
-        video.play().catch(() => {});
-      }
-    } else {
-      slide.classList.remove("active");
-      if (video) video.pause();
-    }
-  });
-  slideIndicator.textContent = `${currentSlideIndex + 1} / ${sliderItems.length}`;
-  slidePrevBtn.disabled = currentSlideIndex === 0;
-  slidePrevBtn.disabled = currentSlideIndex === 0;
-  slideNextBtn.disabled = currentSlideIndex === sliderItems.length - 1;
-}
-
+// Slider Navigation (Delegated to UI module)
 slidePrevBtn?.addEventListener("click", () => {
-  const sliderItems = slideData.filter((dl) => !dl.isMirror);
   if (currentSlideIndex > 0) {
     currentSlideIndex--;
+    setUIState({ currentSlideIndex });
     updateSliderUI();
   }
 });
@@ -1791,515 +677,220 @@ slideNextBtn?.addEventListener("click", () => {
   const sliderItems = slideData.filter((dl) => !dl.isMirror);
   if (currentSlideIndex < sliderItems.length - 1) {
     currentSlideIndex++;
+    setUIState({ currentSlideIndex });
     updateSliderUI();
   }
 });
 
-function renderResult(result, originalUrl) {
-  slideData = result.downloads;
-  currentSlideIndex = 0;
-
-  const sliderItems = slideData.filter((dl) => !dl.isMirror);
-
+// Modal Close Handling
+const hideModal = () => {
+  const slidesWrapper = document.getElementById("modalSlidesWrapper");
   if (slidesWrapper) {
+    slidesWrapper.querySelectorAll("video").forEach((v) => {
+      v.pause();
+      v.src = "";
+      v.load();
+    });
     slidesWrapper.innerHTML = "";
-
-    const isSinglePreview =
-      /youtube\.com|youtu\.be|soundcloud\.com|spotify\.com|music\.apple\.com/i.test(
-        urlInput.value,
-      ) ||
-      (result.title &&
-        /youtube|soundcloud|spotify|apple music/i.test(
-          result.title.toLowerCase(),
-        ));
-
-    if (sliderItems.length > 0 && !isSinglePreview) {
-      sliderItems.forEach((dl, index) => {
-        const slide = document.createElement("div");
-        slide.className = "preview-slide" + (index === 0 ? " active" : "");
-
-        const lowerUrl = dl.url.toLowerCase();
-        const upperType = dl.type.toUpperCase();
-
-        const isImage =
-          lowerUrl.includes(".jpg") ||
-          lowerUrl.includes(".jpeg") ||
-          lowerUrl.includes(".png") ||
-          lowerUrl.includes(".webp") ||
-          upperType.includes("IMAGE") ||
-          upperType.includes("PHOTO");
-
-        const isVideo =
-          !isImage &&
-          (lowerUrl.includes(".mp4") ||
-            lowerUrl.includes(".m3u8") ||
-            lowerUrl.includes("video") ||
-            lowerUrl.includes("tweeload.com/download") ||
-            upperType.includes("VIDEO") ||
-            upperType.includes("MP4") ||
-            /^\d+p/.test(dl.type) ||
-            (upperType === "DOWNLOAD" &&
-              (lowerUrl.includes(".mp4") || lowerUrl.includes("video"))));
-
-        if (isVideo) {
-          const video = document.createElement("video");
-          video.src = dl.url;
-          video.controls = true;
-          video.loop = true;
-          video.muted = false;
-          video.preload = index === 0 ? "auto" : "metadata";
-          video.autoplay = index === 0;
-          video.playsInline = true;
-          slide.appendChild(video);
-        } else if (dl.url.includes(".mp3") || dl.type.includes("MP3")) {
-          // Audio preview on Home
-          const img = document.createElement("img");
-          img.src = dl.thumbnail || result.thumbnail || "";
-          img.style.maxHeight = "200px";
-          img.style.marginBottom = "10px";
-          slide.appendChild(img);
-
-          const audio = document.createElement("audio");
-          audio.src = dl.url;
-          audio.controls = true;
-          audio.muted = false;
-          audio.style.width = "100%";
-          slide.appendChild(audio);
-        } else {
-          const img = document.createElement("img");
-          const imgUrl = dl.thumbnail || dl.url;
-          img.src = imgUrl;
-          img.referrerPolicy = "no-referrer";
-          img.decoding = "async";
-          img.loading = "lazy";
-
-          img.onerror = async () => {
-            // Fallback for Android: Fetch via CapacitorHttp to bypass CORS/Hotlink protection
-            if (
-              window.Capacitor?.isNativePlatform() &&
-              CapacitorHttp &&
-              !img.dataset.retry
-            ) {
-              try {
-                img.dataset.retry = "true";
-                const res = await CapacitorHttp.get({
-                  url: imgUrl,
-                  responseType: "blob",
-                  headers: { "User-Agent": "Mozilla/5.0" },
-                });
-                if (res.status === 200) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    img.src = reader.result;
-                  };
-                  reader.readAsDataURL(res.data);
-                } else {
-                  img.style.display = "none";
-                }
-              } catch (e) {
-                img.style.display = "none";
-              }
-            } else {
-              img.style.display = "none";
-            }
-          };
-          slide.appendChild(img);
-        }
-
-        slidesWrapper.appendChild(slide);
-      });
-
-      if (sliderItems.length > 1) {
-        sliderNav.classList.remove("hidden");
-        slideIndicator.textContent = `${currentSlideIndex + 1} / ${sliderItems.length}`;
-        updateSliderUI();
-      } else {
-        sliderNav.classList.add("hidden");
-      }
-    } else {
-      // Single preview (YouTube or single image/video)
-      const slide = document.createElement("div");
-      slide.className = "preview-slide active";
-      const img = document.createElement("img");
-      const thumb = result.thumbnail || "";
-      img.src = thumb.includes("logo") ? "" : thumb;
-      img.onerror = () => (img.style.display = "none");
-      slide.appendChild(img);
-      slidesWrapper.appendChild(slide);
-      sliderNav.classList.add("hidden");
-    }
   }
+  if (modalOverlay) {
+    modalOverlay.classList.add("hidden");
+    modalOverlay.style.display = "none";
+  }
+};
 
-  let cleanTitleText =
-    result.title || translations[currentLang]["label-content"];
-  // Regex to remove hashtags but preserve text around them:
-  cleanTitleText = cleanTitleText
-    .replace(/#[^\s#]+/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  resultTitle.textContent = truncate(cleanTitleText, 80);
+closeModal?.addEventListener("click", hideModal);
+modalOverlay?.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) hideModal();
+});
 
-  downloadList.innerHTML = "";
-  result.downloads.forEach((dl, index) => {
-    const btn = document.createElement("button");
-    btn.className = "dl-item";
-    btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${dl.type}</span>`;
-    btn.addEventListener("click", (e) =>
-      startNativeDownload(
-        dl.url,
-        dl.type,
-        result.title,
-        e.currentTarget,
-        result.sourceUrl || originalUrl || urlInput.value.trim(),
-      ),
-    );
-    downloadList.appendChild(btn);
+// History Callbacks
+function onHistoryItemClick(item) {
+  showModal(item, (url) => {
+    urlInput.value = url;
+    clearBtn.classList.remove("hidden");
+    document.querySelector('.nav-item[data-page="home"]').click();
+    downloadBtn.click();
   });
-  resultSection.classList.remove("hidden");
-  const supportedSection = document.querySelector(".supported-section");
-  if (supportedSection) supportedSection.classList.add("hidden");
-  resultSection.scrollIntoView({ behavior: "smooth" });
 }
 
-async function startNativeDownload(url, type, title, btn, sourceUrl) {
-  if (!Filesystem) {
-    window.open(url, "_blank");
-    return;
-  }
-
-  const finalUrl =
-    url.startsWith("/") && !url.startsWith("/api/")
-      ? "https://snaptik.app" + url
-      : url;
-  const originalContent = btn.innerHTML;
-
-  try {
-    btn.disabled = true;
-
-    // Show progress UI
-    progressContainer.classList.remove("hidden");
-    progressBar.style.width = "0%";
-    btn.innerHTML = `<div>${translations[currentLang]["btn-downloading"]}</div>`;
-
-    const isAudio =
-      type.toLowerCase().includes("mp3") ||
-      type.toLowerCase().includes("audio") ||
-      type.toLowerCase().includes("128k") ||
-      type.toLowerCase().includes("48k") ||
-      type.toLowerCase().includes("m4a");
-
-    const isImage =
-      type.toLowerCase().includes("image") ||
-      type.toLowerCase().includes("photo") ||
-      type.toLowerCase().includes("jpg") ||
-      type.toLowerCase().includes("png") ||
-      url.toLowerCase().includes(".jpg") ||
-      url.toLowerCase().includes(".jpeg") ||
-      url.toLowerCase().includes(".png") ||
-      url.toLowerCase().includes(".webp");
-
-    let ext = "mp4";
-    if (isAudio) ext = "mp3";
-    else if (isImage) ext = "jpg";
-
-    const fileName = `MORI_${Date.now()}.${ext}`;
-
-    let actualDownloadUrl = finalUrl;
-
-    // Check if it's a YouTube/Worker URL that needs resolving
-    if (finalUrl.includes("ytdown") || finalUrl.includes("worker")) {
-      try {
-        const statusRes = await CapacitorHttp.get({ url: finalUrl });
-        if (statusRes.data && statusRes.data.fileUrl) {
-          actualDownloadUrl = statusRes.data.fileUrl;
-        } else if (
-          statusRes.data &&
-          typeof statusRes.data === "string" &&
-          statusRes.data.includes('"fileUrl":')
-        ) {
-          const match = statusRes.data.match(/"fileUrl"\s*:\s*"([^"]+)"/);
-          if (match) actualDownloadUrl = match[1];
-        }
-      } catch (e) {
-        console.warn("Worker resolve failed, using original url");
-      }
-    }
-
-    const downloadOptions = {
-      url: actualDownloadUrl,
-      path: "Mori/" + fileName,
-      directory: "DOCUMENTS",
-      headers: { "User-Agent": "Mozilla/5.0" },
-      progress: true,
-    };
-
-    // Ensure Mori directory exists
-    try {
-      await Filesystem.mkdir({
-        path: "Mori",
-        directory: "DOCUMENTS",
-        recursive: true,
-      });
-    } catch (e) {}
-
-    let fakeProgress = 0;
-    const progressInterval = setInterval(() => {
-      fakeProgress += 5;
-      if (fakeProgress > 90) fakeProgress = 90;
-      progressBar.style.width = `${fakeProgress}%`;
-    }, 500);
-
-    const savedFile = await Filesystem.downloadFile(downloadOptions);
-
-    clearInterval(progressInterval);
-    progressBar.style.width = "100%";
-
-    // Update history with local path
-    if (sourceUrl) {
-      updateHistoryLocalPath(sourceUrl, savedFile.path);
-    }
-
-    btn.innerHTML = `<div>DONE!</div><span>Opening Browser...</span>`;
-    showToast("Saved to History & Opening Browser");
-
-    // Redirect to browser with the ACTUAL file url
-    setTimeout(() => {
-      window.open(actualDownloadUrl, "_blank");
-    }, 500);
-
-    setTimeout(() => {
-      btn.innerHTML = originalContent;
-      btn.disabled = false;
-      progressContainer.classList.add("hidden");
-    }, 3000);
-  } catch (err) {
-    console.error("Native Download Error:", err);
-    showToast("Download failed. Opening in browser.");
-    window.open(url, "_blank");
-    btn.innerHTML = originalContent;
-    btn.disabled = false;
-    progressContainer.classList.add("hidden");
-  }
+function onHistoryDeleteClick(url) {
+  showConfirm("Delete Item", "Remove this item from history?", () => {
+    let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+    history = history.filter((h) => h.url !== url);
+    localStorage.setItem("mori_history", JSON.stringify(history));
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  });
 }
 
-function updateHistoryLocalPath(url, localUri) {
+// Global Event for File Saved (Syncing UI and History)
+window.addEventListener("mori_file_saved", async (e) => {
+  const { url, path } = e.detail;
   const target = cleanUrl(url);
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+
+  const isVideo = path.toLowerCase().endsWith(".mp4");
+  const isAudio = path.toLowerCase().endsWith(".mp3");
+  const isImage = /\.(jpg|jpeg|png|webp)/i.test(path);
+
   history = history.map((item) => {
     if (cleanUrl(item.url) === target) {
-      return { ...item, localUri };
+      const localFiles = item.localFiles || [];
+      if (!localFiles.find((f) => f.path === path)) {
+        localFiles.push({
+          path,
+          type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
+          thumbnail: null,
+        });
+      }
+      return { ...item, localFiles, localUri: path };
     }
     return item;
   });
   localStorage.setItem("mori_history", JSON.stringify(history));
-  renderHistory();
-  updateGreeting();
-}
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
-// History Management
+  if (isVideo && window.Capacitor) {
+    try {
+      const videoSrc = window.Capacitor.convertFileSrc(path);
+      const localThumbnail = await getVideoThumbnail(videoSrc);
+
+      if (localThumbnail) {
+        history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+        history = history.map((item) => {
+          if (cleanUrl(item.url) === target) {
+            const localFiles = item.localFiles || [];
+            localFiles.forEach((f) => {
+              if (f.path === path) f.thumbnail = localThumbnail;
+            });
+            return {
+              ...item,
+              localFiles,
+              localThumbnail: localThumbnail || item.localThumbnail,
+            };
+          }
+          return item;
+        });
+        localStorage.setItem("mori_history", JSON.stringify(history));
+        renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+      }
+    } catch (err) {
+      console.warn("Failed to generate video thumbnail", err);
+    }
+  }
+
+  updateGreeting();
+  updateStorageInfo();
+});
+
+// History Storage Helper
 function saveToHistory(result, url) {
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-
-  // Clean title before saving
-  let cleanTitle = result.title || "Content";
-  cleanTitle = cleanTitle
+  let cleanTitle = (result.title || "Content")
     .replace(/#[^\s#]+/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+
+  const existingItem = history.find((h) => h.url === url);
 
   const newItem = {
     title: cleanTitle,
     thumbnail: result.thumbnail,
     url: url,
     timestamp: new Date().getTime(),
+    localFiles: existingItem ? existingItem.localFiles : [],
+    localUri: existingItem ? existingItem.localUri : null,
+    localThumbnail: existingItem ? existingItem.localThumbnail : null,
   };
   history = history.filter((h) => h.url !== url);
   history.unshift(newItem);
   localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 50)));
-  renderHistory();
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
   updateGreeting();
 }
 
-function deleteHistoryItem(url) {
-  showConfirm("Delete Item", "Remove this item from history?", () => {
-    let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-    history = history.filter((h) => h.url !== url);
-    localStorage.setItem("mori_history", JSON.stringify(history));
-    renderHistory();
-  });
-}
-
-function renderHistory() {
-  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-  const historyPage = document.getElementById("historyPage");
-  if (!historyPage) return;
-  const emptyState = historyPage.querySelector(".empty-state");
-
-  let list = historyPage.querySelector(".history-list");
-  if (list) list.remove();
-
-  if (history.length === 0) {
-    if (emptyState) emptyState.classList.remove("hidden");
-    if (editHistoryBtn) editHistoryBtn.classList.add("hidden");
-    return;
-  }
-
-  if (emptyState) emptyState.classList.add("hidden");
-  if (editHistoryBtn && !isEditingHistory)
-    editHistoryBtn.classList.remove("hidden");
-
-  list = document.createElement("div");
-  list.className = "history-list";
-
-  history.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = "history-item";
-    card.innerHTML = `
-            <div class="history-thumb-container">
-                <img src="${item.thumbnail}" alt="thumb" class="hist-img" style="display: block;" referrerpolicy="no-referrer">
-            </div>
-            <div class="history-info">
-                <h3>${truncate(item.title, 60)}</h3>
-                <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
-            </div>
-            ${isEditingHistory ? `<button class="delete-item-btn" data-url="${item.url}">×</button>` : ""}
-        `;
-
-    const img = card.querySelector(".hist-img");
-    img.onerror = () => (img.style.display = "none");
-
-    if (!isEditingHistory) {
-      card.addEventListener("click", () => showModal(item));
-    } else {
-      card.querySelector(".delete-item-btn").addEventListener("click", (e) => {
-        e.stopPropagation();
-        deleteHistoryItem(item.url);
-      });
-    }
-
-    list.appendChild(card);
-  });
-  historyPage.appendChild(list);
-}
-
-// Modal Logic
-function showModal(item) {
-  modalTitle.textContent = truncate(item.title, 100);
-  const thumbContainer = document.querySelector(".modal-thumb-container");
-  thumbContainer.innerHTML = ""; // Clear previous content
-
-  if (item.localUri) {
-    const isVideo = item.localUri.toLowerCase().endsWith(".mp4");
-    const isAudio = item.localUri.toLowerCase().endsWith(".mp3");
-    const mediaSrc = Capacitor.convertFileSrc(item.localUri);
-
-    if (isVideo) {
-      const video = document.createElement("video");
-      video.src = mediaSrc;
-      video.controls = true;
-      video.loop = true;
-      video.muted = true;
-      video.autoplay = true;
-      video.playsInline = true;
-      video.style.display = "block";
-      thumbContainer.appendChild(video);
-      video.play().catch((e) => console.warn("Autoplay failed:", e));
-    } else if (isAudio) {
-      // Show thumbnail and audio player
-      const img = document.createElement("img");
-      img.src = item.thumbnail || "";
-      img.style.display = "block";
-      img.style.marginBottom = "10px";
-      thumbContainer.appendChild(img);
-
-      const audio = document.createElement("audio");
-      audio.src = mediaSrc;
-      audio.controls = true;
-      audio.muted = true;
-      audio.style.width = "100%";
-      thumbContainer.appendChild(audio);
-    } else {
-      const img = document.createElement("img");
-      img.src = mediaSrc;
-      img.id = "modalThumb";
-      img.referrerPolicy = "no-referrer";
-      img.style.display = "block";
-      img.onerror = () => {
-        console.error("Local img load failed, falling back to remote");
-        img.src = item.thumbnail || "";
-      };
-      thumbContainer.appendChild(img);
-    }
-  } else {
-    const img = document.createElement("img");
-    img.src = item.thumbnail || "";
-    img.id = "modalThumb";
-    img.referrerPolicy = "no-referrer";
-    img.style.display = "block";
-    img.onerror = () => (img.style.display = "none");
-    thumbContainer.appendChild(img);
-  }
-
-  modalUrl.textContent = item.url;
-  modalUrl.onclick = () => copyToClipboard(item.url);
-  modalOverlay.classList.remove("hidden");
-
-  // Remove the old gallery button if it exists
-  const oldGalleryBtn = document.getElementById("viewGalleryBtn");
-  if (oldGalleryBtn) oldGalleryBtn.remove();
-
-  redownloadBtn.onclick = () => {
-    urlInput.value = item.url;
-    clearBtn.classList.remove("hidden");
-    modalOverlay.classList.add("hidden");
-    document.querySelector('.nav-item[data-page="home"]').click();
-    downloadBtn.click();
-  };
-}
-
-closeModal?.addEventListener("click", () => {
-  const thumbContainer = document.querySelector(".modal-thumb-container");
-  thumbContainer.querySelectorAll("video").forEach((v) => {
-    v.pause();
-    v.src = "";
-    v.load();
-  });
-  thumbContainer.innerHTML = "";
-  modalOverlay.classList.add("hidden");
-});
-
-modalOverlay?.addEventListener("click", (e) => {
-  if (e.target === modalOverlay) {
-    const thumbContainer = document.querySelector(".modal-thumb-container");
-    thumbContainer.querySelectorAll("video").forEach((v) => {
-      v.pause();
-      v.src = "";
-      v.load();
-    });
-    thumbContainer.innerHTML = "";
-    modalOverlay.classList.add("hidden");
-  }
-});
-
-// Initial Render
-renderHistory();
+// Initialize App
+setUIState({ currentLang, isEditingHistory });
+renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
 // Nav Handling
-document.querySelectorAll(".nav-item").forEach((item) => {
+const pages = ["home", "history", "settings"];
+const navItems = document.querySelectorAll(".nav-item");
+
+function switchPage(pageId) {
+  const item = Array.from(navItems).find(
+    (i) => i.getAttribute("data-page") === pageId,
+  );
+  if (!item) return;
+
+  const targetPageId = pageId + "Page";
+  navItems.forEach((i) => i.classList.remove("active"));
+  item.classList.add("active");
+
+  document
+    .querySelectorAll(".page-content")
+    .forEach((page) => page.classList.add("hidden"));
+  document.querySelectorAll("video").forEach((v) => v.pause());
+
+  const targetPage = document.getElementById(targetPageId);
+  if (targetPage) targetPage.classList.remove("hidden");
+}
+
+navItems.forEach((item) => {
   item.addEventListener("click", (e) => {
     e.preventDefault();
-    const targetPageId = item.getAttribute("data-page") + "Page";
-    document
-      .querySelectorAll(".nav-item")
-      .forEach((i) => i.classList.remove("active"));
-    item.classList.add("active");
-    document
-      .querySelectorAll(".page-content")
-      .forEach((page) => page.classList.add("hidden"));
-
-    // Pause all videos when switching pages
-    document.querySelectorAll("video").forEach((v) => v.pause());
-
-    document.getElementById(targetPageId).classList.remove("hidden");
+    switchPage(item.getAttribute("data-page"));
   });
 });
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  },
+  { passive: true },
+);
+
+document.addEventListener(
+  "touchend",
+  (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
+
+    if (Math.abs(diffX) < 100) return;
+
+    const target = e.target;
+    if (
+      target.closest("#slidesWrapper") ||
+      target.closest(".mori-player-container") ||
+      target.closest(".modal-overlay") ||
+      target.closest(".history-item-actions") ||
+      target.closest("input") ||
+      target.closest("button")
+    ) {
+      return;
+    }
+
+    const activeNavItem = document.querySelector(".nav-item.active");
+    if (!activeNavItem) return;
+
+    const currentPage = activeNavItem.getAttribute("data-page");
+    const currentIndex = pages.indexOf(currentPage);
+
+    if (diffX > 0 && currentIndex < pages.length - 1) {
+      switchPage(pages[currentIndex + 1]);
+    } else if (diffX < 0 && currentIndex > 0) {
+      switchPage(pages[currentIndex - 1]);
+    }
+  },
+  { passive: true },
+);

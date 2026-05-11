@@ -70,9 +70,7 @@
                 </svg>
               </button>
             </div>
-            <button id="downloadBtn" data-i18n="btn-configure">
-              Configure
-            </button>
+            <button id="downloadBtn" data-i18n="btn-analyze">Analyze</button>
           </div>
 
           <div id="loader" class="hidden">
@@ -231,11 +229,74 @@
                 <span>Spotify</span>
               </div>
               <div class="chip">
-                <svg viewBox="0 -4.5 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16" fill="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>soundcloud [#164]</title> <desc>Created with Sketch.</desc> <defs> </defs> <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> <g id="Dribbble-Light-Preview" transform="translate(-60.000000, -7483.000000)" fill="currentColor"> <g id="icons" transform="translate(56.000000, 160.000000)"> <path d="M12.5857188,7333.74807 L12.5857188,7323.71968 C12.5857188,7323.40078 12.681671,7323.20964 12.8745748,7323.14824 C16.086973,7322.38863 19.3323547,7324.62982 19.6272077,7328.00596 C22.7676418,7326.67987 25.4982802,7330.67597 23.0644937,7333.07562 C22.4478012,7333.6837 21.7081701,7333.98774 20.8456002,7333.98774 L12.7526356,7333.97883 C12.6456889,7333.94317 12.5857188,7333.83225 12.5857188,7333.74807 L12.5857188,7333.74807 Z M10.4088043,7333.45294 C10.4088043,7334.17789 11.7861176,7334.1868 11.7861176,7333.45294 L11.7861176,7323.80485 C11.7861176,7322.89173 10.4088043,7322.8957 10.4088043,7323.80485 L10.4088043,7333.45294 L10.4088043,7333.45294 Z M8.26987088,7333.45294 C8.26987088,7334.16105 9.6461846,7334.18878 9.6461846,7333.45294 L9.6461846,7327.76629 C9.6461846,7326.85318 8.26987088,7326.85714 8.26987088,7327.76629 L8.26987088,7333.45294 L8.26987088,7333.45294 Z M6.13893345,7333.15782 C6.13893345,7333.88672 7.50725116,7333.89861 7.50725116,7333.15782 L7.50725116,7326.92746 C7.50725116,7326.04504 6.13893345,7326.03415 6.13893345,7326.92746 L6.13893345,7333.15782 Z M4,7332.01494 C4,7332.86566 5.3673182,7333.08057 5.3673182,7332.01494 L5.3673182,7329.34196 C5.3673182,7328.43677 4,7328.44469 4,7329.34196 L4,7332.01494 Z" id="soundcloud-[#164]"> </path> </g> </g> </g> </g></svg>
+                <svg
+                  viewBox="0 -4.5 20 20"
+                  version="1.1"
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns:xlink="http://www.w3.org/1999/xlink"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                >
+                  <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                  <g
+                    id="SVGRepo_tracerCarrier"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></g>
+                  <g id="SVGRepo_iconCarrier">
+                    <title>soundcloud [#164]</title>
+                    <desc>Created with Sketch.</desc>
+                    <defs></defs>
+                    <g
+                      id="Page-1"
+                      stroke="none"
+                      stroke-width="1"
+                      fill="none"
+                      fill-rule="evenodd"
+                    >
+                      <g
+                        id="Dribbble-Light-Preview"
+                        transform="translate(-60.000000, -7483.000000)"
+                        fill="currentColor"
+                      >
+                        <g
+                          id="icons"
+                          transform="translate(56.000000, 160.000000)"
+                        >
+                          <path
+                            d="M12.5857188,7333.74807 L12.5857188,7323.71968 C12.5857188,7323.40078 12.681671,7323.20964 12.8745748,7323.14824 C16.086973,7322.38863 19.3323547,7324.62982 19.6272077,7328.00596 C22.7676418,7326.67987 25.4982802,7330.67597 23.0644937,7333.07562 C22.4478012,7333.6837 21.7081701,7333.98774 20.8456002,7333.98774 L12.7526356,7333.97883 C12.6456889,7333.94317 12.5857188,7333.83225 12.5857188,7333.74807 L12.5857188,7333.74807 Z M10.4088043,7333.45294 C10.4088043,7334.17789 11.7861176,7334.1868 11.7861176,7333.45294 L11.7861176,7323.80485 C11.7861176,7322.89173 10.4088043,7322.8957 10.4088043,7323.80485 L10.4088043,7333.45294 L10.4088043,7333.45294 Z M8.26987088,7333.45294 C8.26987088,7334.16105 9.6461846,7334.18878 9.6461846,7333.45294 L9.6461846,7327.76629 C9.6461846,7326.85318 8.26987088,7326.85714 8.26987088,7327.76629 L8.26987088,7333.45294 L8.26987088,7333.45294 Z M6.13893345,7333.15782 C6.13893345,7333.88672 7.50725116,7333.89861 7.50725116,7333.15782 L7.50725116,7326.92746 C7.50725116,7326.04504 6.13893345,7326.03415 6.13893345,7326.92746 L6.13893345,7333.15782 Z M4,7332.01494 C4,7332.86566 5.3673182,7333.08057 5.3673182,7332.01494 L5.3673182,7329.34196 C5.3673182,7328.43677 4,7328.44469 4,7329.34196 L4,7332.01494 Z"
+                            id="soundcloud-[#164]"
+                          ></path>
+                        </g>
+                      </g>
+                    </g>
+                  </g>
+                </svg>
                 <span>SoundCloud</span>
               </div>
               <div class="chip">
-                <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 512" width="16" height="16" fill="currentColor"><path d="M105 0h302c57.75 0 105 47.25 105 105v302c0 57.75-47.25 105-105 105H105C47.25 512 0 464.75 0 407V105C0 47.25 47.25 0 105 0z"/><path fill="#fff" fill-rule="nonzero" d="M337.36 243.58c-1.46-.7-2.95-1.38-4.46-2.02-2.62-48.36-29.04-76.05-73.41-76.33-25.6-.17-48.52 10.27-62.8 31.94l24.4 16.74c10.15-15.4 26.08-18.68 37.81-18.68h.4c14.61.09 25.64 4.34 32.77 12.62 5.19 6.04 8.67 14.37 10.39 24.89-12.96-2.2-26.96-2.88-41.94-2.02-42.18 2.43-69.3 27.03-67.48 61.21.92 17.35 9.56 32.26 24.32 42.01 12.48 8.24 28.56 12.27 45.26 11.35 22.07-1.2 39.37-9.62 51.45-25.01 9.17-11.69 14.97-26.84 17.53-45.92 10.51 6.34 18.3 14.69 22.61 24.73 7.31 17.06 7.74 45.1-15.14 67.96-20.04 20.03-44.14 28.69-80.55 28.96-40.4-.3-70.95-13.26-90.81-38.51-18.6-23.64-28.21-57.79-28.57-101.5.36-43.71 9.97-77.86 28.57-101.5 19.86-25.25 50.41-38.21 90.81-38.51 40.68.3 71.76 13.32 92.39 38.69 10.11 12.44 17.73 28.09 22.76 46.33l28.59-7.63c-6.09-22.45-15.67-41.8-28.72-57.85-26.44-32.53-65.1-49.19-114.92-49.54h-.2c-49.72.35-87.96 17.08-113.64 49.73-22.86 29.05-34.65 69.48-35.04 120.16v.24c.39 50.68 12.18 91.11 35.04 120.16 25.68 32.65 63.92 49.39 113.64 49.73h.2c44.2-.31 75.36-11.88 101.03-37.53 33.58-33.55 32.57-75.6 21.5-101.42-7.94-18.51-23.08-33.55-43.79-43.48zm-76.32 71.76c-18.48 1.04-37.69-7.26-38.64-25.03-.7-13.18 9.38-27.89 39.78-29.64 3.48-.2 6.9-.3 10.25-.3 11.04 0 21.37 1.07 30.76 3.13-3.5 43.74-24.04 50.84-42.15 51.84z"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  shape-rendering="geometricPrecision"
+                  text-rendering="geometricPrecision"
+                  image-rendering="optimizeQuality"
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  viewBox="0 0 512 512"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M105 0h302c57.75 0 105 47.25 105 105v302c0 57.75-47.25 105-105 105H105C47.25 512 0 464.75 0 407V105C0 47.25 47.25 0 105 0z"
+                  />
+                  <path
+                    fill="#fff"
+                    fill-rule="nonzero"
+                    d="M337.36 243.58c-1.46-.7-2.95-1.38-4.46-2.02-2.62-48.36-29.04-76.05-73.41-76.33-25.6-.17-48.52 10.27-62.8 31.94l24.4 16.74c10.15-15.4 26.08-18.68 37.81-18.68h.4c14.61.09 25.64 4.34 32.77 12.62 5.19 6.04 8.67 14.37 10.39 24.89-12.96-2.2-26.96-2.88-41.94-2.02-42.18 2.43-69.3 27.03-67.48 61.21.92 17.35 9.56 32.26 24.32 42.01 12.48 8.24 28.56 12.27 45.26 11.35 22.07-1.2 39.37-9.62 51.45-25.01 9.17-11.69 14.97-26.84 17.53-45.92 10.51 6.34 18.3 14.69 22.61 24.73 7.31 17.06 7.74 45.1-15.14 67.96-20.04 20.03-44.14 28.69-80.55 28.96-40.4-.3-70.95-13.26-90.81-38.51-18.6-23.64-28.21-57.79-28.57-101.5.36-43.71 9.97-77.86 28.57-101.5 19.86-25.25 50.41-38.21 90.81-38.51 40.68.3 71.76 13.32 92.39 38.69 10.11 12.44 17.73 28.09 22.76 46.33l28.59-7.63c-6.09-22.45-15.67-41.8-28.72-57.85-26.44-32.53-65.1-49.19-114.92-49.54h-.2c-49.72.35-87.96 17.08-113.64 49.73-22.86 29.05-34.65 69.48-35.04 120.16v.24c.39 50.68 12.18 91.11 35.04 120.16 25.68 32.65 63.92 49.39 113.64 49.73h.2c44.2-.31 75.36-11.88 101.03-37.53 33.58-33.55 32.57-75.6 21.5-101.42-7.94-18.51-23.08-33.55-43.79-43.48zm-76.32 71.76c-18.48 1.04-37.69-7.26-38.64-25.03-.7-13.18 9.38-27.89 39.78-29.64 3.48-.2 6.9-.3 10.25-.3 11.04 0 21.37 1.07 30.76 3.13-3.5 43.74-24.04 50.84-42.15 51.84z"
+                  />
+                </svg>
                 <span>Threads</span>
               </div>
               <div class="chip">
@@ -338,7 +399,16 @@
                 <div class="custom-dropdown" id="languageDropdown">
                   <div class="dropdown-trigger" id="languageTrigger">
                     <span id="currentLangDisplay">English</span>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"
+                      />
+                    </svg>
                   </div>
                   <div class="dropdown-options hidden" id="languageOptions">
                     <div class="option" data-value="en">English</div>
@@ -431,7 +501,7 @@
               >App Info</span
             >
             <div class="settings-list" id="appInfoList">
-              <div class="settings-item info-only">
+              <div class="settings-item action-item" id="checkUpdateBtn">
                 <div class="item-label">
                   <svg
                     viewBox="0 0 24 24"
@@ -445,7 +515,10 @@
                   </svg>
                   <span data-i18n="label-version">Version</span>
                 </div>
-                <span class="info-val">2.0.0</span>
+                <div class="update-info">
+                  <span class="info-val">&nbsp;3.0.0</span>
+                  <span class="action-label" data-i18n="btn-check">CHECK</span>
+                </div>
               </div>
               <div class="settings-item info-only">
                 <div class="item-label">
@@ -462,6 +535,22 @@
                   <span data-i18n="label-platform">Platform</span>
                 </div>
                 <span class="info-val" id="platformVal">Android</span>
+              </div>
+              <div class="settings-item action-item" id="reportBugBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-reportbug">Report a Bug</span>
+                </div>
+                <span class="action-label" data-i18n="btn-report">REPORT</span>
               </div>
             </div>
           </div>
@@ -536,7 +625,39 @@
           </div>
           <div class="modal-body">
             <div class="modal-thumb-container">
-              <img id="modalThumb" src="" alt="Thumbnail" />
+              <div
+                id="modalSlidesWrapper"
+                style="width: 100%; position: relative"
+              ></div>
+              <div class="slider-nav hidden" id="modalSliderNav">
+                <button id="modalSlidePrevBtn" class="slide-btn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"
+                    />
+                  </svg>
+                </button>
+                <span id="modalSlideIndicator" class="slide-indicator"
+                  >1 / 1</span
+                >
+                <button id="modalSlideNextBtn" class="slide-btn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="modal-info">
               <p id="modalUrl" class="url-text"></p>
@@ -588,6 +709,6 @@
         "Simplicity is the ultimate sophistication."
       </div>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>
