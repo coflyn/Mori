@@ -781,7 +781,155 @@ export async function scrapeFacebook(url) {
   }
 }
 
+export async function scrapeBandcamp(url) {
+  let currentStatus = null;
+  try {
+    const headers = {
+      "User-Agent": CHROME_UA,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    };
+
+    // Step 1: Get CSRF
+    const r1 = await CapacitorHttp.get({
+      url: "https://bandcampdownloader.app/",
+      headers,
+    });
+    currentStatus = r1.status;
+    const cookies = getCookiesFromHeaders(r1.headers);
+    const parser = new DOMParser();
+    const doc1 = parser.parseFromString(r1.data, "text/html");
+
+    const csrfInput = doc1.querySelector('form[name="submitbcurl"] input[type="hidden"]');
+    const csrfName = csrfInput?.getAttribute("name");
+    const csrfValue = csrfInput?.getAttribute("value");
+
+    if (!csrfName || !csrfValue) throw new Error("CSRF token not found.");
+
+    // Step 2: Process URL
+    const r2 = await CapacitorHttp.post({
+      url: "https://bandcampdownloader.app/action",
+      data: serializeData({ url, [csrfName]: csrfValue }),
+      headers: {
+        ...headers,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: cookies,
+      },
+    });
+    currentStatus = r2.status;
+
+    let r2Data = r2.data;
+    if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
+
+    if (r2Data.error) throw new Error(r2Data.message || "Failed to process URL.");
+    if (!r2Data.success || !r2Data.html) throw new Error("Unexpected response.");
+
+    const doc2 = parser.parseFromString(r2Data.html, "text/html");
+    const trackForms = doc2.querySelectorAll('form[name="submitapurl"]');
+    if (trackForms.length === 0) throw new Error("No tracks found.");
+
+    const firstDataB64 = trackForms[0].querySelector('input[name="data"]')?.value;
+    const firstMeta = JSON.parse(atob(firstDataB64));
+
+    const downloads = [];
+    const isAlbum = trackForms.length > 1;
+
+    for (let i = 0; i < trackForms.length; i++) {
+      const form = trackForms[i];
+      const dataVal = form.querySelector('input[name="data"]')?.value;
+      const baseVal = form.querySelector('input[name="base"]')?.value;
+      const tokenVal = form.querySelector('input[name="token"]')?.value;
+      const meta = JSON.parse(atob(dataVal));
+
+      const r3 = await CapacitorHttp.post({
+        url: "https://bandcampdownloader.app/action/track",
+        data: serializeData({ data: dataVal, base: baseVal, token: tokenVal, type: "320" }),
+        headers: {
+          ...headers,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Cookie: cookies,
+        },
+      });
+
+      let r3Data = r3.data;
+      if (typeof r3Data === "string") r3Data = JSON.parse(r3Data);
+      if (r3Data.error) continue;
+
+      const doc3 = parser.parseFromString(r3Data.data, "text/html");
+      doc3.querySelectorAll("a.abutton").forEach((a) => {
+        const href = a.getAttribute("href");
+        const label = a.textContent.trim();
+        if (href && href.includes("/dl?token=")) {
+          const prefix = isAlbum ? `${(i + 1).toString().padStart(2, "0")}. ` : "";
+          downloads.push({
+            type: `${prefix}${label}`,
+            url: `https://bandcampdownloader.app${href}`,
+          });
+        }
+      });
+    }
+
+    if (downloads.length === 0) throw new Error("Download links not found.");
+
+    return {
+      status: true,
+      result: {
+        title: isAlbum ? (firstMeta.album || firstMeta.name) : firstMeta.name,
+        thumbnail: firstMeta.cover,
+        downloads,
+        sourceUrl: url,
+      },
+    };
+  } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
+export async function scrapePixiv(url) {
+  let currentStatus = null;
+  try {
+    const illustIdMatch = url.match(/artworks\/(\d+)/) || url.match(/illust_id=(\d+)/);
+    if (!illustIdMatch) throw new Error("Invalid Pixiv URL.");
+    const illustId = illustIdMatch[1];
+
+    const res = await CapacitorHttp.get({
+      url: `https://www.phixiv.net/api/info?id=${illustId}`,
+    });
+    currentStatus = res.status;
+
+    const data = res.data;
+    if (data.error || !data.image_proxy_urls) {
+      throw new Error("Artwork data secured/blocked.");
+    }
+
+    let downloads = data.image_proxy_urls.map((u, i) => {
+      let type = "IMAGE";
+      if (u.toLowerCase().includes(".mp4")) type = "VIDEO";
+      if (data.is_ugoira && type === "VIDEO") type = "UGOIRA (MP4)";
+      else if (data.image_proxy_urls.length > 1 && !data.is_ugoira) type = `PAGE ${i + 1}`;
+      return { type, url: u };
+    });
+
+    if (data.is_ugoira && downloads.some(d => d.type.includes("VIDEO"))) {
+      downloads = downloads.filter(d => d.type.includes("VIDEO"));
+    }
+
+    return {
+      status: true,
+      result: {
+        title: data.title ? `${data.title} by ${data.author_name || "Unknown"}` : "Pixiv Artwork",
+        thumbnail: data.image_proxy_urls[0],
+        downloads,
+        sourceUrl: url,
+      },
+    };
+  } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
 export async function scrapeProxy(url) {
+
+
   try {
     const res = await fetch("/api/scrape", {
       method: "POST",

@@ -67,6 +67,8 @@ import {
   scrapePinterest,
   scrapeAppleMusic,
   scrapeFacebook,
+  scrapeBandcamp,
+  scrapePixiv,
   scrapeProxy,
 } from "./scrapers.js";
 
@@ -627,6 +629,10 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeSoundCloud(url);
       } else if (url.includes("threads.net") || url.includes("threads.com")) {
         data = await scrapeThreads(url);
+      } else if (url.includes("bandcamp.com")) {
+        data = await scrapeBandcamp(url);
+      } else if (url.includes("pixiv.net")) {
+        data = await scrapePixiv(url);
       } else {
         data = { status: false, message: "URL not supported yet." };
       }
