@@ -915,7 +915,142 @@ async function threadster(url) {
   }
 }
 
+async function pixiv(url) {
+  try {
+    const illustIdMatch = url.match(/artworks\/(\d+)/) || url.match(/illust_id=(\d+)/);
+    if (!illustIdMatch) throw new Error("Invalid Pixiv URL.");
+    const illustId = illustIdMatch[1];
+
+    const res = await axios.get(`https://www.phixiv.net/api/info?id=${illustId}`, { timeout: 15000 });
+    const data = res.data;
+
+    if (data.error || !data.image_proxy_urls) {
+      throw new Error("Failed to fetch artwork data.");
+    }
+
+    let downloads = data.image_proxy_urls.map((u, i) => {
+      let type = "IMAGE";
+      if (u.toLowerCase().includes(".mp4")) type = "VIDEO";
+      if (data.is_ugoira && type === "VIDEO") type = "UGOIRA (MP4)";
+      else if (data.image_proxy_urls.length > 1 && !data.is_ugoira) type = `PAGE ${i + 1}`;
+      return { type, url: u };
+    });
+
+    // If Ugoira, prefer video and remove static thumbnail if video exists
+    if (data.is_ugoira && downloads.some(d => d.type.includes("VIDEO"))) {
+      downloads = downloads.filter(d => d.type.includes("VIDEO"));
+    }
+
+    return {
+      status: true,
+      result: {
+        title: data.title ? `${data.title} by ${data.author_name || "Unknown"}` : "Pixiv Artwork",
+        thumbnail: data.image_proxy_urls[0],
+        downloads,
+      },
+    };
+  } catch (error) {
+    return { status: false, message: error.message };
+  }
+}
+
+async function bandcamp(url) {
+
+  try {
+    const headers = {
+      "User-Agent": userAgents[0],
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      Referer: "https://bandcampdownloader.app/",
+      Origin: "https://bandcampdownloader.app",
+    };
+
+    const r1 = await axios.get("https://bandcampdownloader.app/", { headers, timeout: 15000 });
+    const cookies = r1.headers["set-cookie"];
+    const cookieStr = cookies ? cookies.map((c) => c.split(";")[0]).join("; ") : "";
+
+    const $1 = cheerio.load(r1.data);
+    const csrfName = $('form[name="submitbcurl"] input[type="hidden"]').attr("name");
+    const csrfValue = $('form[name="submitbcurl"] input[type="hidden"]').attr("value");
+
+    if (!csrfName || !csrfValue) throw new Error("Failed to extract CSRF token.");
+
+    const formData = new URLSearchParams();
+    formData.append("url", url);
+    formData.append(csrfName, csrfValue);
+
+    const r2 = await axios.post("https://bandcampdownloader.app/action", formData.toString(), {
+      headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", Cookie: cookieStr },
+      timeout: 30000,
+    });
+
+    if (r2.data.error) throw new Error(r2.data.message || "Failed to process URL.");
+    if (!r2.data.success || !r2.data.html) throw new Error("Unexpected response from server.");
+
+    const $2 = cheerio.load(r2.data.html);
+    const trackForms = $2('form[name="submitapurl"]');
+    if (trackForms.length === 0) throw new Error("No tracks found.");
+
+    const firstDataB64 = $2(trackForms.first()).find('input[name="data"]').val();
+    const firstMeta = JSON.parse(Buffer.from(firstDataB64, "base64").toString("utf8"));
+
+    const downloads = [];
+    const isAlbum = trackForms.length > 1;
+
+    for (let i = 0; i < trackForms.length; i++) {
+      const form = trackForms[i];
+      const dataVal = $2(form).find('input[name="data"]').val();
+      const baseVal = $2(form).find('input[name="base"]').val();
+      const tokenVal = $2(form).find('input[name="token"]').val();
+      const meta = JSON.parse(Buffer.from(dataVal, "base64").toString("utf8"));
+
+      const trackFormData = new URLSearchParams();
+      trackFormData.append("data", dataVal);
+      trackFormData.append("base", baseVal);
+      trackFormData.append("token", tokenVal);
+      trackFormData.append("type", "320");
+
+      try {
+        const r3 = await axios.post("https://bandcampdownloader.app/action/track", trackFormData.toString(), {
+          headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded", Cookie: cookieStr },
+          timeout: 60000,
+        });
+
+        if (r3.data.error) continue;
+
+        const $3 = cheerio.load(r3.data.data);
+        $3("a.abutton").each((_, el) => {
+          const href = $3(el).attr("href");
+          const label = $3(el).text().trim();
+          if (href && href.includes("/dl?token=")) {
+            const prefix = isAlbum ? `${(i + 1).toString().padStart(2, "0")}. ` : "";
+            downloads.push({
+              type: `${prefix}${label}`,
+              url: `https://bandcampdownloader.app${href}`,
+            });
+          }
+        });
+      } catch (e) {
+        console.error("Bandcamp track error:", e.message);
+      }
+    }
+
+    if (downloads.length === 0) throw new Error("Could not extract download links.");
+
+    return {
+      status: true,
+      result: {
+        title: isAlbum ? (firstMeta.album || firstMeta.name) : firstMeta.name,
+        thumbnail: firstMeta.cover,
+        downloads,
+      },
+    };
+  } catch (error) {
+    return { status: false, message: error.message };
+  }
+}
+
 const express = require("express");
+
 const cors = require("cors");
 const app = express();
 const port = 3000;
@@ -945,6 +1080,8 @@ app.post("/api/scrape", async (req, res) => {
   else if (url.includes("soundcloud.com")) data = await klickaud(url);
   else if (url.includes("threads.net") || url.includes("threads.com"))
     data = await threadster(url);
+  else if (url.includes("bandcamp.com")) data = await bandcamp(url);
+  else if (url.includes("pixiv.net")) data = await pixiv(url);
   else data = { status: false, message: "URL not supported yet." };
 
   res.json(data);
