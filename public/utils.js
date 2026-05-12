@@ -2,6 +2,13 @@
 export const { CapacitorHttp, Filesystem, Toast, Clipboard, App } =
   window.Capacitor?.Plugins || {};
 
+import { translations } from "./i18n.js";
+
+export let currentLang = "en";
+export function setUtilsState(state) {
+  if (state.currentLang) currentLang = state.currentLang;
+}
+
 export const CHROME_UA =
   "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36";
 
@@ -116,10 +123,12 @@ export async function copyToClipboard(text) {
     } else {
       await navigator.clipboard.writeText(text);
     }
-    showToast("Copied to clipboard");
+    if (!window.Capacitor?.isNativePlatform()) {
+      showToast(translations[currentLang]["toast-copy-success"]);
+    }
   } catch (err) {
     console.error("Copy failed", err);
-    showToast("Copy failed");
+    showToast(translations[currentLang]["toast-copy-failed"]);
   }
 }
 

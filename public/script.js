@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.1.0";
 const UPDATE_CHECK_URL =
   "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
 
@@ -94,6 +94,7 @@ import {
   copyToClipboard,
   handleScrapeError,
   getVideoThumbnail,
+  setUtilsState,
 } from "./utils.js";
 
 const progressBar = document.getElementById("progressBar");
@@ -142,6 +143,7 @@ function updateLanguageUI() {
   document.documentElement.lang = currentLang;
 
   updateGreeting();
+  setUtilsState({ currentLang });
 }
 
 const dynamicGreeting = document.getElementById("dynamicGreeting");
@@ -231,6 +233,7 @@ function switchLanguage(lang) {
   currentLang = lang;
   localStorage.setItem("mori_lang", lang);
   setUIState({ currentLang });
+  setUtilsState({ currentLang });
   updateLanguageUI();
   updateGreeting();
   renderHistory(onHistoryItemClick, onHistoryDeleteClick);
@@ -286,13 +289,13 @@ pasteBtn?.addEventListener("click", async () => {
     if (text) {
       urlInput.value = text;
       urlInput.dispatchEvent(new Event("input"));
-      showToast("Pasted from clipboard");
+      // Removed redundant toast as it's visible in the input and system often shows one
     } else {
-      showToast("Clipboard is empty");
+      showToast(translations[currentLang]["toast-clipboard-empty"]);
     }
   } catch (e) {
     console.error("Paste Error:", e);
-    showToast("Clipboard access denied");
+    showToast(translations[currentLang]["toast-clipboard-denied"]);
   }
 });
 
@@ -333,7 +336,7 @@ function processSharedText(text) {
 
   // Highlight the input
   urlInput.focus();
-  showToast("Link Pasted from Share");
+  showToast(translations[currentLang]["toast-pasted-share"]);
 
   // Auto-download after a short delay
   setTimeout(() => {
@@ -473,7 +476,7 @@ clearCacheBtn?.addEventListener("click", () => {
         await updateStorageInfo();
         showToast(translations[currentLang]["label-cache-cleared"]);
       } catch (e) {
-        showToast("Error clearing cache.");
+        showToast(translations[currentLang]["toast-cache-error"]);
       }
     },
   );
@@ -529,7 +532,7 @@ wipeDataBtn?.addEventListener("click", () => {
 });
 
 reportBugBtn?.addEventListener("click", () => {
-  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 2.0.0`;
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.1.0`;
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
@@ -572,7 +575,7 @@ async function checkUpdate() {
     }
   } catch (e) {
     console.error("Update check failed:", e);
-    showToast("Failed to check update.");
+    showToast(translations[currentLang]["label-check-failed"]);
     actionLabel.textContent = translations[currentLang]["btn-check"];
   }
 }
@@ -661,7 +664,7 @@ downloadBtn.addEventListener("click", async () => {
     if (loaderText)
       loaderText.textContent =
         translations[currentLang]["label-fatal"] + ": " + err.message;
-    showToast("Fatal error: " + err.message);
+    showToast(translations[currentLang]["label-fatal-error"] + ": " + err.message);
     setTimeout(() => loader.classList.add("hidden"), 5000);
     if (supportedSection) supportedSection.classList.remove("hidden");
   }

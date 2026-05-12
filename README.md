@@ -1,8 +1,23 @@
-# Mori - Your Simple Media Downloader (v3.0.0)
+# Mori - Your Simple Media Downloader (v3.1.0)
 
 Mori is a beautiful and very easy-to-use app that helps you save your favorite photos and videos from platforms like TikTok, Instagram, YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, and Threads. With its clean **"Mocha & Cream"** design, Mori makes downloading feel fast and premium.
 
-## What's New in v3.0.0
+## What's New in v3.1.0 (Latest)
+
+- **Bandcamp Integration**: High-fidelity audio downloads from Bandcamp albums and tracks, complete with metadata and automatic cover art extraction.
+- **Pixiv Gallery Support**: Full support for Pixiv artwork and multi-page galleries. Automatically handles **Ugoira** (animated) content and converts them to high-quality MP4.
+- **Standalone PDF Export**: Integrated a high-performance PDF engine (`pdf-lib`) to bundle image galleries (Instagram carousels, Pixiv albums, TikTok photos) into a single PDF document directly on your device.
+- **Hybrid PDF Mode**: Intelligently detects mixed content; if a post has both photos and videos, Mori can filter out the videos and export all photos as a clean PDF document.
+- **Optimized Download Engine**: Parallel chunked processing for gallery downloads, making large PDF exports up to 3x faster.
+- **TikTok Live Photo Support**: Enhanced detection for TikTok photo-mode and Live Photos, converting them to standard photos for easier previewing and PDF bundling.
+- **UI & UX Refinements**:
+  - **Double-Toast Fix**: Resolved redundant notification issues on Android 13+ by synchronizing Mori toasts with system clipboard alerts.
+  - **Directory Standardization**: All PDF exports are unified into the `Download/Mori` public directory for easy access.
+  - **Standalone Architecture**: Moved heavy processing to the client-side for faster, more private media management.
+  - **Full i18n Localization**: Audited and localized 100% of the app's notifications, toasts, and UI labels across English, Indonesian, and Japanese.
+  - **Instagram Asset Filtering**: Multi-layer domain-based filtering to eliminate InDown.io site banners and hero images from search results and history.
+
+## Previous Highlights (v3.0.0)
 
 - **MoriPlayer (Custom Media Engine)**: A fully custom-built video and audio player with "Mocha & Cream" aesthetics. Features include:
   - **Double-Tap Seek**: Instant 5s jump forward/backward by double-tapping sides (YouTube-style).
@@ -33,8 +48,9 @@ Mori is a beautiful and very easy-to-use app that helps you save your favorite p
 
 ## Key Features
 
-- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark), Instagram (Reels/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, and Threads.
+- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark), Instagram (Reels/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, Threads, **Bandcamp**, and **Pixiv**.
 - **Live Media Previews**: View images, play videos, and listen to audio directly within the app before downloading.
+- **Standalone PDF Document Export**: Convert image galleries from any platform into high-quality PDF files for offline viewing.
 - **Private History Manager**: Downloaded files are managed internally with local playback support.
 - **Share Intent Integration**: Send links directly to Mori from other apps via the system Share menu.
 - **Intelligent Error Handling**: Real-time feedback for IP blocks or network issues via custom Toast notifications.
@@ -58,7 +74,7 @@ Mori is built using Capacitor and Vanilla JS for high performance.
 
 ### Building the APK
 
-To generate the latest version (e.g., Mori v3.0.0.apk), run:
+To generate the latest version (e.g., Mori v3.1.0.apk), run:
 `npx cap sync android && cd android && ./gradlew assembleDebug`
 
 ---
