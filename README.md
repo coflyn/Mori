@@ -1,8 +1,22 @@
-# Mori - Your Simple Media Downloader (v3.1.0)
+# Mori - Your Simple Media Downloader (v3.2.0)
 
-Mori is a beautiful and very easy-to-use app that helps you save your favorite photos and videos from platforms like TikTok, Instagram, YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, and Threads. With its clean **"Mocha & Cream"** design, Mori makes downloading feel fast and premium.
+Mori is a beautiful and very easy-to-use app that helps you save your favorite photos and videos from platforms like TikTok, Instagram, YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, and Threads. Built with a **Standalone Architecture**, Mori performs all scraping directly on your device for maximum privacy and speed, without requiring a backend server. With its clean **"Mocha & Cream"** design, Mori makes downloading feel fast and premium.
 
-## What's New in v3.1.0 (Latest)
+## What's New in v3.2.0 (Latest)
+
+- **Pure Standalone Architecture**: Completely eliminated the backend server dependency. Mori now operates as a 100% client-side application using `CapacitorHttp` to perform all scraping directly on your device.
+- **Frontend Asset Reorganization**: CSS and JS files are now properly organized into `public/css/` and `public/js/` directories for better maintainability.
+- **MoriPlayer Extraction**: The custom 250-line video player logic was extracted from `ui.js` into its own dedicated `player.js` module.
+- **YouTube Stability & Gallery Sync**: Switched to a robust parallel engine (`ytmp3.mobi`) and implemented a unique tagging system (`_VIDEO_`/`_MP3_`) to ensure all downloads are instantly recognized by the Android Media Scanner.
+- **Smart Local Preview**: Added a local file detection system in the History modal. Mori now identifies if a video/audio is already on your phone and plays it instantly with a new **"OFFLINE"** badge, saving data and time.
+- **Enhanced Gallery Slider**: Re-engineered the media previewer with side-aligned navigation buttons and a top-centered indicator to prevent overlap with video player controls.
+- **Storage & Performance Optimization**: Refactored the history system to store thumbnails as small JPG files in the app cache instead of Base64 strings.
+- **Automatic Cache Cleanup**: Implemented a smart deletion system that removes physical thumbnail files from the app cache when history items are deleted (individually or via "Clear All"), preventing storage swelling while keeping your Gallery downloads 100% safe.
+- **Privacy & Safety Improvements**: Refined "Wipe All Data" and "Clear Cache" to strictly preserve user media files. Updated all app documentation to ensure users feel secure when managing their storage.
+- **UI & UX Polish**: Resolved visual regressions, including a cleaner "Total Media Size" icon, improved blurred background effects, and a new Sociabuzz donation link in the Developer section.
+
+## Previous Highlights (v3.1.0)
+
 
 - **Bandcamp Integration**: High-fidelity audio downloads from Bandcamp albums and tracks, complete with metadata and automatic cover art extraction.
 - **Pixiv Gallery Support**: Full support for Pixiv artwork and multi-page galleries. Automatically handles **Ugoira** (animated) content and converts them to high-quality MP4.
@@ -74,7 +88,7 @@ Mori is built using Capacitor and Vanilla JS for high performance.
 
 ### Building the APK
 
-To generate the latest version (e.g., Mori v3.1.0.apk), run:
+To generate the latest version (e.g., Mori v3.2.0.apk), run:
 `npx cap sync android && cd android && ./gradlew assembleDebug`
 
 ---

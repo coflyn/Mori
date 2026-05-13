@@ -395,46 +395,78 @@ input[type="text"]:focus {
 
 .slider-nav {
   position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 6px 16px;
-  border-radius: 20px;
-  z-index: 10;
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 12;
 }
 
 .slide-btn {
-  background: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.4);
   border: none;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   transition: var(--transition);
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
 }
 
-.slide-btn:hover {
-  color: #ccc;
+#slidePrevBtn, #modalSlidePrevBtn {
+  left: 10px;
 }
 
-.slide-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+#slideNextBtn, #modalSlideNextBtn {
+  right: 10px;
 }
 
 .slide-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 20px;
   color: white;
-  font-size: 0.8rem;
+  font-size: 11px;
   font-weight: 600;
-  min-width: 40px;
-  text-align: center;
+  z-index: 13;
+}
+
+.slide-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.slide-btn:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slide-indicator {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 12px;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 
 .info-wrapper {
@@ -501,6 +533,28 @@ input[type="text"]:focus {
   100% {
     transform: translateX(100%);
   }
+}
+
+.local-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mori-player-container {

@@ -174,7 +174,6 @@ export async function getVideoThumbnail(videoUri) {
         video.currentTime = video.duration / 2;
         video.removeEventListener("loadedmetadata", onMetadata);
       } else {
-        // Fallback if duration is not immediately available
         video.currentTime = 1;
       }
     };
@@ -182,18 +181,31 @@ export async function getVideoThumbnail(videoUri) {
     video.addEventListener("loadedmetadata", onMetadata);
     video.addEventListener("durationchange", onMetadata);
 
-    video.onseeked = () => {
+    video.onseeked = async () => {
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 360;
+        const scale = 0.5; // Scale down for smaller file size
+        canvas.width = (video.videoWidth || 640) * scale;
+        canvas.height = (video.videoHeight || 360) * scale;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
         clearTimeout(timeout);
         video.src = "";
         video.load();
-        resolve(dataUrl);
+
+        if (window.Capacitor?.isNativePlatform() && Filesystem) {
+          const fileName = `thumb_${Date.now()}.jpg`;
+          await Filesystem.writeFile({
+            path: fileName,
+            data: dataUrl.split(",")[1],
+            directory: "CACHE",
+          });
+          resolve(fileName); // Return only filename to save in history
+        } else {
+          resolve(dataUrl);
+        }
       } catch (e) {
         console.error("Canvas thumbnail error:", e);
         reject(e);
