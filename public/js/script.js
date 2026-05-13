@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.2.0";
 const UPDATE_CHECK_URL =
   "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
 
@@ -69,7 +69,6 @@ import {
   scrapeFacebook,
   scrapeBandcamp,
   scrapePixiv,
-  scrapeProxy,
 } from "./scrapers.js";
 
 import { translations } from "./i18n.js";
@@ -286,16 +285,27 @@ pasteBtn?.addEventListener("click", async () => {
       text = await navigator.clipboard.readText();
     }
 
-    if (text) {
-      urlInput.value = text;
-      urlInput.dispatchEvent(new Event("input"));
-      // Removed redundant toast as it's visible in the input and system often shows one
+    if (text && text.trim()) {
+      const trimmed = text.trim();
+      // Basic URL check
+      if (
+        trimmed.startsWith("http") ||
+        trimmed.includes(".com") ||
+        trimmed.includes(".net") ||
+        trimmed.includes("youtu.be")
+      ) {
+        urlInput.value = trimmed;
+        urlInput.dispatchEvent(new Event("input"));
+      } else {
+        showToast(translations[currentLang]["toast-no-link"]);
+      }
     } else {
       showToast(translations[currentLang]["toast-clipboard-empty"]);
     }
   } catch (e) {
     console.error("Paste Error:", e);
-    showToast(translations[currentLang]["toast-clipboard-denied"]);
+    // If it fails, usually it's better to show empty/denied depending on context
+    showToast(translations[currentLang]["toast-clipboard-empty"]);
   }
 });
 
@@ -428,14 +438,27 @@ clearAllBtn?.addEventListener("click", () => {
   showConfirm(
     "Clear All",
     "Are you sure you want to delete all download history?",
-    () => {
+    async () => {
+      // Clean up physical thumbnail files
+      const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+      for (const item of history) {
+        if (item.thumbnail && item.thumbnail.startsWith("thumb_") && Filesystem) {
+          try {
+            await Filesystem.deleteFile({
+              path: item.thumbnail,
+              directory: "CACHE"
+            });
+          } catch (e) {}
+        }
+      }
+
       localStorage.removeItem("mori_history");
       isEditingHistory = false;
       setUIState({ isEditingHistory });
       editHistoryBtn.classList.remove("hidden");
       historyActions.classList.add("hidden");
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
-    },
+    }
   );
 });
 
@@ -502,22 +525,6 @@ wipeDataBtn?.addEventListener("click", () => {
               });
             }
           } catch (e) {}
-
-          try {
-            await Filesystem.rmdir({
-              path: "Download/Mori",
-              directory: "EXTERNAL_STORAGE",
-              recursive: true,
-            });
-          } catch (e) {}
-
-          try {
-            await Filesystem.rmdir({
-              path: "Download/Mori",
-              directory: "EXTERNAL",
-              recursive: true,
-            });
-          } catch (e) {}
         }
         await updateStorageInfo();
         renderHistory(onHistoryItemClick, onHistoryDeleteClick);
@@ -532,7 +539,7 @@ wipeDataBtn?.addEventListener("click", () => {
 });
 
 reportBugBtn?.addEventListener("click", () => {
-  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.1.0`;
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.2.0`;
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
@@ -664,7 +671,9 @@ downloadBtn.addEventListener("click", async () => {
     if (loaderText)
       loaderText.textContent =
         translations[currentLang]["label-fatal"] + ": " + err.message;
-    showToast(translations[currentLang]["label-fatal-error"] + ": " + err.message);
+    showToast(
+      translations[currentLang]["label-fatal-error"] + ": " + err.message,
+    );
     setTimeout(() => loader.classList.add("hidden"), 5000);
     if (supportedSection) supportedSection.classList.remove("hidden");
   }
@@ -717,15 +726,29 @@ modalOverlay?.addEventListener("click", (e) => {
 function onHistoryItemClick(item) {
   showModal(item, (url) => {
     urlInput.value = url;
-    clearBtn.classList.remove("hidden");
+    urlInput.dispatchEvent(new Event("input"));
     document.querySelector('.nav-item[data-page="home"]').click();
     downloadBtn.click();
   });
 }
 
-function onHistoryDeleteClick(url) {
-  showConfirm("Delete Item", "Remove this item from history?", () => {
+async function onHistoryDeleteClick(url) {
+  showConfirm("Delete Item", "Remove this item from history?", async () => {
     let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+    const itemToDelete = history.find((h) => h.url === url);
+    
+    // Delete physical thumbnail if it exists
+    if (itemToDelete && itemToDelete.thumbnail && itemToDelete.thumbnail.startsWith("thumb_") && Filesystem) {
+      try {
+        await Filesystem.deleteFile({
+          path: itemToDelete.thumbnail,
+          directory: "CACHE"
+        });
+      } catch (e) {
+        console.warn("Could not delete thumbnail file:", e);
+      }
+    }
+
     history = history.filter((h) => h.url !== url);
     localStorage.setItem("mori_history", JSON.stringify(history));
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);

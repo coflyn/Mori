@@ -8,27 +8,12 @@ import {
 } from "./utils.js";
 
 export async function scrapeSoundCloud(url) {
-  try {
-    const r1 = await CapacitorHttp.get({
-      url: "https://www.klickaud.org/en14",
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    const cookies = getCookiesFromHeaders(r1.headers);
-
-    await CapacitorHttp.post({
-      url: "https://www.klickaud.org/download.php",
-      data: { value: url },
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: cookies,
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-
-    return await scrapeProxy(url);
-  } catch (e) {
-    return await scrapeProxy(url);
-  }
+  // SoundCloud currently requires a proxy due to SSE limitations in CapacitorHttp.
+  // Since this is a standalone build, SoundCloud is temporarily disabled.
+  return {
+    status: false,
+    message: "SoundCloud is not supported in Standalone mode.",
+  };
 }
 
 export async function scrapeThreads(url) {
@@ -178,15 +163,15 @@ export async function scrapeTikTok(url) {
 
         if ((isCdnLink || isImageLink) && !isWebRedirect) {
           if (text.includes("app") && !isImageLink) return;
-          
+
           let label = "VIDEO";
           if (text.includes("music") || text.includes("mp3")) label = "MP3";
           if (isImageLink) label = "PHOTO";
-          
+
           const isMirror =
             (label === "VIDEO" && downloads.some((d) => d.type === "VIDEO")) ||
             (label === "MP3" && downloads.some((d) => d.type === "MP3"));
-            
+
           downloads.push({ type: label, url: href, isMirror });
         }
       }
@@ -204,7 +189,9 @@ export async function scrapeTikTok(url) {
       : null;
 
     if (!thumb && downloads.length > 0) {
-      const firstMedia = downloads.find(d => d.type === "VIDEO" || d.type === "PHOTO") || downloads[0];
+      const firstMedia =
+        downloads.find((d) => d.type === "VIDEO" || d.type === "PHOTO") ||
+        downloads[0];
       thumb = firstMedia.url;
     }
 
@@ -256,13 +243,19 @@ export async function scrapeInstagram(url) {
         let href = a?.getAttribute("href");
         let imgSrc = img?.getAttribute("src");
 
-        const isInternalAsset = 
-          imgSrc && 
-          imgSrc.includes("indown.io") && 
-          !imgSrc.includes("url=") && 
+        const isInternalAsset =
+          imgSrc &&
+          imgSrc.includes("indown.io") &&
+          !imgSrc.includes("url=") &&
           !imgSrc.includes("token=");
 
-        if (imgSrc && !imgSrc.includes("logo") && !imgSrc.includes("placeholder") && !imgSrc.includes("images/") && !isInternalAsset) {
+        if (
+          imgSrc &&
+          !imgSrc.includes("logo") &&
+          !imgSrc.includes("placeholder") &&
+          !imgSrc.includes("images/") &&
+          !isInternalAsset
+        ) {
           imgSrc = imgSrc.startsWith("/")
             ? "https://indown.io" + imgSrc
             : imgSrc;
@@ -306,11 +299,20 @@ export async function scrapeInstagram(url) {
     const title =
       doc2.querySelector("h5")?.textContent?.trim() || "Instagram Content";
     if (!thumbnail) {
-      const allImgs = doc2.querySelectorAll('.row img');
+      const allImgs = doc2.querySelectorAll(".row img");
       for (const img of allImgs) {
-        const src = img.getAttribute('src') || '';
-        const isInternal = src.includes("indown.io") && !src.includes("url=") && !src.includes("token=");
-        if (src && !src.includes("logo") && !src.includes("placeholder") && !src.includes("images/") && !isInternal) {
+        const src = img.getAttribute("src") || "";
+        const isInternal =
+          src.includes("indown.io") &&
+          !src.includes("url=") &&
+          !src.includes("token=");
+        if (
+          src &&
+          !src.includes("logo") &&
+          !src.includes("placeholder") &&
+          !src.includes("images/") &&
+          !isInternal
+        ) {
           thumbnail = src.startsWith("/") ? "https://indown.io" + src : src;
           break;
         }
@@ -319,7 +321,7 @@ export async function scrapeInstagram(url) {
 
     if (!thumbnail && downloads.length > 0) {
       // Use the first media's real URL as thumbnail
-      const firstMedia = downloads.find(d => !d.isMirror) || downloads[0];
+      const firstMedia = downloads.find((d) => !d.isMirror) || downloads[0];
       thumbnail = firstMedia.thumbnail || firstMedia.url;
     }
 
@@ -335,36 +337,78 @@ export async function scrapeInstagram(url) {
 export async function scrapeYouTube(url) {
   let currentStatus = null;
   try {
-    const res = await CapacitorHttp.post({
-      url: "https://app.ytdown.to/proxy.php",
-      data: { url: url },
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-    currentStatus = res.status;
+    const videoId = url.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+    )?.[1];
+    if (!videoId) throw new Error("Invalid YouTube URL");
 
-    const data = res.data;
-    if (!data || !data.api || data.api.status !== "ok") {
-      throw new Error(data?.api?.message || "YouTube scraper error.");
-    }
+    const fetchLink = async (format) => {
+      const headers = {
+        Origin: "https://ytmp3.mobi",
+        Referer: "https://ytmp3.mobi/",
+        "User-Agent": CHROME_UA,
+      };
 
-    const { title, imagePreviewUrl, mediaItems } = data.api;
-    const downloads = mediaItems.map((item) => ({
-      type: `${item.mediaExtension.toUpperCase()} ${item.mediaQuality}`,
-      url: item.mediaUrl,
-    }));
+      const r1 = await CapacitorHttp.get({
+        url: "https://a.ymcdn.org/api/v1/init?p=y&23=1llum1n471",
+        headers,
+      });
+      if (!r1.data || r1.data.error) return null;
+
+      const r2 = await CapacitorHttp.get({
+        url: `${r1.data.convertURL}&v=${videoId}&f=${format}`,
+        headers,
+      });
+      if (!r2.data || r2.data.error) return null;
+
+      let progress = 0;
+      let dlUrl = r2.data.downloadURL;
+      const progUrl = r2.data.progressURL;
+
+      let attempts = 0;
+      while (progress < 3 && attempts < 5) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const r3 = await CapacitorHttp.get({ url: progUrl, headers });
+        if (!r3.data || r3.data.error) break;
+        progress = r3.data.progress;
+        if (r3.data.downloadURL) dlUrl = r3.data.downloadURL;
+        if (progress === 4) break;
+        attempts++;
+      }
+
+      if (dlUrl && dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
+      if (dlUrl && dlUrl.startsWith("/")) dlUrl = "https://ytmp3.mobi" + dlUrl;
+      return dlUrl;
+    };
+
+    const [mp4Url, mp3Url] = await Promise.all([
+      fetchLink("mp4"),
+      fetchLink("mp3"),
+    ]);
+
+    const downloads = [];
+    if (mp4Url) downloads.push({ type: "MP4 VIDEO", url: mp4Url });
+    if (mp3Url) downloads.push({ type: "MP3 AUDIO", url: mp3Url });
+
+    if (downloads.length === 0)
+      throw new Error("Failed to get download links. Try again.");
+
+    // Fast info via oembed
+    let title = "YouTube Video";
+    let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    try {
+      const oRes = await CapacitorHttp.get({
+        url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+      });
+      if (oRes.data) {
+        title = oRes.data.title;
+        thumbnail = oRes.data.thumbnail_url;
+      }
+    } catch (e) {}
 
     return {
       status: true,
-      result: {
-        title: title || "YouTube Content",
-        thumbnail: imagePreviewUrl,
-        downloads,
-        sourceUrl: url,
-      },
+      result: { title, thumbnail, downloads, sourceUrl: url },
     };
   } catch (err) {
     return { status: false, message: err.message, statusCode: currentStatus };
@@ -816,10 +860,10 @@ export async function scrapeBandcamp(url) {
   try {
     const headers = {
       "User-Agent": CHROME_UA,
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     };
 
-    // Step 1: Get CSRF
     const r1 = await CapacitorHttp.get({
       url: "https://bandcampdownloader.app/",
       headers,
@@ -829,13 +873,14 @@ export async function scrapeBandcamp(url) {
     const parser = new DOMParser();
     const doc1 = parser.parseFromString(r1.data, "text/html");
 
-    const csrfInput = doc1.querySelector('form[name="submitbcurl"] input[type="hidden"]');
+    const csrfInput = doc1.querySelector(
+      'form[name="submitbcurl"] input[type="hidden"]',
+    );
     const csrfName = csrfInput?.getAttribute("name");
     const csrfValue = csrfInput?.getAttribute("value");
 
     if (!csrfName || !csrfValue) throw new Error("CSRF token not found.");
 
-    // Step 2: Process URL
     const r2 = await CapacitorHttp.post({
       url: "https://bandcampdownloader.app/action",
       data: serializeData({ url, [csrfName]: csrfValue }),
@@ -850,14 +895,17 @@ export async function scrapeBandcamp(url) {
     let r2Data = r2.data;
     if (typeof r2Data === "string") r2Data = JSON.parse(r2Data);
 
-    if (r2Data.error) throw new Error(r2Data.message || "Failed to process URL.");
-    if (!r2Data.success || !r2Data.html) throw new Error("Unexpected response.");
+    if (r2Data.error)
+      throw new Error(r2Data.message || "Failed to process URL.");
+    if (!r2Data.success || !r2Data.html)
+      throw new Error("Unexpected response.");
 
     const doc2 = parser.parseFromString(r2Data.html, "text/html");
     const trackForms = doc2.querySelectorAll('form[name="submitapurl"]');
     if (trackForms.length === 0) throw new Error("No tracks found.");
 
-    const firstDataB64 = trackForms[0].querySelector('input[name="data"]')?.value;
+    const firstDataB64 =
+      trackForms[0].querySelector('input[name="data"]')?.value;
     const firstMeta = JSON.parse(atob(firstDataB64));
 
     const downloads = [];
@@ -872,7 +920,12 @@ export async function scrapeBandcamp(url) {
 
       const r3 = await CapacitorHttp.post({
         url: "https://bandcampdownloader.app/action/track",
-        data: serializeData({ data: dataVal, base: baseVal, token: tokenVal, type: "320" }),
+        data: serializeData({
+          data: dataVal,
+          base: baseVal,
+          token: tokenVal,
+          type: "320",
+        }),
         headers: {
           ...headers,
           "Content-Type": "application/x-www-form-urlencoded",
@@ -889,7 +942,9 @@ export async function scrapeBandcamp(url) {
         const href = a.getAttribute("href");
         const label = a.textContent.trim();
         if (href && href.includes("/dl?token=")) {
-          const prefix = isAlbum ? `${(i + 1).toString().padStart(2, "0")}. ` : "";
+          const prefix = isAlbum
+            ? `${(i + 1).toString().padStart(2, "0")}. `
+            : "";
           downloads.push({
             type: `${prefix}${label}`,
             url: `https://bandcampdownloader.app${href}`,
@@ -903,7 +958,7 @@ export async function scrapeBandcamp(url) {
     return {
       status: true,
       result: {
-        title: isAlbum ? (firstMeta.album || firstMeta.name) : firstMeta.name,
+        title: isAlbum ? firstMeta.album || firstMeta.name : firstMeta.name,
         thumbnail: firstMeta.cover,
         downloads,
         sourceUrl: url,
@@ -917,7 +972,8 @@ export async function scrapeBandcamp(url) {
 export async function scrapePixiv(url) {
   let currentStatus = null;
   try {
-    const illustIdMatch = url.match(/artworks\/(\d+)/) || url.match(/illust_id=(\d+)/);
+    const illustIdMatch =
+      url.match(/artworks\/(\d+)/) || url.match(/illust_id=(\d+)/);
     if (!illustIdMatch) throw new Error("Invalid Pixiv URL.");
     const illustId = illustIdMatch[1];
 
@@ -935,18 +991,21 @@ export async function scrapePixiv(url) {
       let type = "IMAGE";
       if (u.toLowerCase().includes(".mp4")) type = "VIDEO";
       if (data.is_ugoira && type === "VIDEO") type = "UGOIRA (MP4)";
-      else if (data.image_proxy_urls.length > 1 && !data.is_ugoira) type = `PAGE ${i + 1}`;
+      else if (data.image_proxy_urls.length > 1 && !data.is_ugoira)
+        type = `PAGE ${i + 1}`;
       return { type, url: u };
     });
 
-    if (data.is_ugoira && downloads.some(d => d.type.includes("VIDEO"))) {
-      downloads = downloads.filter(d => d.type.includes("VIDEO"));
+    if (data.is_ugoira && downloads.some((d) => d.type.includes("VIDEO"))) {
+      downloads = downloads.filter((d) => d.type.includes("VIDEO"));
     }
 
     return {
       status: true,
       result: {
-        title: data.title ? `${data.title} by ${data.author_name || "Unknown"}` : "Pixiv Artwork",
+        title: data.title
+          ? `${data.title} by ${data.author_name || "Unknown"}`
+          : "Pixiv Artwork",
         thumbnail: data.image_proxy_urls[0],
         downloads,
         sourceUrl: url,
@@ -954,20 +1013,5 @@ export async function scrapePixiv(url) {
     };
   } catch (err) {
     return { status: false, message: err.message, statusCode: currentStatus };
-  }
-}
-
-export async function scrapeProxy(url) {
-
-
-  try {
-    const res = await fetch("/api/scrape", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    return await res.json();
-  } catch (e) {
-    return { status: false, message: "Local server not available." };
   }
 }
