@@ -1,5 +1,5 @@
 // Capacitor Plugins
-export const { CapacitorHttp, Filesystem, Toast, Clipboard, App } =
+export const { CapacitorHttp, Filesystem, Toast, Clipboard, App, Share } =
   window.Capacitor?.Plugins || {};
 
 import { translations } from "./i18n.js";

@@ -454,6 +454,25 @@
                     fill="currentColor"
                   >
                     <path
+                      d="M12 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0 10c2.7 0 5.8 1.3 6 2H6c.2-.7 3.3-2 6-2m0-12C9.8 4 8 5.8 8 8s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4m0 10c-4.4 0-8 1.8-8 4v2h16v-2c0-2.2-3.6-4-8-4z"
+                    />
+                  </svg>
+                  <span data-i18n="label-incognito">Incognito Mode</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="incognitoToggle" />
+                  <label for="incognitoToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
                       d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"
                     />
                   </svg>
@@ -487,6 +506,76 @@
                   <span data-i18n="label-storagesize">Total Media Size</span>
                 </div>
                 <span class="info-val" id="storageSizeVal">0 MB</span>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M20 10c0-4.41-3.59-8-8-8s-8 3.59-8 8c0 3.35 2.07 6.22 5 7.41V20c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2v-2.59c2.93-1.19 5-4.06 5-7.41zM12 16c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-datasaver">Data Saver Mode</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="dataSaverToggle" />
+                  <label for="dataSaverToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item action-item" id="changePathBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
+                    />
+                  </svg>
+                  <span data-i18n="label-path-video">Video Path</span>
+                </div>
+                <span class="info-val" id="pathVal">/Download/Mori</span>
+              </div>
+              <div class="settings-item action-item" id="changeMusicPathBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-path-music">Music Path</span>
+                </div>
+                <span class="info-val" id="musicPathVal">/Download/Mori/Music</span>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                    />
+                  </svg>
+                  <span data-i18n="label-autoclear">Auto Clear Cache</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoClearToggle" />
+                  <label for="autoClearToggle"></label>
+                </div>
               </div>
               <div class="settings-item action-item" id="clearCacheBtn">
                 <div class="item-label">
@@ -525,6 +614,62 @@
           </div>
 
           <div class="settings-section">
+            <span class="section-label" data-i18n="label-help"
+              >Help & Info</span
+            >
+            <div class="settings-list">
+              <div class="settings-item action-item" id="howToUseBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
+                    />
+                  </svg>
+                  <span data-i18n="label-howtouse">How to Use</span>
+                </div>
+                <span class="action-label" data-i18n="btn-view">VIEW</span>
+              </div>
+              <div class="settings-item action-item" id="aboutAppBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-about">About Mori</span>
+                </div>
+                <span class="action-label" data-i18n="btn-view">VIEW</span>
+              </div>
+              <div class="settings-item action-item" id="shareAppBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"
+                    />
+                  </svg>
+                  <span data-i18n="label-shareapp">Share Mori App</span>
+                </div>
+                <span class="action-label" data-i18n="btn-share">SHARE</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
             <span class="section-label" data-i18n="label-appinfo"
               >App Info</span
             >
@@ -544,7 +689,7 @@
                   <span data-i18n="label-version">Version</span>
                 </div>
                 <div class="update-info">
-                  <span class="info-val">&nbsp;3.2.0</span>
+                  <span class="info-val">&nbsp;3.3.0</span>
                   <span class="action-label" data-i18n="btn-check">CHECK</span>
                 </div>
               </div>

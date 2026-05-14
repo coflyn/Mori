@@ -1,4 +1,45 @@
-const APP_VERSION = "3.2.0";
+import {
+  scrapeSoundCloud,
+  scrapeThreads,
+  scrapeTikTok,
+  scrapeInstagram,
+  scrapeYouTube,
+  scrapeTwitter,
+  scrapeSpotify,
+  scrapePinterest,
+  scrapeAppleMusic,
+  scrapeFacebook,
+  scrapeBandcamp,
+  scrapePixiv,
+} from "./scrapers.js";
+
+import { translations } from "./i18n.js";
+import {
+  setUIState,
+  renderResult,
+  renderHistory,
+  showModal,
+  updateSliderUI,
+} from "./ui.js";
+
+import {
+  CapacitorHttp,
+  Filesystem,
+  Toast,
+  Clipboard,
+  App,
+  CHROME_UA,
+  cleanUrl,
+  truncate,
+  showToast,
+  copyToClipboard,
+  handleScrapeError,
+  getVideoThumbnail,
+  setUtilsState,
+  Share,
+} from "./utils.js";
+
+const APP_VERSION = "3.3.0";
 const UPDATE_CHECK_URL =
   "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
 
@@ -56,49 +97,22 @@ const languageTrigger = document.getElementById("languageTrigger");
 const languageOptions = document.getElementById("languageOptions");
 const currentLangDisplay = document.getElementById("currentLangDisplay");
 const darkModeToggle = document.getElementById("darkModeToggle");
-import {
-  scrapeSoundCloud,
-  scrapeThreads,
-  scrapeTikTok,
-  scrapeInstagram,
-  scrapeYouTube,
-  scrapeTwitter,
-  scrapeSpotify,
-  scrapePinterest,
-  scrapeAppleMusic,
-  scrapeFacebook,
-  scrapeBandcamp,
-  scrapePixiv,
-} from "./scrapers.js";
-
-import { translations } from "./i18n.js";
-import {
-  setUIState,
-  renderResult,
-  renderHistory,
-  showModal,
-  updateSliderUI,
-} from "./ui.js";
-
-import {
-  CapacitorHttp,
-  Filesystem,
-  Toast,
-  Clipboard,
-  App,
-  CHROME_UA,
-  cleanUrl,
-  truncate,
-  showToast,
-  copyToClipboard,
-  handleScrapeError,
-  getVideoThumbnail,
-  setUtilsState,
-} from "./utils.js";
+const autoClearToggle = document.getElementById("autoClearToggle");
+const howToUseBtn = document.getElementById("howToUseBtn");
+const aboutAppBtn = document.getElementById("aboutAppBtn");
+const incognitoToggle = document.getElementById("incognitoToggle");
+const dataSaverToggle = document.getElementById("dataSaverToggle");
+const shareAppBtn = document.getElementById("shareAppBtn");
+const changePathBtn = document.getElementById("changePathBtn");
+const pathVal = document.getElementById("pathVal");
+const changeMusicPathBtn = document.getElementById("changeMusicPathBtn");
+const musicPathVal = document.getElementById("musicPathVal");
 
 const progressBar = document.getElementById("progressBar");
 const progressContainer = document.getElementById("progressContainer");
 const loaderText = document.getElementById("loaderText");
+
+let currentLang = localStorage.getItem("mori_lang") || "en";
 
 // Init Theme
 const savedTheme = localStorage.getItem("mori_theme") || "light";
@@ -111,9 +125,180 @@ darkModeToggle?.addEventListener("change", (e) => {
   localStorage.setItem("mori_theme", theme);
 });
 
+// Incognito Mode Logic
+const isIncognito = localStorage.getItem("mori_incognito") === "true";
+if (incognitoToggle) {
+  incognitoToggle.checked = isIncognito;
+  incognitoToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_incognito", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-incognito-on"]
+        : lang["toast-incognito-off"],
+    );
+  });
+}
+
+// Data Saver Mode Logic
+const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+if (dataSaverToggle) {
+  dataSaverToggle.checked = isDataSaver;
+  dataSaverToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_data_saver", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-datasaver-on"]
+        : lang["toast-datasaver-off"],
+    );
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  });
+}
+
+// Download Path Logic (Video)
+let customPath = localStorage.getItem("mori_download_path") || "Mori";
+if (pathVal) pathVal.textContent = `/Download/${customPath}`;
+
+changePathBtn?.addEventListener("click", () => {
+  const lang = translations[currentLang];
+  showConfirm(
+    lang["label-path-video"],
+    `<div class="path-picker-ui">
+       <div class="path-input-wrapper">
+         <span class="path-label-sm">Subfolder in Downloads</span>
+         <div class="mori-input-with-icon">
+           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+           <input type="text" id="customPathInput" class="mori-input-noborder" value="${customPath}" placeholder="e.g. Mori">
+         </div>
+       </div>
+       <span class="path-label-sm">${lang["label-path-presets"]}</span>
+       <div class="path-presets-container">
+         <button class="path-preset-chip" data-path="Mori">Mori</button>
+         <button class="path-preset-chip" data-path="Mori/Videos">Mori/Videos</button>
+       </div>
+       <button id="resetPathBtn" class="reset-path-btn">${lang["btn-reset-default"]}</button>
+     </div>`,
+    () => {
+      const input = document.getElementById("customPathInput");
+      if (input && input.value.trim()) {
+        const newPath = input.value.trim().replace(/[\\:*?"<>|]/g, "");
+        customPath = newPath;
+        localStorage.setItem("mori_download_path", newPath);
+        if (pathVal) pathVal.textContent = `/Download/${newPath}`;
+        showToast(lang["toast-path-updated"]);
+      }
+    },
+  );
+  setTimeout(() => {
+    const input = document.getElementById("customPathInput");
+    document.querySelectorAll(".path-preset-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        if (input) input.value = chip.getAttribute("data-path");
+      });
+    });
+    document.getElementById("resetPathBtn")?.addEventListener("click", () => {
+      if (input) input.value = "Mori";
+    });
+  }, 100);
+  okConfirmBtn.textContent = "SAVE";
+});
+
+// Download Path Logic (Music)
+let customMusicPath = localStorage.getItem("mori_music_path") || "Mori/Music";
+if (musicPathVal) musicPathVal.textContent = `/Download/${customMusicPath}`;
+
+changeMusicPathBtn?.addEventListener("click", () => {
+  const lang = translations[currentLang];
+  showConfirm(
+    lang["label-path-music"],
+    `<div class="path-picker-ui">
+       <div class="path-input-wrapper">
+         <span class="path-label-sm">Subfolder in Downloads</span>
+         <div class="mori-input-with-icon">
+           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+           <input type="text" id="customMusicPathInput" class="mori-input-noborder" value="${customMusicPath}" placeholder="e.g. Mori/Music">
+         </div>
+       </div>
+       <span class="path-label-sm">${lang["label-path-presets"]}</span>
+       <div class="path-presets-container">
+         <button class="path-preset-chip" data-path="Mori/Music">Mori/Music</button>
+         <button class="path-preset-chip" data-path="Music">Music</button>
+       </div>
+       <button id="resetMusicPathBtn" class="reset-path-btn">${lang["btn-reset-default"]}</button>
+     </div>`,
+    () => {
+      const input = document.getElementById("customMusicPathInput");
+      if (input && input.value.trim()) {
+        const newPath = input.value.trim().replace(/[\\:*?"<>|]/g, "");
+        customMusicPath = newPath;
+        localStorage.setItem("mori_music_path", newPath);
+        if (musicPathVal) musicPathVal.textContent = `/Download/${newPath}`;
+        showToast(lang["toast-path-updated"]);
+      }
+    },
+  );
+  setTimeout(() => {
+    const input = document.getElementById("customMusicPathInput");
+    document.querySelectorAll(".path-preset-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        if (input) input.value = chip.getAttribute("data-path");
+      });
+    });
+    document
+      .getElementById("resetMusicPathBtn")
+      ?.addEventListener("click", () => {
+        if (input) input.value = "Mori/Music";
+      });
+  }, 100);
+  okConfirmBtn.textContent = "SAVE";
+});
+
+// Auto Clear Cache Logic
+const isAutoClear = localStorage.getItem("mori_auto_clear") === "true";
+if (autoClearToggle) {
+  autoClearToggle.checked = isAutoClear;
+  autoClearToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_clear", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-autoclear-on"]
+        : lang["toast-autoclear-off"],
+    );
+  });
+}
+
+// Run Auto Clear if enabled
+if (isAutoClear) {
+  setTimeout(() => {
+    clearCacheSilently();
+  }, 2000);
+}
+
+async function clearCacheSilently() {
+  if (!Filesystem) return;
+  try {
+    const cacheSize = await getFolderSize("", "CACHE");
+    const sizeInMB = cacheSize / (1024 * 1024);
+
+    // Only clear if cache is more than 50MB
+    if (sizeInMB > 50) {
+      const files = await Filesystem.readdir({ path: "", directory: "CACHE" });
+      for (const file of files.files) {
+        if (file.name.startsWith("thumb_")) {
+          await Filesystem.deleteFile({ path: file.name, directory: "CACHE" });
+        }
+      }
+      updateStorageInfo();
+      console.log(`Auto-cleared ${sizeInMB.toFixed(2)}MB of cache.`);
+    }
+  } catch (e) {}
+}
+
 // Language Logic
 
-let currentLang = localStorage.getItem("mori_lang") || "en";
+// Language Logic
 
 function updateLanguageUI() {
   const lang = translations[currentLang];
@@ -403,8 +588,8 @@ if (App) {
 
 // Custom Confirm Function
 function showConfirm(title, message, onConfirm) {
-  confirmTitle.textContent = title;
-  confirmMessage.textContent = message;
+  confirmTitle.innerHTML = title;
+  confirmMessage.innerHTML = message;
   confirmOverlay.classList.remove("hidden");
 
   okConfirmBtn.onclick = () => {
@@ -415,6 +600,10 @@ function showConfirm(title, message, onConfirm) {
   cancelConfirmBtn.onclick = () => {
     confirmOverlay.classList.add("hidden");
   };
+
+  // Reset button states when showing
+  cancelConfirmBtn.classList.remove("hidden");
+  okConfirmBtn.textContent = "CONFIRM";
 }
 
 // History Edit Handlers
@@ -442,11 +631,15 @@ clearAllBtn?.addEventListener("click", () => {
       // Clean up physical thumbnail files
       const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
       for (const item of history) {
-        if (item.thumbnail && item.thumbnail.startsWith("thumb_") && Filesystem) {
+        if (
+          item.thumbnail &&
+          item.thumbnail.startsWith("thumb_") &&
+          Filesystem
+        ) {
           try {
             await Filesystem.deleteFile({
               path: item.thumbnail,
-              directory: "CACHE"
+              directory: "CACHE",
             });
           } catch (e) {}
         }
@@ -458,7 +651,7 @@ clearAllBtn?.addEventListener("click", () => {
       editHistoryBtn.classList.remove("hidden");
       historyActions.classList.add("hidden");
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
-    }
+    },
   );
 });
 
@@ -539,7 +732,7 @@ wipeDataBtn?.addEventListener("click", () => {
 });
 
 reportBugBtn?.addEventListener("click", () => {
-  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.2.0`;
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.3.0`;
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
@@ -588,6 +781,47 @@ async function checkUpdate() {
 }
 
 checkUpdateBtn?.addEventListener("click", checkUpdate);
+
+howToUseBtn?.addEventListener("click", () => {
+  const lang = translations[currentLang];
+  const steps = lang["howtouse-steps"]
+    .map((s, i) => `${i + 1}. ${s}`)
+    .join("\n\n");
+  showConfirm(lang["label-howtouse"], steps, () => {});
+  // Hide the "OK" button or just use it as close
+  okConfirmBtn.textContent = "GOT IT";
+  cancelConfirmBtn.classList.add("hidden");
+});
+
+aboutAppBtn?.addEventListener("click", () => {
+  const lang = translations[currentLang];
+  showConfirm(lang["label-about"], lang["about-text"], () => {});
+  okConfirmBtn.textContent = "CLOSE";
+  cancelConfirmBtn.classList.add("hidden");
+});
+
+shareAppBtn?.addEventListener("click", async () => {
+  const lang = translations[currentLang];
+  if (window.Capacitor?.isNativePlatform() && Share) {
+    await Share.share({
+      title: "Mori App",
+      text: lang["share-msg"],
+      url: "https://github.com/coflyn/Mori",
+      dialogTitle: "Share Mori",
+    });
+  } else {
+    // Fallback for web
+    if (navigator.share) {
+      navigator.share({
+        title: "Mori App",
+        text: lang["share-msg"],
+        url: "https://github.com/coflyn/Mori",
+      });
+    } else {
+      showToast("Sharing not supported on this browser.");
+    }
+  }
+});
 
 downloadBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
@@ -736,13 +970,18 @@ async function onHistoryDeleteClick(url) {
   showConfirm("Delete Item", "Remove this item from history?", async () => {
     let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
     const itemToDelete = history.find((h) => h.url === url);
-    
+
     // Delete physical thumbnail if it exists
-    if (itemToDelete && itemToDelete.thumbnail && itemToDelete.thumbnail.startsWith("thumb_") && Filesystem) {
+    if (
+      itemToDelete &&
+      itemToDelete.thumbnail &&
+      itemToDelete.thumbnail.startsWith("thumb_") &&
+      Filesystem
+    ) {
       try {
         await Filesystem.deleteFile({
           path: itemToDelete.thumbnail,
-          directory: "CACHE"
+          directory: "CACHE",
         });
       } catch (e) {
         console.warn("Could not delete thumbnail file:", e);
@@ -817,6 +1056,7 @@ window.addEventListener("mori_file_saved", async (e) => {
 
 // History Storage Helper
 function saveToHistory(result, url) {
+  if (localStorage.getItem("mori_incognito") === "true") return;
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
   let cleanTitle = (result.title || "Content")
     .replace(/#[^\s#]+/g, "")

@@ -422,11 +422,13 @@ input[type="text"]:focus {
   backdrop-filter: blur(4px);
 }
 
-#slidePrevBtn, #modalSlidePrevBtn {
+#slidePrevBtn,
+#modalSlidePrevBtn {
   left: 10px;
 }
 
-#slideNextBtn, #modalSlideNextBtn {
+#slideNextBtn,
+#modalSlideNextBtn {
   right: 10px;
 }
 
@@ -923,15 +925,23 @@ input[type="text"]:focus {
 }
 
 .edit-btn {
-  background: none;
+  background: transparent;
   border: 1px solid var(--primary);
   color: var(--text-main);
-  padding: 6px 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 1px;
-  cursor: pointer;
   border-radius: var(--radius-l);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.edit-btn:active {
+  background: var(--primary);
+  color: var(--on-primary);
+  transform: translateY(2px);
 }
 
 .history-actions {
@@ -943,28 +953,49 @@ input[type="text"]:focus {
 
 .clear-all-btn {
   flex: 1;
-  background-color: #ff4444;
-  color: white;
-  border: none;
-  padding: 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  padding: 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 1px;
   border-radius: var(--radius-l);
   cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
+
+.clear-all-btn:active {
+  background: #ff4444;
+  color: white;
+  transform: translateY(2px);
 }
 
 .done-btn {
   flex: 1;
-  background-color: var(--primary);
+  background: var(--primary);
   color: var(--on-primary);
-  border: none;
-  padding: 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  border: 1px solid var(--primary);
+  padding: 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 1px;
   border-radius: var(--radius-l);
   cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.done-btn:active {
+  filter: brightness(1.5);
+  transform: translateY(2px);
 }
 
 .history-item {
@@ -1565,4 +1596,119 @@ input[type="text"]:focus {
 
 .custom-toast.show {
   bottom: 100px;
+}
+
+/* Path Upgrade Pro Styles */
+.path-picker-ui {
+  text-align: left;
+  padding: 5px 0;
+}
+
+.path-input-wrapper {
+  margin-bottom: 20px;
+}
+
+.path-label-sm {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 1px;
+}
+
+.path-presets-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 20px 0;
+  justify-content: flex-start;
+}
+
+.path-preset-chip {
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  padding: 8px 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-main);
+  box-shadow: 2px 2px 0px var(--primary);
+}
+
+.path-preset-chip:active {
+  box-shadow: 0px 0px 0px var(--primary);
+  transform: translate(2px, 2px);
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.reset-path-btn {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 0;
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.reset-path-btn:hover {
+  opacity: 1;
+}
+
+/* Input with Icon Styling */
+.mori-input-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  padding: 8px 16px;
+  box-shadow: 4px 4px 0px var(--primary);
+  border-radius: 4px;
+}
+
+.mori-input-with-icon svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.mori-input-noborder {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  outline: none;
+}
+
+/* Refined Settings Info Val */
+.settings-item .info-val {
+  font-size: 0.7rem !important;
+  font-weight: 600;
+  opacity: 0.7;
+  text-transform: lowercase;
+  letter-spacing: 0.5px;
+}
+
+/* Adjusting Settings Info Val size */
+.settings-item .info-val {
+  font-size: 0.8rem !important;
+  opacity: 0.8;
 }
