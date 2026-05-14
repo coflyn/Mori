@@ -357,20 +357,26 @@ export function renderHistory(onItemClick, onDeleteClick) {
     const card = document.createElement("div");
     card.className = "history-item";
 
-    let thumbSrc = item.thumbnail;
-    if (item.localThumbnail) {
-      thumbSrc = item.localThumbnail;
-    } else if (item.localFiles && item.localFiles.length > 0) {
-      const first = item.localFiles[0];
-      if (first.thumbnail) {
-        thumbSrc = first.thumbnail;
-      } else if (first.type === "IMAGE") {
-        thumbSrc = window.Capacitor?.convertFileSrc(first.path);
-      }
-    } else if (item.localUri && window.Capacitor) {
-      const isImage = /\.(jpg|jpeg|png|webp)/i.test(item.localUri);
-      if (isImage) {
-        thumbSrc = window.Capacitor.convertFileSrc(item.localUri);
+    const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+    let thumbSrc = isDataSaver
+      ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E"
+      : item.thumbnail;
+
+    if (!isDataSaver) {
+      if (item.localThumbnail) {
+        thumbSrc = item.localThumbnail;
+      } else if (item.localFiles && item.localFiles.length > 0) {
+        const first = item.localFiles[0];
+        if (first.thumbnail) {
+          thumbSrc = first.thumbnail;
+        } else if (first.type === "IMAGE") {
+          thumbSrc = window.Capacitor?.convertFileSrc(first.path);
+        }
+      } else if (item.localUri && window.Capacitor) {
+        const isImage = /\.(jpg|jpeg|png|webp)/i.test(item.localUri);
+        if (isImage) {
+          thumbSrc = window.Capacitor.convertFileSrc(item.localUri);
+        }
       }
     }
 
@@ -613,11 +619,17 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       .replace(/\s+/g, " ")
       .substring(0, 150);
 
-    const sanitizedType = type.split(" ")[0].toUpperCase();
-    const fileName = `${sanitizedTitle}_${sanitizedType}_${Date.now()}.${ext}`;
+    const fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
+
+    const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
+    const musicSubfolder =
+      localStorage.getItem("mori_music_path") || "Mori/Music";
+    const fullPath = isAudio
+      ? `Download/${musicSubfolder}`
+      : `Download/${videoSubfolder}`;
 
     await Filesystem.mkdir({
-      path: "Download/Mori",
+      path: fullPath,
       directory: "EXTERNAL_STORAGE",
       recursive: true,
     }).catch((e) => {
@@ -663,7 +675,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     const savedFile = await Filesystem.downloadFile({
       url: actualDownloadUrl,
-      path: "Download/Mori/" + fileName,
+      path: fullPath + "/" + fileName,
       directory: "EXTERNAL_STORAGE",
       progress: true,
       headers: downloadHeaders,
