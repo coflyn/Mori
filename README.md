@@ -47,14 +47,14 @@ Mori is a beautiful and very easy-to-use app that helps you save your favorite p
 
 ## Supported Platforms
 
-| Platform        | Features                 | Platform        | Features                 |
-| :-------------- | :----------------------- | :-------------- | :----------------------- |
-| **TikTok**      | Video (No WM) / Photos   | **Instagram**   | Reels / Stories / Photos |
-| **YouTube**     | MP4 / MP3 (High Quality) | **Twitter (X)** | Video / GIFs             |
-| **Spotify**     | Music / Metadata         | **Pinterest**   | Video / Images           |
-| **Apple Music** | High Fidelity Audio      | **Facebook**    | Reels / HD Video         |
-| **SoundCloud**  | Audio Tracks             | **Threads**     | Video / Photos           |
-| **Bandcamp**    | Album / Track Support    | **Pixiv**       | Gallery / Ugoira to MP4  |
+| Platform | Features | Platform | Features |
+| :--- | :--- | :--- | :--- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube** | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)** | Video / GIFs |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify** | Music / Metadata | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook** | Reels / HD Video |
+| <img src="https://cdn.simpleicons.org/soundcloud/FF3300" width="16" /> **SoundCloud** | Audio Tracks | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads** | Video / Photos |
+| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp** | Album / Track Support | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv** | Gallery / Ugoira to MP4 |
 
 ## Built With
 
