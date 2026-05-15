@@ -1,8 +1,69 @@
-# Mori - Your Simple Media Downloader (v3.3.0)
+<p align="center">
+  <img src="assets/icon.png" width="128" alt="Mori Logo">
+</p>
+
+<h1 align="center">Mori - Your Simple Media Downloader</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-v3.4.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
+</p>
 
 Mori is a beautiful and very easy-to-use app that helps you save your favorite photos and videos from platforms like TikTok, Instagram, YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, and Threads. Built with a **Standalone Architecture**, Mori performs all scraping directly on your device for maximum privacy and speed, without requiring a backend server. With its clean **"Mocha & Cream"** design, Mori makes downloading feel fast and premium.
 
-## What's New in v3.3.0 (Latest)
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/1.jpeg" width="30%">
+  <img src="assets/2.jpeg" width="30%">
+  <img src="assets/3.jpeg" width="30%">
+</p>
+<p align="center">
+  <img src="assets/4.jpeg" width="30%">
+  <img src="assets/5.jpeg" width="30%">
+  <img src="assets/6.jpeg" width="30%">
+</p>
+
+## What's New in v3.4.0 (Latest)
+
+- **Privacy Lock (Biometric)**: Secure your History tab with the ultimate convenience. Mori now supports native **Biometric (Fingerprint/FaceID)** authentication, ensuring your private downloads stay private.
+- **Export/Import Data**: Full data portability is here! Backup your entire Mori ecosystem (History, Settings, and Paths) to a JSON file and restore it on any device via the system Share intent.
+- **Auto-Clear History**: Keep your app lightweight and organized. Mori can now automatically purge history entries older than 30 days, keeping your experience fresh and focused.
+- **Biometric Disable Security**: Added a critical safety layer—native authentication is now required to disable the Privacy Lock, preventing unauthorized access to your history settings.
+- **Onboarding User Guide**: New users are now greeted with a sleek, icon-based guide on startup (with a "Don't show again" option), ensuring everyone knows how to get the most out of Mori.
+- **Premium Custom Dropdowns**: Completely replaced native browser selectors with theme-aware, glassmorphism-inspired dropdowns. Enjoy a cohesive aesthetic across Language and Lock Type settings.
+- **Smart Local Detection (Offline Badge)**: Mori now intelligently cross-references your downloads with your local history. If a file is already on your phone, a premium **"OFFLINE"** badge appears, allowing instant local playback without re-downloading.
+- **Smart Path Presets**: Refined the dual-path download system (Video/Music) with interactive chips and a reset feature for faster configuration.
+- **SnapSave & Facebook Robustness**: Implemented an async polling mechanism (up to 15 attempts) to resolve backend rendering tokens for high-quality Facebook and SnapSave links.
+- **Unified Image Loading Engine**: Re-engineered the media previewer with a redundant loading system via proxy (`weserv.nl`) or authenticated `CapacitorHttp` blobs.
+- **Zero-Stall Download Engine**: Refined "Processing" logic bypasses unnecessary polling for direct media links, ensuring instant downloads.
+- **Configurable Auto-Paste**: Toggleable clipboard detection on app resume.
+- **Shared Link Priority**: Intelligent safety window ensures shared intents always take precedence over the clipboard.
+- **History-Aware Cache Cleanup**: Refined the "Auto-Clear Cache" system to protect thumbnails belonging to your history items while purging orphans.
+- **Settings Preservation**: Improved "Wipe All Data" security—resets history and cache while strictly preserving critical preferences.
+- **Layout Stabilization**: Resolved clipping issues in Settings and perfected the navigation z-index for a seamless experience.
+- **Improved Toast System**: Standardized localized feedback for all major settings, including unique notifications for Cache and History auto-clear.
+
+## Supported Platforms
+
+| Platform        | Features                 | Platform        | Features                 |
+| :-------------- | :----------------------- | :-------------- | :----------------------- |
+| **TikTok**      | Video (No WM) / Photos   | **Instagram**   | Reels / Stories / Photos |
+| **YouTube**     | MP4 / MP3 (High Quality) | **Twitter (X)** | Video / GIFs             |
+| **Spotify**     | Music / Metadata         | **Pinterest**   | Video / Images           |
+| **Apple Music** | High Fidelity Audio      | **Facebook**    | Reels / HD Video         |
+| **SoundCloud**  | Audio Tracks             | **Threads**     | Video / Photos           |
+| **Bandcamp**    | Album / Track Support    | **Pixiv**       | Gallery / Ugoira to MP4  |
+
+## Built With
+
+- **JavaScript (ES6+)**: Core application logic and scraping engine.
+- **HTML5 & CSS3**: Custom design system without bloated frameworks.
+- **CapacitorJS**: Native Android bridge for filesystem, clipboard, and biometrics.
+- **pdf-lib**: Client-side PDF generation and bundling.
+
+## Previous Highlights (v3.3.0)
 
 - **Dual-Path Storage System**: Split download settings into **Video Path** and **Music Path**, allowing users to organize their gallery and music library independently.
 - **Intelligent Path Presets**: Added tactile **Preset Chips** (Mori, Music, Videos) and a **Reset Default** feature in the path picker modal for faster configuration.
@@ -98,7 +159,7 @@ Mori is built using Capacitor and Vanilla JS for high performance.
 
 ### Building the APK
 
-To generate the latest version (e.g., Mori v3.3.0.apk), run:
+To generate the latest version (e.g., Mori v3.4.0.apk), run:
 `npx cap sync android && cd android && ./gradlew assembleDebug`
 
 ---
@@ -106,3 +167,7 @@ To generate the latest version (e.g., Mori v3.3.0.apk), run:
 Developed with ❤️ by coflyn.
 GitHub: https://github.com/coflyn
 Instagram: @\_coflyn
+
+## License
+
+Mori is released under the **MIT License**. Feel free to use, modify, and distribute it.

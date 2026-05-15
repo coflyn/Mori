@@ -454,6 +454,25 @@
                     fill="currentColor"
                   >
                     <path
+                      d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"
+                    />
+                  </svg>
+                  <span data-i18n="label-autopaste">Auto-Paste Link</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoPasteToggle" />
+                  <label for="autoPasteToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
                       d="M12 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0 10c2.7 0 5.8 1.3 6 2H6c.2-.7 3.3-2 6-2m0-12C9.8 4 8 5.8 8 8s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4m0 10c-4.4 0-8 1.8-8 4v2h16v-2c0-2.2-3.6-4-8-4z"
                     />
                   </svg>
@@ -462,6 +481,50 @@
                 <div class="toggle-switch">
                   <input type="checkbox" id="incognitoToggle" />
                   <label for="incognitoToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm3 8H9V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3z"
+                    />
+                  </svg>
+                  <span data-i18n="label-lock-type">Lock Type</span>
+                </div>
+                <div class="custom-select" id="lockTypeSelect">
+                  <div class="selected-text" id="lockTypeText">None</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="lockTypeMenu">
+                    <div
+                      class="dropdown-item"
+                      data-value="none"
+                      data-i18n="lock-type-none"
+                    >
+                      None
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="biometric"
+                      data-i18n="lock-type-biometric"
+                    >
+                      Biometric
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="settings-item">
@@ -556,7 +619,9 @@
                   </svg>
                   <span data-i18n="label-path-music">Music Path</span>
                 </div>
-                <span class="info-val" id="musicPathVal">/Download/Mori/Music</span>
+                <span class="info-val" id="musicPathVal"
+                  >/Download/Mori/Music</span
+                >
               </div>
               <div class="settings-item">
                 <div class="item-label">
@@ -570,11 +635,34 @@
                       d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
                     />
                   </svg>
-                  <span data-i18n="label-autoclear">Auto Clear Cache</span>
+                  <span data-i18n="label-autoclear-cache"
+                    >Auto Clear Cache</span
+                  >
                 </div>
                 <div class="toggle-switch">
                   <input type="checkbox" id="autoClearToggle" />
                   <label for="autoClearToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                    />
+                  </svg>
+                  <span data-i18n="label-autoclear-history"
+                    >Auto-Clear History</span
+                  >
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoClearHistoryToggle" />
+                  <label for="autoClearHistoryToggle"></label>
                 </div>
               </div>
               <div class="settings-item action-item" id="clearCacheBtn">
@@ -609,6 +697,32 @@
                   <span data-i18n="label-wipedata">Wipe All Data</span>
                 </div>
                 <span class="action-label" data-i18n="btn-reset">RESET</span>
+              </div>
+              <div class="settings-item action-item" id="exportDataBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                  </svg>
+                  <span data-i18n="btn-export">Export Data</span>
+                </div>
+              </div>
+              <div class="settings-item action-item" id="importDataBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+                  </svg>
+                  <span data-i18n="btn-import">Import Data</span>
+                </div>
               </div>
             </div>
           </div>
@@ -689,7 +803,7 @@
                   <span data-i18n="label-version">Version</span>
                 </div>
                 <div class="update-info">
-                  <span class="info-val">&nbsp;3.3.0</span>
+                  <span class="info-val">&nbsp;3.4.0</span>
                   <span class="action-label" data-i18n="btn-check">CHECK</span>
                 </div>
               </div>
@@ -884,6 +998,131 @@
           <span data-i18n="nav-settings">Settings</span>
         </a>
       </nav>
+      <!-- Custom Info Modal -->
+      <div id="infoOverlay" class="modal-overlay hidden">
+        <div class="modal-content info-modal">
+          <div class="modal-header">
+            <h3 id="infoTitle">Info</h3>
+            <button id="closeInfoModal">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <path
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div class="info-body">
+            <div id="infoMessage"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Guide Modal -->
+      <div id="guideOverlay" class="modal-overlay hidden">
+        <div class="modal-content guide-modal">
+          <div class="guide-header">
+            <h2 data-i18n="guide-title">User guide</h2>
+          </div>
+          <div class="guide-body">
+            <div class="guide-item">
+              <div class="guide-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"
+                  />
+                </svg>
+              </div>
+              <div class="guide-text" data-i18n="guide-step-1">
+                Click "Paste" to get media link from your clipboard.
+              </div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                </svg>
+              </div>
+              <div class="guide-text" data-i18n="guide-step-2">
+                Tap "Analyze" to verify, then choose your format and Download.
+              </div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                  />
+                </svg>
+              </div>
+              <div class="guide-text" data-i18n="guide-step-3">
+                Manage your downloads in the History tab, including offline
+                playback.
+              </div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
+                  />
+                </svg>
+              </div>
+              <div class="guide-text" data-i18n="guide-step-4">
+                Secure your History with Biometric Lock in Settings.
+              </div>
+            </div>
+          </div>
+          <div class="guide-footer">
+            <label class="guide-checkbox">
+              <input type="checkbox" id="hideGuideCheckbox" />
+              <span class="checkmark"></span>
+              <span data-i18n="label-dont-show">Don't show up again</span>
+            </label>
+            <div class="guide-actions">
+              <button
+                id="closeGuideBtn"
+                class="secondary-btn"
+                data-i18n="btn-close"
+              >
+                Close
+              </button>
+              <button
+                id="guideToSettingsBtn"
+                class="primary-btn"
+                data-i18n="btn-open-settings"
+              >
+                Open settings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Custom Confirm Modal -->
       <div id="confirmOverlay" class="modal-overlay hidden">
         <div class="modal-content confirm-modal">

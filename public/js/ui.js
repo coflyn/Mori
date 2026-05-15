@@ -28,10 +28,14 @@ export function setUIState(state) {
 let modalCurrentSlide = 0;
 
 function renderMediaSlides(container, items, resultThumbnail) {
+  if (!container) return;
   container.innerHTML = "";
+
+  const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+
   items.forEach((dl, index) => {
     const slide = document.createElement("div");
-    slide.className = "preview-slide" + (index === 0 ? " active" : "");
+    slide.className = `preview-slide ${index === 0 ? "active" : ""}`;
 
     const lowerUrl = dl.url ? dl.url.toLowerCase() : "";
     const upperType = dl.type ? dl.type.toUpperCase() : "";
@@ -60,18 +64,47 @@ function renderMediaSlides(container, items, resultThumbnail) {
         upperType.includes("VIDEO") ||
         upperType.includes("MP4"));
 
+    const isLocal =
+      dl.url.includes("_capacitor_file_") ||
+      dl.url.startsWith("file://") ||
+      dl.isLocal === true;
+
     if (isVideo) {
-      const playerContainer = createVideoPlayer(dl, index, resultThumbnail);
-      slide.appendChild(playerContainer);
+      if (isDataSaver && !isLocal) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "data-saver-placeholder";
+        placeholder.innerHTML = `
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+          <p>${translations[currentLang]["label-datasaver"]}</p>
+        `;
+        slide.appendChild(placeholder);
+      } else {
+        const playerContainer = createVideoPlayer(dl, index, resultThumbnail);
+        slide.appendChild(playerContainer);
+      }
     } else if (isAudio) {
-      const img = document.createElement("img");
-      img.src = dl.thumbnail || resultThumbnail || "";
-      img.style.width = "100%";
-      img.style.maxHeight = "300px";
-      img.style.objectFit = "cover";
-      img.style.borderRadius = "8px";
-      img.style.marginBottom = "15px";
-      slide.appendChild(img);
+      if (isDataSaver && !isLocal) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "data-saver-placeholder";
+        placeholder.innerHTML = `<p>${translations[currentLang]["label-datasaver"]}</p>`;
+        slide.appendChild(placeholder);
+      } else {
+        const img = document.createElement("img");
+        img.style.width = "100%";
+        img.style.maxHeight = "300px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "8px";
+        img.style.marginBottom = "15px";
+
+        setupImageLoading(
+          img,
+          dl.thumbnail || resultThumbnail || "",
+          resultThumbnail,
+        );
+        slide.appendChild(img);
+      }
 
       const audio = document.createElement("audio");
       audio.src = dl.url;
@@ -79,64 +112,92 @@ function renderMediaSlides(container, items, resultThumbnail) {
       audio.style.width = "100%";
       slide.appendChild(audio);
     } else {
-      const img = document.createElement("img");
-      let fallbackThumb = resultThumbnail || "";
-      const isIndownAsset =
-        fallbackThumb.includes("indown.io") &&
-        !fallbackThumb.includes("url=") &&
-        !fallbackThumb.includes("token=");
-
-      if (
-        fallbackThumb &&
-        (fallbackThumb.includes("logo") ||
-          fallbackThumb.includes("placeholder") ||
-          fallbackThumb.includes("images/") ||
-          isIndownAsset)
-      ) {
-        fallbackThumb = "";
+      if (isDataSaver && !isLocal) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "data-saver-placeholder";
+        placeholder.innerHTML = `<p>${translations[currentLang]["label-datasaver"]}</p>`;
+        slide.appendChild(placeholder);
+      } else {
+        const img = document.createElement("img");
+        setupImageLoading(img, dl.thumbnail || dl.url || "", resultThumbnail);
+        slide.appendChild(img);
       }
-      img.src = dl.thumbnail || dl.url || fallbackThumb || "";
-      img.referrerPolicy = "no-referrer";
-      img.onerror = () => {
-        if (!img.dataset.retry) {
-          img.dataset.retry = "1";
-          const originalSrc = img.src;
-          img.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalSrc)}&default=${encodeURIComponent(originalSrc)}`;
-        } else if (
-          img.dataset.retry === "1" &&
-          window.Capacitor?.isNativePlatform()
-        ) {
-          img.dataset.retry = "2";
-          let referer = "https://www.google.com/";
-          if (img.src.includes("snaptik.app")) referer = "https://snaptik.app/";
-          if (img.src.includes("instagram.com"))
-            referer = "https://www.instagram.com/";
-
-          CapacitorHttp.get({
-            url: img.src.includes("weserv.nl")
-              ? decodeURIComponent(img.src.split("url=")[1].split("&")[0])
-              : img.src,
-            responseType: "blob",
-            headers: { Referer: referer },
-          })
-            .then((res) => {
-              if (res.data) {
-                const reader = new FileReader();
-                reader.onloadend = () => (img.src = reader.result);
-                reader.readAsDataURL(res.data);
-              }
-            })
-            .catch(() => {
-              img.style.display = "none";
-            });
-        } else {
-          img.style.display = "none";
-        }
-      };
-      slide.appendChild(img);
     }
+
+    if (isLocal) {
+      const badge = document.createElement("div");
+      badge.className = "local-badge";
+      badge.innerHTML = `
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+          <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+        </svg>
+        <span>${translations[currentLang]["label-offline"] || "OFFLINE"}</span>
+      `;
+      slide.appendChild(badge);
+    }
+
     container.appendChild(slide);
   });
+}
+
+/**
+ * Robust image loader with proxy and referer bypass
+ */
+function setupImageLoading(img, src, resultThumbnail) {
+  let fallbackThumb = resultThumbnail || "";
+  const isIndownAsset =
+    fallbackThumb.includes("indown.io") &&
+    !fallbackThumb.includes("url=") &&
+    !fallbackThumb.includes("token=");
+
+  if (
+    fallbackThumb &&
+    (fallbackThumb.includes("logo") ||
+      fallbackThumb.includes("placeholder") ||
+      fallbackThumb.includes("images/") ||
+      isIndownAsset)
+  ) {
+    fallbackThumb = "";
+  }
+
+  img.src = src || fallbackThumb || "";
+  img.referrerPolicy = "no-referrer";
+  img.onerror = () => {
+    if (!img.dataset.retry) {
+      img.dataset.retry = "1";
+      const originalSrc = img.src;
+      img.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalSrc)}&default=${encodeURIComponent(originalSrc)}`;
+    } else if (
+      img.dataset.retry === "1" &&
+      window.Capacitor?.isNativePlatform()
+    ) {
+      img.dataset.retry = "2";
+      let referer = "https://www.google.com/";
+      if (img.src.includes("snaptik.app")) referer = "https://snaptik.app/";
+      if (img.src.includes("instagram.com"))
+        referer = "https://www.instagram.com/";
+
+      CapacitorHttp.get({
+        url: img.src.includes("weserv.nl")
+          ? decodeURIComponent(img.src.split("url=")[1].split("&")[0])
+          : img.src,
+        responseType: "blob",
+        headers: { Referer: referer },
+      })
+        .then((res) => {
+          if (res.data) {
+            const reader = new FileReader();
+            reader.onloadend = () => (img.src = reader.result);
+            reader.readAsDataURL(res.data);
+          }
+        })
+        .catch(() => {
+          img.style.display = "none";
+        });
+    } else {
+      img.style.display = "none";
+    }
+  };
 }
 
 export function updateSliderUI() {
@@ -455,6 +516,7 @@ export function showModal(item, onRedownload) {
                   ? "MP3"
                   : "IMAGE"),
             thumbnail: file.thumbnail,
+            isLocal: true,
           });
         }
       });
@@ -467,6 +529,7 @@ export function showModal(item, onRedownload) {
             ? "MP3"
             : "IMAGE",
         thumbnail: item.localThumbnail,
+        isLocal: true,
       });
     }
 
@@ -641,21 +704,66 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       translations[currentLang]["btn-processing"] || "Processing...";
 
     let actualDownloadUrl = url;
-    if (url.includes("ytdown") || url.includes("worker")) {
+    const needsResolving =
+      (url.includes("ytdown") ||
+        url.includes("worker") ||
+        (url.includes("token=") && url.includes("snapsave"))) &&
+      !url
+        .toLowerCase()
+        .match(/\.(mp4|mp3|m4a|zip|pdf|jpg|jpeg|png|webp)(\?|$)/);
+
+    if (needsResolving) {
       try {
-        const statusRes = await CapacitorHttp.get({ url: url });
-        if (statusRes.data && statusRes.data.fileUrl) {
-          actualDownloadUrl = statusRes.data.fileUrl;
-        } else if (
-          statusRes.data &&
-          typeof statusRes.data === "string" &&
-          statusRes.data.includes('"fileUrl":')
-        ) {
-          const match = statusRes.data.match(/"fileUrl"\s*:\s*"([^"]+)"/);
-          if (match) actualDownloadUrl = match[1];
+        // Handle SnapSave tokens or general worker resolves
+        let resolved = false;
+        let pollCount = 0;
+        const maxPolls = 15;
+
+        while (!resolved && pollCount < maxPolls) {
+          btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
+
+          try {
+            const statusRes = await CapacitorHttp.get({
+              url: actualDownloadUrl,
+            });
+
+            if (statusRes && statusRes.data) {
+              let data = statusRes.data;
+              if (typeof data === "string") {
+                try {
+                  data = JSON.parse(data);
+                } catch (e) {}
+              }
+
+              if (data.fileUrl || data.url || data.download_url) {
+                actualDownloadUrl =
+                  data.fileUrl || data.url || data.download_url;
+                resolved = true;
+              } else if (data.status === "success" && data.download_url) {
+                actualDownloadUrl = data.download_url;
+                resolved = true;
+              } else if (
+                typeof data === "string" &&
+                data.includes('"fileUrl":')
+              ) {
+                const match = data.match(/"fileUrl"\s*:\s*"([^"]+)"/);
+                if (match) {
+                  actualDownloadUrl = match[1];
+                  resolved = true;
+                }
+              }
+            }
+          } catch (err) {
+            console.warn("Poll attempt failed", err);
+          }
+
+          if (!resolved) {
+            pollCount++;
+            await new Promise((r) => setTimeout(r, 1500)); // Faster polling
+          }
         }
       } catch (e) {
-        console.warn("Worker resolve failed, using original url");
+        console.error("Worker resolve fatal failure", e);
       }
     }
 

@@ -28,6 +28,7 @@ import {
   Toast,
   Clipboard,
   App,
+  NativeBiometric,
   CHROME_UA,
   cleanUrl,
   truncate,
@@ -39,7 +40,7 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.3.0";
+const APP_VERSION = "3.4.0";
 const UPDATE_CHECK_URL =
   "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
 
@@ -63,6 +64,8 @@ const slideNextBtn = document.getElementById("slideNextBtn");
 const slideIndicator = document.getElementById("slideIndicator");
 let currentSlideIndex = 0;
 let slideData = [];
+let lastHandledLinkTime = 0; // To prevent clipboard overwriting shared links
+let isIntentPending = false; // Flag to block auto-paste during resume share
 
 // History Edit Elements
 const editHistoryBtn = document.getElementById("editHistoryBtn");
@@ -101,6 +104,7 @@ const autoClearToggle = document.getElementById("autoClearToggle");
 const howToUseBtn = document.getElementById("howToUseBtn");
 const aboutAppBtn = document.getElementById("aboutAppBtn");
 const incognitoToggle = document.getElementById("incognitoToggle");
+const autoPasteToggle = document.getElementById("autoPasteToggle");
 const dataSaverToggle = document.getElementById("dataSaverToggle");
 const shareAppBtn = document.getElementById("shareAppBtn");
 const changePathBtn = document.getElementById("changePathBtn");
@@ -142,6 +146,13 @@ if (incognitoToggle) {
 
 // Data Saver Mode Logic
 const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+if (autoPasteToggle) {
+  autoPasteToggle.checked = localStorage.getItem("mori_auto_paste") !== "false";
+  autoPasteToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_paste", e.target.checked);
+  });
+}
+
 if (dataSaverToggle) {
   dataSaverToggle.checked = isDataSaver;
   dataSaverToggle.addEventListener("change", (e) => {
@@ -155,6 +166,127 @@ if (dataSaverToggle) {
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
   });
 }
+
+const autoClearHistoryToggle = document.getElementById(
+  "autoClearHistoryToggle",
+);
+const lockTypeSelect = document.getElementById("lockTypeSelect");
+const setPinBtn = document.getElementById("setPinBtn");
+const exportDataBtn = document.getElementById("exportDataBtn");
+const importDataBtn = document.getElementById("importDataBtn");
+
+let isHistoryUnlocked = false; // Session-based unlock state
+
+if (autoClearHistoryToggle) {
+  autoClearHistoryToggle.checked =
+    localStorage.getItem("mori_autoclear_history") === "true";
+  autoClearHistoryToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_autoclear_history", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-autoclear-history-on"]
+        : lang["toast-autoclear-history-off"],
+    );
+  });
+}
+
+if (lockTypeSelect) {
+  const lockTypeMenu = document.getElementById("lockTypeMenu");
+  const lockTypeText = document.getElementById("lockTypeText");
+  const currentLock = localStorage.getItem("mori_lock_type") || "none";
+
+  // Initial state
+  lockTypeText.textContent =
+    translations[currentLang][`lock-type-${currentLock}`];
+
+  lockTypeSelect.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpening = lockTypeMenu.classList.contains("hidden");
+    lockTypeMenu.classList.toggle("hidden");
+
+    // Manage z-index to prevent clipping by other sections
+    const section = lockTypeSelect.closest(".settings-section");
+    if (section) {
+      section.classList.toggle("active-section", isOpening);
+    }
+  });
+
+  document.addEventListener("click", () => {
+    lockTypeMenu.classList.add("hidden");
+    document
+      .querySelectorAll(".settings-section")
+      .forEach((s) => s.classList.remove("active-section"));
+  });
+
+  lockTypeMenu.querySelectorAll(".dropdown-item").forEach((item) => {
+    item.addEventListener("click", async (e) => {
+      const type = item.getAttribute("data-value");
+      const currentType = localStorage.getItem("mori_lock_type") || "none";
+
+      // If turning OFF security, require biometric
+      if (currentType === "biometric") {
+        try {
+          const { NativeBiometric } = Capacitor.Plugins;
+          if (NativeBiometric) {
+            await NativeBiometric.verifyIdentity({
+              reason: translations[currentLang]["label-biometric-reason"],
+              title: "Mori Privacy",
+              subtitle: "",
+              description: "",
+            });
+          }
+        } catch (err) {
+          // Cancelled or failed
+          return;
+        }
+      }
+
+      localStorage.setItem("mori_lock_type", type);
+      lockTypeText.textContent = item.textContent;
+      isHistoryUnlocked = type === "none";
+
+      const lang = translations[currentLang];
+      showToast(
+        type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"],
+      );
+    });
+  });
+}
+
+exportDataBtn?.addEventListener("click", exportMoriData);
+importDataBtn?.addEventListener("click", importMoriData);
+
+// User Guide Logic
+const guideOverlay = document.getElementById("guideOverlay");
+const hideGuideCheckbox = document.getElementById("hideGuideCheckbox");
+const closeGuideBtn = document.getElementById("closeGuideBtn");
+const guideToSettingsBtn = document.getElementById("guideToSettingsBtn");
+
+function initUserGuide() {
+  const isHidden = localStorage.getItem("mori_hide_guide") === "true";
+  if (!isHidden) {
+    guideOverlay?.classList.remove("hidden");
+  }
+}
+
+closeGuideBtn?.addEventListener("click", () => {
+  if (hideGuideCheckbox?.checked) {
+    localStorage.setItem("mori_hide_guide", "true");
+  }
+  guideOverlay?.classList.add("hidden");
+});
+
+guideToSettingsBtn?.addEventListener("click", () => {
+  if (hideGuideCheckbox?.checked) {
+    localStorage.setItem("mori_hide_guide", "true");
+  }
+  guideOverlay?.classList.add("hidden");
+  switchPage("settings");
+});
+
+// Run guide check on startup
+document.addEventListener("DOMContentLoaded", initUserGuide);
 
 // Download Path Logic (Video)
 let customPath = localStorage.getItem("mori_download_path") || "Mori";
@@ -259,12 +391,12 @@ const isAutoClear = localStorage.getItem("mori_auto_clear") === "true";
 if (autoClearToggle) {
   autoClearToggle.checked = isAutoClear;
   autoClearToggle.addEventListener("change", (e) => {
-    localStorage.setItem("mori_auto_clear", e.target.checked);
+    localStorage.setItem("mori_auto_clear_cache", e.target.checked);
     const lang = translations[currentLang];
     showToast(
       e.target.checked
-        ? lang["toast-autoclear-on"]
-        : lang["toast-autoclear-off"],
+        ? lang["toast-autoclear-cache-on"]
+        : lang["toast-autoclear-cache-off"],
     );
   });
 }
@@ -279,24 +411,41 @@ if (isAutoClear) {
 async function clearCacheSilently() {
   if (!Filesystem) return;
   try {
+    const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+    const activeThumbs = new Set(
+      history
+        .map((item) => item.thumbnail)
+        .filter((t) => t && t.startsWith("thumb_")),
+    );
+    // Also check localThumbnail field
+    history.forEach((item) => {
+      if (item.localThumbnail && item.localThumbnail.startsWith("thumb_")) {
+        activeThumbs.add(item.localThumbnail);
+      }
+    });
+
     const cacheSize = await getFolderSize("", "CACHE");
     const sizeInMB = cacheSize / (1024 * 1024);
 
     // Only clear if cache is more than 50MB
     if (sizeInMB > 50) {
       const files = await Filesystem.readdir({ path: "", directory: "CACHE" });
+      let clearedCount = 0;
       for (const file of files.files) {
-        if (file.name.startsWith("thumb_")) {
+        if (file.name.startsWith("thumb_") && !activeThumbs.has(file.name)) {
           await Filesystem.deleteFile({ path: file.name, directory: "CACHE" });
+          clearedCount++;
         }
       }
-      updateStorageInfo();
-      console.log(`Auto-cleared ${sizeInMB.toFixed(2)}MB of cache.`);
+      if (clearedCount > 0) {
+        updateStorageInfo();
+        console.log(`Auto-cleared ${clearedCount} orphaned thumbnails.`);
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Silent cache clear failed:", e);
+  }
 }
-
-// Language Logic
 
 // Language Logic
 
@@ -454,7 +603,7 @@ document.addEventListener("click", () => {
     ?.classList.remove("active-section");
 });
 
-pasteBtn?.addEventListener("click", async () => {
+async function handlePasteFromClipboard(isSilent = false) {
   try {
     let text = "";
     if (window.Capacitor?.isNativePlatform() && Clipboard) {
@@ -462,8 +611,6 @@ pasteBtn?.addEventListener("click", async () => {
         const result = await Clipboard.read();
         text = result.value;
       } catch (err) {
-        console.warn("Native clipboard read failed, falling back...", err);
-        // Fallback to navigator if native fails (unlikely but possible)
         text = await navigator.clipboard.readText();
       }
     } else {
@@ -472,27 +619,36 @@ pasteBtn?.addEventListener("click", async () => {
 
     if (text && text.trim()) {
       const trimmed = text.trim();
-      // Basic URL check
-      if (
+      const isUrl =
         trimmed.startsWith("http") ||
         trimmed.includes(".com") ||
         trimmed.includes(".net") ||
-        trimmed.includes("youtu.be")
-      ) {
+        trimmed.includes("youtu.be");
+
+      if (isUrl) {
+        if (urlInput.value.trim() === trimmed) return;
+
         urlInput.value = trimmed;
         urlInput.dispatchEvent(new Event("input"));
-      } else {
+        if (isSilent) {
+          showToast(
+            translations[currentLang]["toast-pasted-share"] ||
+              "Link Detected & Pasted",
+          );
+        }
+      } else if (!isSilent) {
         showToast(translations[currentLang]["toast-no-link"]);
       }
-    } else {
+    } else if (!isSilent) {
       showToast(translations[currentLang]["toast-clipboard-empty"]);
     }
   } catch (e) {
-    console.error("Paste Error:", e);
-    // If it fails, usually it's better to show empty/denied depending on context
-    showToast(translations[currentLang]["toast-clipboard-empty"]);
+    if (!isSilent)
+      showToast(translations[currentLang]["toast-clipboard-empty"]);
   }
-});
+}
+
+pasteBtn?.addEventListener("click", () => handlePasteFromClipboard());
 
 urlInput.addEventListener("input", () => {
   const isEmpty = urlInput.value === "";
@@ -522,6 +678,8 @@ closeResult?.addEventListener("click", () => {
 // Function to process shared text
 function processSharedText(text) {
   if (!text) return;
+  isIntentPending = false;
+  lastHandledLinkTime = Date.now();
   // Find a URL in the text
   const urlMatch = text.match(/https?:\/\/[^\s]+/);
   const finalUrl = urlMatch ? urlMatch[0] : text;
@@ -567,10 +725,11 @@ setTimeout(() => {
   }
 }, 1500);
 
-// Handle Shared Intent / Deep Links (Standard URLs)
 if (App) {
   App.addListener("appUrlOpen", (data) => {
     if (data.url) {
+      isIntentPending = false;
+      lastHandledLinkTime = Date.now();
       urlInput.value = data.url;
       urlInput.dispatchEvent(new Event("input"));
       setTimeout(() => downloadBtn.click(), 500);
@@ -579,9 +738,33 @@ if (App) {
 
   App.getLaunchUrl().then((data) => {
     if (data && data.url) {
+      lastHandledLinkTime = Date.now();
       urlInput.value = data.url;
       urlInput.dispatchEvent(new Event("input"));
       setTimeout(() => downloadBtn.click(), 500);
+    }
+  });
+
+  // App State Change (Auto-detect clipboard on resume)
+  App.addListener("appStateChange", ({ isActive }) => {
+    if (isActive) {
+      const autoPaste = localStorage.getItem("mori_auto_paste") !== "false";
+      if (autoPaste) {
+        isIntentPending = true; // Assume a share might be coming
+
+        // Wait and see if an intent clears the flag
+        setTimeout(() => {
+          const timeSinceShared = Date.now() - lastHandledLinkTime;
+          // Only paste if NO share intent arrived during this window
+          if (isIntentPending && timeSinceShared > 2500) {
+            handlePasteFromClipboard(true);
+          }
+          isIntentPending = false; // Reset for next time
+        }, 1500);
+      }
+    } else {
+      // App going to background, reset flags
+      isIntentPending = false;
     }
   });
 }
@@ -704,7 +887,19 @@ wipeDataBtn?.addEventListener("click", () => {
     translations[currentLang]["desc-wipedata"],
     async () => {
       try {
+        // Preserve some settings
+        const lang = localStorage.getItem("mori_lang");
+        const theme = localStorage.getItem("mori_theme");
+        const vPath = localStorage.getItem("mori_download_path");
+        const mPath = localStorage.getItem("mori_music_path");
+
         localStorage.clear();
+
+        if (lang) localStorage.setItem("mori_lang", lang);
+        if (theme) localStorage.setItem("mori_theme", theme);
+        if (vPath) localStorage.setItem("mori_download_path", vPath);
+        if (mPath) localStorage.setItem("mori_music_path", mPath);
+
         if (Filesystem) {
           try {
             const cacheFiles = await Filesystem.readdir({
@@ -732,7 +927,7 @@ wipeDataBtn?.addEventListener("click", () => {
 });
 
 reportBugBtn?.addEventListener("click", () => {
-  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.3.0`;
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.4.0`;
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
@@ -782,22 +977,38 @@ async function checkUpdate() {
 
 checkUpdateBtn?.addEventListener("click", checkUpdate);
 
+// Custom Info Modal
+const infoOverlay = document.getElementById("infoOverlay");
+const infoTitle = document.getElementById("infoTitle");
+const infoMessage = document.getElementById("infoMessage");
+const closeInfoModal = document.getElementById("closeInfoModal");
+
+function showInfoModal(title, message) {
+  if (!infoOverlay) return;
+  infoTitle.textContent = title;
+  infoMessage.innerHTML = message;
+  infoOverlay.classList.remove("hidden");
+}
+
+closeInfoModal?.addEventListener("click", () => {
+  infoOverlay.classList.add("hidden");
+});
+
+infoOverlay?.addEventListener("click", (e) => {
+  if (e.target === infoOverlay) infoOverlay.classList.add("hidden");
+});
+
 howToUseBtn?.addEventListener("click", () => {
   const lang = translations[currentLang];
   const steps = lang["howtouse-steps"]
     .map((s, i) => `${i + 1}. ${s}`)
-    .join("\n\n");
-  showConfirm(lang["label-howtouse"], steps, () => {});
-  // Hide the "OK" button or just use it as close
-  okConfirmBtn.textContent = "GOT IT";
-  cancelConfirmBtn.classList.add("hidden");
+    .join("<br><br>");
+  showInfoModal(lang["label-howtouse"], steps);
 });
 
 aboutAppBtn?.addEventListener("click", () => {
   const lang = translations[currentLang];
-  showConfirm(lang["label-about"], lang["about-text"], () => {});
-  okConfirmBtn.textContent = "CLOSE";
-  cancelConfirmBtn.classList.add("hidden");
+  showInfoModal(lang["label-about"], lang["about-text"]);
 });
 
 shareAppBtn?.addEventListener("click", async () => {
@@ -886,10 +1097,41 @@ downloadBtn.addEventListener("click", async () => {
     }
 
     if (data && data.status) {
+      // SMART LOCAL DETECTION: Check if we have this content in history and on disk
+      const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+      const existing = history.find(
+        (item) => cleanUrl(item.url) === cleanUrl(url),
+      );
+      if (existing && existing.localFiles && existing.localFiles.length > 0) {
+        for (const dl of data.result.downloads) {
+          const match = existing.localFiles.find((lf) => lf.type === dl.type);
+          if (match && Filesystem) {
+            try {
+              // Verify file still exists on disk
+              const stat = await Filesystem.stat({
+                path: match.path,
+                directory: "EXTERNAL_STORAGE",
+              });
+              if (stat) {
+                dl.url = window.Capacitor.convertFileSrc(match.path);
+                dl.isLocal = true;
+              }
+            } catch (e) {
+              console.warn(
+                "Local file listed in history but not found on disk:",
+                match.path,
+              );
+            }
+          }
+        }
+      }
+
       saveToHistory(data.result, url);
       const state = renderResult(data.result, url);
-      slideData = state.slideData;
-      currentSlideIndex = state.currentSlideIndex;
+      if (state) {
+        slideData = state.slideData || [];
+        currentSlideIndex = state.currentSlideIndex || 0;
+      }
       loader.classList.add("hidden");
     } else {
       const errMsg = data?.message || "Unknown error occurred.";
@@ -1058,30 +1300,148 @@ window.addEventListener("mori_file_saved", async (e) => {
 function saveToHistory(result, url) {
   if (localStorage.getItem("mori_incognito") === "true") return;
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+
   let cleanTitle = (result.title || "Content")
     .replace(/#[^\s#]+/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 
-  const existingItem = history.find((h) => h.url === url);
+  // SMART MATCHING: Use cleaned URL to find existing entries
+  const targetUrl = cleanUrl(url);
+  const existingIndex = history.findIndex((h) => cleanUrl(h.url) === targetUrl);
+  const existingItem = existingIndex !== -1 ? history[existingIndex] : null;
 
   const newItem = {
     title: cleanTitle,
     thumbnail: result.thumbnail,
-    url: url,
-    timestamp: new Date().getTime(),
-    localFiles: existingItem ? existingItem.localFiles : [],
+    url: url, // Keep the latest URL version
+    timestamp: Date.now(),
+    localFiles: existingItem ? existingItem.localFiles || [] : [],
     localUri: existingItem ? existingItem.localUri : null,
     localThumbnail: existingItem ? existingItem.localThumbnail : null,
   };
-  history = history.filter((h) => h.url !== url);
+
+  // Remove old entry if exists (using targetUrl match)
+  if (existingIndex !== -1) {
+    history.splice(existingIndex, 1);
+  }
+
   history.unshift(newItem);
-  localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 50)));
-  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
-  updateGreeting();
+
+  // Limit to 100 items for better performance
+  localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 100)));
+
+  // Refresh UI if defined
+  if (typeof renderHistory === "function") {
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
+
+  if (typeof updateGreeting === "function") {
+    updateGreeting();
+  }
+}
+
+// Auto-Clear Old History (Items > 30 days)
+function autoClearOldHistory() {
+  const isEnabled = localStorage.getItem("mori_autoclear_history") === "true";
+  if (!isEnabled) return;
+
+  let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  const filtered = history.filter((item) => {
+    return now - item.timestamp < thirtyDays;
+  });
+
+  if (filtered.length !== history.length) {
+    console.log(
+      `[CLEANUP] Removed ${history.length - filtered.length} old history items`,
+    );
+    localStorage.setItem("mori_history", JSON.stringify(filtered));
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
+}
+
+// Export/Import Logic
+async function exportMoriData() {
+  try {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("mori_")) {
+        data[key] = localStorage.getItem(key);
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const fileName = `mori_backup_${new Date().toISOString().split("T")[0]}.json`;
+
+    if (window.Capacitor?.isNativePlatform() && Filesystem) {
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(blob);
+      });
+
+      const saved = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: "CACHE",
+      });
+
+      await Share.share({
+        title: "Mori Backup Data",
+        text: "My Mori App settings and history backup.",
+        url: saved.uri,
+        dialogTitle: "Export Backup",
+      });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    showToast(translations[currentLang]["toast-export-success"]);
+  } catch (err) {
+    console.error("Export failed", err);
+    showToast("Export failed: " + err.message);
+  }
+}
+
+async function importMoriData() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        Object.keys(data).forEach((key) => {
+          if (key.startsWith("mori_")) {
+            localStorage.setItem(key, data[key]);
+          }
+        });
+        showToast(translations[currentLang]["toast-import-success"]);
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        showToast("Import failed: invalid file");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 // Initialize App
+autoClearOldHistory();
 setUIState({ currentLang, isEditingHistory });
 renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
@@ -1089,7 +1449,31 @@ renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 const pages = ["home", "history", "settings"];
 const navItems = document.querySelectorAll(".nav-item");
 
-function switchPage(pageId) {
+async function switchPage(pageId) {
+  if (pageId === "history" && !isHistoryUnlocked) {
+    const lockType = localStorage.getItem("mori_lock_type") || "none";
+
+    if (lockType === "biometric" && NativeBiometric) {
+      try {
+        const result = await NativeBiometric.isAvailable();
+        if (result.isAvailable) {
+          await NativeBiometric.verifyIdentity({
+            reason: translations[currentLang]["label-biometric-reason"],
+            title: "Mori Privacy Lock",
+            subtitle: "History Tab",
+            description: translations[currentLang]["label-biometric-reason"],
+          });
+          isHistoryUnlocked = true;
+        }
+      } catch (err) {
+        console.warn("Biometric failed or cancelled", err);
+        return;
+      }
+    } else {
+      isHistoryUnlocked = true;
+    }
+  }
+
   const item = Array.from(navItems).find(
     (i) => i.getAttribute("data-page") === pageId,
   );
@@ -1106,6 +1490,11 @@ function switchPage(pageId) {
 
   const targetPage = document.getElementById(targetPageId);
   if (targetPage) targetPage.classList.remove("hidden");
+
+  // Refresh history if entering history page
+  if (pageId === "history") {
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
 }
 
 navItems.forEach((item) => {

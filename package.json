@@ -1,6 +1,6 @@
 {
   "name": "mori",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,11 +13,13 @@
   "type": "commonjs",
   "dependencies": {
     "@capacitor/android": "^8.3.3",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.3.3",
     "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "^8.3.3",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",
+    "@capgo/capacitor-native-biometric": "^8.4.5",
     "axios": "^1.16.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",

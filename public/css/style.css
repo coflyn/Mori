@@ -1138,9 +1138,81 @@ input[type="text"]:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--primary);
   position: relative;
+  min-height: 64px; /* Stabilize height */
+  box-sizing: border-box;
+}
+
+.custom-select {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 8px 0 8px 12px;
+  min-width: 80px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.selected-text {
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: right;
+  margin-right: 6px;
+}
+
+.dropdown-arrow {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -10px; /* Align with edge */
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  width: auto;
+  min-width: 140px;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: dropdownFade 0.2s ease-out;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-menu .dropdown-item {
+  padding: 12px 16px;
+  color: var(--text-main);
+  transition: background 0.2s;
+  text-align: left; /* Back to left for items */
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .dropdown-menu .dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .settings-item.active-dropdown {
@@ -1183,6 +1255,7 @@ input[type="text"]:focus {
   position: relative;
   width: 40px;
   height: 20px;
+  flex-shrink: 0; /* Prevent compression */
 }
 
 .toggle-switch input {
@@ -1223,18 +1296,225 @@ input[type="text"]:focus {
   transform: translateX(20px);
 }
 
+/* PIN Modal */
+.pin-modal {
+  max-width: 320px;
+  text-align: center;
+  padding: 32px 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+}
+
+.pin-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.pin-input-container {
+  margin: 24px 0;
+}
+
+.pin-input-container input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.03);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  padding-left: 28px; /* Compensate for letter-spacing */
+  font-size: 32px;
+  text-align: center;
+  letter-spacing: 12px;
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+[data-theme="dark"] .pin-input-container input {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pin-input-container input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1);
+}
+
+/* User Guide Modal */
+.guide-modal {
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+}
+
+[data-theme="dark"] .guide-modal {
+  background: #242220; /* Deep dark for Seal vibe */
+}
+
+.guide-header h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.guide-item {
+  display: flex;
+  gap: 16px;
+  align-items: center; /* Center icons with text */
+}
+
+.guide-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  opacity: 0.9;
+}
+
+.guide-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.guide-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  position: relative;
+  padding: 4px 0;
+}
+
+.guide-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.guide-checkbox:active .checkmark {
+  transform: scale(0.9);
+}
+
+.checkmark {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--text-secondary);
+  opacity: 0.5;
+  border-radius: 6px;
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-checkbox input:checked + .checkmark {
+  background: var(--primary);
+  border-color: var(--primary);
+  opacity: 1;
+  animation: checkPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.guide-checkbox input:checked + .checkmark::after {
+  content: "";
+  display: block;
+  width: 5px;
+  height: 10px;
+  border: solid var(--on-primary);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px; /* Pull it slightly up to center visually */
+}
+
+.guide-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.guide-actions button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.secondary-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+}
+
+.primary-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+}
+
+.pin-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  min-height: 18px;
+}
+
+.pin-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.pin-actions button {
+  flex: 1;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
-  padding: 20px;
+  justify-content: center;
+  z-index: 2000;
+  transition: opacity 0.3s;
 }
 
 .modal-content {
@@ -1574,28 +1854,30 @@ input[type="text"]:focus {
 
 .custom-toast {
   position: fixed;
-  bottom: -150px;
+  bottom: 80px;
   left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--primary);
-  color: var(--on-primary);
-  padding: 12px 24px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border: 1px solid var(--on-primary);
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
-  z-index: 10000;
-  transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  white-space: normal;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   text-align: center;
-  width: 90%;
-  max-width: 380px;
+  white-space: nowrap;
 }
 
 .custom-toast.show {
-  bottom: 100px;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Path Upgrade Pro Styles */
@@ -1710,5 +1992,66 @@ input[type="text"]:focus {
 /* Adjusting Settings Info Val size */
 .settings-item .info-val {
   font-size: 0.8rem !important;
+  opacity: 0.8;
+}
+
+.info-modal {
+  max-width: 350px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-modal .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-modal .modal-header h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.info-modal .modal-header button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-main);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.info-body {
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.data-saver-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--surface);
+  color: var(--text-secondary);
+  gap: 12px;
+}
+
+.data-saver-placeholder p {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   opacity: 0.8;
 }

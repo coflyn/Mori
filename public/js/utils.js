@@ -1,6 +1,12 @@
-// Capacitor Plugins
-export const { CapacitorHttp, Filesystem, Toast, Clipboard, App, Share } =
-  window.Capacitor?.Plugins || {};
+export const {
+  CapacitorHttp,
+  Filesystem,
+  Toast,
+  Clipboard,
+  App,
+  Share,
+  NativeBiometric,
+} = window.Capacitor?.Plugins || {};
 
 import { translations } from "./i18n.js";
 
@@ -84,9 +90,39 @@ export function extractFinalUrl(input) {
 }
 
 export function cleanUrl(url) {
+  if (!url) return "";
   try {
     const u = new URL(url);
-    return u.origin + u.pathname;
+    // Remove common tracking/referral params
+    const trackerParams = [
+      "igsh",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "s",
+      "t",
+    ];
+    trackerParams.forEach((p) => u.searchParams.delete(p));
+
+    if (u.hostname.includes("tiktok.com")) {
+      u.search = ""; // TikTok usually has long tracking strings
+    }
+
+    if (u.hostname.includes("youtube.com") || u.hostname.includes("youtu.be")) {
+      // Keep "v" for youtube.com and everything for youtu.be paths
+      if (u.hostname.includes("youtube.com") && u.searchParams.has("v")) {
+        const v = u.searchParams.get("v");
+        u.search = "";
+        u.searchParams.set("v", v);
+      }
+    } else if (!u.hostname.includes("facebook.com")) {
+      // For most other platforms, strip query entirely for matching
+      if (!u.searchParams.has("id") && !u.searchParams.has("story_fbid")) {
+        u.search = "";
+      }
+    }
+
+    return u.href.replace(/\/$/, "");
   } catch (e) {
     return url.split("?")[0].replace(/\/$/, "");
   }

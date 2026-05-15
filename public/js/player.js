@@ -5,6 +5,7 @@
  * @param {string} resultThumbnail - Fallback thumbnail URL.
  * @returns {HTMLElement} The player container element.
  */
+
 export function createVideoPlayer(dl, index, resultThumbnail) {
   const playerContainer = document.createElement("div");
   playerContainer.className = "mori-player-container";
