@@ -17,10 +17,12 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
 
   const video = document.createElement("video");
   video.src = dl.url;
-  video.loop = true;
+  const loopSetting = localStorage.getItem("mori_loop") !== "false";
+  video.loop = loopSetting;
   video.muted = false;
   video.preload = index === 0 ? "auto" : "metadata";
-  video.autoplay = index === 0;
+  const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
+  video.autoplay = index === 0 && autoPlaySetting;
   video.playsInline = true;
   let posterThumb = dl.thumbnail || resultThumbnail || "";
   const isIndownPoster =
@@ -109,6 +111,7 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
     if (video.paused) {
+      video.loop = localStorage.getItem("mori_loop") !== "false";
       video.play().catch(() => {});
       playIcon.classList.add("hidden");
       pauseIcon.classList.remove("hidden");

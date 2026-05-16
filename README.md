@@ -5,7 +5,7 @@
 <h1 align="center">Mori - Your Simple Media Downloader</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.4.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v3.5.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
@@ -25,25 +25,22 @@ Mori is a beautiful and very easy-to-use app that helps you save your favorite p
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.4.0 (Latest)
+## What's New in v3.5.0 (Latest)
 
-- **Privacy Lock (Biometric)**: Secure your History tab with the ultimate convenience. Mori now supports native **Biometric (Fingerprint/FaceID)** authentication, ensuring your private downloads stay private.
-- **Export/Import Data**: Full data portability is here! Backup your entire Mori ecosystem (History, Settings, and Paths) to a JSON file and restore it on any device via the system Share intent.
-- **Auto-Clear History**: Keep your app lightweight and organized. Mori can now automatically purge history entries older than 30 days, keeping your experience fresh and focused.
-- **Biometric Disable Security**: Added a critical safety layer—native authentication is now required to disable the Privacy Lock, preventing unauthorized access to your history settings.
-- **Onboarding User Guide**: New users are now greeted with a sleek, icon-based guide on startup (with a "Don't show again" option), ensuring everyone knows how to get the most out of Mori.
-- **Premium Custom Dropdowns**: Completely replaced native browser selectors with theme-aware, glassmorphism-inspired dropdowns. Enjoy a cohesive aesthetic across Language and Lock Type settings.
-- **Smart Local Detection (Offline Badge)**: Mori now intelligently cross-references your downloads with your local history. If a file is already on your phone, a premium **"OFFLINE"** badge appears, allowing instant local playback without re-downloading.
-- **Smart Path Presets**: Refined the dual-path download system (Video/Music) with interactive chips and a reset feature for faster configuration.
-- **SnapSave & Facebook Robustness**: Implemented an async polling mechanism (up to 15 attempts) to resolve backend rendering tokens for high-quality Facebook and SnapSave links.
-- **Unified Image Loading Engine**: Re-engineered the media previewer with a redundant loading system via proxy (`weserv.nl`) or authenticated `CapacitorHttp` blobs.
-- **Zero-Stall Download Engine**: Refined "Processing" logic bypasses unnecessary polling for direct media links, ensuring instant downloads.
-- **Configurable Auto-Paste**: Toggleable clipboard detection on app resume.
-- **Shared Link Priority**: Intelligent safety window ensures shared intents always take precedence over the clipboard.
-- **History-Aware Cache Cleanup**: Refined the "Auto-Clear Cache" system to protect thumbnails belonging to your history items while purging orphans.
-- **Settings Preservation**: Improved "Wipe All Data" security—resets history and cache while strictly preserving critical preferences.
-- **Layout Stabilization**: Resolved clipping issues in Settings and perfected the navigation z-index for a seamless experience.
-- **Improved Toast System**: Standardized localized feedback for all major settings, including unique notifications for Cache and History auto-clear.
+- **Quick Settings Dashboard**: Access common toggles faster. Added a tactile 4-item grid at the top of the Settings menu for instant control over **Dark Mode, Incognito, Auto-Paste**, and **Data Saver**.
+- **Custom App Typography**: Personalized reading experience. Choose between premium font families: **Plus Jakarta Sans** (Modern), **Default** (Inter), **Serif** (Classic), **Mono** (Tech), and **Display** (Bold).
+- **Auto-Play Media Toggle**: Control your viewing experience. A new "Auto-Play" setting allows you to enable or disable automatic media playback in the analysis slider and history browser.
+- **Dynamic Color Accents**: Make Mori yours! Introduced a premium theme engine with selectable accent colors: **Classic (Gold), Ocean (Blue), Forest (Green), Royal (Purple)**, and **Sunset (Orange)**.
+- **Auto-Loop Media Control**: Tailor your playback. A new toggle allows you to enable or disable automatic looping for both video and audio players globally.
+- **Adaptive Toast Notifications**: Better readability for long messages. Mori's notification system now supports multi-line text with auto-wrapping, ensuring important feedback is never cut off.
+- **Next-Gen Wi-Fi Protection**: Save your data plan more effectively. The "Wi-Fi Only" toggle now includes robust detection for high-speed mobile networks, including **5G** and **4.5G**, ensuring zero data leakage.
+- **Auto-Download Link**: The ultimate zero-click experience. When enabled, Mori intelligently detects supported links from your clipboard on startup or resume and triggers the analysis engine automatically.
+- **Custom Filename**: Organize your library your way. Choose between **Default** (Timestamped), **Title Only**, **Title + Platform**, or **Title + Date** naming conventions.
+- **Tiered Settings Navigation**: Redesigned the settings interface into five distinct categories for a cleaner, "Pro" application feel.
+- **Accent-Aware UI**: The entire interface, from icons to progress bars, now dynamically adapts to your selected Color Accent for a cohesive premium experience.
+- **Premium Glassmorphism Dropdowns**: Refined the settings interface with sleek, semi-transparent menus and increased hit areas for better mobile interaction.
+- **Improved Settings Hierarchy**: Reorganized settings sections, relocating "App Font" to the General menu for more intuitive navigation.
+- **Enhanced Visual Consistency**: Synchronized social media and developer icons for a more balanced and professional "State-of-the-art" look.
 
 ## Supported Platforms
 
@@ -62,6 +59,26 @@ Mori is a beautiful and very easy-to-use app that helps you save your favorite p
 - **HTML5 & CSS3**: Custom design system without bloated frameworks.
 - **CapacitorJS**: Native Android bridge for filesystem, clipboard, and biometrics.
 - **pdf-lib**: Client-side PDF generation and bundling.
+
+## Previous Highlights (v3.4.0)
+
+- **Privacy Lock (Biometric)**: Secure your History tab with the ultimate convenience. Mori now supports native **Biometric (Fingerprint/FaceID)** authentication, ensuring your private downloads stay private.
+- **Export/Import Data**: Full data portability is here! Backup your entire Mori ecosystem (History, Settings, and Paths) to a JSON file and restore it on any device via the system Share intent.
+- **Auto-Clear History**: Keep your app lightweight and organized. Mori can now automatically purge history entries older than 30 days, keeping your experience fresh and focused.
+- **Biometric Disable Security**: Added a critical safety layer—native authentication is now required to disable the Privacy Lock, preventing unauthorized access to your history settings.
+- **Onboarding User Guide**: New users are now greeted with a sleek, icon-based guide on startup (with a "Don't show again" option), ensuring everyone knows how to get the most out of Mori.
+- **Premium Custom Dropdowns**: Completely replaced native browser selectors with theme-aware, glassmorphism-inspired dropdowns. Enjoy a cohesive aesthetic across Language and Lock Type settings.
+- **Smart Local Detection (Offline Badge)**: Mori now intelligently cross-references your downloads with your local history. If a file is already on your phone, a premium **"OFFLINE"** badge appears, allowing instant local playback without re-downloading.
+- **Smart Path Presets**: Refined the dual-path download system (Video/Music) with interactive chips and a reset feature for faster configuration.
+- **SnapSave & Facebook Robustness**: Implemented an async polling mechanism (up to 15 attempts) to resolve backend rendering tokens for high-quality Facebook and SnapSave links.
+- **Unified Image Loading Engine**: Re-engineered the media previewer with a redundant loading system via proxy (`weserv.nl`) or authenticated `CapacitorHttp` blobs.
+- **Zero-Stall Download Engine**: Refined "Processing" logic bypasses unnecessary polling for direct media links, ensuring instant downloads.
+- **Configurable Auto-Paste**: Toggleable clipboard detection on app resume.
+- **Shared Link Priority**: Intelligent safety window ensures shared intents always take precedence over the clipboard.
+- **History-Aware Cache Cleanup**: Refined the "Auto-Clear Cache" system to protect thumbnails belonging to your history items while purging orphans.
+- **Settings Preservation**: Improved "Wipe All Data" security—resets history and cache while strictly preserving critical preferences.
+- **Layout Stabilization**: Resolved clipping issues in Settings and perfected the navigation z-index for a seamless experience.
+- **Improved Toast System**: Standardized localized feedback for all major settings, including unique notifications for Cache and History auto-clear.
 
 ## Previous Highlights (v3.3.0)
 
@@ -159,7 +176,7 @@ Mori is built using Capacitor and Vanilla JS for high performance.
 
 ### Building the APK
 
-To generate the latest version (e.g., Mori v3.4.0.apk), run:
+To generate the latest version (e.g., Mori v3.5.0.apk), run:
 `npx cap sync android && cd android && ./gradlew assembleDebug`
 
 ---

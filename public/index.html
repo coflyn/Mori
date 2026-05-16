@@ -9,7 +9,7 @@
     <title>Mori</title>
     <link rel="stylesheet" href="css/style.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -329,13 +329,13 @@
               </div>
               <div class="chip">
                 <svg
-                  viewBox="0 0 48 48"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
                   width="16"
                   height="16"
-                  fill="currentColor"
                 >
                   <path
-                    d="M44,6.1V41.9a.3.3,0,0,1-.1.2,1.9,1.9,0,0,1-1.8,1.8H31.6V28.5h4.9c.3,0,.3,0,.4-.3l.3-2.5c.1-1,.2-2,.4-3s0-.3-.2-.3H31.6V18.5c0-.3.1-.7.1-1a1.8,1.8,0,0,1,1.6-1.6l1.3-.2h3c.2,0,.2,0,.2-.2V10.4c0-.1,0-.2-.2-.2H33a7.2,7.2,0,0,0-3.3.7A6,6,0,0,0,26.2,14a7.3,7.3,0,0,0-.8,3.6c-.1,1.5,0,3.1,0,4.7H20.3c-.2,0-.2.1-.2.2v5.7c0,.2,0,.2.2.2h5.1V43.8a.3.3,0,0,0-.1.2H5.9a1.9,1.9,0,0,1-1.8-1.8c-.1,0-.1-.1-.1-.2V6.1c0-.1,0-.2.1-.2A1.9,1.9,0,0,1,5.9,4.1H42.1a1.9,1.9,0,0,1,1.8,1.8Z"
+                    d="M22.676 0H1.324C.593 0 0 .593 0 1.324v21.352C0 23.408.593 24 1.324 24h11.494v-9.294H9.691v-3.622h3.127V8.412c0-3.1 1.893-4.788 4.658-4.788 1.325 0 2.464.099 2.796.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.324-.592 1.324-1.324V1.324C24 .593 23.408 0 22.676 0z"
                   />
                 </svg>
                 <span>Facebook</span>
@@ -401,14 +401,149 @@
 
         <!-- Settings Page -->
         <div id="settingsPage" class="page-content hidden">
-          <div class="page-header">
-            <h2 data-i18n="nav-settings">Settings</h2>
-            <p data-i18n="settings-desc">Configure your experience</p>
+          <!-- Main Settings Menu -->
+          <div id="settingsMainMenu">
+            <div class="page-header">
+              <h2 data-i18n="nav-settings">Settings</h2>
+              <p data-i18n="settings-desc">Configure your experience</p>
+            </div>
+
+
+            <div class="settings-menu-list">
+              <div class="settings-menu-item" data-target="settingsGeneral">
+                <div class="menu-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.70-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                    />
+                  </svg>
+                </div>
+                <div class="menu-text">
+                  <div class="menu-title" data-i18n="menu-general-title">
+                    General
+                  </div>
+                  <div class="menu-desc" data-i18n="menu-general-desc">
+                    Language, Auto-Paste, Privacy Lock
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-menu-item" data-target="settingsAppearance">
+                <div class="menu-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"
+                    />
+                  </svg>
+                </div>
+                <div class="menu-text">
+                  <div class="menu-title" data-i18n="menu-appearance-title">
+                    Look & feel
+                  </div>
+                  <div class="menu-desc" data-i18n="menu-appearance-desc">
+                    Dark theme, Data saver
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-menu-item" data-target="settingsStorage">
+                <div class="menu-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"
+                    />
+                  </svg>
+                </div>
+                <div class="menu-text">
+                  <div class="menu-title" data-i18n="menu-storage-title">
+                    Storage & Download
+                  </div>
+                  <div class="menu-desc" data-i18n="menu-storage-desc">
+                    Path, Quality, Download Behavior
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-menu-item" data-target="settingsAdvanced">
+                <div class="menu-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                    />
+                  </svg>
+                </div>
+                <div class="menu-text">
+                  <div class="menu-title" data-i18n="menu-advanced-title">
+                    Advanced
+                  </div>
+                  <div class="menu-desc" data-i18n="menu-advanced-desc">
+                    Auto-clear history, Backup & Reset
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-menu-item" data-target="settingsAbout">
+                <div class="menu-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"
+                    />
+                  </svg>
+                </div>
+                <div class="menu-text">
+                  <div class="menu-title" data-i18n="menu-about-title">
+                    About & Help
+                  </div>
+                  <div class="menu-desc" data-i18n="menu-about-desc">
+                    Version, Help, Developer links
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="settings-section">
-            <span class="section-label" data-i18n="label-general"
-              >General Settings</span
-            >
+
+          <!-- Sub-page: General -->
+          <div id="settingsGeneral" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button class="back-btn-settings">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="menu-general-title">General</h3>
+            </div>
             <div class="settings-list">
               <div class="settings-item">
                 <div class="item-label">
@@ -536,6 +671,72 @@
                     fill="currentColor"
                   >
                     <path
+                      d="M9.93 13.5h4.14L12 7.98zM20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-4.05 16.5l-1.14-3H9.17l-1.12 3H5.96l5.11-13h1.86l5.11 13h-2.09z"
+                    />
+                  </svg>
+                  <span data-i18n="label-font">App Font</span>
+                </div>
+                <div class="custom-select" id="fontSelect">
+                  <div class="selected-text" id="fontText">Default</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="fontMenu">
+                    <div class="dropdown-item" data-value="default">
+                      Default
+                    </div>
+                    <div class="dropdown-item" data-value="jakarta">
+                      Plus Jakarta Sans
+                    </div>
+                    <div class="dropdown-item" data-value="serif">
+                      Classic Serif
+                    </div>
+                    <div class="dropdown-item" data-value="mono">
+                      Modern Mono
+                    </div>
+                    <div class="dropdown-item" data-value="display">
+                      Display Bold
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-page: Appearance -->
+          <div id="settingsAppearance" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button class="back-btn-settings">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="menu-appearance-title">Look & feel</h3>
+            </div>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
                       d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"
                     />
                   </svg>
@@ -546,15 +747,7 @@
                   <label for="darkModeToggle"></label>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <span class="section-label" data-i18n="label-storage"
-              >Storage & Data</span
-            >
-            <div class="settings-list">
-              <div class="settings-item info-only">
+              <div class="settings-item">
                 <div class="item-label">
                   <svg
                     viewBox="0 0 24 24"
@@ -563,12 +756,99 @@
                     fill="currentColor"
                   >
                     <path
-                      d="M12 2C6.48 2 2 4.24 2 7v10c0 2.76 4.48 5 10 5s10-2.24 10-5V7c0-2.76-4.48-5-10-5zm0 2c3.11 0 6 .9 7.42 2-1.42 1.1-4.31 2-7.42 2s-6-.9-7.42-2c1.42-1.1 4.31-2 7.42-2zm0 14c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2zm0-4c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2zm0-4c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2z"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
                     />
                   </svg>
-                  <span data-i18n="label-storagesize">Total Media Size</span>
+                  <span data-i18n="label-autoplay">Auto-Play Media</span>
                 </div>
-                <span class="info-val" id="storageSizeVal">0 MB</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoPlayToggle" />
+                  <label for="autoPlayToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-autoloop">Auto-Loop Media</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoLoopToggle" />
+                  <label for="autoLoopToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm-5-8h10v2H7v-2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-color-accent">Color Accent</span>
+                </div>
+                <div class="custom-select" id="colorAccentSelect">
+                  <div class="selected-text" id="colorAccentText">Classic</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="colorAccentMenu">
+                    <div
+                      class="dropdown-item"
+                      data-value="black"
+                      data-i18n="accent-black"
+                    >
+                      Classic
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="blue"
+                      data-i18n="accent-blue"
+                    >
+                      Ocean
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="green"
+                      data-i18n="accent-green"
+                    >
+                      Forest
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="purple"
+                      data-i18n="accent-purple"
+                    >
+                      Royal
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="orange"
+                      data-i18n="accent-orange"
+                    >
+                      Sunset
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="settings-item">
                 <div class="item-label">
@@ -589,6 +869,28 @@
                   <label for="dataSaverToggle"></label>
                 </div>
               </div>
+
+            </div>
+          </div>
+
+          <!-- Sub-page: Storage -->
+          <div id="settingsStorage" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button class="back-btn-settings">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="menu-storage-title">Storage & Download</h3>
+            </div>
+            <div class="settings-list">
               <div class="settings-item action-item" id="changePathBtn">
                 <div class="item-label">
                   <svg
@@ -632,18 +934,149 @@
                     fill="currentColor"
                   >
                     <path
+                      d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                    />
+                  </svg>
+                  <span data-i18n="label-filename-template">Filename</span>
+                </div>
+                <div class="custom-select" id="filenameSelect">
+                  <div class="selected-text" id="filenameText">Default</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="filenameMenu">
+                    <div
+                      class="dropdown-item"
+                      data-value="default"
+                      data-i18n="filename-default"
+                    >
+                      Default
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="title"
+                      data-i18n="filename-title"
+                    >
+                      Title Only
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="title-platform"
+                      data-i18n="filename-title-platform"
+                    >
+                      Title + Platform
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="title-date"
+                      data-i18n="filename-title-date"
+                    >
+                      Title + Date
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-item info-only">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 4.24 2 7v10c0 2.76 4.48 5 10 5s10-2.24 10-5V7c0-2.76-4.48-5-10-5zm0 2c3.11 0 6 .9 7.42 2-1.42 1.1-4.31 2-7.42 2s-6-.9-7.42-2c1.42-1.1 4.31-2 7.42-2zm0 14c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2zm0-4c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2zm0-4c-3.11 0-6-.9-7.42-2 1.42 1.1 4.31 2 7.42 2s6-.9 7.42-2c-1.42 1.1-4.31 2-7.42 2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-storagesize">Total Media Size</span>
+                </div>
+                <span class="info-val" id="storageSizeVal">0 MB</span>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13 11.33L18 18H6l5-6.67V4h2v7.33zM12 2c-1.1 0-2 .9-2 2v7.33L5 18c-.67.89-.03 2.15 1.1 2.15h11.8c1.13 0 1.77-1.26 1.1-2.15L14 11.33V4c0-1.1-.9-2-2-2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-autodownload">Auto-Download Link</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="autoDownloadToggle" />
+                  <label for="autoDownloadToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-wifi-only">Download via Wi-Fi Only</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="wifiOnlyToggle" />
+                  <label for="wifiOnlyToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
                       d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
                     />
                   </svg>
-                  <span data-i18n="label-autoclear-cache"
-                    >Auto Clear Cache</span
-                  >
+                  <span data-i18n="label-autoclear-cache">Auto Clear Cache</span>
                 </div>
                 <div class="toggle-switch">
                   <input type="checkbox" id="autoClearToggle" />
                   <label for="autoClearToggle"></label>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Sub-page: Advanced -->
+          <div id="settingsAdvanced" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button class="back-btn-settings">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="menu-advanced-title">Advanced</h3>
+            </div>
+            <div class="settings-list">
               <div class="settings-item">
                 <div class="item-label">
                   <svg
@@ -727,11 +1160,59 @@
             </div>
           </div>
 
-          <div class="settings-section">
-            <span class="section-label" data-i18n="label-help"
-              >Help & Info</span
-            >
+          <!-- Sub-page: About & Help -->
+          <div id="settingsAbout" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button class="back-btn-settings">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="menu-about-title">About & Help</h3>
+            </div>
             <div class="settings-list">
+              <div class="settings-item action-item" id="checkUpdateBtn">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+                    />
+                  </svg>
+                  <span data-i18n="label-version">Version</span>
+                </div>
+                <div class="update-info">
+                  <span class="info-val">&nbsp;3.5.0</span>
+                  <span class="action-label" data-i18n="btn-check">CHECK</span>
+                </div>
+              </div>
+              <div class="settings-item info-only">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H3V4h18v10z"
+                    />
+                  </svg>
+                  <span data-i18n="label-platform">Platform</span>
+                </div>
+                <span class="info-val" id="platformVal">Android</span>
+              </div>
               <div class="settings-item action-item" id="howToUseBtn">
                 <div class="item-label">
                   <svg
@@ -780,49 +1261,6 @@
                 </div>
                 <span class="action-label" data-i18n="btn-share">SHARE</span>
               </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <span class="section-label" data-i18n="label-appinfo"
-              >App Info</span
-            >
-            <div class="settings-list" id="appInfoList">
-              <div class="settings-item action-item" id="checkUpdateBtn">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-                    />
-                  </svg>
-                  <span data-i18n="label-version">Version</span>
-                </div>
-                <div class="update-info">
-                  <span class="info-val">&nbsp;3.4.0</span>
-                  <span class="action-label" data-i18n="btn-check">CHECK</span>
-                </div>
-              </div>
-              <div class="settings-item info-only">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H3V4h18v10z"
-                    />
-                  </svg>
-                  <span data-i18n="label-platform">Platform</span>
-                </div>
-                <span class="info-val" id="platformVal">Android</span>
-              </div>
               <div class="settings-item action-item" id="reportBugBtn">
                 <div class="item-label">
                   <svg
@@ -840,12 +1278,11 @@
                 <span class="action-label" data-i18n="btn-report">REPORT</span>
               </div>
             </div>
-          </div>
 
-          <div class="settings-section">
-            <span class="section-label" data-i18n="label-developer"
-              >Developer</span
-            >
+            <!-- Developer Section -->
+            <div class="settings-section-divider" data-i18n="label-developer">
+              Developer
+            </div>
             <div class="settings-list">
               <a
                 href="https://github.com/coflyn"
@@ -880,7 +1317,7 @@
                     fill="currentColor"
                   >
                     <path
-                      d="M21 18v1c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 2 7.5 2c1.74 0 3.41.81 4.5 2.09C13.09 2.81 14.76 2 16.5 2 19.58 2 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     />
                   </svg>
                   <span data-i18n="label-support">Support Me</span>

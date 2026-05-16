@@ -110,6 +110,10 @@ function renderMediaSlides(container, items, resultThumbnail) {
       audio.src = dl.url;
       audio.controls = true;
       audio.style.width = "100%";
+      const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
+      const loopSetting = localStorage.getItem("mori_loop") !== "false";
+      audio.autoplay = index === 0 && autoPlaySetting;
+      audio.loop = loopSetting;
       slide.appendChild(audio);
     } else {
       if (isDataSaver && !isLocal) {
@@ -217,6 +221,7 @@ export function updateSliderUI() {
       if (video) {
         if (video.readyState < 1) video.load();
         video.currentTime = 0;
+        video.loop = localStorage.getItem("mori_loop") !== "false";
         video.play().catch(() => {});
       }
     } else {
@@ -556,6 +561,7 @@ export function showModal(item, onRedownload) {
           if (video) {
             if (isActive) {
               video.currentTime = 0;
+              video.loop = localStorage.getItem("mori_loop") !== "false";
               video.play().catch(() => {});
             } else {
               video.pause();
@@ -682,7 +688,24 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       .replace(/\s+/g, " ")
       .substring(0, 150);
 
-    const fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
+    const template = localStorage.getItem("mori_filename") || "default";
+    let fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
+    
+    if (template === "title") {
+      fileName = `${sanitizedTitle}.${ext}`;
+    } else if (template === "title-platform") {
+      let platform = "Media";
+      const lowerUrl = (sourceUrl || url).toLowerCase();
+      if (lowerUrl.includes("tiktok")) platform = "TikTok";
+      else if (lowerUrl.includes("instagram")) platform = "Instagram";
+      else if (lowerUrl.includes("youtube") || lowerUrl.includes("youtu.be")) platform = "YouTube";
+      else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com")) platform = "Twitter";
+      else if (lowerUrl.includes("facebook")) platform = "Facebook";
+      fileName = `${sanitizedTitle}_${platform}.${ext}`;
+    } else if (template === "title-date") {
+      const dateStr = new Date().toISOString().split("T")[0];
+      fileName = `${sanitizedTitle}_${dateStr}.${ext}`;
+    }
 
     const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
     const musicSubfolder =

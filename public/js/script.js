@@ -40,7 +40,7 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.4.0";
+const APP_VERSION = "3.5.0";
 const UPDATE_CHECK_URL =
   "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
 
@@ -111,6 +111,22 @@ const changePathBtn = document.getElementById("changePathBtn");
 const pathVal = document.getElementById("pathVal");
 const changeMusicPathBtn = document.getElementById("changeMusicPathBtn");
 const musicPathVal = document.getElementById("musicPathVal");
+const wifiOnlyToggle = document.getElementById("wifiOnlyToggle");
+const autoDownloadToggle = document.getElementById("autoDownloadToggle");
+const filenameSelect = document.getElementById("filenameSelect");
+const colorAccentSelect = document.getElementById("colorAccentSelect");
+const fontSelect = document.getElementById("fontSelect");
+const autoPlayToggle = document.getElementById("autoPlayToggle");
+const autoLoopToggle = document.getElementById("autoLoopToggle");
+
+const quickDarkMode = document.getElementById("quickDarkMode");
+const quickIncognito = document.getElementById("quickIncognito");
+const quickAutoPaste = document.getElementById("quickAutoPaste");
+const quickDataSaver = document.getElementById("quickDataSaver");
+const settingsMainMenu = document.getElementById("settingsMainMenu");
+const settingsSubPages = document.querySelectorAll(".settings-sub-page");
+const settingsMenuItems = document.querySelectorAll(".settings-menu-item");
+const settingsBackBtns = document.querySelectorAll(".back-btn-settings");
 
 const progressBar = document.getElementById("progressBar");
 const progressContainer = document.getElementById("progressContainer");
@@ -127,7 +143,32 @@ darkModeToggle?.addEventListener("change", (e) => {
   const theme = e.target.checked ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("mori_theme", theme);
+  applyColorAccent();
 });
+
+// Color Accent Logic
+const accentColors = {
+  black: { light: "#1a1917", dark: "#fffbf2" },
+  blue: { light: "#1a73e8", dark: "#8ab4f8" },
+  green: { light: "#1e8e3e", dark: "#81c995" },
+  purple: { light: "#9334e6", dark: "#c58af9" },
+  orange: { light: "#e8710a", dark: "#fcad70" },
+};
+
+function applyColorAccent() {
+  const accent = localStorage.getItem("mori_accent") || "black";
+  const theme = localStorage.getItem("mori_theme") || "light";
+  const color = accentColors[accent][theme];
+  document.documentElement.style.setProperty("--primary", color);
+
+  const accentText = document.getElementById("colorAccentText");
+  if (accentText) {
+    const lang = translations[currentLang];
+    accentText.textContent = lang[`accent-${accent}`] || accent;
+  }
+}
+
+applyColorAccent();
 
 // Incognito Mode Logic
 const isIncognito = localStorage.getItem("mori_incognito") === "true";
@@ -263,6 +304,23 @@ const hideGuideCheckbox = document.getElementById("hideGuideCheckbox");
 const closeGuideBtn = document.getElementById("closeGuideBtn");
 const guideToSettingsBtn = document.getElementById("guideToSettingsBtn");
 
+// Settings Navigation Logic
+settingsMenuItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    const targetId = item.getAttribute("data-target");
+    settingsMainMenu.classList.add("hidden");
+    const targetPage = document.getElementById(targetId);
+    if (targetPage) targetPage.classList.remove("hidden");
+  });
+});
+
+settingsBackBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    settingsSubPages.forEach((p) => p.classList.add("hidden"));
+    settingsMainMenu.classList.remove("hidden");
+  });
+});
+
 function initUserGuide() {
   const isHidden = localStorage.getItem("mori_hide_guide") === "true";
   if (!isHidden) {
@@ -287,6 +345,137 @@ guideToSettingsBtn?.addEventListener("click", () => {
 
 // Run guide check on startup
 document.addEventListener("DOMContentLoaded", initUserGuide);
+
+// Wi-Fi Only Toggle
+if (wifiOnlyToggle) {
+  wifiOnlyToggle.checked = localStorage.getItem("mori_wifi_only") === "true";
+  wifiOnlyToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_wifi_only", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked ? lang["toast-wifi-on"] : lang["toast-wifi-off"],
+    );
+  });
+}
+
+// Auto-Download Toggle
+if (autoDownloadToggle) {
+  autoDownloadToggle.checked =
+    localStorage.getItem("mori_auto_download") === "true";
+  autoDownloadToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_download", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-autodownload-on"]
+        : lang["toast-autodownload-off"],
+    );
+  });
+}
+
+// Custom Select Handler for New Settings
+function setupCustomSelect(selectId, storageKey, textId, menuId) {
+  const select = document.getElementById(selectId);
+  const text = document.getElementById(textId);
+  const menu = document.getElementById(menuId);
+  if (!select || !text || !menu) return;
+
+  const currentVal = localStorage.getItem(storageKey) || "default";
+
+  // Update display on load
+  const item = menu.querySelector(`[data-value="${currentVal}"]`);
+  if (item) {
+    text.textContent = item.textContent;
+  }
+
+  select.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpening = menu.classList.contains("hidden");
+
+    // Close other dropdowns
+    document.querySelectorAll(".dropdown-menu").forEach((m) => {
+      if (m !== menu) m.classList.add("hidden");
+    });
+
+    menu.classList.toggle("hidden");
+
+    if (!menu.classList.contains("hidden")) {
+      // Reset to natural downward position for calculation
+      menu.classList.remove("open-up");
+
+      const rect = menu.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      // If it would overflow the bottom in its natural state, flip it
+      if (rect.bottom > viewportHeight - 20) {
+        menu.classList.add("open-up");
+      }
+    } else {
+      // Clean up when closing
+      menu.classList.remove("open-up");
+    }
+  });
+
+  menu.querySelectorAll(".dropdown-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const val = item.getAttribute("data-value");
+      localStorage.setItem(storageKey, val);
+      text.textContent = item.textContent;
+      menu.classList.add("hidden");
+      menu.classList.remove("open-up"); // Clean up on selection
+
+      if (storageKey === "mori_accent") applyColorAccent();
+      if (storageKey === "mori_font") applyFont();
+    });
+  });
+}
+
+// Initialize Dropdowns
+setupCustomSelect(
+  "filenameSelect",
+  "mori_filename",
+  "filenameText",
+  "filenameMenu",
+);
+setupCustomSelect(
+  "colorAccentSelect",
+  "mori_accent",
+  "colorAccentText",
+  "colorAccentMenu",
+);
+setupCustomSelect("fontSelect", "mori_font", "fontText", "fontMenu");
+
+// Font Switching Logic
+function applyFont() {
+  const font = localStorage.getItem("mori_font") || "default";
+  document.body.className = document.body.className.replace(/\bfont-\S+/g, "");
+  document.body.classList.add(`font-${font}`);
+}
+
+// Initial Font apply
+applyFont();
+
+// Auto-Play Toggle
+if (autoPlayToggle) {
+  autoPlayToggle.checked = localStorage.getItem("mori_autoplay") !== "false";
+  autoPlayToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_autoplay", e.target.checked);
+  });
+}
+
+if (autoLoopToggle) {
+  autoLoopToggle.checked = localStorage.getItem("mori_loop") !== "false";
+  autoLoopToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_loop", e.target.checked);
+  });
+}
+
+// Close dropdowns on outside click
+document.addEventListener("click", () => {
+  document
+    .querySelectorAll(".dropdown-menu")
+    .forEach((m) => m.classList.add("hidden"));
+});
 
 // Download Path Logic (Video)
 let customPath = localStorage.getItem("mori_download_path") || "Mori";
@@ -387,7 +576,7 @@ changeMusicPathBtn?.addEventListener("click", () => {
 });
 
 // Auto Clear Cache Logic
-const isAutoClear = localStorage.getItem("mori_auto_clear") === "true";
+const isAutoClear = localStorage.getItem("mori_auto_clear_cache") === "true";
 if (autoClearToggle) {
   autoClearToggle.checked = isAutoClear;
   autoClearToggle.addEventListener("change", (e) => {
@@ -398,6 +587,9 @@ if (autoClearToggle) {
         ? lang["toast-autoclear-cache-on"]
         : lang["toast-autoclear-cache-off"],
     );
+    if (e.target.checked) {
+      clearCacheSilently();
+    }
   });
 }
 
@@ -432,14 +624,29 @@ async function clearCacheSilently() {
       const files = await Filesystem.readdir({ path: "", directory: "CACHE" });
       let clearedCount = 0;
       for (const file of files.files) {
-        if (file.name.startsWith("thumb_") && !activeThumbs.has(file.name)) {
-          await Filesystem.deleteFile({ path: file.name, directory: "CACHE" });
-          clearedCount++;
+        const isThumb = file.name.startsWith("thumb_");
+        // Delete if it's an orphaned thumbnail OR if it's not a thumbnail at all
+        if (!isThumb || !activeThumbs.has(file.name)) {
+          try {
+            if (file.type === "directory") {
+              await Filesystem.rmdir({
+                path: file.name,
+                directory: "CACHE",
+                recursive: true,
+              });
+            } else {
+              await Filesystem.deleteFile({
+                path: file.name,
+                directory: "CACHE",
+              });
+            }
+            clearedCount++;
+          } catch (err) {}
         }
       }
       if (clearedCount > 0) {
         updateStorageInfo();
-        console.log(`Auto-cleared ${clearedCount} orphaned thumbnails.`);
+        console.log(`Auto-cleared ${clearedCount} items from cache.`);
       }
     }
   } catch (e) {
@@ -635,6 +842,40 @@ async function handlePasteFromClipboard(isSilent = false) {
             translations[currentLang]["toast-pasted-share"] ||
               "Link Detected & Pasted",
           );
+
+          const autoDownload =
+            localStorage.getItem("mori_auto_download") === "true";
+          if (autoDownload) {
+            // Wi-Fi check for auto-download
+            const isWifiOnly =
+              localStorage.getItem("mori_wifi_only") === "true";
+            let canAuto = true;
+            if (isWifiOnly && window.Capacitor?.getPlatform() !== "web") {
+              const conn =
+                navigator.connection ||
+                navigator.mozConnection ||
+                navigator.webkitConnection;
+              if (conn) {
+                const type = (conn.type || "").toLowerCase();
+                const isCell =
+                  type === "cellular" ||
+                  type === "mobile" ||
+                  type.includes("2g") ||
+                  type.includes("3g") ||
+                  type.includes("4g") ||
+                  type.includes("5g");
+
+                if (isCell) {
+                  canAuto = false;
+                  showToast(translations[currentLang]["toast-wifi-needed"]);
+                }
+              }
+            }
+
+            if (canAuto) {
+              setTimeout(() => downloadBtn.click(), 500);
+            }
+          }
         }
       } else if (!isSilent) {
         showToast(translations[currentLang]["toast-no-link"]);
@@ -748,6 +989,7 @@ if (App) {
   // App State Change (Auto-detect clipboard on resume)
   App.addListener("appStateChange", ({ isActive }) => {
     if (isActive) {
+      const loopSetting = localStorage.getItem("mori_loop") !== "false";
       const autoPaste = localStorage.getItem("mori_auto_paste") !== "false";
       if (autoPaste) {
         isIntentPending = true; // Assume a share might be coming
@@ -927,7 +1169,7 @@ wipeDataBtn?.addEventListener("click", () => {
 });
 
 reportBugBtn?.addEventListener("click", () => {
-  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: 3.4.0`;
+  const deviceInfo = `Model: ${navigator.userAgent}\nPlatform: ${platformVal?.textContent || "Unknown"}\nVersion: ${APP_VERSION}`;
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
@@ -1037,6 +1279,34 @@ shareAppBtn?.addEventListener("click", async () => {
 downloadBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
   if (!url) return;
+
+  // Wi-Fi Only Check
+  const loopSetting = localStorage.getItem("mori_loop") !== "false";
+  const isWifiOnly = localStorage.getItem("mori_wifi_only") === "true";
+  if (isWifiOnly && window.Capacitor?.getPlatform() !== "web") {
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+    if (connection) {
+      const type = (connection.type || "").toLowerCase();
+      const isCellular =
+        type === "cellular" ||
+        type === "mobile" ||
+        type.includes("2g") ||
+        type.includes("3g") ||
+        type.includes("4g") ||
+        type.includes("5g");
+
+      if (isCellular) {
+        showToast(
+          translations[currentLang]["toast-wifi-needed"] ||
+            "Wi-Fi connection required",
+        );
+        return;
+      }
+    }
+  }
 
   const phrases = translations[currentLang]["loader-phrases"];
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
@@ -1491,6 +1761,12 @@ async function switchPage(pageId) {
   const targetPage = document.getElementById(targetPageId);
   if (targetPage) targetPage.classList.remove("hidden");
 
+  // Reset settings to main menu when entering settings page
+  if (pageId === "settings") {
+    settingsSubPages.forEach((p) => p.classList.add("hidden"));
+    if (settingsMainMenu) settingsMainMenu.classList.remove("hidden");
+  }
+
   // Refresh history if entering history page
   if (pageId === "history") {
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
@@ -1555,3 +1831,13 @@ document.addEventListener(
   },
   { passive: true },
 );
+
+// Initial Auto-Download Check
+setTimeout(() => {
+  const autoDownload = localStorage.getItem("mori_auto_download") === "true";
+  if (autoDownload) {
+    if (typeof handlePasteFromClipboard === "function") {
+      handlePasteFromClipboard(true);
+    }
+  }
+}, 2000);
