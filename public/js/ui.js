@@ -690,7 +690,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     const template = localStorage.getItem("mori_filename") || "default";
     let fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
-    
+
     if (template === "title") {
       fileName = `${sanitizedTitle}.${ext}`;
     } else if (template === "title-platform") {
@@ -698,8 +698,10 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       const lowerUrl = (sourceUrl || url).toLowerCase();
       if (lowerUrl.includes("tiktok")) platform = "TikTok";
       else if (lowerUrl.includes("instagram")) platform = "Instagram";
-      else if (lowerUrl.includes("youtube") || lowerUrl.includes("youtu.be")) platform = "YouTube";
-      else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com")) platform = "Twitter";
+      else if (lowerUrl.includes("youtube") || lowerUrl.includes("youtu.be"))
+        platform = "YouTube";
+      else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com"))
+        platform = "Twitter";
       else if (lowerUrl.includes("facebook")) platform = "Facebook";
       fileName = `${sanitizedTitle}_${platform}.${ext}`;
     } else if (template === "title-date") {
@@ -871,10 +873,10 @@ async function exportGalleryToPdf(title, items) {
         return CapacitorHttp.get({
           url: item.url,
           responseType: "arraybuffer",
-          connectTimeout: 15000,
-          readTimeout: 30000,
+          connectTimeout: 30000,
+          readTimeout: 60000,
           headers: { Referer: referer },
-        });
+        }).catch((err) => ({ status: 0, error: err }));
       });
 
       const results = await Promise.all(downloadPromises);
@@ -900,18 +902,77 @@ async function exportGalleryToPdf(title, items) {
 
           const isPng =
             item.url.toLowerCase().endsWith(".png") ||
-            (res.headers["Content-Type"] &&
+            (res.headers &&
+              res.headers["Content-Type"] &&
               res.headers["Content-Type"].includes("png"));
+
+          const compressImage = async (bytes, isOriginalPng) => {
+            return new Promise((resolve) => {
+              const blob = new Blob([bytes], {
+                type: isOriginalPng ? "image/png" : "image/jpeg",
+              });
+              const url = URL.createObjectURL(blob);
+              const img = new Image();
+              img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 1200;
+
+                if (width > MAX_WIDTH) {
+                  height = Math.round(height * (MAX_WIDTH / width));
+                  width = MAX_WIDTH;
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d", { alpha: false });
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+                URL.revokeObjectURL(url);
+
+                const base64 = dataUrl.split(",")[1];
+                const binaryString = atob(base64);
+                const compressedBytes = new Uint8Array(binaryString.length);
+                for (let k = 0; k < binaryString.length; k++) {
+                  compressedBytes[k] = binaryString.charCodeAt(k);
+                }
+
+                // Aggressive GC
+                canvas.width = 0;
+                canvas.height = 0;
+                resolve({ bytes: compressedBytes, isJpeg: true });
+              };
+              img.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve({ bytes, isJpeg: false });
+              };
+              img.src = url;
+            });
+          };
+
+          const optimized = await compressImage(imgBytes, isPng);
+
+          // Allow GC of original large buffer
+          imgBytes = null;
+          res.data = null;
 
           let image;
           try {
-            if (isPng) image = await pdfDoc.embedPng(imgBytes);
-            else image = await pdfDoc.embedJpg(imgBytes);
+            if (optimized.isJpeg) {
+              image = await pdfDoc.embedJpg(optimized.bytes);
+            } else {
+              if (isPng) image = await pdfDoc.embedPng(optimized.bytes);
+              else image = await pdfDoc.embedJpg(optimized.bytes);
+            }
           } catch (e) {
             // Fallback for misidentified formats
             try {
-              if (isPng) image = await pdfDoc.embedJpg(imgBytes);
-              else image = await pdfDoc.embedPng(imgBytes);
+              if (isPng) image = await pdfDoc.embedJpg(optimized.bytes);
+              else image = await pdfDoc.embedPng(optimized.bytes);
             } catch (e2) {
               console.warn(
                 `Skipping image ${itemIndex + 1}: Unsupported format`,

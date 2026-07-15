@@ -25,33 +25,22 @@ Mori is a beautiful and very easy-to-use app that helps you save your favorite p
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.5.0 (Latest)
+## Fix Scraper Problem
 
-- **Quick Settings Dashboard**: Access common toggles faster. Added a tactile 4-item grid at the top of the Settings menu for instant control over **Dark Mode, Incognito, Auto-Paste**, and **Data Saver**.
-- **Custom App Typography**: Personalized reading experience. Choose between premium font families: **Plus Jakarta Sans** (Modern), **Default** (Inter), **Serif** (Classic), **Mono** (Tech), and **Display** (Bold).
-- **Auto-Play Media Toggle**: Control your viewing experience. A new "Auto-Play" setting allows you to enable or disable automatic media playback in the analysis slider and history browser.
-- **Dynamic Color Accents**: Make Mori yours! Introduced a premium theme engine with selectable accent colors: **Classic (Gold), Ocean (Blue), Forest (Green), Royal (Purple)**, and **Sunset (Orange)**.
-- **Auto-Loop Media Control**: Tailor your playback. A new toggle allows you to enable or disable automatic looping for both video and audio players globally.
-- **Adaptive Toast Notifications**: Better readability for long messages. Mori's notification system now supports multi-line text with auto-wrapping, ensuring important feedback is never cut off.
-- **Next-Gen Wi-Fi Protection**: Save your data plan more effectively. The "Wi-Fi Only" toggle now includes robust detection for high-speed mobile networks, including **5G** and **4.5G**, ensuring zero data leakage.
-- **Auto-Download Link**: The ultimate zero-click experience. When enabled, Mori intelligently detects supported links from your clipboard on startup or resume and triggers the analysis engine automatically.
-- **Custom Filename**: Organize your library your way. Choose between **Default** (Timestamped), **Title Only**, **Title + Platform**, or **Title + Date** naming conventions.
-- **Tiered Settings Navigation**: Redesigned the settings interface into five distinct categories for a cleaner, "Pro" application feel.
-- **Accent-Aware UI**: The entire interface, from icons to progress bars, now dynamically adapts to your selected Color Accent for a cohesive premium experience.
-- **Premium Glassmorphism Dropdowns**: Refined the settings interface with sleek, semi-transparent menus and increased hit areas for better mobile interaction.
-- **Improved Settings Hierarchy**: Reorganized settings sections, relocating "App Font" to the General menu for more intuitive navigation.
-- **Enhanced Visual Consistency**: Synchronized social media and developer icons for a more balanced and professional "State-of-the-art" look.
+- **Instagram**: Fixed the existing `indown.io` scraper by implementing custom desktop `User-Agent` and `Accept` header structures to bypass Cloudflare Turnstile and JS-based challenges. This fully resolves the recent `403 Forbidden` block and correctly parses reels, videos, and multi-image posts.
+
+- **Pixiv**: Migrated the fallback system for restricted (R-18/R-18G) and region-locked artworks to **Pixivre (pixiv.re)** as the alternative, since Phixiv is no longer available. When the main Pixiv API blocks content, Mori dynamically detects the total page count using a lightweight binary search on `pixiv.re` HEAD checks, and extracts the original post title via static HTML scraping of `pixiv.net/en/artworks/` metadata.
 
 ## Supported Platforms
 
-| Platform | Features | Platform | Features |
-| :--- | :--- | :--- | :--- |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube** | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)** | Video / GIFs |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify** | Music / Metadata | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook** | Reels / HD Video |
-| <img src="https://cdn.simpleicons.org/soundcloud/FF3300" width="16" /> **SoundCloud** | Audio Tracks | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads** | Video / Photos |
-| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp** | Album / Track Support | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv** | Gallery / Ugoira to MP4 |
+| Platform                                                                               | Features                 | Platform                                                                            | Features                 |
+| :------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**          | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
+| <img src="https://cdn.simpleicons.org/soundcloud/FF3300" width="16" /> **SoundCloud**  | Audio Tracks             | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**      | Album / Track Support    | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
 
 ## Built With
 

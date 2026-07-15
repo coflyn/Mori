@@ -208,11 +208,18 @@ export async function scrapeInstagram(url) {
   let currentStatus = null;
   try {
     const cleanUrl = url.split("?")[0];
+    const desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    const acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
+
     const r1 = await CapacitorHttp.get({
-      url: "https://indown.io/",
-      headers: { "User-Agent": "Mozilla/5.0" },
+      url: "https://indown.io/en2",
+      headers: {
+        "User-Agent": desktopUA,
+        "Accept": acceptHeader,
+      },
     });
     currentStatus = r1.status;
+
     const parser = new DOMParser();
     const doc1 = parser.parseFromString(r1.data, "text/html");
     const cookies = getCookiesFromHeaders(r1.headers);
@@ -222,112 +229,80 @@ export async function scrapeInstagram(url) {
 
     const r2 = await CapacitorHttp.post({
       url: "https://indown.io/download",
-      data: { link: cleanUrl, _token: token },
+      data: serializeData({ link: cleanUrl, _token: token, a: "a" }),
       headers: {
         Cookie: cookies,
         "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": desktopUA,
+        "Accept": acceptHeader,
       },
     });
     currentStatus = r2.status;
 
     const doc2 = parser.parseFromString(r2.data, "text/html");
+    
+    // Check for error modal/alert
+    const errorMsg = doc2.querySelector("#error .modal-body")?.textContent?.trim();
+    if (errorMsg && errorMsg.toLowerCase().includes("not found")) {
+      throw new Error("Post not found on Indown.");
+    }
+
     const downloads = [];
     let thumbnail = null;
 
-    doc2
-      .querySelectorAll(".container .row .col-md-4, .row .col-md-4")
-      .forEach((el) => {
-        const a = el.querySelector("a");
-        const img = el.querySelector("img");
-        let href = a?.getAttribute("href");
-        let imgSrc = img?.getAttribute("src");
+    // Thumbnail from video poster
+    const video = doc2.querySelector("video.img-fluid");
+    if (video) {
+      thumbnail = video.getAttribute("poster");
+    }
 
-        const isInternalAsset =
-          imgSrc &&
-          imgSrc.includes("indown.io") &&
-          !imgSrc.includes("url=") &&
-          !imgSrc.includes("token=");
-
-        if (
-          imgSrc &&
-          !imgSrc.includes("logo") &&
-          !imgSrc.includes("placeholder") &&
-          !imgSrc.includes("images/") &&
-          !isInternalAsset
-        ) {
-          imgSrc = imgSrc.startsWith("/")
-            ? "https://indown.io" + imgSrc
-            : imgSrc;
-          if (!thumbnail) thumbnail = imgSrc;
+    // Download links in btn-group-vertical
+    doc2.querySelectorAll(".btn-group-vertical a").forEach((a) => {
+      const href = a.getAttribute("href");
+      if (href && href.startsWith("http")) {
+        const text = a.textContent.trim().toUpperCase();
+        const type = text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
+        if (!downloads.some((d) => d.url === href)) {
+          downloads.push({ type, url: href });
         }
+      }
+    });
 
-        if (href && href.includes("fetch?url=")) {
-          if (href.startsWith("/")) href = "https://indown.io" + href;
-          let realUrl = href;
-          try {
-            realUrl = decodeURIComponent(href.split("fetch?url=")[1]);
-          } catch (e) {}
-
-          const type =
-            href.includes(".mp4") ||
-            href.includes("video") ||
-            realUrl.includes(".mp4")
-              ? "VIDEO"
-              : "IMAGE";
-          const isMirror = downloads.some((d) => d.url === href);
-          downloads.push({ type, url: href, thumbnail: realUrl, isMirror });
-        }
-      });
-
+    // Fallback: any direct http link in result area
     if (downloads.length === 0) {
-      doc2.querySelectorAll("a").forEach((a) => {
-        let href = a.getAttribute("href");
-        if (href && href.includes("fetch?url=")) {
-          if (href.startsWith("/")) href = "https://indown.io" + href;
-          const type =
-            href.includes(".mp4") || href.includes("video") ? "VIDEO" : "IMAGE";
-          const isMirror = downloads.some((d) => d.url === href);
-          downloads.push({ type, url: href, isMirror });
+      const resultArea = doc2.querySelector(".container .row") || doc2;
+      resultArea.querySelectorAll("a").forEach((a) => {
+        const href = a.getAttribute("href");
+        if (
+          href &&
+          href.startsWith("http") &&
+          !href.includes("indown.io") &&
+          !href.includes("ads")
+        ) {
+          const text = a.textContent.trim().toUpperCase();
+          const type = text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
+          if (!downloads.some((d) => d.url === href)) {
+            downloads.push({ type, url: href });
+          }
         }
       });
     }
 
     if (downloads.length === 0)
-      throw new Error("Media links not found. Post might be private.");
-
-    const title =
-      doc2.querySelector("h5")?.textContent?.trim() || "Instagram Content";
-    if (!thumbnail) {
-      const allImgs = doc2.querySelectorAll(".row img");
-      for (const img of allImgs) {
-        const src = img.getAttribute("src") || "";
-        const isInternal =
-          src.includes("indown.io") &&
-          !src.includes("url=") &&
-          !src.includes("token=");
-        if (
-          src &&
-          !src.includes("logo") &&
-          !src.includes("placeholder") &&
-          !src.includes("images/") &&
-          !isInternal
-        ) {
-          thumbnail = src.startsWith("/") ? "https://indown.io" + src : src;
-          break;
-        }
-      }
-    }
+      throw new Error("Media links not found. Post might be private or invalid.");
 
     if (!thumbnail && downloads.length > 0) {
-      // Use the first media's real URL as thumbnail
-      const firstMedia = downloads.find((d) => !d.isMirror) || downloads[0];
-      thumbnail = firstMedia.thumbnail || firstMedia.url;
+      thumbnail = downloads[0].url;
     }
 
     return {
       status: true,
-      result: { title, thumbnail, downloads, sourceUrl: url },
+      result: {
+        title: "Instagram Content",
+        thumbnail,
+        downloads,
+        sourceUrl: url,
+      },
     };
   } catch (err) {
     return { status: false, message: err.message, statusCode: currentStatus };
@@ -982,35 +957,144 @@ export async function scrapePixiv(url) {
     const illustId = illustIdMatch[1];
 
     const res = await CapacitorHttp.get({
-      url: `https://www.phixiv.net/api/info?id=${illustId}`,
+      url: `https://www.pixiv.net/ajax/illust/${illustId}?lang=en`,
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Referer: "https://www.pixiv.net/",
+      },
     });
     currentStatus = res.status;
 
-    const data = res.data;
-    if (data.error || !data.image_proxy_urls) {
-      throw new Error("Artwork data secured/blocked.");
+    let resData = res.data;
+    if (typeof resData === "string") {
+      try {
+        resData = JSON.parse(resData);
+      } catch (e) {}
     }
 
-    let downloads = data.image_proxy_urls.map((u, i) => {
-      let type = "IMAGE";
-      if (u.toLowerCase().includes(".mp4")) type = "VIDEO";
-      if (data.is_ugoira && type === "VIDEO") type = "UGOIRA (MP4)";
-      else if (data.image_proxy_urls.length > 1 && !data.is_ugoira)
-        type = `PAGE ${i + 1}`;
-      return { type, url: u };
-    });
+    const data = resData?.body;
+    if (resData?.error || !data || !data.urls || !data.urls.original) {
+      let maxValid = 1;
 
-    if (data.is_ugoira && downloads.some((d) => d.type.includes("VIDEO"))) {
-      downloads = downloads.filter((d) => d.type.includes("VIDEO"));
+      const checkExists = async (page) => {
+        try {
+          const res = await fetch(`https://pixiv.re/${illustId}-${page}.jpg`, {
+            method: "HEAD",
+          });
+          return res.status !== 404;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      if (await checkExists(1)) {
+        let low = 1;
+        let high = 200;
+        while (low <= high) {
+          let mid = Math.floor((low + high) / 2);
+          if (await checkExists(mid)) {
+            maxValid = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+      }
+
+      const fallbackDownloads = [
+        { type: "IMAGE / PAGE 1", url: `https://pixiv.re/${illustId}.jpg` },
+      ];
+      for (let i = 2; i <= maxValid; i++) {
+        fallbackDownloads.push({
+          type: `PAGE ${i}`,
+          url: `https://pixiv.re/${illustId}-${i}.jpg`,
+        });
+      }
+      let fallbackTitle = "Pixiv Artwork (Restricted / R-18)";
+      try {
+        const htmlRes = await CapacitorHttp.get({
+          url: `https://www.pixiv.net/en/artworks/${illustId}`,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept-Language": "en-US,en;q=0.9"
+          }
+        });
+        if (htmlRes.data && typeof htmlRes.data === "string") {
+          const match = htmlRes.data.match(/<meta\s+property="twitter:title"\s+content="([^"]+)"/i);
+          if (match && match[1]) {
+            fallbackTitle = match[1]
+              .replace(/&amp;/g, "&")
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&lt;/g, "<")
+              .replace(/&gt;/g, ">");
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch R-18 title", e);
+      }
+
+      return {
+        status: true,
+        result: {
+          title: fallbackTitle,
+          thumbnail: `https://pixiv.re/${illustId}.jpg`,
+          downloads: fallbackDownloads,
+          sourceUrl: url,
+        },
+      };
     }
+
+    const pageCount = data.pageCount || 1;
+    const isUgoira = data.illustType === 2;
+    const downloads = [];
+
+    if (isUgoira) {
+      const ugoRes = await CapacitorHttp.get({
+        url: `https://www.pixiv.net/ajax/illust/${illustId}/ugoira_meta?lang=en`,
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          Referer: "https://www.pixiv.net/",
+        },
+      });
+      let ugoDataRaw = ugoRes.data;
+      if (typeof ugoDataRaw === "string") {
+        try {
+          ugoDataRaw = JSON.parse(ugoDataRaw);
+        } catch (e) {}
+      }
+      const ugoData = ugoDataRaw?.body;
+      if (ugoData && ugoData.originalSrc) {
+        downloads.push({
+          type: "UGOIRA (ZIP)",
+          url: ugoData.originalSrc.replace("i.pximg.net", "i.pixiv.re"),
+        });
+      }
+    } else {
+      const originalUrl = data.urls.original;
+      for (let i = 0; i < pageCount; i++) {
+        let type = pageCount > 1 ? `PAGE ${i + 1}` : "IMAGE";
+        let pageUrl = originalUrl.replace("_p0", `_p${i}`);
+        pageUrl = pageUrl.replace("i.pximg.net", "i.pixiv.re");
+        downloads.push({ type, url: pageUrl });
+      }
+    }
+
+    if (downloads.length === 0) {
+      throw new Error("No downloadable media found.");
+    }
+
+    const thumb =
+      data.urls.regular?.replace("i.pximg.net", "i.pixiv.re") ||
+      data.urls.original?.replace("i.pximg.net", "i.pixiv.re");
 
     return {
       status: true,
       result: {
         title: data.title
-          ? `${data.title} by ${data.author_name || "Unknown"}`
+          ? `${data.title} by ${data.userName || "Unknown"}`
           : "Pixiv Artwork",
-        thumbnail: data.image_proxy_urls[0],
+        thumbnail: thumb,
         downloads,
         sourceUrl: url,
       },
