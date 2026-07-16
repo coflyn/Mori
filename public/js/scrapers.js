@@ -9,10 +9,10 @@ import {
 
 export async function scrapeSoundCloud(url) {
   // SoundCloud currently requires a proxy due to SSE limitations in CapacitorHttp.
-  // Since this is a standalone build, SoundCloud is temporarily disabled.
+  // SoundCloud is temporarily disabled.
   return {
     status: false,
-    message: "SoundCloud is not supported in Standalone mode.",
+    message: "SoundCloud is not supported",
   };
 }
 
@@ -208,14 +208,16 @@ export async function scrapeInstagram(url) {
   let currentStatus = null;
   try {
     const cleanUrl = url.split("?")[0];
-    const desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    const acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
+    const desktopUA =
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    const acceptHeader =
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
 
     const r1 = await CapacitorHttp.get({
       url: "https://indown.io/en2",
       headers: {
         "User-Agent": desktopUA,
-        "Accept": acceptHeader,
+        Accept: acceptHeader,
       },
     });
     currentStatus = r1.status;
@@ -234,15 +236,17 @@ export async function scrapeInstagram(url) {
         Cookie: cookies,
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": desktopUA,
-        "Accept": acceptHeader,
+        Accept: acceptHeader,
       },
     });
     currentStatus = r2.status;
 
     const doc2 = parser.parseFromString(r2.data, "text/html");
-    
+
     // Check for error modal/alert
-    const errorMsg = doc2.querySelector("#error .modal-body")?.textContent?.trim();
+    const errorMsg = doc2
+      .querySelector("#error .modal-body")
+      ?.textContent?.trim();
     if (errorMsg && errorMsg.toLowerCase().includes("not found")) {
       throw new Error("Post not found on Indown.");
     }
@@ -261,7 +265,8 @@ export async function scrapeInstagram(url) {
       const href = a.getAttribute("href");
       if (href && href.startsWith("http")) {
         const text = a.textContent.trim().toUpperCase();
-        const type = text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
+        const type =
+          text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
         if (!downloads.some((d) => d.url === href)) {
           downloads.push({ type, url: href });
         }
@@ -280,7 +285,10 @@ export async function scrapeInstagram(url) {
           !href.includes("ads")
         ) {
           const text = a.textContent.trim().toUpperCase();
-          const type = text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
+          const type =
+            text.includes("PHOTO") || text.includes("IMAGE")
+              ? "IMAGE"
+              : "VIDEO";
           if (!downloads.some((d) => d.url === href)) {
             downloads.push({ type, url: href });
           }
@@ -289,7 +297,9 @@ export async function scrapeInstagram(url) {
     }
 
     if (downloads.length === 0)
-      throw new Error("Media links not found. Post might be private or invalid.");
+      throw new Error(
+        "Media links not found. Post might be private or invalid.",
+      );
 
     if (!thumbnail && downloads.length > 0) {
       thumbnail = downloads[0].url;
@@ -978,7 +988,8 @@ export async function scrapePixiv(url) {
 
       const checkExists = async (page) => {
         try {
-          const res = await fetch(`https://pixiv.re/${illustId}-${page}.jpg`, {
+          const res = await CapacitorHttp.request({
+            url: `https://pixiv.re/${illustId}-${page}.jpg`,
             method: "HEAD",
           });
           return res.status !== 404;
@@ -1016,11 +1027,13 @@ export async function scrapePixiv(url) {
           url: `https://www.pixiv.net/en/artworks/${illustId}`,
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept-Language": "en-US,en;q=0.9"
-          }
+            "Accept-Language": "en-US,en;q=0.9",
+          },
         });
         if (htmlRes.data && typeof htmlRes.data === "string") {
-          const match = htmlRes.data.match(/<meta\s+property="twitter:title"\s+content="([^"]+)"/i);
+          const match = htmlRes.data.match(
+            /<meta\s+property="twitter:title"\s+content="([^"]+)"/i,
+          );
           if (match && match[1]) {
             fallbackTitle = match[1]
               .replace(/&amp;/g, "&")
