@@ -10,12 +10,17 @@ bin/
 android/local.properties
 android/app/src/main/assets/public
 *.apk
+*.aab
+android/captures/
 
 # Environment & Logs
 .env*
 *.log
 npm-debug.log*
+*.hprof
 
 # OS & IDEs
 .DS_Store
 .vscode/
+.idea/
+*.iml

@@ -29,6 +29,11 @@ let modalCurrentSlide = 0;
 
 function renderMediaSlides(container, items, resultThumbnail) {
   if (!container) return;
+
+  // Cleanup old players before clearing
+  container.querySelectorAll(".mori-player-container").forEach((pc) => {
+    if (pc._cleanup) pc._cleanup();
+  });
   container.innerHTML = "";
 
   const isDataSaver = localStorage.getItem("mori_data_saver") === "true";

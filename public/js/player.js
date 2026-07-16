@@ -266,5 +266,13 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   };
   playerContainer.onmousemove = showControls;
 
+  // Return cleanup function to remove window listeners when player is destroyed
+  playerContainer._cleanup = () => {
+    window.removeEventListener("mousemove", doDrag);
+    window.removeEventListener("mouseup", stopDrag);
+    window.removeEventListener("touchmove", doDrag);
+    window.removeEventListener("touchend", stopDrag);
+  };
+
   return playerContainer;
 }

@@ -40,9 +40,11 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.5.0";
+const APP_VERSION = "3.6.0";
+const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL =
-  "https://gist.githubusercontent.com/coflyn/b4c2a950aa23bc896538adb70712b0c7/raw/mori_version.json";
+  `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 const urlInput = document.getElementById("urlInput");
 const clearBtn = document.getElementById("clearBtn");
@@ -705,12 +707,7 @@ function updateGreeting() {
   else greeting = lang["greeting-night"] || lang["greeting-evening"];
 
   greetingText.textContent = greeting;
-
-  if (currentLang === "ja") {
-    greetingStats.textContent = `履歴に ${history.length} ${lang["items-history"]}`;
-  } else {
-    greetingStats.textContent = `${history.length} ${lang["items-history"]}`;
-  }
+  greetingStats.textContent = `${history.length} ${lang["items-history"]}`;
 }
 
 // Initial calls
@@ -838,11 +835,6 @@ async function handlePasteFromClipboard(isSilent = false) {
         urlInput.value = trimmed;
         urlInput.dispatchEvent(new Event("input"));
         if (isSilent) {
-          showToast(
-            translations[currentLang]["toast-pasted-share"] ||
-              "Link Detected & Pasted",
-          );
-
           const autoDownload =
             localStorage.getItem("mori_auto_download") === "true";
           if (autoDownload) {
@@ -1180,32 +1172,28 @@ reportBugBtn?.addEventListener("click", () => {
 
 async function checkUpdate() {
   const actionLabel = checkUpdateBtn.querySelector(".action-label");
-
-  if (actionLabel.textContent === translations[currentLang]["btn-update"]) {
-    const text = encodeURIComponent(
-      `Hi coflyn, I want to update Mori to the latest version. I'm currently on v${APP_VERSION}.`,
-    );
-    const whatsappUrl = `https://wa.me/6282399408885?text=${text}`;
-    showToast(translations[currentLang]["label-opening-wa"]);
-    window.open(whatsappUrl, "_blank");
-    return;
-  }
-
   actionLabel.textContent = translations[currentLang]["btn-processing"];
   showToast(translations[currentLang]["label-checking-update"]);
 
   try {
-    const res = await fetch(UPDATE_CHECK_URL + "?t=" + Date.now());
-    const data = await res.json();
+    const res = await CapacitorHttp.get({
+      url: UPDATE_CHECK_URL,
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "Mori-App",
+      },
+    });
+    const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    const latest = (data.tag_name || "").replace(/^v/i, "");
 
-    if (data.version && data.version !== APP_VERSION) {
+    if (latest && latest !== APP_VERSION) {
       actionLabel.textContent = translations[currentLang]["btn-update"];
       showToast(
         translations[currentLang]["label-update-available"] +
-          " (v" +
-          data.version +
-          ")",
+          " (v" + latest + ")",
       );
+      // Store URL so click opens repo (location.href for WebView compat)
+      checkUpdateBtn.onclick = () => { window.location.href = REPO_URL; };
     } else {
       actionLabel.textContent = translations[currentLang]["btn-check"];
       showToast(translations[currentLang]["label-up-to-date"]);
@@ -1217,7 +1205,36 @@ async function checkUpdate() {
   }
 }
 
+async function autoCheckUpdate() {
+  try {
+    const res = await CapacitorHttp.get({
+      url: UPDATE_CHECK_URL,
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "Mori-App",
+      },
+    });
+    const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    const latest = (data.tag_name || "").replace(/^v/i, "");
+
+    if (latest && latest !== APP_VERSION) {
+      const lang = translations[currentLang];
+      const title = lang["label-update-available"];
+      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
+      showInfoModal(title, msg);
+      // Attach click handler after modal renders
+      setTimeout(() => {
+        const el = document.getElementById("autoUpdateLink");
+        if (el) el.onclick = () => { window.location.href = REPO_URL; };
+      }, 50);
+    }
+  } catch (e) {
+    // Silent fail on startup
+  }
+}
+
 checkUpdateBtn?.addEventListener("click", checkUpdate);
+autoCheckUpdate();
 
 // Custom Info Modal
 const infoOverlay = document.getElementById("infoOverlay");
@@ -1281,7 +1298,6 @@ downloadBtn.addEventListener("click", async () => {
   if (!url) return;
 
   // Wi-Fi Only Check
-  const loopSetting = localStorage.getItem("mori_loop") !== "false";
   const isWifiOnly = localStorage.getItem("mori_wifi_only") === "true";
   if (isWifiOnly && window.Capacitor?.getPlatform() !== "web") {
     const connection =
