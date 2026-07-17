@@ -5,7 +5,7 @@
 <h1 align="center">Mori - Minimalist Media Downloader</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.6.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v3.7.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
@@ -25,12 +25,19 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## Added some scrapers
+## What's New in v3.7.0
 
 - **SoundCloud Removed**: Replaced SoundCloud with **Bilibili**, **Douyin**, and **RedNote (Xiaohongshu)** scrapers.
-- **RedNote (Xiaohongshu)**: Download media via RedNoteDownloader.com server action with CDN URL extraction.
+- **Bilibili (Mainland & International)**: Full DASH support with video + audio stream extraction. Mainland China links use seekin.ai API fallback, while bilibili.tv links extract episode IDs from HTML `window.__initialState` and query the official playurl gateway directly.
 - **Douyin**: Direct page parsing with `window._ROUTER_DATA` extraction — supports both watermarked and no-watermark video.
-- **Bilibili**: Uses public Bilibili API (`x/web-interface/view` + `x/player/playurl`) to fetch title, thumbnail, video, and audio (DASH support).
+- **RedNote (Xiaohongshu)**: Download media via seekin.ai server action with CDN URL extraction.
+- **Download Quality Labels**: Platform scrapers now include descriptive quality labels (`1080p`, `320kbps`, etc.) displayed in the download list.
+- **Platform Icons Updated**: Douyin uses TikTok icon, Bilibili uses official Bilibili SVG icon, RedNote uses RedNote icon in the supported platforms table.
+- **Update Notification Modal**: Both manual and auto-update checks now show a polished modal with "Don't show again" option for auto-check. Supports EN/ID/JA translations.
+- **Preview Optimization**: Resolved infinite loading on Bilibili, Douyin, and RedNote previews.
+  - **Bilibili**: Now uses static image preview (similar to YouTube) to optimize layout and prevent player overhead.
+  - **Douyin**: Plays directly from the direct CDN watermark stream to prevent 302 redirect header-stripping issues and signature invalidation.
+  - **RedNote**: Loads the first 3MB chunk in memory as a `Blob` (via range headers) and converts it to a local Object URL to bypass CDN referrer restrictions.
 
 ## Previous Updates v3.6.0
 
@@ -76,9 +83,9 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
 | <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
 | <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
 | <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/rednote/EE0000" width="16" /> **RedNote**        | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**      | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
 | <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**      | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://simpleicons.org/icons/douyin.svg" width="16" /> **Douyin**           | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
+| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin**          | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
 
 ## Built With
 

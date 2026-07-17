@@ -1,3 +1,6 @@
+import { CapacitorHttp, Filesystem, showToast, currentLang } from "./utils.js";
+import { translations } from "./i18n.js";
+
 /**
  * Creates a custom video player element with all MoriPlayer controls.
  * @param {Object} dl - Download item with url, type, thumbnail properties.
@@ -5,6 +8,7 @@
  * @param {string} resultThumbnail - Fallback thumbnail URL.
  * @returns {HTMLElement} The player container element.
  */
+
 
 export function createVideoPlayer(dl, index, resultThumbnail) {
   const playerContainer = document.createElement("div");
@@ -16,7 +20,70 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   playerContainer.style.maxHeight = "80vh";
 
   const video = document.createElement("video");
-  video.src = dl.url;
+  video.setAttribute("referrerpolicy", "no-referrer");
+
+  let videoUrl = dl.url || "";
+  const isDouyin = /douyin|snssdk/i.test(videoUrl);
+
+  if (videoUrl.startsWith("http://") && !isDouyin) {
+    videoUrl = videoUrl.replace("http://", "https://");
+  }
+
+  const isBilibili = /bilibili|bilivideo/i.test(videoUrl);
+  const isRedNote = /xiaohongshu|rednote|xhscdn/i.test(videoUrl);
+  const needsBypass = isDouyin || isRedNote;
+  const isNative = window.Capacitor?.isNativePlatform();
+
+  if (needsBypass && isNative && CapacitorHttp) {
+    playerContainer.classList.add("mori-loading");
+
+    let referer = "https://www.google.com/";
+    let ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1";
+
+    if (isBilibili) {
+      referer = videoUrl.includes("bilibili.tv") ? "https://www.bilibili.tv/" : "https://www.bilibili.com/";
+      ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+    } else if (isDouyin) {
+      referer = "https://www.douyin.com/";
+    } else if (isRedNote) {
+      referer = "https://www.xiaohongshu.com/";
+    }
+
+    CapacitorHttp.get({
+      url: videoUrl,
+      responseType: "blob",
+      headers: {
+        "Referer": referer,
+        "User-Agent": ua,
+        "Range": "bytes=0-3145728"
+      }
+    }).then((res) => {
+      if (res.status >= 200 && res.status < 300 && res.data && (res.data instanceof Blob || res.data.constructor?.name === "Blob")) {
+        const fileUrl = URL.createObjectURL(res.data);
+        video.src = fileUrl;
+        
+        // Auto-play if active
+        const isCurrentActiveSlide = playerContainer.parentElement && playerContainer.parentElement.classList.contains("active");
+        const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
+        if ((index === 0 || isCurrentActiveSlide) && autoPlaySetting && video.paused) {
+          video.play().catch(() => {});
+        }
+      } else {
+        throw new Error(`Invalid response (Status ${res.status})`);
+      }
+    }).catch((err) => {
+      console.error("Native preview fetch failed, falling back:", err);
+      video.src = videoUrl;
+    });
+  } else {
+    video.src = videoUrl;
+  }
+
+  video.onerror = (e) => {
+    playerContainer.classList.remove("mori-loading");
+    console.error("Video element loading error:", video.error);
+  };
+
   const loopSetting = localStorage.getItem("mori_loop") !== "false";
   video.loop = loopSetting;
   video.muted = false;
@@ -272,6 +339,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     window.removeEventListener("mouseup", stopDrag);
     window.removeEventListener("touchmove", doDrag);
     window.removeEventListener("touchend", stopDrag);
+    if (playerContainer._blobUrl) {
+      URL.revokeObjectURL(playerContainer._blobUrl);
+    }
   };
 
   return playerContainer;
