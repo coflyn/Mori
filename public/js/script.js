@@ -1,5 +1,7 @@
 import {
-  scrapeSoundCloud,
+  scrapeRedNote,
+  scrapeDouyin,
+  scrapeBilibili,
   scrapeThreads,
   scrapeTikTok,
   scrapeInstagram,
@@ -42,8 +44,7 @@ import {
 
 const APP_VERSION = "3.6.0";
 const GITHUB_REPO = "coflyn/Mori";
-const UPDATE_CHECK_URL =
-  `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 const urlInput = document.getElementById("urlInput");
@@ -1179,7 +1180,7 @@ async function checkUpdate() {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
       headers: {
-        "Accept": "application/vnd.github+json",
+        Accept: "application/vnd.github+json",
         "User-Agent": "Mori-App",
       },
     });
@@ -1190,10 +1191,14 @@ async function checkUpdate() {
       actionLabel.textContent = translations[currentLang]["btn-update"];
       showToast(
         translations[currentLang]["label-update-available"] +
-          " (v" + latest + ")",
+          " (v" +
+          latest +
+          ")",
       );
       // Store URL so click opens repo (location.href for WebView compat)
-      checkUpdateBtn.onclick = () => { window.location.href = REPO_URL; };
+      checkUpdateBtn.onclick = () => {
+        window.location.href = REPO_URL;
+      };
     } else {
       actionLabel.textContent = translations[currentLang]["btn-check"];
       showToast(translations[currentLang]["label-up-to-date"]);
@@ -1210,7 +1215,7 @@ async function autoCheckUpdate() {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
       headers: {
-        "Accept": "application/vnd.github+json",
+        Accept: "application/vnd.github+json",
         "User-Agent": "Mori-App",
       },
     });
@@ -1222,10 +1227,12 @@ async function autoCheckUpdate() {
       const title = lang["label-update-available"];
       const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
       showInfoModal(title, msg);
-      // Attach click handler after modal renders
       setTimeout(() => {
         const el = document.getElementById("autoUpdateLink");
-        if (el) el.onclick = () => { window.location.href = REPO_URL; };
+        if (el)
+          el.onclick = () => {
+            window.location.href = REPO_URL;
+          };
       }, 50);
     }
   } catch (e) {
@@ -1366,8 +1373,12 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeAppleMusic(url);
       } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
         data = await scrapeFacebook(url);
-      } else if (url.includes("soundcloud.com")) {
-        data = await scrapeSoundCloud(url);
+      } else if (url.includes("xiaohongshu.com") || url.includes("xhslink.com")) {
+        data = await scrapeRedNote(url);
+      } else if (url.includes("douyin.com")) {
+        data = await scrapeDouyin(url);
+      } else if (url.includes("bilibili.com") || url.includes("b23.tv") || url.includes("bilibili.tv")) {
+        data = await scrapeBilibili(url);
       } else if (url.includes("threads.net") || url.includes("threads.com")) {
         data = await scrapeThreads(url);
       } else if (url.includes("bandcamp.com")) {
@@ -1566,6 +1577,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
+              versionCode: 7,
+              versionName: "3.6.0",
             };
           }
           return item;
