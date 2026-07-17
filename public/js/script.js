@@ -42,7 +42,7 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.6.0";
+const APP_VERSION = "3.7.0";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -1166,7 +1166,7 @@ reportBugBtn?.addEventListener("click", () => {
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
-  const whatsappUrl = `https://wa.me/6282399408885?text=${text}`;
+  const whatsappUrl = `https://wa.me/6285194858996?text=${text}`;
   showToast(translations[currentLang]["label-opening-wa"]);
   window.open(whatsappUrl, "_blank");
 });
@@ -1174,7 +1174,6 @@ reportBugBtn?.addEventListener("click", () => {
 async function checkUpdate() {
   const actionLabel = checkUpdateBtn.querySelector(".action-label");
   actionLabel.textContent = translations[currentLang]["btn-processing"];
-  showToast(translations[currentLang]["label-checking-update"]);
 
   try {
     const res = await CapacitorHttp.get({
@@ -1189,28 +1188,38 @@ async function checkUpdate() {
 
     if (latest && latest !== APP_VERSION) {
       actionLabel.textContent = translations[currentLang]["btn-update"];
-      showToast(
-        translations[currentLang]["label-update-available"] +
-          " (v" +
-          latest +
-          ")",
-      );
-      // Store URL so click opens repo (location.href for WebView compat)
-      checkUpdateBtn.onclick = () => {
-        window.location.href = REPO_URL;
-      };
+      const lang = translations[currentLang];
+      const title = lang["label-update-available"];
+      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="manualUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
+      showInfoModal(title, msg);
+      setTimeout(() => {
+        const el = document.getElementById("manualUpdateLink");
+        if (el)
+          el.onclick = () => {
+            window.location.href = REPO_URL;
+          };
+      }, 50);
     } else {
       actionLabel.textContent = translations[currentLang]["btn-check"];
-      showToast(translations[currentLang]["label-up-to-date"]);
+      const lang = translations[currentLang];
+      showInfoModal(lang["label-update"], `${lang["label-up-to-date"]}`);
     }
   } catch (e) {
     console.error("Update check failed:", e);
-    showToast(translations[currentLang]["label-check-failed"]);
     actionLabel.textContent = translations[currentLang]["btn-check"];
+    const lang = translations[currentLang];
+    showInfoModal(
+      lang["label-check-failed"] || "Check Failed",
+      lang["label-check-failed-msg"] ||
+        "Unable to reach GitHub. Check your connection and try again.",
+    );
   }
 }
 
 async function autoCheckUpdate() {
+  // Respect user skip
+  if (localStorage.getItem("mori_skip_auto_update")) return;
+
   try {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
@@ -1225,8 +1234,12 @@ async function autoCheckUpdate() {
     if (latest && latest !== APP_VERSION) {
       const lang = translations[currentLang];
       const title = lang["label-update-available"];
-      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
-      showInfoModal(title, msg);
+      const msg = `<div style="text-align:center;padding:8px 0;"><span style="font-size:2rem;display:block;margin-bottom:8px;">🎉</span>${lang["label-update-available"]} <strong>v${latest}</strong><br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;cursor:pointer;">${lang["btn-update"] || "Open Repository"}</span></div>`;
+      showInfoModal(title, msg, {
+        showDontShow: true,
+        dontShowKey: "mori_skip_auto_update",
+        dontShowLabel: lang["label-dont-show-again"] || "Don't show again",
+      });
       setTimeout(() => {
         const el = document.getElementById("autoUpdateLink");
         if (el)
@@ -1248,18 +1261,42 @@ const infoOverlay = document.getElementById("infoOverlay");
 const infoTitle = document.getElementById("infoTitle");
 const infoMessage = document.getElementById("infoMessage");
 const closeInfoModal = document.getElementById("closeInfoModal");
+const infoDontShowAgain = document.getElementById("infoDontShowAgain");
+const infoDontShowCheckbox = document.getElementById("infoDontShowCheckbox");
+const infoDontShowLabel = document.getElementById("infoDontShowLabel");
 
-function showInfoModal(title, message) {
+function showInfoModal(title, message, options = {}) {
   if (!infoOverlay) return;
   infoTitle.textContent = title;
   infoMessage.innerHTML = message;
+
+  // Handle "Don't show again" checkbox
+  if (options.showDontShow) {
+    infoDontShowAgain?.classList.remove("hidden");
+    infoDontShowCheckbox.checked = false;
+    if (infoDontShowLabel) {
+      infoDontShowLabel.textContent =
+        options.dontShowLabel || "Don't show again";
+    }
+    // Store flag on close if checked
+    const origClose = () => infoOverlay.classList.add("hidden");
+    const closeWithCheck = () => {
+      if (infoDontShowCheckbox.checked && options.dontShowKey) {
+        localStorage.setItem(options.dontShowKey, "true");
+      }
+      origClose();
+    };
+    closeInfoModal.onclick = closeWithCheck;
+  } else {
+    infoDontShowAgain?.classList.add("hidden");
+    closeInfoModal.onclick = () => infoOverlay.classList.add("hidden");
+  }
+
   infoOverlay.classList.remove("hidden");
 }
 
-closeInfoModal?.addEventListener("click", () => {
-  infoOverlay.classList.add("hidden");
-});
-
+// The close handler is now managed inside showInfoModal via options.
+// Clicking the overlay background still dismisses.
 infoOverlay?.addEventListener("click", (e) => {
   if (e.target === infoOverlay) infoOverlay.classList.add("hidden");
 });
@@ -1373,11 +1410,18 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeAppleMusic(url);
       } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
         data = await scrapeFacebook(url);
-      } else if (url.includes("xiaohongshu.com") || url.includes("xhslink.com")) {
+      } else if (
+        url.includes("xiaohongshu.com") ||
+        url.includes("xhslink.com")
+      ) {
         data = await scrapeRedNote(url);
       } else if (url.includes("douyin.com")) {
         data = await scrapeDouyin(url);
-      } else if (url.includes("bilibili.com") || url.includes("b23.tv") || url.includes("bilibili.tv")) {
+      } else if (
+        url.includes("bilibili.com") ||
+        url.includes("b23.tv") ||
+        url.includes("bilibili.tv")
+      ) {
         data = await scrapeBilibili(url);
       } else if (url.includes("threads.net") || url.includes("threads.com")) {
         data = await scrapeThreads(url);
@@ -1578,7 +1622,7 @@ window.addEventListener("mori_file_saved", async (e) => {
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
               versionCode: 7,
-              versionName: "3.6.0",
+              versionName: "3.7.0",
             };
           }
           return item;

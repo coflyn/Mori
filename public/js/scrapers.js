@@ -260,149 +260,167 @@ export async function scrapeBilibili(url) {
         cleanUrl = u.origin + u.pathname;
       } catch (e) {}
 
-      // Parse bilibili.tv path to extract video (aid) or anime (ep_id)
-      const urlObj = new URL(cleanUrl);
-      const parts = urlObj.pathname.split("/").filter(Boolean);
-
-      let apiInfo = null;
-      let title = "Bilibili.tv Video";
-      let thumbnail = null;
-
-      const idxVideo = parts.indexOf("video");
-      if (idxVideo !== -1) {
-        const aid = parts[idxVideo + 1];
-        if (aid && /^\d+$/.test(aid)) {
-          apiInfo = { tipo: "video", id: aid };
-        }
-      }
-
-      const idxPlay = parts.indexOf("play");
-      if (idxPlay !== -1) {
-        const numericParts = parts.slice(idxPlay + 1).filter((p) => /^\d+$/.test(p));
-        if (numericParts.length > 1) {
-          apiInfo = { tipo: "anime", id: numericParts[1] };
-        } else if (numericParts.length === 1) {
-          // Season-only URL, need to resolve default episode ID from HTML first
-          apiInfo = { tipo: "anime", id: null, seasonId: numericParts[0] };
-        }
-      }
-
-      if (!apiInfo) {
-        throw new Error("Could not parse Bilibili.tv video or episode ID.");
-      }
-
-      // Fetch HTML page to extract title, thumbnail, and default episode if needed
-      let html = "";
       try {
-        const pageRes = await CapacitorHttp.get({
-          url: cleanUrl,
+        // Parse bilibili.tv path to extract video (aid) or anime (ep_id)
+        const urlObj = new URL(cleanUrl);
+        const parts = urlObj.pathname.split("/").filter(Boolean);
+
+        let apiInfo = null;
+        let title = "Bilibili.tv Video";
+        let thumbnail = null;
+
+        const idxVideo = parts.indexOf("video");
+        if (idxVideo !== -1) {
+          const aid = parts[idxVideo + 1];
+          if (aid && /^\d+$/.test(aid)) {
+            apiInfo = { tipo: "video", id: aid };
+          }
+        }
+
+        const idxPlay = parts.indexOf("play");
+        if (idxPlay !== -1) {
+          const numericParts = parts
+            .slice(idxPlay + 1)
+            .filter((p) => /^\d+$/.test(p));
+          if (numericParts.length > 1) {
+            apiInfo = { tipo: "anime", id: numericParts[1] };
+          } else if (numericParts.length === 1) {
+            // Season-only URL, need to resolve default episode ID from HTML first
+            apiInfo = { tipo: "anime", id: null, seasonId: numericParts[0] };
+          }
+        }
+
+        if (!apiInfo) {
+          throw new Error("Could not parse Bilibili.tv video or episode ID.");
+        }
+
+        // Fetch HTML page to extract title, thumbnail, and default episode if needed
+        let html = "";
+        try {
+          const pageRes = await CapacitorHttp.get({
+            url: cleanUrl,
+            headers: {
+              "User-Agent": CHROME_UA,
+            },
+          });
+          html = pageRes.data || "";
+          const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+          if (titleMatch) title = titleMatch[1].trim();
+
+          const imageMatch =
+            html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) ||
+            html.match(/<meta\s+name="twitter:image"\s+content="([^"]+)"/i);
+          if (imageMatch) thumbnail = imageMatch[1];
+        } catch (err) {
+          console.error("Failed to fetch Bilibili.tv page metadata:", err);
+        }
+
+        // If we don't have the episode ID yet (season-only URL), resolve it from HTML
+        if (apiInfo.tipo === "anime" && !apiInfo.id) {
+          let defaultEpId = null;
+          try {
+            const match = html.match(
+              /window\.__initialState\s*=\s*([\s\S]*?)<\/script>/,
+            );
+            if (match) {
+              let scriptText = match[1].trim();
+              if (scriptText.endsWith(";")) {
+                scriptText = scriptText.substring(0, scriptText.length - 1);
+              }
+              const fn = new Function(`
+                var window = {};
+                window.__initialState = ${scriptText};
+                return window.__initialState;
+              `);
+              const state = fn();
+              if (state) {
+                defaultEpId =
+                  state.ogv?.season?.first_episode?.episode_id ||
+                  state.ogv?.sectionsList?.[0]?.episodes?.[0]?.episode_id;
+              }
+            }
+          } catch (err) {
+            console.error("Failed to parse Bilibili.tv season page HTML:", err);
+          }
+          apiInfo.id = defaultEpId || apiInfo.seasonId;
+        }
+
+        let urlApi;
+        if (apiInfo.tipo === "anime") {
+          urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?ep_id=${apiInfo.id}&device=wap&platform=web&qn=64&tf=0&type=0`;
+        } else {
+          urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?s_locale=en_US&platform=web&aid=${apiInfo.id}&qn=120`;
+        }
+
+        const playRes = await CapacitorHttp.get({
+          url: urlApi,
           headers: {
+            referer: "https://www.bilibili.tv/",
             "User-Agent": CHROME_UA,
           },
         });
-        html = pageRes.data || "";
-        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-        if (titleMatch) title = titleMatch[1].trim();
 
-        const imageMatch =
-          html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) ||
-          html.match(/<meta\s+name="twitter:image"\s+content="([^"]+)"/i);
-        if (imageMatch) thumbnail = imageMatch[1];
-      } catch (err) {
-        console.error("Failed to fetch Bilibili.tv page metadata:", err);
-      }
+        const playData =
+          typeof playRes.data === "string"
+            ? JSON.parse(playRes.data)
+            : playRes.data;
+        if (!playData || !playData.data?.playurl) {
+          throw new Error("Failed to retrieve Bilibili.tv stream data.");
+        }
 
-      // If we don't have the episode ID yet (season-only URL), resolve it from HTML
-      if (apiInfo.tipo === "anime" && !apiInfo.id) {
-        let defaultEpId = null;
-        try {
-          const match = html.match(/window\.__initialState\s*=\s*([\s\S]*?)<\/script>/);
-          if (match) {
-            let scriptText = match[1].trim();
-            if (scriptText.endsWith(";")) {
-              scriptText = scriptText.substring(0, scriptText.length - 1);
-            }
-            const fn = new Function(`
-              var window = {};
-              window.__initialState = ${scriptText};
-              return window.__initialState;
-            `);
-            const state = fn();
-            if (state) {
-              defaultEpId = state.ogv?.season?.first_episode?.episode_id || 
-                            state.ogv?.sectionsList?.[0]?.episodes?.[0]?.episode_id;
-            }
+        const playurl = playData.data.playurl;
+        const downloads = [];
+
+        // Extract video streams — all resolutions
+        const videoList = playurl.video || [];
+        for (const v of videoList) {
+          const resource = v.video_resource || {};
+          if (resource.url) {
+            const qText =
+              v.stream_info?.desc_words || `${v.stream_info?.quality}P` || "HD";
+            downloads.push({
+              url: resource.url,
+              type: "Video",
+              quality: qText,
+            });
           }
-        } catch (err) {
-          console.error("Failed to parse Bilibili.tv season page HTML:", err);
         }
-        apiInfo.id = defaultEpId || apiInfo.seasonId;
-      }
 
-      let urlApi;
-      if (apiInfo.tipo === "anime") {
-        urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?ep_id=${apiInfo.id}&device=wap&platform=web&qn=64&tf=0&type=0`;
-      } else {
-        urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?s_locale=en_US&platform=web&aid=${apiInfo.id}&qn=120`;
-      }
-
-      const playRes = await CapacitorHttp.get({
-        url: urlApi,
-        headers: {
-          referer: "https://www.bilibili.tv/",
-          "User-Agent": CHROME_UA,
-        },
-      });
-
-      const playData = typeof playRes.data === "string" ? JSON.parse(playRes.data) : playRes.data;
-      if (!playData || !playData.data?.playurl) {
-        throw new Error("Failed to retrieve Bilibili.tv stream data.");
-      }
-
-      const playurl = playData.data.playurl;
-      const downloads = [];
-
-      // Extract video streams
-      const videoList = playurl.video || [];
-      for (const v of videoList) {
-        const resource = v.video_resource || {};
-        if (resource.url) {
-          const qText = v.stream_info?.desc_words || `${v.stream_info?.quality}P` || "HD";
-          downloads.push({
-            url: resource.url,
-            type: "VIDEO",
-            quality: `Video - ${qText}`,
-          });
+        // Extract audio streams — all bitrates
+        const audioList = playurl.audio_resource || [];
+        for (const a of audioList) {
+          if (a.url) {
+            const qText = a.quality
+              ? `${Math.floor(a.quality / 1000)}kbps`
+              : "High";
+            downloads.push({
+              url: a.url,
+              type: "Audio",
+              quality: qText,
+            });
+          }
         }
-      }
 
-      // Extract audio streams
-      const audioList = playurl.audio_resource || [];
-      for (const a of audioList) {
-        if (a.url) {
-          const qText = a.quality ? `${Math.floor(a.quality / 1000)}kbps` : "High";
-          downloads.push({
-            url: a.url,
-            type: "AUDIO",
-            quality: `Audio - ${qText}`,
-          });
+        if (downloads.length === 0) {
+          throw new Error("No video or audio download streams found.");
         }
-      }
 
-      if (downloads.length === 0) {
-        throw new Error("No video or audio download streams found.");
+        return {
+          status: true,
+          result: {
+            title,
+            thumbnail,
+            author: "Bilibili.tv Creator",
+            downloads,
+            sourceUrl: url,
+          },
+        };
+      } catch (err) {
+        console.warn(
+          "Bilibili.tv native scraper failed, trying seekin.ai fallback:",
+          err,
+        );
       }
-
-      return {
-        status: true,
-        result: {
-          title,
-          thumbnail,
-          author: "Bilibili.tv Creator",
-          downloads,
-          sourceUrl: url,
-        },
-      };
     }
 
     // Clean tracking parameters to keep a clean destination URL
