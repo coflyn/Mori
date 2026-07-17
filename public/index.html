@@ -29,7 +29,7 @@
 
       <main>
         <!-- Home Page -->
-        <div id="homePage" class="page-content">
+        <div id="homePage" class="page-content animation">
           <div class="input-section">
             <div class="input-wrapper">
               <span class="search-icon">
@@ -377,7 +377,7 @@
         </div>
 
         <!-- History Page -->
-        <div id="historyPage" class="page-content hidden">
+        <div id="historyPage" class="page-content animation hidden">
           <div class="page-header history-header">
             <div class="header-main">
               <h2 data-i18n="nav-history">History</h2>
@@ -405,7 +405,7 @@
         </div>
 
         <!-- Settings Page -->
-        <div id="settingsPage" class="page-content hidden">
+        <div id="settingsPage" class="page-content animation hidden">
           <!-- Main Settings Menu -->
           <div id="settingsMainMenu">
             <div class="page-header">
@@ -454,8 +454,11 @@
                   <div class="menu-title" data-i18n="menu-appearance-title">
                     Look & feel
                   </div>
-                  <div class="menu-desc" data-i18n="menu-appearance-desc">
-                    Dark theme, Data saver
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="menu-desc" data-i18n="menu-appearance-desc">
+                      Dark theme, Data saver
+                    </div>
+                    <span class="new-icon">New</span>
                   </div>
                 </div>
               </div>
@@ -871,6 +874,19 @@
                 <div class="toggle-switch">
                   <input type="checkbox" id="dataSaverToggle" />
                   <label for="dataSaverToggle"></label>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg width="18" height="18" fill="currentColor" xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
+                      <path d="m10.5,2.5c0-.828.672-1.5,1.5-1.5s1.5.672,1.5,1.5-.672,1.5-1.5,1.5-1.5-.672-1.5-1.5Zm8.5,10.5c0,3.86-3.141,7-7,7s-7-3.14-7-7,3.141-7,7-7,7,3.14,7,7Zm-2,0c0-2.757-2.243-5-5-5s-5,2.243-5,5c0,1.018.306,1.965.83,2.756l3.463-3.463,1.414,1.414-3.463,3.463c.791.524,1.738.83,2.756.83,2.757,0,5-2.243,5-5Zm-15.5-1.5c-.828,0-1.5.672-1.5,1.5s.672,1.5,1.5,1.5,1.5-.672,1.5-1.5-.672-1.5-1.5-1.5Zm21,0c-.828,0-1.5.672-1.5,1.5s.672,1.5,1.5,1.5,1.5-.672,1.5-1.5-.672-1.5-1.5-1.5ZM4.5,7c.828,0,1.5-.672,1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5,1.5.672,1.5,1.5,1.5Zm15,12c-.828,0-1.5.672-1.5,1.5s.672,1.5,1.5,1.5,1.5-.672,1.5-1.5-.672-1.5-1.5-1.5Zm-15,0c-.828,0-1.5.672-1.5,1.5s.672,1.5,1.5,1.5,1.5-.672,1.5-1.5-.672-1.5-1.5-1.5Zm15-12c.828,0,1.5-.672,1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5,1.5.672,1.5,1.5,1.5Z"/>
+                  </svg>
+                  <span data-i18n="label-reduce-animation">Reduce animation</span>
+                  <span data-i18n="label-new-feature" class="new-icon">New</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="reduceAnimationToggle" />
+                  <label for="reduceAnimationToggle"></label>
                 </div>
               </div>
             </div>
@@ -1358,7 +1374,7 @@
 
       <!-- Modal -->
       <div id="modalOverlay" class="modal-overlay hidden">
-        <div class="modal-content">
+        <div class="modal-content animation">
           <div class="modal-header">
             <h3 id="modalTitle">History Detail</h3>
             <button id="closeModal">
@@ -1444,7 +1460,7 @@
       </nav>
       <!-- Custom Info Modal -->
       <div id="infoOverlay" class="modal-overlay hidden">
-        <div class="modal-content info-modal">
+        <div class="modal-content animation info-modal">
           <div class="modal-header">
             <h3 id="infoTitle">Info</h3>
             <button id="closeInfoModal">
@@ -1468,7 +1484,7 @@
 
       <!-- User Guide Modal -->
       <div id="guideOverlay" class="modal-overlay hidden">
-        <div class="modal-content guide-modal">
+        <div class="modal-content animation guide-modal">
           <div class="guide-header">
             <h2 data-i18n="guide-title">User guide</h2>
           </div>
@@ -1569,7 +1585,7 @@
 
       <!-- Custom Confirm Modal -->
       <div id="confirmOverlay" class="modal-overlay hidden">
-        <div class="modal-content confirm-modal">
+        <div class="modal-content animation confirm-modal">
           <div class="confirm-body">
             <h2 id="confirmTitle">Confirm Action</h2>
             <p id="confirmMessage">Are you sure you want to proceed?</p>

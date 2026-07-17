@@ -8,7 +8,10 @@
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "name": "Coflyn",
+    "url": "https://github.com/coflyn"
+  },
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

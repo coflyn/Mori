@@ -91,7 +91,7 @@ const confirmMessage = document.getElementById("confirmMessage");
 const okConfirmBtn = document.getElementById("okConfirmBtn");
 const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
 
-// Settings Elements
+// Settings Elementsblur
 const clearCacheBtn = document.getElementById("clearCacheBtn");
 const wipeDataBtn = document.getElementById("wipeDataBtn");
 const reportBugBtn = document.getElementById("reportBugBtn");
@@ -108,6 +108,7 @@ const aboutAppBtn = document.getElementById("aboutAppBtn");
 const incognitoToggle = document.getElementById("incognitoToggle");
 const autoPasteToggle = document.getElementById("autoPasteToggle");
 const dataSaverToggle = document.getElementById("dataSaverToggle");
+const reduceAnimationToggle = document.getElementById("reduceAnimationToggle");
 const shareAppBtn = document.getElementById("shareAppBtn");
 const changePathBtn = document.getElementById("changePathBtn");
 const pathVal = document.getElementById("pathVal");
@@ -189,6 +190,8 @@ if (incognitoToggle) {
 
 // Data Saver Mode Logic
 const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+const isReduceAnimation = localStorage.getItem("mori_reduce_animation") === "true";
+
 if (autoPasteToggle) {
   autoPasteToggle.checked = localStorage.getItem("mori_auto_paste") !== "false";
   autoPasteToggle.addEventListener("change", (e) => {
@@ -207,6 +210,43 @@ if (dataSaverToggle) {
         : lang["toast-datasaver-off"],
     );
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  });
+}
+
+function reduceAnimation() {
+  const isReduceAnimationCurrent = localStorage.getItem("mori_reduce_animation") === "true";
+  const pageContents = document.querySelectorAll(".page-content");
+  const modalContents = document.querySelectorAll(".modal-content");
+
+  if (isReduceAnimationCurrent) {
+    pageContents.forEach((pageContent) => {
+      pageContent.classList.remove("animation")
+    })
+    modalContents.forEach((modalContent) => {
+      modalContent.classList.remove("animation")
+    })
+  } else {
+    pageContents.forEach((pageContent) => {
+      pageContent.classList.add("animation")
+    })
+    modalContents.forEach((modalContent) => {
+      modalContent.classList.add("animation")
+    })
+  }
+}
+reduceAnimation()
+
+if (reduceAnimationToggle) {
+  reduceAnimationToggle.checked = isReduceAnimation;
+  reduceAnimationToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_reduce_animation", e.target.checked);
+    const lang = translations[currentLang];
+    showToast(
+      e.target.checked
+        ? lang["toast-reduce-animation-on"]
+        : lang["toast-reduce-animation-off"],
+    );
+    reduceAnimation()
   });
 }
 

@@ -291,7 +291,7 @@ input[type="text"]:focus {
   }
 }
 
-.page-content:not(.hidden) {
+.page-content.animation:not(.hidden) {
   animation: moriEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1672,7 +1672,7 @@ input[type="text"]:focus {
   transition: opacity 0.3s;
 }
 
-.modal-content {
+.modal-content.animation {
   background-color: var(--bg-color);
   width: 100%;
   max-width: 400px;
@@ -2212,4 +2212,10 @@ input[type="text"]:focus {
   text-transform: uppercase;
   letter-spacing: 1px;
   opacity: 0.8;
+}
+
+.new-icon {
+  background-color: red;
+  padding: 1px 5px 1px 5px;
+  font-size: 8px !important;
 }
