@@ -7,13 +7,463 @@ import {
   serializeData,
 } from "./utils.js";
 
-export async function scrapeSoundCloud(url) {
-  // SoundCloud currently requires a proxy due to SSE limitations in CapacitorHttp.
-  // SoundCloud is temporarily disabled.
-  return {
-    status: false,
-    message: "SoundCloud is not supported",
-  };
+// Helper to extract clean URL from pasted text (which may contain share text, comments, etc.)
+function getCleanUrl(text) {
+  if (!text || typeof text !== "string") return "";
+  const match = text.match(/https?:\/\/[^\s]+/);
+  let clean = match ? match[0] : text.trim();
+  // Ensure it has a protocol
+  if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    clean = "https://" + clean;
+  }
+  return clean;
+}
+
+async function sha256(message) {
+  const msgUint8 = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function scrapeRedNote(url) {
+  try {
+    let cleanUrl = getCleanUrl(url);
+
+    // Resolve redirection if it's a short URL to get the xsec_token
+    if (cleanUrl.includes("xhslink.com")) {
+      try {
+        const redirectRes = await CapacitorHttp.get({
+          url: cleanUrl,
+          headers: {
+            "User-Agent": CHROME_UA,
+          },
+        });
+        if (redirectRes.url) {
+          cleanUrl = redirectRes.url;
+        } else {
+          const html = redirectRes.data || "";
+          const canonicalMatch =
+            html.match(/<link\s+rel="canonical"\s+href="([^"]+)"/) ||
+            html.match(
+              /href="(https?:\/\/(?:www\.)?xiaohongshu\.com\/explore\/[^"]+)"/,
+            );
+          if (canonicalMatch) {
+            cleanUrl = canonicalMatch[1];
+          }
+        }
+      } catch (e) {
+        console.error("RedNote redirect resolve failed:", e);
+      }
+    }
+
+    const timestamp = Date.now().toString();
+    const secret = "3HT8hjE79L";
+    const signStr = "en" + timestamp + secret + "url=" + cleanUrl;
+    const sign = await sha256(signStr);
+
+    const res = await CapacitorHttp.post({
+      url: "https://api.seekin.ai/ikool/media/download",
+      data: { url: cleanUrl },
+      headers: {
+        "Content-Type": "application/json",
+        lang: "en",
+        timestamp: timestamp,
+        sign: sign,
+      },
+    });
+
+    const responseData =
+      typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    if (!responseData || responseData.code !== "0000" || !responseData.data) {
+      throw new Error(responseData?.msg || "Failed to process RedNote URL.");
+    }
+
+    const info = responseData.data;
+    const title = info.title || "RedNote_Media";
+    const thumbnail = info.imageUrl || null;
+    const downloads = [];
+
+    if (info.medias && info.medias.length > 0) {
+      for (const item of info.medias) {
+        downloads.push({
+          url: item.url,
+          type: "VIDEO",
+          quality: item.format || "HD",
+        });
+      }
+    } else if (info.images && info.images.length > 0) {
+      for (const item of info.images) {
+        downloads.push({
+          url: item.url || item,
+          type: "IMAGE",
+          quality: "HD",
+        });
+      }
+    }
+
+    if (downloads.length === 0) throw new Error("No media found on this URL.");
+    return {
+      status: true,
+      result: { title, thumbnail, downloads, sourceUrl: url },
+    };
+  } catch (e) {
+    return { status: false, message: e.message };
+  }
+}
+
+export async function scrapeDouyin(url) {
+  try {
+    if (!url || typeof url !== "string") throw new Error("Invalid URL.");
+    const clean = getCleanUrl(url);
+
+    // Fetch Douyin page
+    const mobileUA =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1";
+    const pageRes = await CapacitorHttp.get({
+      url: clean,
+      headers: {
+        "User-Agent": mobileUA,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+    });
+
+    const html = typeof pageRes.data === "string" ? pageRes.data : "";
+    const marker = "window._ROUTER_DATA =";
+    const startIdx = html.indexOf(marker);
+    if (startIdx === -1) throw new Error("Could not find video data in page.");
+
+    const slice = html.substring(startIdx + marker.length).trim();
+    // Balance braces to extract JSON
+    let braceCount = 0,
+      inStr = false,
+      strChar = null,
+      escape = false,
+      endIdx = -1;
+    for (let i = 0; i < slice.length; i++) {
+      const c = slice[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (inStr) {
+        if (c === strChar) inStr = false;
+        continue;
+      }
+      if (c === '"' || c === "'") {
+        inStr = true;
+        strChar = c;
+        continue;
+      }
+      if (c === "{") braceCount++;
+      else if (c === "}") {
+        braceCount--;
+        if (braceCount === 0) {
+          endIdx = i + 1;
+          break;
+        }
+      }
+    }
+    if (endIdx === -1) throw new Error("Could not parse router data.");
+
+    const routerData = JSON.parse(slice.substring(0, endIdx));
+    const loaderData = routerData.loaderData || {};
+    let videoInfoRes = null;
+    for (const key in loaderData) {
+      if (loaderData[key] && loaderData[key].videoInfoRes) {
+        videoInfoRes = loaderData[key].videoInfoRes;
+        break;
+      }
+    }
+    if (
+      !videoInfoRes ||
+      !videoInfoRes.item_list ||
+      videoInfoRes.item_list.length === 0
+    )
+      throw new Error("Could not locate video data.");
+
+    const item = videoInfoRes.item_list[0];
+    const title = item.desc || "Douyin Video";
+    const author = item.author ? item.author.nickname : "Unknown";
+    const thumbnail =
+      item.video && item.video.cover ? item.video.cover.url_list?.[0] : null;
+
+    // Watermarked URL
+    const watermarkUrl =
+      item.video && item.video.play_addr
+        ? item.video.play_addr.url_list?.[0]
+        : null;
+    if (!watermarkUrl) throw new Error("No video URL found.");
+
+    // Extract video_id for no-watermark URL
+    let videoId = null;
+    try {
+      videoId = new URL(watermarkUrl).searchParams.get("video_id");
+    } catch (e) {}
+    if (!videoId) {
+      const m = watermarkUrl.match(/video_id=([^&]+)/);
+      if (m) videoId = m[1];
+    }
+    const noWatermarkUrl = videoId
+      ? `https://aweme.snssdk.com/aweme/v1/play/?video_id=${videoId}`
+      : watermarkUrl;
+
+    return {
+      status: true,
+      result: {
+        title,
+        author,
+        thumbnail,
+        downloads: [
+          { type: "MP4 (No WM)", url: noWatermarkUrl },
+          { type: "MP4 (Watermark)", url: watermarkUrl },
+        ],
+        sourceUrl: url,
+      },
+    };
+  } catch (e) {
+    return { status: false, message: e.message };
+  }
+}
+
+export async function scrapeBilibili(url) {
+  try {
+    let cleanUrl = getCleanUrl(url);
+
+    // Resolve redirection if it's a short URL (b23.tv)
+    if (cleanUrl.includes("b23.tv")) {
+      try {
+        const redirectRes = await CapacitorHttp.get({
+          url: cleanUrl,
+          headers: {
+            "User-Agent": CHROME_UA,
+          },
+        });
+        if (redirectRes.url) {
+          cleanUrl = redirectRes.url;
+        }
+      } catch (e) {
+        console.error("Bilibili redirect resolve failed:", e);
+      }
+    }
+
+    if (cleanUrl.includes("bilibili.tv")) {
+      // Clean tracking parameters to keep a clean destination URL
+      try {
+        const u = new URL(cleanUrl);
+        cleanUrl = u.origin + u.pathname;
+      } catch (e) {}
+
+      // Parse bilibili.tv path to extract video (aid) or anime (ep_id)
+      const urlObj = new URL(cleanUrl);
+      const parts = urlObj.pathname.split("/").filter(Boolean);
+
+      let apiInfo = null;
+      let title = "Bilibili.tv Video";
+      let thumbnail = null;
+
+      const idxVideo = parts.indexOf("video");
+      if (idxVideo !== -1) {
+        const aid = parts[idxVideo + 1];
+        if (aid && /^\d+$/.test(aid)) {
+          apiInfo = { tipo: "video", id: aid };
+        }
+      }
+
+      const idxPlay = parts.indexOf("play");
+      if (idxPlay !== -1) {
+        const numericParts = parts.slice(idxPlay + 1).filter((p) => /^\d+$/.test(p));
+        if (numericParts.length > 1) {
+          apiInfo = { tipo: "anime", id: numericParts[1] };
+        } else if (numericParts.length === 1) {
+          // Season-only URL, need to resolve default episode ID from HTML first
+          apiInfo = { tipo: "anime", id: null, seasonId: numericParts[0] };
+        }
+      }
+
+      if (!apiInfo) {
+        throw new Error("Could not parse Bilibili.tv video or episode ID.");
+      }
+
+      // Fetch HTML page to extract title, thumbnail, and default episode if needed
+      let html = "";
+      try {
+        const pageRes = await CapacitorHttp.get({
+          url: cleanUrl,
+          headers: {
+            "User-Agent": CHROME_UA,
+          },
+        });
+        html = pageRes.data || "";
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+        if (titleMatch) title = titleMatch[1].trim();
+
+        const imageMatch =
+          html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) ||
+          html.match(/<meta\s+name="twitter:image"\s+content="([^"]+)"/i);
+        if (imageMatch) thumbnail = imageMatch[1];
+      } catch (err) {
+        console.error("Failed to fetch Bilibili.tv page metadata:", err);
+      }
+
+      // If we don't have the episode ID yet (season-only URL), resolve it from HTML
+      if (apiInfo.tipo === "anime" && !apiInfo.id) {
+        let defaultEpId = null;
+        try {
+          const match = html.match(/window\.__initialState\s*=\s*([\s\S]*?)<\/script>/);
+          if (match) {
+            let scriptText = match[1].trim();
+            if (scriptText.endsWith(";")) {
+              scriptText = scriptText.substring(0, scriptText.length - 1);
+            }
+            const fn = new Function(`
+              var window = {};
+              window.__initialState = ${scriptText};
+              return window.__initialState;
+            `);
+            const state = fn();
+            if (state) {
+              defaultEpId = state.ogv?.season?.first_episode?.episode_id || 
+                            state.ogv?.sectionsList?.[0]?.episodes?.[0]?.episode_id;
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse Bilibili.tv season page HTML:", err);
+        }
+        apiInfo.id = defaultEpId || apiInfo.seasonId;
+      }
+
+      let urlApi;
+      if (apiInfo.tipo === "anime") {
+        urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?ep_id=${apiInfo.id}&device=wap&platform=web&qn=64&tf=0&type=0`;
+      } else {
+        urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?s_locale=en_US&platform=web&aid=${apiInfo.id}&qn=120`;
+      }
+
+      const playRes = await CapacitorHttp.get({
+        url: urlApi,
+        headers: {
+          referer: "https://www.bilibili.tv/",
+          "User-Agent": CHROME_UA,
+        },
+      });
+
+      const playData = typeof playRes.data === "string" ? JSON.parse(playRes.data) : playRes.data;
+      if (!playData || !playData.data?.playurl) {
+        throw new Error("Failed to retrieve Bilibili.tv stream data.");
+      }
+
+      const playurl = playData.data.playurl;
+      const downloads = [];
+
+      // Extract video streams
+      const videoList = playurl.video || [];
+      for (const v of videoList) {
+        const resource = v.video_resource || {};
+        if (resource.url) {
+          const qText = v.stream_info?.desc_words || `${v.stream_info?.quality}P` || "HD";
+          downloads.push({
+            url: resource.url,
+            type: "VIDEO",
+            quality: `Video - ${qText}`,
+          });
+        }
+      }
+
+      // Extract audio streams
+      const audioList = playurl.audio_resource || [];
+      for (const a of audioList) {
+        if (a.url) {
+          const qText = a.quality ? `${Math.floor(a.quality / 1000)}kbps` : "High";
+          downloads.push({
+            url: a.url,
+            type: "AUDIO",
+            quality: `Audio - ${qText}`,
+          });
+        }
+      }
+
+      if (downloads.length === 0) {
+        throw new Error("No video or audio download streams found.");
+      }
+
+      return {
+        status: true,
+        result: {
+          title,
+          thumbnail,
+          author: "Bilibili.tv Creator",
+          downloads,
+          sourceUrl: url,
+        },
+      };
+    }
+
+    // Clean tracking parameters to keep a clean destination URL
+    try {
+      const u = new URL(cleanUrl);
+      cleanUrl = u.origin + u.pathname;
+    } catch (e) {}
+
+    const timestamp = Date.now().toString();
+    const secret = "3HT8hjE79L";
+    const signStr = "en" + timestamp + secret + "url=" + cleanUrl;
+    const sign = await sha256(signStr);
+
+    const res = await CapacitorHttp.post({
+      url: "https://api.seekin.ai/ikool/media/download",
+      data: { url: cleanUrl },
+      headers: {
+        "Content-Type": "application/json",
+        lang: "en",
+        timestamp: timestamp,
+        sign: sign,
+      },
+    });
+
+    const responseData =
+      typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    if (!responseData || responseData.code !== "0000" || !responseData.data) {
+      throw new Error(responseData?.msg || "Failed to process Bilibili URL.");
+    }
+
+    const info = responseData.data;
+    const title = info.title || "Bilibili Video";
+    const thumbnail = info.imageUrl || null;
+    const downloads = [];
+
+    if (info.medias && info.medias.length > 0) {
+      for (let i = 0; i < info.medias.length; i++) {
+        const item = info.medias[i];
+        downloads.push({
+          url: item.url,
+          type: "VIDEO",
+          quality: item.format || `Part ${i + 1}`,
+        });
+      }
+    }
+
+    if (downloads.length === 0) throw new Error("No video URLs found.");
+
+    return {
+      status: true,
+      result: {
+        title,
+        thumbnail,
+        author: "Bilibili Creator",
+        downloads,
+        sourceUrl: url,
+      },
+    };
+  } catch (e) {
+    return { status: false, message: e.message };
+  }
 }
 
 export async function scrapeThreads(url) {

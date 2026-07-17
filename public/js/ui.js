@@ -259,11 +259,11 @@ export function renderResult(result, originalUrl) {
 
   const sliderItems = slideData.filter((dl) => !dl.isMirror);
   const isSinglePreview =
-    /youtube\.com|youtu\.be|soundcloud\.com|spotify\.com|music\.apple\.com|bandcamp\.com/i.test(
+    /youtube\.com|youtu\.be|spotify\.com|music\.apple\.com|bandcamp\.com/i.test(
       urlInput.value,
     ) ||
     (result.title &&
-      /youtube|soundcloud|spotify|apple music|bandcamp/i.test(
+      /youtube|spotify|apple music|bandcamp/i.test(
         result.title.toLowerCase(),
       ));
 

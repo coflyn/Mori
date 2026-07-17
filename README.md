@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
 
-Mori is a modern, privacy-first media downloader that saves photos, videos, and audio from 12 platforms. Built with a **client-only architecture**, all scraping runs on-device — no backend, no tracking, maximum privacy.
+Mori is a modern, privacy-first media downloader that saves photos, videos, and audio from 14 platforms. Built with a **client-only architecture**, all scraping runs on-device — no backend, no tracking, maximum privacy.
 
 ## 📸 Screenshots
 
@@ -25,7 +25,14 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.6.0
+## Added some scrapers
+
+- **SoundCloud Removed**: Replaced SoundCloud with **Bilibili**, **Douyin**, and **RedNote (Xiaohongshu)** scrapers.
+- **RedNote (Xiaohongshu)**: Download media via RedNoteDownloader.com server action with CDN URL extraction.
+- **Douyin**: Direct page parsing with `window._ROUTER_DATA` extraction — supports both watermarked and no-watermark video.
+- **Bilibili**: Uses public Bilibili API (`x/web-interface/view` + `x/player/playurl`) to fetch title, thumbnail, video, and audio (DASH support).
+
+## Previous Updates v3.6.0
 
 - **Instagram**: Fixed the existing `indown.io` scraper by implementing custom desktop `User-Agent` and `Accept` header structures to bypass Cloudflare Turnstile and JS-based challenges. This fully resolves the recent `403 Forbidden` block and correctly parses reels, videos, and multi-image posts.
 
@@ -69,8 +76,9 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
 | <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
 | <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
 | <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/soundcloud/FF3300" width="16" /> **SoundCloud**  | Audio Tracks             | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
-| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**      | Album / Track Support    | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
+| <img src="https://cdn.simpleicons.org/rednote/EE0000" width="16" /> **RedNote**        | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**      | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
+| <img src="https://simpleicons.org/icons/douyin.svg" width="16" /> **Douyin**           | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
 
 ## Built With
 
@@ -108,7 +116,7 @@ Mori/
 
 ## Key Features
 
-- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark), Instagram (Reels/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, SoundCloud, Threads, **Bandcamp**, and **Pixiv** (including R-18/R-18G).
+- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark), Instagram (Reels/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
 - **Live Media Previews**: View images, play videos, and listen to audio directly within the app before downloading.
 - **Standalone PDF Document Export**: Convert image galleries from any platform into high-quality PDF files for offline viewing.
 - **Private History Manager**: Downloaded files are managed internally with local playback support and offline badge detection.
