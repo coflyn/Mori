@@ -5,7 +5,7 @@
 <h1 align="center">Mori - Minimalist Media Downloader</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.7.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v3.8.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
@@ -25,7 +25,17 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.7.0
+## What's New in v3.8.0
+
+- **TikTok Scraper Migrated (SnapTik → TikTokIO)**: Replaced the broken SnapTik-based scraper with a new implementation using `tiktokio.com/api/v1/tk/html`. Direct POST request via `CapacitorHttp`, regex-based HTML parsing (no DOM dependency), supports video (no watermark / HD) and MP3 downloads.
+- **Douyin Photo Slideshow**: Added support for Douyin photo posts (`aweme_type` 2). Multiple images display as a swipeable slideshow — same as TikTok photo experience.
+- **Consolidated User-Agent**: Removed scattered hardcoded UA strings across all scrapers — replaced with a single `CHROME_UA` constant from `utils.js`. Only Douyin keeps its mobile Safari UA intentionally.
+- **Bugfixes**:
+  - **Instagram URL cleaning**: Now uses `getCleanUrl()` before stripping query params — prevents failure when pasting text with embedded URLs.
+  - **Douyin thumbnail**: Falls back to first photo URL when `item.video.cover` is undefined (photo slideshows).
+  - **TikTok URL query params**: Strips `?` parameters before sending to TikTokIO API — was causing "Paste correct link" errors.
+
+## Previous Updates v3.7.0
 
 - **SoundCloud Removed**: Replaced SoundCloud with **Bilibili**, **Douyin**, and **RedNote (Xiaohongshu)** scrapers.
 - **Bilibili (Mainland & International)**: Full DASH support with video + audio stream extraction. Mainland China links use seekin.ai API fallback, while bilibili.tv links extract episode IDs from HTML `window.__initialState` and query the official playurl gateway directly.
@@ -39,53 +49,17 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   - **Douyin**: Plays directly from the direct CDN watermark stream to prevent 302 redirect header-stripping issues and signature invalidation.
   - **RedNote**: Loads the first 3MB chunk in memory as a `Blob` (via range headers) and converts it to a local Object URL to bypass CDN referrer restrictions.
 
-## Previous Updates v3.6.0
-
-- **Instagram**: Fixed the existing `indown.io` scraper by implementing custom desktop `User-Agent` and `Accept` header structures to bypass Cloudflare Turnstile and JS-based challenges. This fully resolves the recent `403 Forbidden` block and correctly parses reels, videos, and multi-image posts.
-
-- **Pixiv**: Migrated the fallback system for restricted (R-18/R-18G) and region-locked artworks to **Pixivre (pixiv.re)** as the alternative, since Phixiv is no longer available. When the main Pixiv API blocks content, Mori dynamically detects the total page count using a lightweight binary search on `pixiv.re` HEAD checks via `CapacitorHttp`, and extracts the original post title via static HTML scraping of `pixiv.net/en/artworks/` metadata.
-
-- **Google Fonts**: Added `Space Mono` to the preloaded Google Fonts stylesheet — all five font families (`Inter`, `Outfit`, `Plus Jakarta Sans`, `Space Mono`) are now correctly loaded.
-
-- **Japanese Translations**: Completed all missing Japanese UI strings (~25+ keys) including Privacy Lock, Biometric, Export/Import, User Guide, Wi-Fi Only, and Auto-Download. Fixed mismatched key names (`toast-autoclear-on/off` → `toast-autoclear-cache-on/off`).
-
-- **Biometric Reason Prompt**: Added `label-biometric-reason` translation key for all three languages (EN/ID/JA) — biometric prompt no longer shows raw `"undefined"`.
-
-- **Pixiv Network Consistency**: Replaced raw `fetch()` with `CapacitorHttp.request()` in the Pixiv fallback binary search for consistent CORS/cookie handling across Android WebView.
-
-- **Duplicate CSS Removed**: Removed 3 redundant CSS selector blocks (`.progress-container`, `.progress-bar`, duplicate `.slide-indicator`) that conflicted with the later polished definitions.
-
-- **Unused Code Cleanup**: Removed unused `loopSetting` variable from the download handler.
-
-- **Android `.gitignore` Hardened**: Added standard patterns (`*.aab`, `.idea/`, `*.hprof`, `*.iml`, `android/captures/`).
-
-- **Update Check via GitHub Releases**: Replaced Gist-based version check with GitHub Releases API (`api.github.com/repos/coflyn/Mori`). When an update is available, clicking the button opens the repo page directly.
-
-- **Auto-Check on Startup**: Added `autoCheckUpdate()` that runs when the app launches — if a newer version is detected, it shows a popup modal with a link to open the GitHub repo.
-
-- **SEO & Meta Tags**: Added proper `<title>`, meta description, Open Graph tags, and favicon link to `index.html` for better sharing previews and discoverability.
-
-- **Removed Unused Axios**: Dropped the unused `axios.min.js` CDN script from `index.html`, reducing initial page load.
-
-- **Player Window Listener Leak Fixed**: Video players now properly clean up global `window` event listeners (`mousemove`, `mouseup`, `touchmove`, `touchend`) when slides are re-rendered or unmounted, preventing memory leaks.
-
-- **Double Toast Removed (Auto-Paste)**: Removed Mori's redundant toast notification when silently pasting from clipboard — only the system Android clipboard toast shows now.
-
-- **Toast Layout Fix**: Fixed toast container CSS to use `inline-block` + `white-space: nowrap` so short text stays on a single row instead of wrapping unnecessarily.
-
-- **Hardcoded Locale Format Removed**: Replaced JA-specific hardcoded greeting formatting with a single i18n template that works for all languages.
-
 ## Supported Platforms
 
-| Platform                                                                               | Features                 | Platform                                                                            | Features                 |
-| :------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**          | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**      | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
-| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**      | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin**          | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
+| Platform                                                                                                                                                              | Features                 | Platform                                                                            | Features                 |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
+| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
 
 ## Built With
 

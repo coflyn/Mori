@@ -13,8 +13,7 @@ android/app/src/main/assets/public
 *.aab
 android/captures/
 
-# Environment & Logs
-.env*
+# Logs
 *.log
 npm-debug.log*
 *.hprof
