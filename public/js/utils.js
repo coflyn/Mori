@@ -257,3 +257,88 @@ export async function getVideoThumbnail(videoUri) {
     video.load();
   });
 }
+
+export const CapacitorHttpWeb = {
+  async get(options) {
+    const {
+      url,
+      headers = {},
+      params,
+      responseType = "text",
+    } = options;
+
+    const finalUrl = new URL(url);
+
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        finalUrl.searchParams.append(k, v);
+      });
+    }
+
+    const res = await fetch(finalUrl.toString(), {
+      method: "GET",
+      headers,
+    });
+
+    return {
+      data: await parseBody(res, responseType),
+      status: res.status,
+      headers: Object.fromEntries(res.headers.entries()),
+      url: res.url,
+    };
+  },
+
+  async post(options) {
+    const {
+      url,
+      headers = {},
+      data,
+      responseType = "text",
+    } = options;
+
+    let body = data;
+
+    const contentType = headers["Content-Type"] || headers["content-type"];
+
+    if (
+      contentType?.includes("application/x-www-form-urlencoded") &&
+      typeof data === "object"
+    ) {
+      body = new URLSearchParams(data).toString();
+    } else if (
+      contentType?.includes("application/json") &&
+      typeof data === "object"
+    ) {
+      body = JSON.stringify(data);
+    }
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body,
+    });
+
+    return {
+      data: await parseBody(res, responseType),
+      status: res.status,
+      headers: Object.fromEntries(res.headers.entries()),
+      url: res.url,
+    };
+  },
+};
+
+async function parseBody(res, type) {
+  switch (type) {
+    case "json":
+      return await res.json();
+
+    case "blob":
+      return await res.blob();
+
+    case "arraybuffer":
+      return await res.arrayBuffer();
+
+    default:
+      return await res.text();
+  }
+}

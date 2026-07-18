@@ -1,11 +1,14 @@
 import {
-  CapacitorHttp,
+  CapacitorHttp as CapacitorHttpNative,
   CHROME_UA,
   getCookiesFromHeaders,
   decodeSnapSave,
   extractFinalUrl,
   serializeData,
+  CapacitorHttpWeb
 } from "./utils.js";
+
+const CapacitorHttp = CapacitorHttpNative ?? CapacitorHttpWeb;
 
 export async function scrapeSoundCloud(url) {
   // SoundCloud currently requires a proxy due to SSE limitations in CapacitorHttp.
@@ -200,6 +203,79 @@ export async function scrapeTikTok(url) {
       result: { title, thumbnail: thumb, downloads, sourceUrl: url },
     };
   } catch (err) {
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
+export async function scrapeTikTokV2(url) {
+  let currentStatus = null;
+  try {
+    const body = new URLSearchParams({
+      url,
+      count: "12",
+      cursor: "0",
+      web: "1",
+      hd: "1",
+    });
+
+    const mainRes = await CapacitorHttp.post({
+      url: `https://tikwm.com/api/`,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      data: body,
+      responseType: "json"
+    });
+    currentStatus = mainRes.status;
+
+    let data = mainRes.data;
+    if (!data?.data || data?.msg != "success" || !data?.data?.title || !data?.data?.cover) {
+      console.error(data.data)
+      return { status: false, message: "Error tikwm provider.", statusCode: currentStatus };
+    }
+    data = data?.data;
+    
+    let title = data.title;
+    let thumb = !data.cover.includes("tiktokcdn-us") ? "https://tikwm.com" + data.cover : data.cover;
+    let downloads = [];
+
+    if (data?.images && data?.images?.length != 0) {
+      thumb = data.images[0];
+      data.images.forEach((image) => {
+        downloads.push({ type: "PHOTO", url: !image.includes("tiktokcdn-us") ? "https://tikwm.com" + image : image, isMirror: false });
+      })
+    } else if (data?.hdplay && data?.hdplay != "") {
+      downloads.push({ type: "VIDEO", url: !data.hdplay.includes("tiktokcdn-us") ? "https://tikwm.com/" + data.hdplay : data.hdplay, isMirror: false });
+      if (data?.music_info && data?.music_info?.play) {
+        downloads.push({ type: "AUDIO", url: !data.music_info.play.includes("tiktokcdn-us") ? "https://tikwm.com/" + data.music_info.play : data.music_info.play, isMirror: false });
+      }
+    } else {
+      console.error(data.data)
+      return { status: false, message: "Error tikwm provider.", statusCode: currentStatus };
+    }
+
+    return {
+      status: true,
+      result: { title, thumbnail: thumb, downloads, sourceUrl: url },
+    };
+  } catch (err) {
+    console.error(err.message)
+    return { status: false, message: err.message, statusCode: currentStatus };
+  }
+}
+
+export async function scrapeTikTokV3(url) {
+  let currentStatus = null;
+  try {
+    
+
+    return {
+      status: true,
+      result: { title, thumbnail: thumb, downloads, sourceUrl: url },
+    };
+  } catch (err) {
+    console.error(err.message)
     return { status: false, message: err.message, statusCode: currentStatus };
   }
 }

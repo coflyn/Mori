@@ -2,6 +2,7 @@ import {
   scrapeSoundCloud,
   scrapeThreads,
   scrapeTikTok,
+  scrapeTikTokV2,
   scrapeInstagram,
   scrapeYouTube,
   scrapeTwitter,
@@ -23,7 +24,7 @@ import {
 } from "./ui.js";
 
 import {
-  CapacitorHttp,
+  CapacitorHttp as CapacitorHttpNative,
   Filesystem,
   Toast,
   Clipboard,
@@ -38,6 +39,7 @@ import {
   getVideoThumbnail,
   setUtilsState,
   Share,
+  CapacitorHttpWeb,
 } from "./utils.js";
 
 const APP_VERSION = "3.6.0";
@@ -45,6 +47,8 @@ const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL =
   `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
+
+const CapacitorHttp = CapacitorHttpNative ?? CapacitorHttpWeb;
 
 const urlInput = document.getElementById("urlInput");
 const clearBtn = document.getElementById("clearBtn");
@@ -1391,7 +1395,12 @@ downloadBtn.addEventListener("click", async () => {
     if (CapacitorHttp) {
       console.log("[NATIVE] Using CapacitorHttp for:", url);
       if (url.includes("tiktok.com")) {
-        data = await scrapeTikTok(url);
+        data = await scrapeTikTokV2(url);
+        if (!data.status || !data || data.result.thumbnail == "" || data.result.downloads.length == 0) {
+          // Fallback kalo scraping url baru gak berfungsi ygy
+          console.log("[FALLBACK] Tiktok scraper to default.")
+          data = await scrapeTikTok(url);
+        }
       } else if (url.includes("instagram.com")) {
         data = await scrapeInstagram(url);
       } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -1421,6 +1430,8 @@ downloadBtn.addEventListener("click", async () => {
       console.log("[PROXY] Falling back to server proxy");
       data = await scrapeProxy(url);
     }
+
+    console.log(data)
 
     if (data && data.status) {
       // SMART LOCAL DETECTION: Check if we have this content in history and on disk
@@ -1460,6 +1471,7 @@ downloadBtn.addEventListener("click", async () => {
       }
       loader.classList.add("hidden");
     } else {
+      console.error(data)
       const errMsg = data?.message || "Unknown error occurred.";
       handleScrapeError(data, data?.statusCode);
       if (loaderText)
