@@ -189,41 +189,61 @@ export async function scrapeDouyin(url) {
       throw new Error("Could not locate video data.");
 
     const item = videoInfoRes.item_list[0];
-    const title = item.desc || "Douyin Video";
+    const title = item.desc || "Douyin Content";
     const author = item.author ? item.author.nickname : "Unknown";
-    const thumbnail =
-      item.video && item.video.cover ? item.video.cover.url_list?.[0] : null;
+    const awemeType = item.aweme_type;
 
-    // Watermarked URL
-    const watermarkUrl =
-      item.video && item.video.play_addr
-        ? item.video.play_addr.url_list?.[0]
-        : null;
-    if (!watermarkUrl) throw new Error("No video URL found.");
+    const downloads = [];
 
-    // Extract video_id for no-watermark URL
-    let videoId = null;
-    try {
-      videoId = new URL(watermarkUrl).searchParams.get("video_id");
-    } catch (e) {}
-    if (!videoId) {
-      const m = watermarkUrl.match(/video_id=([^&]+)/);
-      if (m) videoId = m[1];
+    // Photo slideshow (aweme_type 2)
+    if (awemeType === 2 && item.images && item.images.length > 0) {
+      item.images.forEach((img) => {
+        const url = img.url_list?.[0];
+        if (url) {
+          const isMirror = downloads.some((d) => d.url === url);
+          downloads.push({ type: "PHOTO", url, isMirror });
+        }
+      });
+    } else {
+      // Video mode
+      const thumbnail =
+        item.video && item.video.cover ? item.video.cover.url_list?.[0] : null;
+
+      const watermarkUrl =
+        item.video && item.video.play_addr
+          ? item.video.play_addr.url_list?.[0]
+          : null;
+      if (!watermarkUrl) throw new Error("No video URL found.");
+
+      let videoId = null;
+      try {
+        videoId = new URL(watermarkUrl).searchParams.get("video_id");
+      } catch (e) {}
+      if (!videoId) {
+        const m = watermarkUrl.match(/video_id=([^&]+)/);
+        if (m) videoId = m[1];
+      }
+      const noWatermarkUrl = videoId
+        ? `https://aweme.snssdk.com/aweme/v1/play/?video_id=${videoId}`
+        : watermarkUrl;
+
+      downloads.push(
+        { type: "VIDEO", url: noWatermarkUrl, isMirror: false },
+        { type: "VIDEO_WM", url: watermarkUrl, isMirror: true },
+      );
     }
-    const noWatermarkUrl = videoId
-      ? `https://aweme.snssdk.com/aweme/v1/play/?video_id=${videoId}`
-      : watermarkUrl;
+
+    if (downloads.length === 0) {
+      throw new Error("No downloadable media found.");
+    }
 
     return {
       status: true,
       result: {
         title,
         author,
-        thumbnail,
-        downloads: [
-          { type: "MP4 (No WM)", url: noWatermarkUrl },
-          { type: "MP4 (Watermark)", url: watermarkUrl },
-        ],
+        thumbnail: item.video?.cover?.url_list?.[0] || (item.images?.[0]?.url_list?.[0]) || null,
+        downloads,
         sourceUrl: url,
       },
     };
@@ -294,7 +314,6 @@ export async function scrapeBilibili(url) {
           throw new Error("Could not parse Bilibili.tv video or episode ID.");
         }
 
-        // Fetch HTML page to extract title, thumbnail, and default episode if needed
         let html = "";
         try {
           const pageRes = await CapacitorHttp.get({
@@ -488,7 +507,7 @@ export async function scrapeThreads(url) {
   try {
     const mainRes = await CapacitorHttp.get({
       url: "https://threadster.app/",
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": CHROME_UA },
     });
     const cookies = mainRes.headers["set-cookie"] || "";
 
@@ -497,6 +516,7 @@ export async function scrapeThreads(url) {
       data: { url },
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": CHROME_UA,
         Cookie: cookies,
       },
     });
@@ -545,139 +565,186 @@ export async function scrapeThreads(url) {
 export async function scrapeTikTok(url) {
   let currentStatus = null;
   try {
-    const mainRes = await CapacitorHttp.get({
-      url: "https://snaptik.app/en",
-      headers: { "User-Agent": "Mozilla/5.0" },
+    const cleanUrl = getCleanUrl(url).split("?")[0];
+    const regexTiktokUrl =
+      /https:\/\/(?:m|www|vm|vt|lite)?\.?tiktok\.com\/((?:.*\b(?:(?:usr|v|embed|user|video|photo)\/|\?shareId=|\&item_id=)(\d+))|\w+)/;
+    if (!regexTiktokUrl.test(cleanUrl)) {
+      throw new Error("Must be a valid tiktok url.");
+    }
+
+    const userAgent = CHROME_UA;
+
+    const res = await CapacitorHttp.post({
+      url: "https://tiktokio.com/api/v1/tk/html",
+      data: {
+        vid: cleanUrl,
+        prefix: "tiktokio.com",
+      },
+      headers: {
+        "User-Agent": userAgent,
+        "Content-Type": "application/json",
+        Origin: "https://tiktokio.com",
+        Referer: "https://tiktokio.com/",
+      },
     });
-    currentStatus = mainRes.status;
+    currentStatus = res.status;
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(mainRes.data, "text/html");
-    const token = doc.querySelector('input[name="token"]')?.value;
-    if (!token) throw new Error("Scraper outdated (token missing).");
+    let html = res.data;
+    if (typeof html === "object" && html !== null) {
+      html = JSON.stringify(html);
+    }
+    if (typeof html !== "string") {
+      html = "";
+    }
+    if (
+      !html ||
+      html.includes("Please paste a valid link") ||
+      html.includes("Error")
+    ) {
+      throw new Error("Invalid link or failed to fetch data from tiktokio.");
+    }
 
-    const abcRes = await CapacitorHttp.post({
-      url: "https://snaptik.app/abc2.php",
-      data: { token, url },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
-    currentStatus = abcRes.status;
+    // Extract title
+    let title = "TikTok Content";
+    const titleMatch = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+    if (titleMatch) {
+      title = titleMatch[1].replace(/<[^>]+>/g, "").trim();
+    }
 
-    const script1 = abcRes.data;
-    const script2 = await new Promise((resolve, reject) => {
-      try {
-        const mockEval = (s) => resolve(s);
-        const fn = new Function("eval", script1);
-        fn(mockEval);
-      } catch (e) {
-        reject(new Error("Scraper outdated (eval failed)."));
-      }
-    });
+    // Extract thumbnail
+    let thumbnail = "";
+    const thumbMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+    if (thumbMatch) {
+      thumbnail = thumbMatch[1].replace(/&#38;/g, "&");
+    }
 
-    const capturedHtml = await new Promise((resolve, reject) => {
-      let html = "";
-      const context = {
-        $: () => ({
-          set innerHTML(t) {
-            html = t;
-          },
-          remove: () => {},
-          style: { display: "" },
-        }),
-        app: { showAlert: (msg) => reject(new Error(msg)) },
-        document: { getElementById: () => ({ src: "" }) },
-        fetch: () => {
-          resolve(html);
-          return { json: () => Promise.resolve({ thumbnail_url: "" }) };
-        },
-        gtag: () => {},
-        Math: { round: () => 0 },
-        XMLHttpRequest: function () {
-          return { open: () => {}, send: () => {} };
-        },
-        window: { location: { hostname: "snaptik.app" } },
-        setTimeout: () => {},
-        setInterval: () => {},
-        console: { log: () => {} },
-        URL: { createObjectURL: () => "" },
-      };
-      try {
-        const fn = new Function(...Object.keys(context), script2);
-        fn(...Object.values(context));
-      } catch (e) {
-        reject(new Error("DOM Simulation failed."));
-      }
-    });
+    // Check if slideshow
+    const isSlideshow =
+      html.includes('class="images-grid"') ||
+      html.includes('class="image-item"');
 
-    const resDoc = parser.parseFromString(capturedHtml, "text/html");
+    // Extract author from URL
+    const authorMatch = cleanUrl.match(/@([^\/]+)/);
+    const author = authorMatch ? authorMatch[1] : "Unknown";
+
     const downloads = [];
-    resDoc.querySelectorAll("a").forEach((a) => {
-      let href = a.getAttribute("href");
-      let text = a.textContent.trim().toLowerCase();
-      if (href) {
-        if (href.startsWith("/")) href = "https://snaptik.app" + href;
-        const isCdnLink =
-          href.includes("acxcdn.com") ||
-          href.includes("token=") ||
-          href.includes("download.php");
-        const isWebRedirect =
-          href.includes("/en/download") || href.includes("/id/download");
 
-        const isImageLink =
-          href.match(/\.(jpg|jpeg|png|webp|avif)/i) ||
-          text.includes("photo") ||
-          text.includes("image") ||
-          text.includes("slide");
+    if (isSlideshow) {
+      // Extract photo links - find all anchor tags inside image-item
+      const slidesRegex =
+        /<div[^>]*class=["'][^"']*image-item[^"']*["'][^>]*>[\s\S]*?<\/div>/gi;
+      let slideMatch;
+      while ((slideMatch = slidesRegex.exec(html)) !== null) {
+        const slideHtml = slideMatch[0];
+        // href inside the slide
+        const aHref = slideHtml.match(/href=["']([^"']+)/i);
+        if (aHref && aHref[1] !== "#") {
+          const url = aHref[1].replace(/&#38;/g, "&");
+          if (!downloads.some((d) => d.url === url)) {
+            downloads.push({ type: "PHOTO", url, isMirror: false });
+          }
+        } else {
+          // fallback to img src
+          const imgSrc = slideHtml.match(/src=["']([^"']+)/i);
+          if (imgSrc) {
+            const url = imgSrc[1].replace(/&#38;/g, "&");
+            if (!downloads.some((d) => d.url === url)) {
+              downloads.push({ type: "PHOTO", url, isMirror: false });
+            }
+          }
+        }
+      }
 
-        if ((isCdnLink || isImageLink) && !isWebRedirect) {
-          if (text.includes("app") && !isImageLink) return;
+      // Extract MP3/music link for slideshow
+      const mp3TagRegex = /<a[\s\S]*?<\/a>/gi;
+      let mp3Match;
+      while ((mp3Match = mp3TagRegex.exec(html)) !== null) {
+        const tag = mp3Match[0];
+        if (
+          tag.includes("download-btn-purple") ||
+          tag.toLowerCase().includes("mp3") ||
+          tag.toLowerCase().includes("music")
+        ) {
+          const h = tag.match(/href=["']([^"']+)/i);
+          if (h && h[1] !== "#") {
+            const url = h[1].replace(/&#38;/g, "&");
+            if (!downloads.some((d) => d.url === url)) {
+              downloads.push({ type: "MP3", url, isMirror: false });
+            }
+          }
+        }
+      }
+    } else {
+      // Normal video mode - extract ALL anchor tags, check class for download-btn
+      const anchorTagRegex = /<a[\s\S]*?<\/a>/gi;
+      let anchorMatch;
+      while ((anchorMatch = anchorTagRegex.exec(html)) !== null) {
+        const tag = anchorMatch[0];
 
-          let label = "VIDEO";
-          if (text.includes("music") || text.includes("mp3")) label = "MP3";
-          if (isImageLink) label = "PHOTO";
+        // Must contain download-btn in class
+        if (!tag.includes("download-btn")) continue;
 
-          const isMirror =
-            (label === "VIDEO" && downloads.some((d) => d.type === "VIDEO")) ||
-            (label === "MP3" && downloads.some((d) => d.type === "MP3"));
+        // Extract href
+        const hrefM = tag.match(/href=["']([^"']+)/i);
+        if (!hrefM || hrefM[1] === "#") continue;
+        const href = hrefM[1].replace(/&#38;/g, "&");
 
+        // Extract inner text
+        const innerText = tag
+          .replace(/<[^>]+>/g, "")
+          .trim()
+          .toLowerCase();
+
+        let label = null;
+        if (
+          innerText.includes("without watermark") ||
+          tag.includes("download-btn-blue") ||
+          tag.includes("download-btn-green")
+        ) {
+          label = "VIDEO";
+        } else if (
+          innerText.includes("mp3") ||
+          innerText.includes("music") ||
+          tag.includes("download-btn-purple")
+        ) {
+          label = "MP3";
+        }
+
+        if (label) {
+          const isMirror = downloads.some((d) => d.type === label);
           downloads.push({ type: label, url: href, isMirror });
         }
       }
-    });
+    }
 
-    const titleEl =
-      resDoc.querySelector(".video-title") || resDoc.querySelector("h3");
-    if (titleEl) titleEl.querySelectorAll("a").forEach((a) => a.remove());
-    const title = titleEl?.textContent?.trim() || "TikTok Content";
-    const thumbEl = resDoc.querySelector("img");
-    let thumb = thumbEl
-      ? thumbEl.getAttribute("src")?.startsWith("/")
-        ? "https://snaptik.app" + thumbEl.getAttribute("src")
-        : thumbEl.getAttribute("src")
-      : null;
-
-    if (!thumb && downloads.length > 0) {
-      const firstMedia =
-        downloads.find((d) => d.type === "VIDEO" || d.type === "PHOTO") ||
-        downloads[0];
-      thumb = firstMedia.url;
+    if (downloads.length === 0) {
+      throw new Error("No download links found.");
     }
 
     return {
       status: true,
-      result: { title, thumbnail: thumb, downloads, sourceUrl: url },
+      result: {
+        title,
+        author,
+        thumbnail,
+        downloads,
+        sourceUrl: url,
+      },
     };
   } catch (err) {
-    return { status: false, message: err.message, statusCode: currentStatus };
+    return {
+      status: false,
+      message: err.message,
+      statusCode: currentStatus,
+    };
   }
 }
 
 export async function scrapeInstagram(url) {
   let currentStatus = null;
   try {
-    const cleanUrl = url.split("?")[0];
-    const desktopUA =
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    const cleanUrl = getCleanUrl(url).split("?")[0];
+    const desktopUA = CHROME_UA;
     const acceptHeader =
       "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
 
@@ -877,7 +944,7 @@ export async function scrapeTwitter(url) {
     );
     const r1 = await CapacitorHttp.get({
       url: "https://tweeload.com/en",
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": CHROME_UA },
     });
     currentStatus = r1.status;
 
@@ -888,7 +955,7 @@ export async function scrapeTwitter(url) {
       data: serializeData({ url: twitterUrl }),
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": CHROME_UA,
       },
     });
     currentStatus = r2.status;
@@ -966,7 +1033,7 @@ export async function scrapeSpotify(url) {
   try {
     const r1 = await CapacitorHttp.get({
       url: "https://spotidown.app/",
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": CHROME_UA },
     });
     currentStatus = r1.status;
 
@@ -1437,7 +1504,7 @@ export async function scrapePixiv(url) {
     const res = await CapacitorHttp.get({
       url: `https://www.pixiv.net/ajax/illust/${illustId}?lang=en`,
       headers: {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": CHROME_UA,
         Referer: "https://www.pixiv.net/",
       },
     });
@@ -1494,7 +1561,7 @@ export async function scrapePixiv(url) {
         const htmlRes = await CapacitorHttp.get({
           url: `https://www.pixiv.net/en/artworks/${illustId}`,
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "User-Agent": CHROME_UA,
             "Accept-Language": "en-US,en;q=0.9",
           },
         });
@@ -1534,7 +1601,7 @@ export async function scrapePixiv(url) {
       const ugoRes = await CapacitorHttp.get({
         url: `https://www.pixiv.net/ajax/illust/${illustId}/ugoira_meta?lang=en`,
         headers: {
-          "User-Agent": "Mozilla/5.0",
+          "User-Agent": CHROME_UA,
           Referer: "https://www.pixiv.net/",
         },
       });

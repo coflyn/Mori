@@ -189,6 +189,7 @@ function setupImageLoading(img, src, resultThumbnail) {
 
       let referer = "https://www.google.com/";
       if (targetUrl.includes("snaptik.app")) referer = "https://snaptik.app/";
+      if (targetUrl.includes("tiktokio.com")) referer = "https://tiktokio.com/";
       if (targetUrl.includes("instagram.com"))
         referer = "https://www.instagram.com/";
       if (targetUrl.includes("douyin") || targetUrl.includes("douyinpic"))
@@ -291,14 +292,21 @@ export function renderResult(result, originalUrl) {
     sliderItems.some((dl) => dl.type?.toUpperCase() === "VIDEO");
 
   if (isDouyin) {
-    const watermarkVideo = sliderItems.find((dl) =>
-      dl.type?.includes("Watermark"),
+    const hasPhoto = sliderItems.some(
+      (dl) => dl.type?.toUpperCase() === "PHOTO",
     );
-    sliderItems = watermarkVideo
-      ? [watermarkVideo]
-      : sliderItems.length > 0
-        ? [sliderItems[0]]
-        : [];
+    if (hasPhoto) {
+      sliderItems = sliderItems.filter(
+        (dl) => dl.type?.toUpperCase() === "PHOTO",
+      );
+    } else {
+      const nonMirror = sliderItems.find((dl) => !dl.isMirror);
+      sliderItems = nonMirror
+        ? [nonMirror]
+        : sliderItems.length > 0
+          ? [sliderItems[0]]
+          : [];
+    }
   } else if (isBilibili || isRedNoteVideo) {
     const firstVideo = sliderItems.find((dl) =>
       dl.type?.toUpperCase().includes("VIDEO"),
