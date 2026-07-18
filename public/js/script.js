@@ -1,5 +1,7 @@
 import {
-  scrapeSoundCloud,
+  scrapeRedNote,
+  scrapeDouyin,
+  scrapeBilibili,
   scrapeThreads,
   scrapeTikTok,
   scrapeTikTokV2,
@@ -42,10 +44,9 @@ import {
   CapacitorHttpWeb,
 } from "./utils.js";
 
-const APP_VERSION = "3.6.0";
+const APP_VERSION = "3.7.0";
 const GITHUB_REPO = "coflyn/Mori";
-const UPDATE_CHECK_URL =
-  `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 const CapacitorHttp = CapacitorHttpNative ?? CapacitorHttpWeb;
@@ -156,10 +157,70 @@ darkModeToggle?.addEventListener("change", (e) => {
 // Color Accent Logic
 const accentColors = {
   black: { light: "#1a1917", dark: "#fffbf2" },
-  blue: { light: "#1a73e8", dark: "#8ab4f8" },
-  green: { light: "#1e8e3e", dark: "#81c995" },
+  white: { light: "#f5f5f5", dark: "#e5e5e5" },
+  gray: { light: "#5f6368", dark: "#bdc1c6" },
+
+  red: { light: "#d93025", dark: "#f28b82" },
+  crimson: { light: "#b00020", dark: "#ff8a80" },
+  pink: { light: "#d81b60", dark: "#f48fb1" },
+  rose: { light: "#e11d48", dark: "#fda4af" },
+  magenta: { light: "#c2185b", dark: "#f06292" },
+
   purple: { light: "#9334e6", dark: "#c58af9" },
+  violet: { light: "#7c3aed", dark: "#c4b5fd" },
+  indigo: { light: "#4f46e5", dark: "#a5b4fc" },
+  lavender: { light: "#8b5cf6", dark: "#c4b5fd" },
+
+  blue: { light: "#1a73e8", dark: "#8ab4f8" },
+  sky: { light: "#0284c7", dark: "#7dd3fc" },
+  cyan: { light: "#0891b2", dark: "#67e8f9" },
+  teal: { light: "#0f766e", dark: "#5eead4" },
+  turquoise: { light: "#0ea5a4", dark: "#99f6e4" },
+
+  green: { light: "#1e8e3e", dark: "#81c995" },
+  emerald: { light: "#059669", dark: "#6ee7b7" },
+  mint: { light: "#10b981", dark: "#a7f3d0" },
+  lime: { light: "#65a30d", dark: "#bef264" },
+  olive: { light: "#556b2f", dark: "#c5e1a5" },
+
+  yellow: { light: "#f9ab00", dark: "#fde293" },
+  amber: { light: "#d97706", dark: "#fcd34d" },
+  gold: { light: "#b8860b", dark: "#f6e58d" },
+
   orange: { light: "#e8710a", dark: "#fcad70" },
+  coral: { light: "#ff7043", dark: "#ffab91" },
+  peach: { light: "#fb8c00", dark: "#ffcc80" },
+
+  brown: { light: "#795548", dark: "#bcaaa4" },
+  chocolate: { light: "#5d4037", dark: "#d7ccc8" },
+  coffee: { light: "#6d4c41", dark: "#bcaaa4" },
+
+  navy: { light: "#1e3a8a", dark: "#93c5fd" },
+  sapphire: { light: "#1565c0", dark: "#90caf9" },
+  royal: { light: "#3949ab", dark: "#9fa8da" },
+
+  aqua: { light: "#00acc1", dark: "#80deea" },
+  seafoam: { light: "#26a69a", dark: "#80cbc4" },
+
+  maroon: { light: "#800000", dark: "#ef9a9a" },
+  burgundy: { light: "#7b1e3d", dark: "#f48fb1" },
+  wine: { light: "#722f37", dark: "#ef9a9a" },
+
+  slate: { light: "#475569", dark: "#cbd5e1" },
+  steel: { light: "#607d8b", dark: "#b0bec5" },
+  charcoal: { light: "#374151", dark: "#d1d5db" },
+
+  forest: { light: "#2e7d32", dark: "#a5d6a7" },
+  moss: { light: "#558b2f", dark: "#c5e1a5" },
+  jade: { light: "#009688", dark: "#80cbc4" },
+
+  raspberry: { light: "#c2185b", dark: "#f48fb1" },
+  plum: { light: "#6a1b9a", dark: "#ce93d8" },
+  orchid: { light: "#ab47bc", dark: "#e1bee7" },
+
+  sunset: { light: "#ef6c00", dark: "#ffcc80" },
+  tangerine: { light: "#f57c00", dark: "#ffb74d" },
+  apricot: { light: "#fb8c00", dark: "#ffd180" },
 };
 
 function applyColorAccent() {
@@ -467,8 +528,8 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
       const val = item.getAttribute("data-value");
       localStorage.setItem(storageKey, val);
       text.textContent = item.textContent;
-      menu.classList.add("hidden");
-      menu.classList.remove("open-up"); // Clean up on selection
+      // menu.classList.add("hidden");
+      // menu.classList.remove("open-up"); // Clean up on selection
 
       if (storageKey === "mori_accent") applyColorAccent();
       if (storageKey === "mori_font") applyFont();
@@ -1209,7 +1270,7 @@ reportBugBtn?.addEventListener("click", () => {
   const text = encodeURIComponent(
     `Hi coflyn, I found a bug in Mori App:\n\n[BUG DESCRIPTION HERE]\n\n---\nDevice Info:\n${deviceInfo}`,
   );
-  const whatsappUrl = `https://wa.me/6282399408885?text=${text}`;
+  const whatsappUrl = `https://wa.me/6285194858996?text=${text}`;
   showToast(translations[currentLang]["label-opening-wa"]);
   window.open(whatsappUrl, "_blank");
 });
@@ -1217,13 +1278,12 @@ reportBugBtn?.addEventListener("click", () => {
 async function checkUpdate() {
   const actionLabel = checkUpdateBtn.querySelector(".action-label");
   actionLabel.textContent = translations[currentLang]["btn-processing"];
-  showToast(translations[currentLang]["label-checking-update"]);
 
   try {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
       headers: {
-        "Accept": "application/vnd.github+json",
+        Accept: "application/vnd.github+json",
         "User-Agent": "Mori-App",
       },
     });
@@ -1232,29 +1292,43 @@ async function checkUpdate() {
 
     if (latest && latest !== APP_VERSION) {
       actionLabel.textContent = translations[currentLang]["btn-update"];
-      showToast(
-        translations[currentLang]["label-update-available"] +
-          " (v" + latest + ")",
-      );
-      // Store URL so click opens repo (location.href for WebView compat)
-      checkUpdateBtn.onclick = () => { window.location.href = REPO_URL; };
+      const lang = translations[currentLang];
+      const title = lang["label-update-available"];
+      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="manualUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
+      showInfoModal(title, msg);
+      setTimeout(() => {
+        const el = document.getElementById("manualUpdateLink");
+        if (el)
+          el.onclick = () => {
+            window.location.href = REPO_URL;
+          };
+      }, 50);
     } else {
       actionLabel.textContent = translations[currentLang]["btn-check"];
-      showToast(translations[currentLang]["label-up-to-date"]);
+      const lang = translations[currentLang];
+      showInfoModal(lang["label-update"], `${lang["label-up-to-date"]}`);
     }
   } catch (e) {
     console.error("Update check failed:", e);
-    showToast(translations[currentLang]["label-check-failed"]);
     actionLabel.textContent = translations[currentLang]["btn-check"];
+    const lang = translations[currentLang];
+    showInfoModal(
+      lang["label-check-failed"] || "Check Failed",
+      lang["label-check-failed-msg"] ||
+        "Unable to reach GitHub. Check your connection and try again.",
+    );
   }
 }
 
 async function autoCheckUpdate() {
+  // Respect user skip
+  if (localStorage.getItem("mori_skip_auto_update")) return;
+
   try {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
       headers: {
-        "Accept": "application/vnd.github+json",
+        Accept: "application/vnd.github+json",
         "User-Agent": "Mori-App",
       },
     });
@@ -1264,12 +1338,18 @@ async function autoCheckUpdate() {
     if (latest && latest !== APP_VERSION) {
       const lang = translations[currentLang];
       const title = lang["label-update-available"];
-      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
-      showInfoModal(title, msg);
-      // Attach click handler after modal renders
+      const msg = `<div style="text-align:center;padding:8px 0;"><span style="font-size:2rem;display:block;margin-bottom:8px;">🎉</span>${lang["label-update-available"]} <strong>v${latest}</strong><br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;cursor:pointer;">${lang["btn-update"] || "Open Repository"}</span></div>`;
+      showInfoModal(title, msg, {
+        showDontShow: true,
+        dontShowKey: "mori_skip_auto_update",
+        dontShowLabel: lang["label-dont-show-again"] || "Don't show again",
+      });
       setTimeout(() => {
         const el = document.getElementById("autoUpdateLink");
-        if (el) el.onclick = () => { window.location.href = REPO_URL; };
+        if (el)
+          el.onclick = () => {
+            window.location.href = REPO_URL;
+          };
       }, 50);
     }
   } catch (e) {
@@ -1285,18 +1365,42 @@ const infoOverlay = document.getElementById("infoOverlay");
 const infoTitle = document.getElementById("infoTitle");
 const infoMessage = document.getElementById("infoMessage");
 const closeInfoModal = document.getElementById("closeInfoModal");
+const infoDontShowAgain = document.getElementById("infoDontShowAgain");
+const infoDontShowCheckbox = document.getElementById("infoDontShowCheckbox");
+const infoDontShowLabel = document.getElementById("infoDontShowLabel");
 
-function showInfoModal(title, message) {
+function showInfoModal(title, message, options = {}) {
   if (!infoOverlay) return;
   infoTitle.textContent = title;
   infoMessage.innerHTML = message;
+
+  // Handle "Don't show again" checkbox
+  if (options.showDontShow) {
+    infoDontShowAgain?.classList.remove("hidden");
+    infoDontShowCheckbox.checked = false;
+    if (infoDontShowLabel) {
+      infoDontShowLabel.textContent =
+        options.dontShowLabel || "Don't show again";
+    }
+    // Store flag on close if checked
+    const origClose = () => infoOverlay.classList.add("hidden");
+    const closeWithCheck = () => {
+      if (infoDontShowCheckbox.checked && options.dontShowKey) {
+        localStorage.setItem(options.dontShowKey, "true");
+      }
+      origClose();
+    };
+    closeInfoModal.onclick = closeWithCheck;
+  } else {
+    infoDontShowAgain?.classList.add("hidden");
+    closeInfoModal.onclick = () => infoOverlay.classList.add("hidden");
+  }
+
   infoOverlay.classList.remove("hidden");
 }
 
-closeInfoModal?.addEventListener("click", () => {
-  infoOverlay.classList.add("hidden");
-});
-
+// The close handler is now managed inside showInfoModal via options.
+// Clicking the overlay background still dismisses.
 infoOverlay?.addEventListener("click", (e) => {
   if (e.target === infoOverlay) infoOverlay.classList.add("hidden");
 });
@@ -1415,8 +1519,19 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeAppleMusic(url);
       } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
         data = await scrapeFacebook(url);
-      } else if (url.includes("soundcloud.com")) {
-        data = await scrapeSoundCloud(url);
+      } else if (
+        url.includes("xiaohongshu.com") ||
+        url.includes("xhslink.com")
+      ) {
+        data = await scrapeRedNote(url);
+      } else if (url.includes("douyin.com")) {
+        data = await scrapeDouyin(url);
+      } else if (
+        url.includes("bilibili.com") ||
+        url.includes("b23.tv") ||
+        url.includes("bilibili.tv")
+      ) {
+        data = await scrapeBilibili(url);
       } else if (url.includes("threads.net") || url.includes("threads.com")) {
         data = await scrapeThreads(url);
       } else if (url.includes("bandcamp.com")) {
@@ -1618,6 +1733,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
+              versionCode: 7,
+              versionName: "3.7.0",
             };
           }
           return item;

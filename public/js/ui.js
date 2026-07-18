@@ -57,6 +57,8 @@ function renderMediaSlides(container, items, resultThumbnail) {
     const isAudio =
       lowerUrl.endsWith(".mp3") ||
       lowerUrl.includes(".mp3?") ||
+      lowerUrl.includes(".m4a") ||
+      lowerUrl.includes("audio") ||
       upperType.includes("MP3") ||
       upperType.includes("AUDIO");
 
@@ -181,17 +183,33 @@ function setupImageLoading(img, src, resultThumbnail) {
       window.Capacitor?.isNativePlatform()
     ) {
       img.dataset.retry = "2";
+      const targetUrl = img.src.includes("weserv.nl")
+        ? decodeURIComponent(img.src.split("url=")[1].split("&")[0])
+        : img.src;
+
       let referer = "https://www.google.com/";
-      if (img.src.includes("snaptik.app")) referer = "https://snaptik.app/";
-      if (img.src.includes("instagram.com"))
+      if (targetUrl.includes("snaptik.app")) referer = "https://snaptik.app/";
+      if (targetUrl.includes("instagram.com"))
         referer = "https://www.instagram.com/";
+      if (targetUrl.includes("douyin") || targetUrl.includes("douyinpic"))
+        referer = "https://www.douyin.com/";
+      if (
+        targetUrl.includes("xiaohongshu") ||
+        targetUrl.includes("xhscdn") ||
+        targetUrl.includes("rednote")
+      )
+        referer = "https://www.xiaohongshu.com/";
+      if (targetUrl.includes("bilibili") || targetUrl.includes("biliimg"))
+        referer = "https://www.bilibili.com/";
 
       CapacitorHttp.get({
-        url: img.src.includes("weserv.nl")
-          ? decodeURIComponent(img.src.split("url=")[1].split("&")[0])
-          : img.src,
+        url: targetUrl,
         responseType: "blob",
-        headers: { Referer: referer },
+        headers: {
+          Referer: referer,
+          "User-Agent":
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+        },
       })
         .then((res) => {
           if (res.data) {
@@ -257,13 +275,47 @@ export function renderResult(result, originalUrl) {
   slidesWrapper.innerHTML = "";
   if (downloadList) downloadList.innerHTML = "";
 
-  const sliderItems = slideData.filter((dl) => !dl.isMirror);
+  let sliderItems = slideData.filter((dl) => !dl.isMirror);
+
+  // For platforms with multiple stream qualities (Bilibili, Douyin, and RedNote video), only keep the first video stream for the preview slides to avoid duplicates
+  const isBilibili =
+    /bilibili/i.test(urlInput.value) ||
+    (result.title && /bilibili/i.test(result.title.toLowerCase()));
+  const isDouyin =
+    /douyin/i.test(urlInput.value) ||
+    (result.title && /douyin/i.test(result.title.toLowerCase()));
+  const isRedNoteVideo =
+    (/xiaohongshu|rednote/i.test(urlInput.value) ||
+      (result.title &&
+        /xiaohongshu|rednote/i.test(result.title.toLowerCase()))) &&
+    sliderItems.some((dl) => dl.type?.toUpperCase() === "VIDEO");
+
+  if (isDouyin) {
+    const watermarkVideo = sliderItems.find((dl) =>
+      dl.type?.includes("Watermark"),
+    );
+    sliderItems = watermarkVideo
+      ? [watermarkVideo]
+      : sliderItems.length > 0
+        ? [sliderItems[0]]
+        : [];
+  } else if (isBilibili || isRedNoteVideo) {
+    const firstVideo = sliderItems.find((dl) =>
+      dl.type?.toUpperCase().includes("VIDEO"),
+    );
+    sliderItems = firstVideo
+      ? [firstVideo]
+      : sliderItems.length > 0
+        ? [sliderItems[0]]
+        : [];
+  }
+
   const isSinglePreview =
-    /youtube\.com|youtu\.be|soundcloud\.com|spotify\.com|music\.apple\.com|bandcamp\.com/i.test(
+    /youtube\.com|youtu\.be|spotify\.com|music\.apple\.com|bandcamp\.com|bilibili\.com|bilibili\.tv|bilivideo/i.test(
       urlInput.value,
     ) ||
     (result.title &&
-      /youtube|soundcloud|spotify|apple music|bandcamp/i.test(
+      /youtube|spotify|apple music|bandcamp|bilibili/i.test(
         result.title.toLowerCase(),
       ));
 
@@ -280,10 +332,10 @@ export function renderResult(result, originalUrl) {
     const slide = document.createElement("div");
     slide.className = "preview-slide active";
     const img = document.createElement("img");
-    img.src = result.thumbnail || "";
     img.style.width = "100%";
     img.style.borderRadius = "8px";
     img.style.objectFit = "cover";
+    setupImageLoading(img, result.thumbnail || "", result.thumbnail);
     slide.appendChild(img);
     slidesWrapper.appendChild(slide);
     sliderNav?.classList.add("hidden");
@@ -381,7 +433,8 @@ export function renderResult(result, originalUrl) {
     result.downloads.forEach((dl, index) => {
       const btn = document.createElement("button");
       btn.className = "dl-item";
-      btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${dl.type}</span>`;
+      const label = dl.quality ? `${dl.type} - ${dl.quality}` : dl.type;
+      btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${label}</span>`;
       btn.addEventListener("click", (e) =>
         startNativeDownload(
           dl.url,
