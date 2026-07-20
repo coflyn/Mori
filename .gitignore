@@ -13,6 +13,13 @@ android/app/src/main/assets/public
 *.aab
 android/captures/
 
+# iOS & Capacitor
+ios/App/Pods/
+ios/App/build/
+ios/App/.build/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/Podfile.lock
+
 # Logs
 *.log
 npm-debug.log*
