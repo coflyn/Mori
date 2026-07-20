@@ -200,7 +200,11 @@ function setupImageLoading(img, src, resultThumbnail) {
         targetUrl.includes("rednote")
       )
         referer = "https://www.xiaohongshu.com/";
-      if (targetUrl.includes("bilibili") || targetUrl.includes("biliimg"))
+      if (
+        targetUrl.includes("bilibili") ||
+        targetUrl.includes("biliimg") ||
+        targetUrl.includes("bili.im")
+      )
         referer = "https://www.bilibili.com/";
 
       CapacitorHttp.get({
@@ -280,8 +284,8 @@ export function renderResult(result, originalUrl) {
 
   // For platforms with multiple stream qualities (Bilibili, Douyin, and RedNote video), only keep the first video stream for the preview slides to avoid duplicates
   const isBilibili =
-    /bilibili/i.test(urlInput.value) ||
-    (result.title && /bilibili/i.test(result.title.toLowerCase()));
+    /bilibili|bili\.im/i.test(urlInput.value) ||
+    (result.title && /bilibili|bili\.im/i.test(result.title.toLowerCase()));
   const isDouyin =
     /douyin/i.test(urlInput.value) ||
     (result.title && /douyin/i.test(result.title.toLowerCase()));
@@ -290,6 +294,10 @@ export function renderResult(result, originalUrl) {
       (result.title &&
         /xiaohongshu|rednote/i.test(result.title.toLowerCase()))) &&
     sliderItems.some((dl) => dl.type?.toUpperCase() === "VIDEO");
+  const isTwitterVideo =
+    (/twitter\.com|x\.com|fixupx|fxtwitter|vxtwitter/i.test(urlInput.value) ||
+      (result.title && /twitter/i.test(result.title.toLowerCase()))) &&
+    !sliderItems.some((dl) => dl.type === "IMAGE" || dl.type === "PHOTO");
 
   if (isDouyin) {
     const hasPhoto = sliderItems.some(
@@ -307,23 +315,17 @@ export function renderResult(result, originalUrl) {
           ? [sliderItems[0]]
           : [];
     }
-  } else if (isBilibili || isRedNoteVideo) {
-    const firstVideo = sliderItems.find((dl) =>
-      dl.type?.toUpperCase().includes("VIDEO"),
-    );
-    sliderItems = firstVideo
-      ? [firstVideo]
-      : sliderItems.length > 0
-        ? [sliderItems[0]]
-        : [];
+  } else if (isBilibili || isRedNoteVideo || isTwitterVideo) {
+    const firstItem = sliderItems.find((dl) => !dl.isMirror) || sliderItems[0];
+    sliderItems = firstItem ? [firstItem] : [];
   }
 
   const isSinglePreview =
-    /youtube\.com|youtu\.be|spotify\.com|music\.apple\.com|bandcamp\.com|bilibili\.com|bilibili\.tv|bilivideo/i.test(
+    /youtube\.com|youtu\.be|spotify\.com|music\.apple\.com|bandcamp\.com|bilibili\.com|bilibili\.tv|bilivideo|bili\.im/i.test(
       urlInput.value,
     ) ||
     (result.title &&
-      /youtube|spotify|apple music|bandcamp|bilibili/i.test(
+      /youtube|spotify|apple music|bandcamp|bilibili|bili\.im/i.test(
         result.title.toLowerCase(),
       ));
 
@@ -749,10 +751,14 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       /\.(jpg|jpeg|png|webp)/i.test(url);
     const ext = isAudio ? "MP3" : isImage ? "JPG" : "MP4";
 
-    const sanitizedTitle = (title || "Mori Media")
-      .replace(/[\\/:*?"<>|]/g, "")
+    let sanitizedTitle = (title || "Mori Media")
+      .replace(/[\\/:*?"<>|#%&{}[\]()@$^+=~`';,]/g, "")
+      .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
+      .trim()
       .replace(/\s+/g, " ")
-      .substring(0, 150);
+      .substring(0, 60);
+
+    if (!sanitizedTitle) sanitizedTitle = "Mori_Media";
 
     const template = localStorage.getItem("mori_filename") || "default";
     let fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
@@ -858,27 +864,81 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       }
     }
 
-    const isYoutube = url.includes("ytmp3.mobi") || url.includes("ytdown");
+    const isYoutube =
+      actualDownloadUrl.includes("ytmp3.mobi") ||
+      actualDownloadUrl.includes("ytdown");
     const isTwitter =
-      url.includes("tweeload") ||
-      url.includes("twimg.com") ||
-      url.includes("acxcdn.com");
+      actualDownloadUrl.includes("tweeload") ||
+      actualDownloadUrl.includes("twimg.com") ||
+      actualDownloadUrl.includes("acxcdn.com") ||
+      (url && (url.includes("twitter") || url.includes("x.com")));
 
     const downloadHeaders = {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     };
 
-    if (isYoutube) downloadHeaders["Referer"] = "https://ytmp3.mobi/";
-    if (isTwitter) downloadHeaders["Referer"] = "https://tweeload.com/";
+    const isPixivDirect =
+      actualDownloadUrl.includes("pixiv.net") ||
+      actualDownloadUrl.includes("pximg.net") ||
+      actualDownloadUrl.includes("pixiv.re");
+    const isUgoiraCom = actualDownloadUrl.includes("ugoira");
+    const isBilibili =
+      actualDownloadUrl.includes("bilibili") ||
+      actualDownloadUrl.includes("bilivideo") ||
+      actualDownloadUrl.includes("bstarstatic") ||
+      actualDownloadUrl.includes("akamaized.net") ||
+      (url &&
+        (url.includes("bilibili") ||
+          url.includes("b23.tv") ||
+          url.includes("bili.im")));
 
-    const savedFile = await Filesystem.downloadFile({
-      url: actualDownloadUrl,
-      path: fullPath + "/" + fileName,
-      directory: "EXTERNAL_STORAGE",
-      progress: true,
-      headers: downloadHeaders,
-    });
+    if (isYoutube) downloadHeaders["Referer"] = "https://ytmp3.mobi/";
+    if (isPixivDirect) downloadHeaders["Referer"] = "https://www.pixiv.net/";
+    if (isUgoiraCom) downloadHeaders["Referer"] = "https://ugoira.com/";
+    if (isBilibili) downloadHeaders["Referer"] = "https://www.bilibili.tv/";
+    if (isTwitter) {
+      if (actualDownloadUrl.includes("twimg.com")) {
+        downloadHeaders["Referer"] = "https://twitter.com/";
+      } else {
+        downloadHeaders["Referer"] = "https://tweeload.com/";
+      }
+    }
+
+    let savedFile;
+    try {
+      savedFile = await Filesystem.downloadFile({
+        url: actualDownloadUrl,
+        path: fullPath + "/" + fileName,
+        directory: "EXTERNAL_STORAGE",
+        progress: true,
+        headers: downloadHeaders,
+      });
+    } catch (dlErr) {
+      console.warn(
+        "Filesystem.downloadFile failed, trying CapacitorHttp blob fallback...",
+        dlErr,
+      );
+      try {
+        const httpRes = await CapacitorHttp.get({
+          url: actualDownloadUrl,
+          responseType: "blob",
+          headers: downloadHeaders,
+        });
+        if (httpRes && httpRes.data && typeof httpRes.data === "string") {
+          await Filesystem.writeFile({
+            path: fullPath + "/" + fileName,
+            directory: "EXTERNAL_STORAGE",
+            data: httpRes.data,
+          });
+          savedFile = { path: fullPath + "/" + fileName };
+        } else {
+          throw dlErr;
+        }
+      } catch (fallbackErr) {
+        throw dlErr;
+      }
+    }
 
     if (progressBar) progressBar.style.width = "100%";
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;

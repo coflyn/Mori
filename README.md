@@ -5,7 +5,7 @@
 <h1 align="center">Mori - Minimalist Media Downloader</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.8.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v3.9.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
@@ -25,7 +25,38 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.8.0
+## What's New in v3.9.0
+
+- **Enhanced Filename Sanitization & Storage Permission Error Fix**:
+  - **URI & Hashtag Sanitization**: Strips `#` (hashtags), `%`, `&`, and special symbols from video/media titles. Hashtags in filenames were previously causing Android native URI parsers to fail with `EACCES (Permission denied)` and `ENOENT (No such file or directory)`.
+  - **Length & Unicode Optimization**: Truncates sanitized titles to a maximum of 60 characters and strips non-standard Unicode symbols, preventing filesystem path overflow errors across Android versions.
+- **Bilibili Short-Link & Season Resolution (bili.im / b23.tv)**: Overhauled Bilibili link resolution and stream extraction:
+  - **Short Link & Redirect Handling**: Robust manual parsing for non-standard HTML redirects on `bili.im` and `b23.tv` short URLs when CapacitorHttp response headers do not auto-resolve destination URLs.
+  - **Anime/Series Season Resolution**: Resolves season-only URLs (`/play/sid`) directly to active episode IDs (`ep_id`) using the Bilibili OGV episodes API (`/intl/gateway/web/v2/ogv/play/episodes`).
+  - **Upgraded Stream API**: Switched to Bilibili OGV v2 API (`/intl/gateway/v2/ogv/playurl`), delivering multi-resolution video streams (480p, 360p, 240p, 144p) and high-bitrate audio streams.
+  - **HTTPS & Referer Injection**: Enforces HTTPS protocols on all DASH video/audio stream URLs (`bilivideo.com`, `bstarstatic.com`, `akamaized.net`) and injects mandatory `Referer: https://www.bilibili.tv/` headers, eliminating cleartext HTTP download errors and 403 Forbidden file corruptions.
+- **Pixiv Ugoira Extraction & Download Engine**: Overhauled Pixiv Ugoira (animated illustration) detection & download system:
+  - **Server-Independent Detection**: Bypasses login & R-18 restriction blocks using `meta-preload-data` HTML parsing and `ugoira_meta` API validation.
+  - **Animated Media Preview**: Live animated GIF preview for Ugoira artworks in the application viewer.
+  - **Format Options**: Export Ugoiras as **MP4**, **GIF**, or **ZIP** (full original frame archive).
+  - **CapacitorHttp Blob Fallback Downloader**: Integrated a fallback download engine using `CapacitorHttp` with `responseType: "blob"` and domain-aware `Referer` routing (`ugoira.com` & `pximg.net`), ensuring downloads succeed across strict CDN redirects and anti-hotlink rules.
+- **Dual YouTube Scraper System**: Integrated dual-scraper selection menu when analyzing YouTube URLs:
+  - **Server 1 (ytmp3.gg)**: Multi-resolution video downloads (1080p, 720p, 480p, 360p) + MP3 audio.
+  - **Server 2 (ytmp3.mobi)**: Fast & stable single-quality MP4 / MP3 extraction.
+- **Dual TikTok Scraper System**: Added server selection menu for TikTok downloads:
+  - **Server 1 (TikTokIO)**: Multi Feature (HD Video, MP3 audio, and Photo Slideshow).
+  - **Server 2 (SnapTik)**: Fast & Direct (HD / MP4 Video and Photo Slideshow).
+- **Dual Instagram Scraper System**: Added server selection menu for Instagram downloads:
+  - **Server 1 (Indown)**: HD Reels, Posts, Photos extraction.
+  - **Server 2 (DownReels)**: Fast API-based Reels & media extraction.
+- **Dual Twitter/X Scraper System**: Added server selection menu for Twitter/X downloads:
+  - **Server 1 (Tweeload)**: Multi-resolution video downloads (HD/SD).
+  - **Server 2 (TVD)**: Fast TwitterVideoDownloader direct video extraction.
+- **Dual Spotify Scraper System**: Added server selection menu for Spotify track downloads:
+  - **Server 1 (SpotiDown)**: Standard MP3 track extraction.
+  - **Server 2 (SpotMate)**: Fast & Direct MP3 extraction (`spotmate.online` integration).
+
+## Previous Updates v3.8.0
 
 - **TikTok Scraper Migrated (SnapTik → TikTokIO)**: Replaced the broken SnapTik-based scraper with a new implementation using `tiktokio.com/api/v1/tk/html`. Direct POST request via `CapacitorHttp`, regex-based HTML parsing (no DOM dependency), supports video (no watermark / HD) and MP3 downloads.
 - **Douyin Photo Slideshow**: Added support for Douyin photo posts (`aweme_type` 2). Multiple images display as a swipeable slideshow — same as TikTok photo experience.
@@ -35,31 +66,17 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   - **Douyin thumbnail**: Falls back to first photo URL when `item.video.cover` is undefined (photo slideshows).
   - **TikTok URL query params**: Strips `?` parameters before sending to TikTokIO API — was causing "Paste correct link" errors.
 
-## Previous Updates v3.7.0
-
-- **SoundCloud Removed**: Replaced SoundCloud with **Bilibili**, **Douyin**, and **RedNote (Xiaohongshu)** scrapers.
-- **Bilibili (Mainland & International)**: Full DASH support with video + audio stream extraction. Mainland China links use seekin.ai API fallback, while bilibili.tv links extract episode IDs from HTML `window.__initialState` and query the official playurl gateway directly.
-- **Douyin**: Direct page parsing with `window._ROUTER_DATA` extraction — supports both watermarked and no-watermark video.
-- **RedNote (Xiaohongshu)**: Download media via seekin.ai server action with CDN URL extraction.
-- **Download Quality Labels**: Platform scrapers now include descriptive quality labels (`1080p`, `320kbps`, etc.) displayed in the download list.
-- **Platform Icons Updated**: Douyin uses TikTok icon, Bilibili uses official Bilibili SVG icon, RedNote uses RedNote icon in the supported platforms table.
-- **Update Notification Modal**: Both manual and auto-update checks now show a polished modal with "Don't show again" option for auto-check. Supports EN/ID/JA translations.
-- **Preview Optimization**: Resolved infinite loading on Bilibili, Douyin, and RedNote previews.
-  - **Bilibili**: Now uses static image preview (similar to YouTube) to optimize layout and prevent player overhead.
-  - **Douyin**: Plays directly from the direct CDN watermark stream to prevent 302 redirect header-stripping issues and signature invalidation.
-  - **RedNote**: Loads the first 3MB chunk in memory as a `Blob` (via range headers) and converts it to a local Object URL to bypass CDN referrer restrictions.
-
 ## Supported Platforms
 
 | Platform                                                                                                                                                              | Features                 | Platform                                                                            | Features                 |
 | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
 | <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 / MP3 (High Quality) | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | Video / GIFs             |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | Music / Metadata         | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | High Fidelity Audio      | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio    | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | MP3 Audio                | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | MP3 Audio                | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
 | <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
 | <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM / WM)       | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / Track Support    |
+| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
 
 ## Built With
 

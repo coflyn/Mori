@@ -242,7 +242,10 @@ export async function scrapeDouyin(url) {
       result: {
         title,
         author,
-        thumbnail: item.video?.cover?.url_list?.[0] || (item.images?.[0]?.url_list?.[0]) || null,
+        thumbnail:
+          item.video?.cover?.url_list?.[0] ||
+          item.images?.[0]?.url_list?.[0] ||
+          null,
         downloads,
         sourceUrl: url,
       },
@@ -256,8 +259,8 @@ export async function scrapeBilibili(url) {
   try {
     let cleanUrl = getCleanUrl(url);
 
-    // Resolve redirection if it's a short URL (b23.tv)
-    if (cleanUrl.includes("b23.tv")) {
+    // Resolve redirection if it's a short URL (b23.tv or bili.im)
+    if (cleanUrl.includes("b23.tv") || cleanUrl.includes("bili.im")) {
       try {
         const redirectRes = await CapacitorHttp.get({
           url: cleanUrl,
@@ -265,8 +268,14 @@ export async function scrapeBilibili(url) {
             "User-Agent": CHROME_UA,
           },
         });
-        if (redirectRes.url) {
+        if (redirectRes.url && redirectRes.url !== cleanUrl) {
           cleanUrl = redirectRes.url;
+        } else if (redirectRes.data && typeof redirectRes.data === "string") {
+          // bili.im may return HTML with <a href="..."> instead of HTTP redirect
+          const hrefMatch = redirectRes.data.match(/href="([^"]+)"/i);
+          if (hrefMatch) {
+            cleanUrl = hrefMatch[1].replace(/&amp;/g, "&");
+          }
         }
       } catch (e) {
         console.error("Bilibili redirect resolve failed:", e);
@@ -334,89 +343,185 @@ export async function scrapeBilibili(url) {
           console.error("Failed to fetch Bilibili.tv page metadata:", err);
         }
 
-        // If we don't have the episode ID yet (season-only URL), resolve it from HTML
-        if (apiInfo.tipo === "anime" && !apiInfo.id) {
-          let defaultEpId = null;
+        // If we don't have the episode ID yet (season-only URL), resolve it from episodes API or HTML
+        if (apiInfo.tipo === "anime" && !apiInfo.id && apiInfo.seasonId) {
           try {
-            const match = html.match(
-              /window\.__initialState\s*=\s*([\s\S]*?)<\/script>/,
-            );
-            if (match) {
-              let scriptText = match[1].trim();
-              if (scriptText.endsWith(";")) {
-                scriptText = scriptText.substring(0, scriptText.length - 1);
+            const epRes = await CapacitorHttp.get({
+              url: `https://api.bilibili.tv/intl/gateway/web/v2/ogv/play/episodes?season_id=${apiInfo.seasonId}&platform=web&s_locale=en_US`,
+              headers: { "User-Agent": CHROME_UA },
+            });
+            const epData =
+              typeof epRes.data === "string"
+                ? JSON.parse(epRes.data)
+                : epRes.data;
+            const fetchedEpId =
+              epData?.data?.sections?.[0]?.episodes?.[0]?.episode_id;
+            if (fetchedEpId) {
+              apiInfo.id = fetchedEpId;
+            }
+          } catch (e) {
+            console.error("Failed to fetch Bilibili.tv episodes list:", e);
+          }
+
+          if (!apiInfo.id) {
+            try {
+              const match = html.match(
+                /window\.__initialState\s*=\s*([\s\S]*?)<\/script>/,
+              );
+              if (match) {
+                let scriptText = match[1].trim();
+                if (scriptText.endsWith(";")) {
+                  scriptText = scriptText.substring(0, scriptText.length - 1);
+                }
+                const fn = new Function(`
+                  var window = {};
+                  window.__initialState = ${scriptText};
+                  return window.__initialState;
+                `);
+                const state = fn();
+                if (state) {
+                  apiInfo.id =
+                    state.ogv?.season?.first_episode?.episode_id ||
+                    state.ogv?.sectionsList?.[0]?.episodes?.[0]?.episode_id;
+                }
               }
-              const fn = new Function(`
-                var window = {};
-                window.__initialState = ${scriptText};
-                return window.__initialState;
-              `);
-              const state = fn();
-              if (state) {
-                defaultEpId =
-                  state.ogv?.season?.first_episode?.episode_id ||
-                  state.ogv?.sectionsList?.[0]?.episodes?.[0]?.episode_id;
+            } catch (err) {
+              console.error(
+                "Failed to parse Bilibili.tv season page HTML:",
+                err,
+              );
+            }
+          }
+
+          if (!apiInfo.id) {
+            apiInfo.id = apiInfo.seasonId;
+          }
+        }
+
+        const downloads = [];
+
+        // Try v2 OGV playurl endpoint first for anime/episodes
+        if (apiInfo.tipo === "anime") {
+          try {
+            const v2Res = await CapacitorHttp.get({
+              url: `https://api.bilibili.tv/intl/gateway/v2/ogv/playurl?s_locale=en_US&platform=web&ep_id=${apiInfo.id}`,
+              headers: {
+                referer: "https://www.bilibili.tv/",
+                "User-Agent": CHROME_UA,
+              },
+            });
+            const v2Data =
+              typeof v2Res.data === "string"
+                ? JSON.parse(v2Res.data)
+                : v2Res.data;
+            const videoInfo = v2Data?.data?.video_info;
+            if (videoInfo) {
+              const streamList = videoInfo.stream_list || [];
+              for (const s of streamList) {
+                let streamUrl =
+                  s.dash_video?.base_url ||
+                  s.dash_video?.backup_url?.[0] ||
+                  s.video_resource?.url;
+                if (streamUrl) {
+                  if (streamUrl.startsWith("http://")) {
+                    streamUrl = "https://" + streamUrl.slice(7);
+                  }
+                  const qText =
+                    s.stream_info?.display_desc ||
+                    s.stream_info?.description ||
+                    `${s.stream_info?.quality}P` ||
+                    "HD";
+                  downloads.push({
+                    url: streamUrl,
+                    type: "Video",
+                    quality: qText,
+                  });
+                }
+              }
+
+              const dashAudio = videoInfo.dash_audio || [];
+              for (const a of dashAudio) {
+                let audioUrl = a.base_url || a.backup_url?.[0];
+                if (audioUrl) {
+                  if (audioUrl.startsWith("http://")) {
+                    audioUrl = "https://" + audioUrl.slice(7);
+                  }
+                  const qText = a.bandwidth
+                    ? `${Math.round(a.bandwidth / 1000)}kbps`
+                    : "Audio";
+                  downloads.push({
+                    url: audioUrl,
+                    type: "Audio",
+                    quality: qText,
+                  });
+                }
               }
             }
           } catch (err) {
-            console.error("Failed to parse Bilibili.tv season page HTML:", err);
-          }
-          apiInfo.id = defaultEpId || apiInfo.seasonId;
-        }
-
-        let urlApi;
-        if (apiInfo.tipo === "anime") {
-          urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?ep_id=${apiInfo.id}&device=wap&platform=web&qn=64&tf=0&type=0`;
-        } else {
-          urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?s_locale=en_US&platform=web&aid=${apiInfo.id}&qn=120`;
-        }
-
-        const playRes = await CapacitorHttp.get({
-          url: urlApi,
-          headers: {
-            referer: "https://www.bilibili.tv/",
-            "User-Agent": CHROME_UA,
-          },
-        });
-
-        const playData =
-          typeof playRes.data === "string"
-            ? JSON.parse(playRes.data)
-            : playRes.data;
-        if (!playData || !playData.data?.playurl) {
-          throw new Error("Failed to retrieve Bilibili.tv stream data.");
-        }
-
-        const playurl = playData.data.playurl;
-        const downloads = [];
-
-        // Extract video streams — all resolutions
-        const videoList = playurl.video || [];
-        for (const v of videoList) {
-          const resource = v.video_resource || {};
-          if (resource.url) {
-            const qText =
-              v.stream_info?.desc_words || `${v.stream_info?.quality}P` || "HD";
-            downloads.push({
-              url: resource.url,
-              type: "Video",
-              quality: qText,
-            });
+            console.warn("Bilibili.tv v2 OGV playurl failed:", err);
           }
         }
 
-        // Extract audio streams — all bitrates
-        const audioList = playurl.audio_resource || [];
-        for (const a of audioList) {
-          if (a.url) {
-            const qText = a.quality
-              ? `${Math.floor(a.quality / 1000)}kbps`
-              : "High";
-            downloads.push({
-              url: a.url,
-              type: "Audio",
-              quality: qText,
-            });
+        // Fallback to legacy playurl endpoint if no streams found yet
+        if (downloads.length === 0) {
+          let urlApi;
+          if (apiInfo.tipo === "anime") {
+            urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?ep_id=${apiInfo.id}&device=wap&platform=web&qn=64&tf=0&type=0`;
+          } else {
+            urlApi = `https://api.bilibili.tv/intl/gateway/web/playurl?s_locale=en_US&platform=web&aid=${apiInfo.id}&qn=120`;
+          }
+
+          const playRes = await CapacitorHttp.get({
+            url: urlApi,
+            headers: {
+              referer: "https://www.bilibili.tv/",
+              "User-Agent": CHROME_UA,
+            },
+          });
+
+          const playData =
+            typeof playRes.data === "string"
+              ? JSON.parse(playRes.data)
+              : playRes.data;
+          if (playData && playData.data?.playurl) {
+            const playurl = playData.data.playurl;
+            const videoList = playurl.video || [];
+            for (const v of videoList) {
+              const resource = v.video_resource || {};
+              if (resource.url) {
+                let finalUrl = resource.url;
+                if (finalUrl.startsWith("http://")) {
+                  finalUrl = "https://" + finalUrl.slice(7);
+                }
+                const qText =
+                  v.stream_info?.desc_words ||
+                  `${v.stream_info?.quality}P` ||
+                  "HD";
+                downloads.push({
+                  url: finalUrl,
+                  type: "Video",
+                  quality: qText,
+                });
+              }
+            }
+
+            const audioList = playurl.audio_resource || [];
+            for (const a of audioList) {
+              if (a.url) {
+                let finalUrl = a.url;
+                if (finalUrl.startsWith("http://")) {
+                  finalUrl = "https://" + finalUrl.slice(7);
+                }
+                const qText = a.quality
+                  ? `${Math.floor(a.quality / 1000)}kbps`
+                  : "High";
+                downloads.push({
+                  url: finalUrl,
+                  type: "Audio",
+                  quality: qText,
+                });
+              }
+            }
           }
         }
 
@@ -562,6 +667,68 @@ export async function scrapeThreads(url) {
   }
 }
 
+async function decryptSnapTikAes(id, encryptedBase64) {
+  const salt = "sn4pt1k_v3r1fy2026";
+  const str = salt + ":" + id;
+  const encoder = new TextEncoder();
+  const keyBytes = await window.crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(str),
+  );
+
+  const binaryString = atob(encryptedBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const iv = bytes.slice(0, 16);
+  const data = bytes.slice(16);
+
+  const cryptoKey = await window.crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-CBC" },
+    false,
+    ["decrypt"],
+  );
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: "AES-CBC", iv },
+    cryptoKey,
+    data,
+  );
+
+  return new TextDecoder().decode(decryptedBuffer);
+}
+
+function solveSnapTikChallenge(challenge) {
+  switch (challenge.t) {
+    case "b":
+      return ((challenge.a ^ challenge.b) >> challenge.s) & 255;
+    case "r":
+      return challenge.n.reduce((m, f) => m + f, 0) * 2 + 1;
+    case "c":
+      return challenge.w.charCodeAt(challenge.i) * challenge.m;
+    case "m":
+      return ((challenge.a + challenge.b) % 100) * challenge.c;
+    case "n":
+      return (
+        challenge.a * challenge.b +
+        challenge.b * challenge.c +
+        challenge.c * challenge.a -
+        challenge.a
+      );
+    default:
+      throw new Error("Unknown challenge type: " + challenge.t);
+  }
+}
+
+export let _ttSource = null;
+export function setTikTokSource(src) {
+  _ttSource = src;
+}
+
 export async function scrapeTikTok(url) {
   let currentStatus = null;
   try {
@@ -572,166 +739,257 @@ export async function scrapeTikTok(url) {
       throw new Error("Must be a valid tiktok url.");
     }
 
-    const userAgent = CHROME_UA;
+    if (!_ttSource) return { requireSource: true };
 
-    const res = await CapacitorHttp.post({
-      url: "https://tiktokio.com/api/v1/tk/html",
-      data: {
-        vid: cleanUrl,
-        prefix: "tiktokio.com",
-      },
-      headers: {
-        "User-Agent": userAgent,
-        "Content-Type": "application/json",
-        Origin: "https://tiktokio.com",
-        Referer: "https://tiktokio.com/",
-      },
-    });
-    currentStatus = res.status;
+    if (_ttSource === "snaptik") {
+      const tokenRes = await CapacitorHttp.post({
+        url: "https://snaptik.app/api/token",
+        headers: {
+          "User-Agent": CHROME_UA,
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/json",
+          Origin: "https://snaptik.app",
+          Referer: "https://snaptik.app/",
+        },
+        data: {},
+      });
+      currentStatus = tokenRes.status;
+      const tData =
+        typeof tokenRes.data === "string"
+          ? JSON.parse(tokenRes.data)
+          : tokenRes.data;
+      if (!tData || !tData.id || !tData.p)
+        throw new Error("Failed to retrieve token from SnapTik API.");
 
-    let html = res.data;
-    if (typeof html === "object" && html !== null) {
-      html = JSON.stringify(html);
+      const decryptedStr = await decryptSnapTikAes(tData.id, tData.p);
+      const challenge = JSON.parse(decryptedStr);
+      const _e = challenge._e;
+      const _h = challenge._h;
+      delete challenge._e;
+      delete challenge._h;
+      const challengeResult = solveSnapTikChallenge(challenge);
+      const xVerify = `${tData.id}:${challengeResult}:${_e}:${_h}`;
+
+      const extractRes = await CapacitorHttp.get({
+        url: `https://snaptik.app/api/extract?url=${encodeURIComponent(cleanUrl)}`,
+        headers: {
+          "User-Agent": CHROME_UA,
+          "X-Requested-With": "XMLHttpRequest",
+          "X-Verify": xVerify,
+          Origin: "https://snaptik.app",
+          Referer: "https://snaptik.app/",
+        },
+      });
+      currentStatus = extractRes.status;
+      const exData =
+        typeof extractRes.data === "string"
+          ? JSON.parse(extractRes.data)
+          : extractRes.data;
+      if (!exData || !exData.success || !exData.data) {
+        throw new Error(exData?.message || "SnapTik extraction failed.");
+      }
+
+      const info = exData.data;
+      const downloads = [];
+
+      const photos =
+        info.photoUrls || info.photos || info.images || info.slides;
+      if (photos && Array.isArray(photos) && photos.length > 0) {
+        photos.forEach((img) => downloads.push({ type: "PHOTO", url: img }));
+      }
+
+      if (info.downloadUrl) {
+        downloads.push({ type: "MP4", url: info.downloadUrl });
+      }
+      if (info.hdDownloadUrl) {
+        const hdUrl = info.hdDownloadUrl.startsWith("http")
+          ? info.hdDownloadUrl
+          : "https://snaptik.app" + info.hdDownloadUrl;
+        downloads.push({ type: "MP4 (HD)", url: hdUrl });
+      }
+
+      if (!downloads.length)
+        throw new Error("No download links found from SnapTik.");
+
+      _ttSource = null;
+      return {
+        status: true,
+        result: {
+          title: info.title || "TikTok Video",
+          author: info.author?.nickname || info.author?.name || "TikTok User",
+          thumbnail: info.thumbnail || "",
+          downloads,
+          sourceUrl: url,
+        },
+      };
     }
-    if (typeof html !== "string") {
-      html = "";
-    }
-    if (
-      !html ||
-      html.includes("Please paste a valid link") ||
-      html.includes("Error")
-    ) {
-      throw new Error("Invalid link or failed to fetch data from tiktokio.");
-    }
 
-    // Extract title
-    let title = "TikTok Content";
-    const titleMatch = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
-    if (titleMatch) {
-      title = titleMatch[1].replace(/<[^>]+>/g, "").trim();
-    }
+    if (_ttSource === "tiktokio") {
+      const userAgent = CHROME_UA;
 
-    // Extract thumbnail
-    let thumbnail = "";
-    const thumbMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-    if (thumbMatch) {
-      thumbnail = thumbMatch[1].replace(/&#38;/g, "&");
-    }
+      const res = await CapacitorHttp.post({
+        url: "https://tiktokio.com/api/v1/tk/html",
+        data: {
+          vid: cleanUrl,
+          prefix: "tiktokio.com",
+        },
+        headers: {
+          "User-Agent": userAgent,
+          "Content-Type": "application/json",
+          Origin: "https://tiktokio.com",
+          Referer: "https://tiktokio.com/",
+        },
+      });
+      currentStatus = res.status;
 
-    // Check if slideshow
-    const isSlideshow =
-      html.includes('class="images-grid"') ||
-      html.includes('class="image-item"');
+      let html = res.data;
+      if (typeof html === "object" && html !== null) {
+        html = JSON.stringify(html);
+      }
+      if (typeof html !== "string") {
+        html = "";
+      }
+      if (
+        !html ||
+        html.includes("Please paste a valid link") ||
+        html.includes("Error")
+      ) {
+        throw new Error("Invalid link or failed to fetch data from tiktokio.");
+      }
 
-    // Extract author from URL
-    const authorMatch = cleanUrl.match(/@([^\/]+)/);
-    const author = authorMatch ? authorMatch[1] : "Unknown";
+      // Extract title
+      let title = "TikTok Content";
+      const titleMatch = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+      if (titleMatch) {
+        title = titleMatch[1].replace(/<[^>]+>/g, "").trim();
+      }
 
-    const downloads = [];
+      // Extract thumbnail
+      let thumbnail = "";
+      const thumbMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+      if (thumbMatch) {
+        thumbnail = thumbMatch[1].replace(/&#38;/g, "&");
+      }
 
-    if (isSlideshow) {
-      // Extract photo links - find all anchor tags inside image-item
-      const slidesRegex =
-        /<div[^>]*class=["'][^"']*image-item[^"']*["'][^>]*>[\s\S]*?<\/div>/gi;
-      let slideMatch;
-      while ((slideMatch = slidesRegex.exec(html)) !== null) {
-        const slideHtml = slideMatch[0];
-        // href inside the slide
-        const aHref = slideHtml.match(/href=["']([^"']+)/i);
-        if (aHref && aHref[1] !== "#") {
-          const url = aHref[1].replace(/&#38;/g, "&");
-          if (!downloads.some((d) => d.url === url)) {
-            downloads.push({ type: "PHOTO", url, isMirror: false });
-          }
-        } else {
-          // fallback to img src
-          const imgSrc = slideHtml.match(/src=["']([^"']+)/i);
-          if (imgSrc) {
-            const url = imgSrc[1].replace(/&#38;/g, "&");
+      // Check if slideshow
+      const isSlideshow =
+        html.includes('class="images-grid"') ||
+        html.includes('class="image-item"');
+
+      // Extract author from URL
+      const authorMatch = cleanUrl.match(/@([^\/]+)/);
+      const author = authorMatch ? authorMatch[1] : "Unknown";
+
+      const downloads = [];
+
+      if (isSlideshow) {
+        // Extract photo links - find all anchor tags inside image-item
+        const slidesRegex =
+          /<div[^>]*class=["'][^"']*image-item[^"']*["'][^>]*>[\s\S]*?<\/div>/gi;
+        let slideMatch;
+        while ((slideMatch = slidesRegex.exec(html)) !== null) {
+          const slideHtml = slideMatch[0];
+          // href inside the slide
+          const aHref = slideHtml.match(/href=["']([^"']+)/i);
+          if (aHref && aHref[1] !== "#") {
+            const url = aHref[1].replace(/&#38;/g, "&");
             if (!downloads.some((d) => d.url === url)) {
               downloads.push({ type: "PHOTO", url, isMirror: false });
             }
-          }
-        }
-      }
-
-      // Extract MP3/music link for slideshow
-      const mp3TagRegex = /<a[\s\S]*?<\/a>/gi;
-      let mp3Match;
-      while ((mp3Match = mp3TagRegex.exec(html)) !== null) {
-        const tag = mp3Match[0];
-        if (
-          tag.includes("download-btn-purple") ||
-          tag.toLowerCase().includes("mp3") ||
-          tag.toLowerCase().includes("music")
-        ) {
-          const h = tag.match(/href=["']([^"']+)/i);
-          if (h && h[1] !== "#") {
-            const url = h[1].replace(/&#38;/g, "&");
-            if (!downloads.some((d) => d.url === url)) {
-              downloads.push({ type: "MP3", url, isMirror: false });
+          } else {
+            // fallback to img src
+            const imgSrc = slideHtml.match(/src=["']([^"']+)/i);
+            if (imgSrc) {
+              const url = imgSrc[1].replace(/&#38;/g, "&");
+              if (!downloads.some((d) => d.url === url)) {
+                downloads.push({ type: "PHOTO", url, isMirror: false });
+              }
             }
           }
         }
-      }
-    } else {
-      // Normal video mode - extract ALL anchor tags, check class for download-btn
-      const anchorTagRegex = /<a[\s\S]*?<\/a>/gi;
-      let anchorMatch;
-      while ((anchorMatch = anchorTagRegex.exec(html)) !== null) {
-        const tag = anchorMatch[0];
 
-        // Must contain download-btn in class
-        if (!tag.includes("download-btn")) continue;
-
-        // Extract href
-        const hrefM = tag.match(/href=["']([^"']+)/i);
-        if (!hrefM || hrefM[1] === "#") continue;
-        const href = hrefM[1].replace(/&#38;/g, "&");
-
-        // Extract inner text
-        const innerText = tag
-          .replace(/<[^>]+>/g, "")
-          .trim()
-          .toLowerCase();
-
-        let label = null;
-        if (
-          innerText.includes("without watermark") ||
-          tag.includes("download-btn-blue") ||
-          tag.includes("download-btn-green")
-        ) {
-          label = "VIDEO";
-        } else if (
-          innerText.includes("mp3") ||
-          innerText.includes("music") ||
-          tag.includes("download-btn-purple")
-        ) {
-          label = "MP3";
+        // Extract MP3/music link for slideshow
+        const mp3TagRegex = /<a[\s\S]*?<\/a>/gi;
+        let mp3Match;
+        while ((mp3Match = mp3TagRegex.exec(html)) !== null) {
+          const tag = mp3Match[0];
+          if (
+            tag.includes("download-btn-purple") ||
+            tag.toLowerCase().includes("mp3") ||
+            tag.toLowerCase().includes("music")
+          ) {
+            const h = tag.match(/href=["']([^"']+)/i);
+            if (h && h[1] !== "#") {
+              const url = h[1].replace(/&#38;/g, "&");
+              if (!downloads.some((d) => d.url === url)) {
+                downloads.push({ type: "MP3", url, isMirror: false });
+              }
+            }
+          }
         }
+      } else {
+        // Normal video mode - extract ALL anchor tags, check class for download-btn
+        const anchorTagRegex = /<a[\s\S]*?<\/a>/gi;
+        let anchorMatch;
+        while ((anchorMatch = anchorTagRegex.exec(html)) !== null) {
+          const tag = anchorMatch[0];
 
-        if (label) {
-          const isMirror = downloads.some((d) => d.type === label);
-          downloads.push({ type: label, url: href, isMirror });
+          // Must contain download-btn in class
+          if (!tag.includes("download-btn")) continue;
+
+          // Extract href
+          const hrefM = tag.match(/href=["']([^"']+)/i);
+          if (!hrefM || hrefM[1] === "#") continue;
+          const href = hrefM[1].replace(/&#38;/g, "&");
+
+          // Extract inner text
+          const innerText = tag
+            .replace(/<[^>]+>/g, "")
+            .trim()
+            .toLowerCase();
+
+          let label = null;
+          if (
+            innerText.includes("without watermark") ||
+            tag.includes("download-btn-blue") ||
+            tag.includes("download-btn-green")
+          ) {
+            label = "VIDEO";
+          } else if (
+            innerText.includes("mp3") ||
+            innerText.includes("music") ||
+            tag.includes("download-btn-purple")
+          ) {
+            label = "MP3";
+          }
+
+          if (label) {
+            const isMirror = downloads.some((d) => d.type === label);
+            downloads.push({ type: label, url: href, isMirror });
+          }
         }
       }
+
+      if (downloads.length === 0) {
+        throw new Error("No download links found.");
+      }
+
+      _ttSource = null;
+      return {
+        status: true,
+        result: {
+          title,
+          author,
+          thumbnail,
+          downloads,
+          sourceUrl: url,
+        },
+      };
     }
 
-    if (downloads.length === 0) {
-      throw new Error("No download links found.");
-    }
-
-    return {
-      status: true,
-      result: {
-        title,
-        author,
-        thumbnail,
-        downloads,
-        sourceUrl: url,
-      },
-    };
+    throw new Error("Invalid source selected.");
   } catch (err) {
+    _ttSource = null;
     return {
       status: false,
       message: err.message,
@@ -740,118 +998,160 @@ export async function scrapeTikTok(url) {
   }
 }
 
+export let _igSource = null;
+export function setInstagramSource(src) {
+  _igSource = src;
+}
+
 export async function scrapeInstagram(url) {
   let currentStatus = null;
   try {
     const cleanUrl = getCleanUrl(url).split("?")[0];
-    const desktopUA = CHROME_UA;
-    const acceptHeader =
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
+    if (!_igSource) return { requireSource: true };
 
-    const r1 = await CapacitorHttp.get({
-      url: "https://indown.io/en2",
-      headers: {
-        "User-Agent": desktopUA,
-        Accept: acceptHeader,
-      },
-    });
-    currentStatus = r1.status;
-
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
-    const cookies = getCookiesFromHeaders(r1.headers);
-    const token = doc1.querySelector('input[name="_token"]')?.value;
-
-    if (!token) throw new Error("Scraper outdated (token missing).");
-
-    const r2 = await CapacitorHttp.post({
-      url: "https://indown.io/download",
-      data: serializeData({ link: cleanUrl, _token: token, a: "a" }),
-      headers: {
-        Cookie: cookies,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": desktopUA,
-        Accept: acceptHeader,
-      },
-    });
-    currentStatus = r2.status;
-
-    const doc2 = parser.parseFromString(r2.data, "text/html");
-
-    // Check for error modal/alert
-    const errorMsg = doc2
-      .querySelector("#error .modal-body")
-      ?.textContent?.trim();
-    if (errorMsg && errorMsg.toLowerCase().includes("not found")) {
-      throw new Error("Post not found on Indown.");
+    if (_igSource === "downreels") {
+      const r = await CapacitorHttp.post({
+        url: "https://api.zoraahub.com/fetch.php",
+        data: { url: cleanUrl },
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": CHROME_UA,
+          Origin: "https://downreels.com",
+          Referer: "https://downreels.com/",
+        },
+      });
+      currentStatus = r.status;
+      const data = typeof r.data === "string" ? JSON.parse(r.data) : r.data;
+      if (data.status !== "ok")
+        throw new Error(data.message || "Failed to fetch from DownReels.");
+      const items = data.videos || data.images || [];
+      const downloads = items.map((item) => ({
+        url: item.url,
+        type: item.isVideo ? "VIDEO" : "IMAGE",
+        quality: item.quality || "HD",
+        thumbnail: item.thumb || null,
+      }));
+      if (!downloads.length)
+        throw new Error("No download links found from DownReels.");
+      _igSource = null;
+      return {
+        status: true,
+        result: {
+          title: "Instagram Media",
+          thumbnail: data.thumbnail || downloads[0].url,
+          downloads,
+          sourceUrl: url,
+        },
+      };
     }
 
-    const downloads = [];
-    let thumbnail = null;
+    if (_igSource === "indown") {
+      const desktopUA = CHROME_UA;
+      const acceptHeader =
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
 
-    // Thumbnail from video poster
-    const video = doc2.querySelector("video.img-fluid");
-    if (video) {
-      thumbnail = video.getAttribute("poster");
-    }
+      const r1 = await CapacitorHttp.get({
+        url: "https://indown.io/en2",
+        headers: {
+          "User-Agent": desktopUA,
+          Accept: acceptHeader,
+        },
+      });
+      currentStatus = r1.status;
+      const parser = new DOMParser();
+      const doc1 = parser.parseFromString(r1.data, "text/html");
+      const cookies = getCookiesFromHeaders(r1.headers);
+      const token = doc1.querySelector('input[name="_token"]')?.value;
+      if (!token) throw new Error("Scraper outdated (token missing).");
 
-    // Download links in btn-group-vertical
-    doc2.querySelectorAll(".btn-group-vertical a").forEach((a) => {
-      const href = a.getAttribute("href");
-      if (href && href.startsWith("http")) {
-        const text = a.textContent.trim().toUpperCase();
-        const type =
-          text.includes("PHOTO") || text.includes("IMAGE") ? "IMAGE" : "VIDEO";
-        if (!downloads.some((d) => d.url === href)) {
-          downloads.push({ type, url: href });
-        }
+      const r2 = await CapacitorHttp.post({
+        url: "https://indown.io/download",
+        data: serializeData({ link: cleanUrl, _token: token, a: "a" }),
+        headers: {
+          Cookie: cookies,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": desktopUA,
+          Accept: acceptHeader,
+        },
+      });
+      currentStatus = r2.status;
+
+      const doc2 = parser.parseFromString(r2.data, "text/html");
+      const errorMsg = doc2
+        .querySelector("#error .modal-body")
+        ?.textContent?.trim();
+      if (errorMsg && errorMsg.toLowerCase().includes("not found")) {
+        throw new Error("Post not found on Indown.");
       }
-    });
 
-    // Fallback: any direct http link in result area
-    if (downloads.length === 0) {
-      const resultArea = doc2.querySelector(".container .row") || doc2;
-      resultArea.querySelectorAll("a").forEach((a) => {
+      let thumbnail = null;
+      const video = doc2.querySelector("video.img-fluid");
+      if (video) thumbnail = video.getAttribute("poster");
+
+      const downloadsMap = new Map();
+
+      const addLink = (a) => {
         const href = a.getAttribute("href");
         if (
-          href &&
-          href.startsWith("http") &&
-          !href.includes("indown.io") &&
-          !href.includes("ads")
-        ) {
-          const text = a.textContent.trim().toUpperCase();
-          const type =
-            text.includes("PHOTO") || text.includes("IMAGE")
-              ? "IMAGE"
-              : "VIDEO";
-          if (!downloads.some((d) => d.url === href)) {
-            downloads.push({ type, url: href });
-          }
-        }
-      });
-    }
+          !href ||
+          !href.startsWith("http") ||
+          href.includes("indown.io") ||
+          href.includes("ads")
+        )
+          return;
+        const key = href.split("?")[0];
+        if (downloadsMap.has(key)) return;
+        const text = (a.textContent || "").toUpperCase();
+        const isImage =
+          /\.(jpe?g|png|webp|gif)(\?|$)/i.test(key) ||
+          text.includes("IMAGE") ||
+          text.includes("PHOTO");
+        const type = isImage ? "IMAGE" : "VIDEO";
+        downloadsMap.set(key, { type, url: href });
+      };
 
-    if (downloads.length === 0)
-      throw new Error(
-        "Media links not found. Post might be private or invalid.",
+      // Prioritize download buttons in result containers
+      const btnLinks = doc2.querySelectorAll(
+        ".btn-group-vertical a, a.btn-color, a.btn, a[href*='cdninstagram'], a[href*='fbcdn']",
       );
+      if (btnLinks.length > 0) {
+        btnLinks.forEach(addLink);
+      }
 
-    if (!thumbnail && downloads.length > 0) {
-      thumbnail = downloads[0].url;
+      if (downloadsMap.size === 0) {
+        const resultArea = doc2.querySelector(".container .row") || doc2;
+        resultArea.querySelectorAll("a[href]").forEach(addLink);
+      }
+
+      const downloads = [...downloadsMap.values()];
+
+      if (downloads.length === 0)
+        throw new Error(
+          "Media links not found. Post might be private or invalid.",
+        );
+      if (!thumbnail && downloads.length > 0) thumbnail = downloads[0].url;
+
+      _igSource = null;
+      return {
+        status: true,
+        result: {
+          title: "Instagram Content",
+          thumbnail,
+          downloads,
+          sourceUrl: url,
+        },
+      };
     }
 
-    return {
-      status: true,
-      result: {
-        title: "Instagram Content",
-        thumbnail,
-        downloads,
-        sourceUrl: url,
-      },
-    };
+    throw new Error("Invalid source selected.");
   } catch (err) {
+    _igSource = null;
     return { status: false, message: err.message, statusCode: currentStatus };
   }
+}
+export let _ytSource = null;
+export function setYouTubeSource(src) {
+  _ytSource = src;
 }
 
 export async function scrapeYouTube(url) {
@@ -862,175 +1162,490 @@ export async function scrapeYouTube(url) {
     )?.[1];
     if (!videoId) throw new Error("Invalid YouTube URL");
 
-    const fetchLink = async (format) => {
+    if (!_ytSource) return { requireSource: true };
+
+    const oembed = async () => {
+      let title = "YouTube Video";
+      let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      try {
+        const oRes = await CapacitorHttp.get({
+          url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+        });
+        if (oRes.data) {
+          const o =
+            typeof oRes.data === "string" ? JSON.parse(oRes.data) : oRes.data;
+          title = o.title || title;
+          thumbnail = o.thumbnail_url || thumbnail;
+        }
+      } catch (e) {}
+      return { title, thumbnail };
+    };
+
+    const meta = await oembed();
+
+    if (_ytSource === "gg") {
+      const headers = {
+        Origin: "https://media.ytmp3.gg",
+        Referer: "https://media.ytmp3.gg/",
+        "User-Agent": CHROME_UA,
+        Accept: "application/json, text/plain, */*",
+      };
+      const runConvert = async (format, quality) => {
+        try {
+          const convRes = await CapacitorHttp.post({
+            url: "https://hub.convert1s.com/api/download",
+            headers: { ...headers, "Content-Type": "application/json" },
+            data: JSON.stringify({
+              url,
+              os: "macos",
+              output: {
+                type: format === "mp4" ? "video" : "audio",
+                format,
+                quality,
+              },
+              audio: { bitrate: "128k" },
+            }),
+          });
+          currentStatus = convRes.status;
+          const conv =
+            typeof convRes.data === "string"
+              ? JSON.parse(convRes.data)
+              : convRes.data;
+          if (conv.error || !conv.statusUrl) return null;
+          let downloadUrl = null,
+            attempts = 0;
+          while (!downloadUrl && attempts < 30) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const pollRes = await CapacitorHttp.get({
+              url: conv.statusUrl,
+              headers,
+            });
+            const status =
+              typeof pollRes.data === "string"
+                ? JSON.parse(pollRes.data)
+                : pollRes.data;
+            attempts++;
+            if (status.status === "completed" && status.downloadUrl) {
+              downloadUrl = status.downloadUrl;
+              break;
+            }
+            if (status.status === "error" || status.status === "failed") break;
+          }
+          return downloadUrl
+            ? { url: downloadUrl, quality: conv.selectedQuality || quality }
+            : null;
+        } catch (e) {
+          return null;
+        }
+      };
+      const tiers = ["1080p", "720p", "480p", "360p"];
+      const [mp3, ...mp4s] = await Promise.all([
+        runConvert("mp3", ""),
+        ...tiers.map((q) => runConvert("mp4", q)),
+      ]);
+      const downloads = [];
+      mp4s.forEach((r, i) => {
+        if (r) downloads.push({ type: `MP4 ${tiers[i]}`, url: r.url });
+      });
+      if (mp3) downloads.push({ type: "MP3", url: mp3.url });
+      if (!downloads.length)
+        throw new Error("Failed to get download links. Try again.");
+      _ytSource = null;
+      return { status: true, result: { ...meta, downloads, sourceUrl: url } };
+    }
+
+    if (_ytSource === "mobi") {
       const headers = {
         Origin: "https://ytmp3.mobi",
         Referer: "https://ytmp3.mobi/",
         "User-Agent": CHROME_UA,
       };
-
       const r1 = await CapacitorHttp.get({
         url: "https://a.ymcdn.org/api/v1/init?p=y&23=1llum1n471",
         headers,
       });
-      if (!r1.data || r1.data.error) return null;
+      if (!r1.data || r1.data.error) throw new Error("Init failed");
+      const fetchSingle = async (format) => {
+        const r2 = await CapacitorHttp.get({
+          url: `${r1.data.convertURL}&v=${videoId}&f=${format}`,
+          headers,
+        });
+        if (!r2.data || r2.data.error) return null;
+        let progress = 0,
+          dlUrl = r2.data.downloadURL,
+          progUrl = r2.data.progressURL;
+        let attempts = 0;
+        while (progress < 3 && attempts < 15) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const r3 = await CapacitorHttp.get({ url: progUrl, headers });
+          if (!r3.data || r3.data.error) break;
+          progress = r3.data.progress;
+          if (r3.data.downloadURL) dlUrl = r3.data.downloadURL;
+          if (progress === 4) break;
+          attempts++;
+        }
+        if (dlUrl && dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
+        if (dlUrl && dlUrl.startsWith("/"))
+          dlUrl = "https://ytmp3.mobi" + dlUrl;
+        return dlUrl;
+      };
+      const [mp4Url, mp3Url] = await Promise.all([
+        fetchSingle("mp4"),
+        fetchSingle("mp3"),
+      ]);
+      const downloads = [];
+      if (mp4Url) downloads.push({ type: "MP4", url: mp4Url });
+      if (mp3Url) downloads.push({ type: "MP3", url: mp3Url });
+      if (!downloads.length)
+        throw new Error("Failed to get download links. Try again.");
+      _ytSource = null;
+      return { status: true, result: { ...meta, downloads, sourceUrl: url } };
+    }
 
-      const r2 = await CapacitorHttp.get({
-        url: `${r1.data.convertURL}&v=${videoId}&f=${format}`,
-        headers,
-      });
-      if (!r2.data || r2.data.error) return null;
-
-      let progress = 0;
-      let dlUrl = r2.data.downloadURL;
-      const progUrl = r2.data.progressURL;
-
-      let attempts = 0;
-      while (progress < 3 && attempts < 15) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const r3 = await CapacitorHttp.get({ url: progUrl, headers });
-        if (!r3.data || r3.data.error) break;
-        progress = r3.data.progress;
-        if (r3.data.downloadURL) dlUrl = r3.data.downloadURL;
-        if (progress === 4) break;
-        attempts++;
-      }
-
-      if (dlUrl && dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
-      if (dlUrl && dlUrl.startsWith("/")) dlUrl = "https://ytmp3.mobi" + dlUrl;
-      return dlUrl;
-    };
-
-    const [mp4Url, mp3Url] = await Promise.all([
-      fetchLink("mp4"),
-      fetchLink("mp3"),
-    ]);
-
-    const downloads = [];
-    if (mp4Url) downloads.push({ type: "MP4 VIDEO", url: mp4Url });
-    if (mp3Url) downloads.push({ type: "MP3 AUDIO", url: mp3Url });
-
-    if (downloads.length === 0)
-      throw new Error("Failed to get download links. Try again.");
-
-    // Fast info via oembed
-    let title = "YouTube Video";
-    let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-    try {
-      const oRes = await CapacitorHttp.get({
-        url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-      });
-      if (oRes.data) {
-        title = oRes.data.title;
-        thumbnail = oRes.data.thumbnail_url;
-      }
-    } catch (e) {}
-
-    return {
-      status: true,
-      result: { title, thumbnail, downloads, sourceUrl: url },
-    };
+    throw new Error("Invalid source selected");
   } catch (err) {
     return { status: false, message: err.message, statusCode: currentStatus };
   }
+}
+
+export let _twSource = null;
+export function setTwitterSource(src) {
+  _twSource = src;
 }
 
 export async function scrapeTwitter(url) {
   let currentStatus = null;
   try {
-    const twitterUrl = url.replace(
-      /https:\/\/(fixupx|fxtwitter|vxtwitter|nitter|twitter)\.com/g,
-      "https://x.com",
-    );
-    const r1 = await CapacitorHttp.get({
-      url: "https://tweeload.com/en",
-      headers: { "User-Agent": CHROME_UA },
-    });
-    currentStatus = r1.status;
+    const cleanUrl = getCleanUrl(url).split("?")[0];
+    if (!_twSource) return { requireSource: true };
 
-    const parser = new DOMParser();
+    const formatResolutionLabel = (rawText, qualityText) => {
+      const text = (rawText || "") + " " + (qualityText || "");
+      const match = text.match(/(\d+\s*[xX]\s*\d+|\d+\s*p)/i);
+      if (match) {
+        return match[1].replace(/\s+/g, "").toLowerCase();
+      }
+      const clean = text.replace(/download|video|mp4|\:/gi, "").trim();
+      return clean || "MP4";
+    };
 
-    const r2 = await CapacitorHttp.post({
-      url: "https://tweeload.com/en/download",
-      data: serializeData({ url: twitterUrl }),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": CHROME_UA,
-      },
-    });
-    currentStatus = r2.status;
-
-    const doc2 = parser.parseFromString(r2.data, "text/html");
-    const downloads = [];
-
-    doc2
-      .querySelectorAll(".download__item__info__actions tbody tr")
-      .forEach((tr) => {
-        const tds = tr.querySelectorAll("td");
-        const quality = tds[0]?.textContent?.trim();
-        let dlUrl = tr
-          .querySelector("a.download__item__info__actions__button")
-          ?.getAttribute("href");
-        if (dlUrl) {
-          if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
-          const label = quality ? quality + " VIDEO" : "VIDEO";
-          const isMirror = downloads.some((d) => d.type.includes("VIDEO"));
-          downloads.push({ type: label, url: dlUrl, isMirror });
-        }
+    if (_twSource === "tvd") {
+      const twitterUrl = cleanUrl.replace(
+        /https:\/\/(x|fixupx|fxtwitter|vxtwitter|nitter)\.com/g,
+        "https://twitter.com",
+      );
+      const r1 = await CapacitorHttp.get({
+        url: "https://twittervideodownloader.com/",
+        headers: { "User-Agent": CHROME_UA },
       });
+      currentStatus = r1.status;
+      const parser = new DOMParser();
+      const doc1 = parser.parseFromString(r1.data, "text/html");
+      const csrf = doc1.querySelector(
+        'input[name="csrfmiddlewaretoken"]',
+      )?.value;
+      const gql = doc1.querySelector('input[name="gql"]')?.value || "";
+      const cookies = getCookiesFromHeaders(r1.headers);
 
-    if (downloads.length === 0) {
-      doc2.querySelectorAll("a.btn").forEach((a) => {
-        let href = a.getAttribute("href");
-        if (
-          href &&
-          (href.includes("downloads.acxcdn.com") ||
-            href.includes("twimg.com") ||
-            href.includes("tweeload"))
-        ) {
-          const text = a.textContent.trim();
-          if (text.toLowerCase() !== "download via the mobile app") {
-            const isImage =
-              href.includes("/image?") || text.toLowerCase().includes("image");
-            const isVideo = !isImage;
-            const label = isVideo
-              ? text.includes("HD")
-                ? "HD VIDEO"
-                : "VIDEO"
-              : "IMAGE";
-            const isMirror =
-              isVideo && downloads.some((d) => d.type.includes("VIDEO"));
-            downloads.push({ type: label, url: href, isMirror });
+      if (!csrf)
+        throw new Error(
+          "Could not find CSRF token from TwitterVideoDownloader.",
+        );
+
+      const r2 = await CapacitorHttp.post({
+        url: "https://twittervideodownloader.com/download",
+        data: serializeData({
+          tweet: twitterUrl,
+          csrfmiddlewaretoken: csrf,
+          gql: gql,
+        }),
+        headers: {
+          Cookie: cookies,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": CHROME_UA,
+          Referer: "https://twittervideodownloader.com/",
+        },
+      });
+      currentStatus = r2.status;
+
+      const doc2 = parser.parseFromString(r2.data, "text/html");
+      const downloads = [];
+
+      doc2.querySelectorAll(".card-body").forEach((card) => {
+        const qualityText =
+          card.querySelector(".card-text")?.textContent?.trim() || "";
+        card.querySelectorAll("a.btn-download, a.btn").forEach((btn) => {
+          const href = btn.getAttribute("href");
+          const btnText = btn.textContent.trim();
+          if (href && href.startsWith("http")) {
+            const label = formatResolutionLabel(btnText, qualityText);
+            if (!downloads.some((d) => d.url === href)) {
+              const isImg =
+                /\.(jpe?g|png|webp)(\?|$)/i.test(href) ||
+                label === "IMAGE" ||
+                label === "PHOTO";
+              const isMirror = isImg
+                ? false
+                : downloads.some(
+                    (d) => d.type !== "IMAGE" && d.type !== "PHOTO",
+                  );
+              downloads.push({ type: label, url: href, isMirror });
+            }
           }
-        }
+        });
       });
+
+      if (downloads.length === 0) {
+        doc2
+          .querySelectorAll('a[href*="video.twimg.com"], a[href*="twimg.com"]')
+          .forEach((a) => {
+            const href = a.getAttribute("href");
+            if (
+              href &&
+              href.startsWith("http") &&
+              !downloads.some((d) => d.url === href)
+            ) {
+              const label = formatResolutionLabel(a.textContent.trim(), "");
+              const isImg =
+                /\.(jpe?g|png|webp)(\?|$)/i.test(href) ||
+                label === "IMAGE" ||
+                label === "PHOTO";
+              const isMirror = isImg
+                ? false
+                : downloads.some(
+                    (d) => d.type !== "IMAGE" && d.type !== "PHOTO",
+                  );
+              downloads.push({ type: label, url: href, isMirror });
+            }
+          });
+      }
+
+      if (downloads.length === 0)
+        throw new Error("No video links found on TVD.");
+
+      const thumbnail =
+        doc2
+          .querySelector(
+            "img[src*='twimg.com'], img[src*='pbs.twimg.com'], .card img",
+          )
+          ?.getAttribute("src") ||
+        doc2.querySelector("video")?.getAttribute("poster") ||
+        null;
+
+      _twSource = null;
+      return {
+        status: true,
+        result: {
+          title: "Twitter/X Video",
+          thumbnail,
+          downloads,
+          sourceUrl: url,
+        },
+      };
     }
 
-    if (downloads.length === 0) throw new Error("Twitter links not found.");
+    if (_twSource === "tweeload") {
+      const twitterUrl = cleanUrl.replace(
+        /https:\/\/(fixupx|fxtwitter|vxtwitter|nitter|twitter)\.com/g,
+        "https://x.com",
+      );
+      const r1 = await CapacitorHttp.get({
+        url: "https://tweeload.com/en",
+        headers: { "User-Agent": CHROME_UA },
+      });
+      currentStatus = r1.status;
 
-    const name = doc2
-      .querySelector(".download__item__info__user__name")
-      ?.textContent?.trim();
-    const handle = doc2
-      .querySelector(".download__item__info__user__handle")
-      ?.textContent?.trim();
-    return {
-      status: true,
-      result: {
-        title: name ? `${name} (${handle})` : "Twitter Content",
-        thumbnail: null,
-        downloads,
-        sourceUrl: url,
-      },
-    };
+      const parser = new DOMParser();
+
+      const r2 = await CapacitorHttp.post({
+        url: "https://tweeload.com/en/download",
+        data: serializeData({ url: twitterUrl }),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": CHROME_UA,
+        },
+      });
+      currentStatus = r2.status;
+
+      const doc2 = parser.parseFromString(r2.data, "text/html");
+      const downloads = [];
+
+      doc2
+        .querySelectorAll(".download__item__info__actions tbody tr")
+        .forEach((tr) => {
+          const tds = tr.querySelectorAll("td");
+          const quality = tds[0]?.textContent?.trim();
+          let dlUrl = tr
+            .querySelector("a.download__item__info__actions__button")
+            ?.getAttribute("href");
+          if (dlUrl) {
+            if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
+            const label = formatResolutionLabel(quality, "");
+            const isImg =
+              /\.(jpe?g|png|webp)(\?|$)/i.test(dlUrl) ||
+              label === "IMAGE" ||
+              label === "PHOTO";
+            const isMirror = isImg
+              ? false
+              : downloads.some((d) => d.type !== "IMAGE" && d.type !== "PHOTO");
+            downloads.push({ type: label, url: dlUrl, isMirror });
+          }
+        });
+
+      if (downloads.length === 0) {
+        doc2.querySelectorAll("a.btn").forEach((a) => {
+          let href = a.getAttribute("href");
+          if (
+            href &&
+            (href.includes("downloads.acxcdn.com") ||
+              href.includes("twimg.com") ||
+              href.includes("tweeload"))
+          ) {
+            const text = a.textContent.trim();
+            if (text.toLowerCase() !== "download via the mobile app") {
+              const label = formatResolutionLabel(text, "");
+              const isImg =
+                /\.(jpe?g|png|webp)(\?|$)/i.test(href) ||
+                label === "IMAGE" ||
+                label === "PHOTO";
+              const isMirror = isImg
+                ? false
+                : downloads.some(
+                    (d) => d.type !== "IMAGE" && d.type !== "PHOTO",
+                  );
+              downloads.push({ type: label, url: href, isMirror });
+            }
+          }
+        });
+      }
+
+      if (downloads.length === 0) throw new Error("Twitter links not found.");
+
+      const name = doc2
+        .querySelector(".download__item__info__user__name")
+        ?.textContent?.trim();
+      const handle = doc2
+        .querySelector(".download__item__info__user__handle")
+        ?.textContent?.trim();
+      const thumbnail =
+        doc2
+          .querySelector(".download__item__preview img, .download__item img")
+          ?.getAttribute("src") || null;
+
+      _twSource = null;
+      return {
+        status: true,
+        result: {
+          title: name ? `${name} (${handle})` : "Twitter Content",
+          thumbnail,
+          downloads,
+          sourceUrl: url,
+        },
+      };
+    }
+
+    throw new Error("Invalid source selected.");
   } catch (err) {
+    _twSource = null;
     return { status: false, message: err.message, statusCode: currentStatus };
   }
 }
 
+let _spSource = null;
+
+export function setSpotifySource(source) {
+  _spSource = source;
+}
+
 export async function scrapeSpotify(url) {
+  if (!_spSource) {
+    return { status: true, requireSource: true };
+  }
+
   let currentStatus = null;
   try {
+    if (_spSource === "spotmate") {
+      const r1 = await CapacitorHttp.get({
+        url: "https://spotmate.online/en1",
+        headers: { "User-Agent": CHROME_UA },
+      });
+      currentStatus = r1.status;
+      const cookies = getCookiesFromHeaders(r1.headers);
+      const parser = new DOMParser();
+      const doc1 = parser.parseFromString(r1.data, "text/html");
+
+      const csrfToken = doc1
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
+      if (!csrfToken) {
+        throw new Error("Could not extract CSRF token from SpotMate.");
+      }
+
+      const apiHeaders = {
+        "X-CSRF-TOKEN": csrfToken,
+        "Content-Type": "application/json",
+        "User-Agent": CHROME_UA,
+        Referer: "https://spotmate.online/en1",
+        Origin: "https://spotmate.online",
+        "X-Requested-With": "XMLHttpRequest",
+      };
+      if (cookies) apiHeaders["Cookie"] = cookies;
+
+      const r2 = await CapacitorHttp.post({
+        url: "https://spotmate.online/getTrackData",
+        data: JSON.stringify({ spotify_url: url }),
+        headers: apiHeaders,
+      });
+      currentStatus = r2.status;
+      const trackData =
+        typeof r2.data === "string" ? JSON.parse(r2.data) : r2.data;
+      if (!trackData || trackData.error || !trackData.name) {
+        throw new Error(
+          trackData?.message || "Failed to fetch track details from SpotMate.",
+        );
+      }
+
+      const title = trackData.name;
+      const artist = trackData.artists
+        ? trackData.artists.map((a) => a.name).join(", ")
+        : "Unknown Artist";
+      const thumbnail =
+        trackData.album && trackData.album.images && trackData.album.images[0]
+          ? trackData.album.images[0].url
+          : "";
+
+      const r3 = await CapacitorHttp.post({
+        url: "https://spotmate.online/convert",
+        data: JSON.stringify({ urls: url }),
+        headers: apiHeaders,
+      });
+      currentStatus = r3.status;
+      const convertData =
+        typeof r3.data === "string" ? JSON.parse(r3.data) : r3.data;
+      if (!convertData || convertData.error || !convertData.url) {
+        throw new Error(
+          convertData?.message || "Failed to get download URL from SpotMate.",
+        );
+      }
+
+      _spSource = null;
+      return {
+        status: true,
+        result: {
+          title: artist ? `${artist} - ${title}` : title,
+          thumbnail,
+          downloads: [
+            {
+              type: "MP3",
+              url: convertData.url,
+            },
+          ],
+          sourceUrl: url,
+        },
+      };
+    }
+
+    // Default: SpotiDown
     const r1 = await CapacitorHttp.get({
       url: "https://spotidown.app/",
       headers: { "User-Agent": CHROME_UA },
@@ -1120,6 +1735,7 @@ export async function scrapeSpotify(url) {
       }
     });
 
+    _spSource = null;
     return {
       status: true,
       result: {
@@ -1130,6 +1746,7 @@ export async function scrapeSpotify(url) {
       },
     };
   } catch (err) {
+    _spSource = null;
     return { status: false, message: err.message, statusCode: currentStatus };
   }
 }
@@ -1501,62 +2118,31 @@ export async function scrapePixiv(url) {
     if (!illustIdMatch) throw new Error("Invalid Pixiv URL.");
     const illustId = illustIdMatch[1];
 
-    const res = await CapacitorHttp.get({
-      url: `https://www.pixiv.net/ajax/illust/${illustId}?lang=en`,
-      headers: {
-        "User-Agent": CHROME_UA,
-        Referer: "https://www.pixiv.net/",
-      },
-    });
-    currentStatus = res.status;
+    let illustData = null;
 
-    let resData = res.data;
-    if (typeof resData === "string") {
-      try {
-        resData = JSON.parse(resData);
-      } catch (e) {}
-    }
-
-    const data = resData?.body;
-    if (resData?.error || !data || !data.urls || !data.urls.original) {
-      let maxValid = 1;
-
-      const checkExists = async (page) => {
+    // 1. Try fetching official AJAX API
+    try {
+      const res = await CapacitorHttp.get({
+        url: `https://www.pixiv.net/ajax/illust/${illustId}?lang=en`,
+        headers: {
+          "User-Agent": CHROME_UA,
+          Referer: "https://www.pixiv.net/",
+        },
+      });
+      currentStatus = res.status;
+      let resData = res.data;
+      if (typeof resData === "string") {
         try {
-          const res = await CapacitorHttp.request({
-            url: `https://pixiv.re/${illustId}-${page}.jpg`,
-            method: "HEAD",
-          });
-          return res.status !== 404;
-        } catch (e) {
-          return false;
-        }
-      };
-
-      if (await checkExists(1)) {
-        let low = 1;
-        let high = 200;
-        while (low <= high) {
-          let mid = Math.floor((low + high) / 2);
-          if (await checkExists(mid)) {
-            maxValid = mid;
-            low = mid + 1;
-          } else {
-            high = mid - 1;
-          }
-        }
+          resData = JSON.parse(resData);
+        } catch (e) {}
       }
-
-      const fallbackDownloads = [
-        { type: "IMAGE / PAGE 1", url: `https://pixiv.re/${illustId}.jpg` },
-      ];
-      for (let i = 2; i <= maxValid; i++) {
-        fallbackDownloads.push({
-          type: `PAGE ${i}`,
-          url: `https://pixiv.re/${illustId}-${i}.jpg`,
-        });
+      if (resData && !resData.error && resData.body) {
+        illustData = resData.body;
       }
-      let fallbackTitle = "Pixiv Artwork (Restricted / R-18)";
+    } catch (e) {}
+
+    // 2. If AJAX API fails (R-18 / Login restriction), scrape HTML meta-preload-data
+    if (!illustData) {
       try {
         const htmlRes = await CapacitorHttp.get({
           url: `https://www.pixiv.net/en/artworks/${illustId}`,
@@ -1566,82 +2152,143 @@ export async function scrapePixiv(url) {
           },
         });
         if (htmlRes.data && typeof htmlRes.data === "string") {
-          const match = htmlRes.data.match(
-            /<meta\s+property="twitter:title"\s+content="([^"]+)"/i,
-          );
+          const match =
+            htmlRes.data.match(/id="meta-preload-data"\s+content='([^']+)'/i) ||
+            htmlRes.data.match(/id="meta-preload-data"\s+content="([^"]+)"/i);
           if (match && match[1]) {
-            fallbackTitle = match[1]
-              .replace(/&amp;/g, "&")
+            const rawContent = match[1]
               .replace(/&quot;/g, '"')
-              .replace(/&#39;/g, "'")
-              .replace(/&lt;/g, "<")
-              .replace(/&gt;/g, ">");
+              .replace(/&amp;/g, "&");
+            const preload = JSON.parse(rawContent);
+            if (preload && preload.illust && preload.illust[illustId]) {
+              illustData = preload.illust[illustId];
+            }
           }
         }
       } catch (e) {
-        console.warn("Could not fetch R-18 title", e);
+        console.warn("Could not parse meta-preload-data:", e);
       }
-
-      return {
-        status: true,
-        result: {
-          title: fallbackTitle,
-          thumbnail: `https://pixiv.re/${illustId}.jpg`,
-          downloads: fallbackDownloads,
-          sourceUrl: url,
-        },
-      };
     }
 
-    const pageCount = data.pageCount || 1;
-    const isUgoira = data.illustType === 2;
+    // 3. Determine if Ugoira
+    let isUgoira = false;
+    if (illustData) {
+      isUgoira =
+        String(illustData.illustType) === "2" ||
+        illustData.illustType == 2 ||
+        String(illustData.illust_type) === "2" ||
+        illustData.type === "ugoira" ||
+        (illustData.urls &&
+          illustData.urls.original &&
+          illustData.urls.original.includes("ugoira"));
+    }
+
+    // Double check via ugoira_meta endpoint
+    if (!isUgoira) {
+      try {
+        const ugoMetaRes = await CapacitorHttp.get({
+          url: `https://www.pixiv.net/ajax/illust/${illustId}/ugoira_meta?lang=en`,
+          headers: {
+            "User-Agent": CHROME_UA,
+            Referer: "https://www.pixiv.net/",
+          },
+        });
+        let metaData = ugoMetaRes.data;
+        if (typeof metaData === "string") {
+          try {
+            metaData = JSON.parse(metaData);
+          } catch (e) {}
+        }
+        if (
+          metaData &&
+          !metaData.error &&
+          metaData.body &&
+          (metaData.body.originalSrc ||
+            (metaData.body.frames && metaData.body.frames.length > 0))
+        ) {
+          isUgoira = true;
+        }
+      } catch (e) {}
+    }
+
+    const title =
+      illustData?.title || illustData?.illustTitle
+        ? `${illustData.title || illustData.illustTitle} by ${
+            illustData.userName || illustData.userAccount || "Unknown"
+          }`
+        : "Pixiv Artwork";
+
     const downloads = [];
 
     if (isUgoira) {
-      const ugoRes = await CapacitorHttp.get({
-        url: `https://www.pixiv.net/ajax/illust/${illustId}/ugoira_meta?lang=en`,
-        headers: {
-          "User-Agent": CHROME_UA,
-          Referer: "https://www.pixiv.net/",
-        },
-      });
-      let ugoDataRaw = ugoRes.data;
-      if (typeof ugoDataRaw === "string") {
-        try {
-          ugoDataRaw = JSON.parse(ugoDataRaw);
-        } catch (e) {}
-      }
-      const ugoData = ugoDataRaw?.body;
-      if (ugoData && ugoData.originalSrc) {
-        downloads.push({
-          type: "UGOIRA (ZIP)",
-          url: ugoData.originalSrc.replace("i.pximg.net", "i.pixiv.re"),
+      let zipUrl = null;
+      try {
+        const ugoMetaRes = await CapacitorHttp.get({
+          url: `https://www.pixiv.net/ajax/illust/${illustId}/ugoira_meta?lang=en`,
+          headers: {
+            "User-Agent": CHROME_UA,
+            Referer: "https://www.pixiv.net/",
+          },
         });
-      }
+        let metaData = ugoMetaRes.data;
+        if (typeof metaData === "string") {
+          try {
+            metaData = JSON.parse(metaData);
+          } catch (e) {}
+        }
+        if (metaData && !metaData.error && metaData.body) {
+          zipUrl = metaData.body.originalSrc || metaData.body.src;
+        }
+      } catch (e) {}
+
+      downloads.push({
+        type: "UGOIRA (MP4)",
+        url: `https://ugoira.com/api/mp4/${illustId}`,
+      });
+      downloads.push({
+        type: "UGOIRA (GIF)",
+        url: `https://pixiv.re/${illustId}.gif`,
+      });
+      downloads.push({
+        type: "UGOIRA (ZIP)",
+        url:
+          zipUrl ||
+          `https://i.pximg.net/img-zip-ugoira/img/${illustId}_ugoira1920x1080.zip`,
+      });
     } else {
-      const originalUrl = data.urls.original;
-      for (let i = 0; i < pageCount; i++) {
-        let type = pageCount > 1 ? `PAGE ${i + 1}` : "IMAGE";
-        let pageUrl = originalUrl.replace("_p0", `_p${i}`);
-        pageUrl = pageUrl.replace("i.pximg.net", "i.pixiv.re");
-        downloads.push({ type, url: pageUrl });
+      const pageCount = illustData?.pageCount || 1;
+      const originalUrl = illustData?.urls?.original;
+      if (originalUrl) {
+        for (let i = 0; i < pageCount; i++) {
+          let type = pageCount > 1 ? `PAGE ${i + 1}` : "IMAGE";
+          let pageUrl = originalUrl.replace("_p0", `_p${i}`);
+          pageUrl = pageUrl.replace("i.pximg.net", "i.pixiv.re");
+          downloads.push({ type, url: pageUrl });
+        }
+      } else {
+        downloads.push({
+          type: "IMAGE / PAGE 1",
+          url: `https://pixiv.re/${illustId}.jpg`,
+        });
+        for (let i = 2; i <= pageCount; i++) {
+          downloads.push({
+            type: `PAGE ${i}`,
+            url: `https://pixiv.re/${illustId}-${i}.jpg`,
+          });
+        }
       }
     }
 
-    if (downloads.length === 0) {
-      throw new Error("No downloadable media found.");
-    }
-
-    const thumb =
-      data.urls.regular?.replace("i.pximg.net", "i.pixiv.re") ||
-      data.urls.original?.replace("i.pximg.net", "i.pixiv.re");
+    const thumb = isUgoira
+      ? `https://pixiv.re/${illustId}.gif`
+      : illustData?.urls?.regular?.replace("i.pximg.net", "i.pixiv.re") ||
+        illustData?.urls?.original?.replace("i.pximg.net", "i.pixiv.re") ||
+        `https://pixiv.re/${illustId}.jpg`;
 
     return {
       status: true,
       result: {
-        title: data.title
-          ? `${data.title} by ${data.userName || "Unknown"}`
-          : "Pixiv Artwork",
+        title,
         thumbnail: thumb,
         downloads,
         sourceUrl: url,
