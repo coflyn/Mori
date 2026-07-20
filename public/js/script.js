@@ -4,10 +4,15 @@ import {
   scrapeBilibili,
   scrapeThreads,
   scrapeTikTok,
+  setTikTokSource,
   scrapeInstagram,
+  setInstagramSource,
   scrapeYouTube,
+  setYouTubeSource,
   scrapeTwitter,
+  setTwitterSource,
   scrapeSpotify,
+  setSpotifySource,
   scrapePinterest,
   scrapeAppleMusic,
   scrapeFacebook,
@@ -42,7 +47,7 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.8.0";
+const APP_VERSION = "3.9.0";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -1396,14 +1401,140 @@ downloadBtn.addEventListener("click", async () => {
       console.log("[NATIVE] Using CapacitorHttp for:", url);
       if (url.includes("tiktok.com")) {
         data = await scrapeTikTok(url);
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: Multi Feature (HD Video · MP3 · Photo Slideshow)\nServer 2: Fast & Direct (HD/MP4 Video · Photo Slideshow)";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            okConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("tiktokio");
+            };
+            cancelConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("snaptik");
+            };
+          });
+          setTikTokSource(chosen);
+          data = await scrapeTikTok(url);
+        }
       } else if (url.includes("instagram.com")) {
         data = await scrapeInstagram(url);
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: Reels, Posts & Photos\nServer 2: Reels, Posts & Photos";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            okConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("indown");
+            };
+            cancelConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("downreels");
+            };
+          });
+          setInstagramSource(chosen);
+          data = await scrapeInstagram(url);
+        }
       } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
         data = await scrapeYouTube(url);
-      } else if (url.includes("twitter.com") || url.includes("x.com")) {
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: Multi Resolution (1080p - 360p + MP3)\nServer 2: Fast & Stable (MP4 / MP3)";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            okConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("gg");
+            };
+            cancelConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("mobi");
+            };
+          });
+          setYouTubeSource(chosen);
+          data = await scrapeYouTube(url);
+        }
+      } else if (
+        url.includes("twitter.com") ||
+        url.includes("x.com") ||
+        url.includes("fixupx.com") ||
+        url.includes("fxtwitter.com") ||
+        url.includes("vxtwitter.com")
+      ) {
         data = await scrapeTwitter(url);
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: Multi Resolution (HD / SD Video)\nServer 2: Multi Resolution (HD / SD Video)";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            okConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("tweeload");
+            };
+            cancelConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("tvd");
+            };
+          });
+          setTwitterSource(chosen);
+          data = await scrapeTwitter(url);
+        }
       } else if (url.includes("spotify.com")) {
         data = await scrapeSpotify(url);
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: High Quality Audio (MP3)\nServer 2: High Quality Audio (MP3)";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            okConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("spotidown");
+            };
+            cancelConfirmBtn.onclick = () => {
+              hideConfirm();
+              resolve("spotmate");
+            };
+          });
+          setSpotifySource(chosen);
+          data = await scrapeSpotify(url);
+        }
       } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
         data = await scrapePinterest(url);
       } else if (url.includes("music.apple.com")) {
@@ -1420,6 +1551,7 @@ downloadBtn.addEventListener("click", async () => {
       } else if (
         url.includes("bilibili.com") ||
         url.includes("b23.tv") ||
+        url.includes("bili.im") ||
         url.includes("bilibili.tv")
       ) {
         data = await scrapeBilibili(url);
@@ -1534,6 +1666,18 @@ const hideModal = () => {
   }
 };
 
+const hideConfirm = () => {
+  if (confirmOverlay) {
+    confirmOverlay.classList.add("hidden");
+    confirmOverlay.style.display = "none";
+  }
+  if (cancelConfirmBtn) cancelConfirmBtn.textContent = "CANCEL";
+  if (okConfirmBtn) {
+    okConfirmBtn.textContent = "CONFIRM";
+    okConfirmBtn.style.color = "";
+  }
+};
+
 closeModal?.addEventListener("click", hideModal);
 modalOverlay?.addEventListener("click", (e) => {
   if (e.target === modalOverlay) hideModal();
@@ -1621,8 +1765,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
-              versionCode: 7,
-              versionName: "3.8.0",
+              versionCode: 8,
+              versionName: "3.9.0",
             };
           }
           return item;

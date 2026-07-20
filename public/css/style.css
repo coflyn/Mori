@@ -1807,6 +1807,9 @@ input[type="text"]:focus {
 .confirm-body p {
   font-size: 0.8rem;
   color: var(--text-secondary);
+  white-space: pre-line;
+  line-height: 1.5;
+  margin-top: 8px;
 }
 
 .confirm-actions {
