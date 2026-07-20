@@ -19,6 +19,23 @@ function getCleanUrl(text) {
   return clean;
 }
 
+// Helper to safely parse JSON response data, catching HTML error responses (Cloudflare/Rate limit)
+function parseJsonResponse(data, serverName = "Server") {
+  if (typeof data === "object" && data !== null) return data;
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+    if (trimmed.startsWith("<") || trimmed.startsWith("<!DOCTYPE")) {
+      throw new Error(`${serverName} returned an HTML error page (blocked or unavailable). Please try another server.`);
+    }
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      throw new Error(`${serverName} returned an invalid response format.`);
+    }
+  }
+  throw new Error(`${serverName} returned an empty response.`);
+}
+
 async function sha256(message) {
   const msgUint8 = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
@@ -795,7 +812,12 @@ export async function scrapeTikTok(url) {
       const photos =
         info.photoUrls || info.photos || info.images || info.slides;
       if (photos && Array.isArray(photos) && photos.length > 0) {
-        photos.forEach((img) => downloads.push({ type: "PHOTO", url: img }));
+        photos.forEach((img) => {
+          const photoUrl = typeof img === "string" ? img : (img?.url || img?.src || img?.link || img?.downloadUrl || "");
+          if (photoUrl) {
+            downloads.push({ type: "PHOTO", url: photoUrl });
+          }
+        });
       }
 
       if (info.downloadUrl) {
@@ -1012,7 +1034,7 @@ export async function scrapeInstagram(url) {
     if (_igSource === "downreels") {
       const r = await CapacitorHttp.post({
         url: "https://api.zoraahub.com/fetch.php",
-        data: { url: cleanUrl },
+        data: { url },
         headers: {
           "Content-Type": "application/json",
           "User-Agent": CHROME_UA,
@@ -1021,9 +1043,9 @@ export async function scrapeInstagram(url) {
         },
       });
       currentStatus = r.status;
-      const data = typeof r.data === "string" ? JSON.parse(r.data) : r.data;
-      if (data.status !== "ok")
-        throw new Error(data.message || "Failed to fetch from DownReels.");
+      const data = parseJsonResponse(r.data, "DownReels Server");
+      if (!data || data.status !== "ok")
+        throw new Error(data?.message || "Failed to fetch from DownReels.");
       const items = data.videos || data.images || [];
       const downloads = items.map((item) => ({
         url: item.url,

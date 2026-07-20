@@ -5,9 +5,9 @@
 <h1 align="center">Mori - Minimalist Media Downloader</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.9.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.0.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
 
 Mori is a modern, privacy-first media downloader that saves photos, videos, and audio from 14 platforms. Built with a **client-only architecture**, all scraping runs on-device — no backend, no tracking, maximum privacy.
@@ -25,7 +25,15 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.jpeg" width="30%">
 </p>
 
-## What's New in v3.9.0
+## Work in Progress
+
+- **iOS Support (Capacitor)**: Mori now runs on iOS! Added full Xcode project structure, iOS-native Capacitor plugins, and platform-agnostic file system handling via `@capacitor/filesystem`.
+- **SnapTik TikTok Photo Slideshow Patch**: Fixed Object-URL data structure changes from SnapTik API (Server 2 TikTok), enabling robust photo slide extraction and UI rendering without crashes.
+- **Safe JSON Response Parsing**: Added defensive `parseJsonResponse` error handling to catch HTML responses (Cloudflare/Rate Limits) from scraper servers gracefully instead of throwing raw JSON syntax errors.
+- **Cross-Platform Parity**: All 14 platform scrapers work identically on iOS & Android. Shared codebase — one code, two platforms.
+- **iOS-Specific Fixes**: File permission handling adapted for iOS sandbox, share sheet integration via `@capacitor/share`, biometric lock via `@capgo/capacitor-native-biometric`.
+
+## Previous Updates v3.9.0
 
 - **Enhanced Filename Sanitization & Storage Permission Error Fix**:
   - **URI & Hashtag Sanitization**: Strips `#` (hashtags), `%`, `&`, and special symbols from video/media titles. Hashtags in filenames were previously causing Android native URI parsers to fail with `EACCES (Permission denied)` and `ENOENT (No such file or directory)`.
@@ -56,33 +64,23 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   - **Server 1 (SpotiDown)**: Standard MP3 track extraction.
   - **Server 2 (SpotMate)**: Fast & Direct MP3 extraction (`spotmate.online` integration).
 
-## Previous Updates v3.8.0
-
-- **TikTok Scraper Migrated (SnapTik → TikTokIO)**: Replaced the broken SnapTik-based scraper with a new implementation using `tiktokio.com/api/v1/tk/html`. Direct POST request via `CapacitorHttp`, regex-based HTML parsing (no DOM dependency), supports video (no watermark / HD) and MP3 downloads.
-- **Douyin Photo Slideshow**: Added support for Douyin photo posts (`aweme_type` 2). Multiple images display as a swipeable slideshow — same as TikTok photo experience.
-- **Consolidated User-Agent**: Removed scattered hardcoded UA strings across all scrapers — replaced with a single `CHROME_UA` constant from `utils.js`. Only Douyin keeps its mobile Safari UA intentionally.
-- **Bugfixes**:
-  - **Instagram URL cleaning**: Now uses `getCleanUrl()` before stripping query params — prevents failure when pasting text with embedded URLs.
-  - **Douyin thumbnail**: Falls back to first photo URL when `item.video.cover` is undefined (photo slideshows).
-  - **TikTok URL query params**: Strips `?` parameters before sending to TikTokIO API — was causing "Paste correct link" errors.
-
 ## Supported Platforms
 
-| Platform                                                                                                                                                              | Features                 | Platform                                                                            | Features                 |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio    | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | MP3 Audio                | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | MP3 Audio                | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos          | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
-| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)     | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos   | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
+| Platform                                                                                                                                                              | Features               | Platform                                                                            | Features                 |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | MP3 Audio              | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | MP3 Audio              | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
+| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
 
 ## Built With
 
 - **JavaScript (ES6+)**: Core application logic and scraping engine.
 - **HTML5 & CSS3**: Custom design system without bloated frameworks.
-- **CapacitorJS**: Native Android bridge for filesystem, clipboard, and biometrics.
+- **CapacitorJS**: Native Android and iOS bridge for filesystem, share sheet, clipboard, and biometrics.
 - **pdf-lib**: Client-side PDF generation and bundling.
 
 ## Project Structure
@@ -92,6 +90,8 @@ Mori/
 ├── android/                    # Capacitor Android native project
 │   ├── app/src/main/           # Android manifest, resources, assets
 │   └── gradle/                 # Gradle wrapper & build config
+├── ios/                        # Capacitor iOS Xcode workspace
+│   └── App/                    # iOS Xcode project, Info.plist, and Pods
 ├── assets/                     # Screenshots & branding assets
 ├── public/
 │   ├── css/
@@ -114,16 +114,16 @@ Mori/
 
 ## Key Features
 
-- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark), Instagram (Reels/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
+- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (Reels/Posts/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
 - **Live Media Previews**: View images, play videos, and listen to audio directly within the app before downloading.
 - **Standalone PDF Document Export**: Convert image galleries from any platform into high-quality PDF files for offline viewing.
 - **Private History Manager**: Downloaded files are managed internally with local playback support and offline badge detection.
 - **Share Intent Integration**: Send links directly to Mori from other apps via the system Share menu.
 - **Auto Clipboard Paste**: Automatically detects and pastes links from clipboard when you return to the app.
 - **Auto Update Check**: Checks for new versions on startup via GitHub Releases and shows a popup modal when an update is available.
-- **Biometric Privacy Lock**: Secure your history with native fingerprint/FaceID authentication.
+- **Biometric Privacy Lock**: Secure your history with native fingerprint, FaceID, or TouchID authentication.
 - **Export/Import Data**: Full data portability — backup and restore your history, settings, and paths as a JSON file.
-- **Intelligent Error Handling**: Real-time feedback for IP blocks or network issues via premium Toast notifications.
+- **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions, dark mode, and accent colors.
 
 ## How to Use
@@ -139,7 +139,7 @@ Mori/
 
 Mori is built using Capacitor and Vanilla JS for high performance.
 
-- **On Android**: Uses `CapacitorHttp` to bypass CORS and download directly from the device IP.
+- **On Android & iOS**: Uses `CapacitorHttp` to bypass CORS and download directly from the device IP. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
 - **On Web**: Preview mode only — runs directly in the browser with limited functionality.
 
 ### Building the APK
@@ -159,6 +159,18 @@ For a release APK, generate a signed keystore and run:
 
 ```bash
 cd android && ./gradlew assembleRelease
+```
+
+### Running & Building for iOS
+
+```bash
+# 1. Sync web assets & iOS CocoaPods dependencies
+npx cap sync ios
+
+# 2. Open the Xcode workspace
+npx cap open ios
+
+# 3. Select target (iPhone Simulator or connected iOS device) and press Run (Cmd + R)
 ```
 
 ---

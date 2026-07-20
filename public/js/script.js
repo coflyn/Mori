@@ -47,7 +47,7 @@ import {
   Share,
 } from "./utils.js";
 
-const APP_VERSION = "3.9.0";
+const APP_VERSION = "4.0.0";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -1765,8 +1765,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
-              versionCode: 8,
-              versionName: "3.9.0",
+              versionCode: 9,
+              versionName: "4.0.0",
             };
           }
           return item;

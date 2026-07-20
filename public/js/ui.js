@@ -42,7 +42,8 @@ function renderMediaSlides(container, items, resultThumbnail) {
     const slide = document.createElement("div");
     slide.className = `preview-slide ${index === 0 ? "active" : ""}`;
 
-    const lowerUrl = dl.url ? dl.url.toLowerCase() : "";
+    const rawUrl = typeof dl.url === "string" ? dl.url : (dl.url?.url || dl.url?.src || String(dl.url || ""));
+    const lowerUrl = rawUrl.toLowerCase();
     const upperType = dl.type ? dl.type.toUpperCase() : "";
 
     const isImage =
@@ -395,7 +396,8 @@ export function renderResult(result, originalUrl) {
   // PDF Export Option for Galleries (Hybrid Mode)
   const imageItems = sliderItems.filter((item) => {
     const type = (item.type || "").toUpperCase();
-    const url = (item.url || "").toLowerCase();
+    const rawUrl = typeof item.url === "string" ? item.url : (item.url?.url || item.url?.src || String(item.url || ""));
+    const url = rawUrl.toLowerCase();
     const isImage =
       type.includes("PAGE") ||
       type.includes("IMAGE") ||
