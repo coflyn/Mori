@@ -178,6 +178,7 @@ cd android && ./gradlew assembleRelease
 
 ### Running & Building for iOS
 
+#### Running on Simulator or Device
 ```bash
 # 1. Sync web assets & iOS CocoaPods dependencies
 npx cap sync ios
@@ -187,6 +188,22 @@ npx cap open ios
 
 # 3. Select target (iPhone Simulator or connected iOS device) and press Run (Cmd + R)
 ```
+
+#### Building Unsigned IPA (For Sideloading/Distribution)
+If you do not have an iPhone connected or a paid Apple Developer Account, you can build a generic unsigned `.ipa` for distribution via the command line:
+
+```bash
+# 1. Sync assets
+npx cap sync ios
+
+# 2. Compile target for generic iOS device without code signing
+xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
+
+# 3. Package compiled app bundle into a Payload folder and Zip to IPA
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.0.0.ipa" Payload && rm -rf Payload build
+```
+
+This outputs `Mori v4.0.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ---
 
