@@ -1004,22 +1004,24 @@ input[type="text"]:focus {
 
 .delete-item-btn {
   position: absolute;
-  right: 16px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   background: #ff4444;
   color: white;
   border: none;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  animation: popInBtn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.35);
+  animation: popInBtn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes popInBtn {
@@ -1878,79 +1880,19 @@ input[type="text"]:focus {
   color: var(--text-secondary);
 }
 
-.custom-dropdown {
-  position: relative;
-  min-width: 100px;
-}
-
-.dropdown-trigger {
+.info-dont-show {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface);
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-main);
-  padding: 4px 0;
-  transition: var(--transition);
-  text-align: right;
+  font-size: 0.75rem;
 }
 
-.dropdown-trigger svg {
-  transition: transform 0.3s ease;
-  opacity: 0.5;
-}
-
-.custom-dropdown.active .dropdown-trigger svg {
-  transform: rotate(180deg);
-}
-
-.dropdown-options {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: rgba(var(--surface-rgb), 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  padding: 8px;
-  z-index: 9999;
-  min-width: 160px;
-  animation: dropdownIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid var(--primary);
-}
-
-@keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.dropdown-options .option {
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition);
-  text-align: left;
-}
-
-.dropdown-options .option:hover {
-  background-color: var(--bg-color);
-  color: var(--primary);
-}
-
-.dropdown-options .option.selected {
-  font-weight: 700;
-  color: var(--primary);
+.info-dont-show-checkbox {
+  accent-color: var(--primary);
 }
 
 .about-quote {

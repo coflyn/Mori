@@ -6,6 +6,8 @@ export const {
   App,
   Share,
   NativeBiometric,
+  Media,
+  Haptics,
 } = window.Capacitor?.Plugins || {};
 
 import { translations } from "./i18n.js";
@@ -17,6 +19,21 @@ export function setUtilsState(state) {
 
 export const CHROME_UA =
   "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36";
+
+export const UA_PRESETS = {
+  default: CHROME_UA,
+  chrome:
+    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+  safari:
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+  desktop:
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+};
+
+export function getUserAgent() {
+  const mode = localStorage.getItem("mori_user_agent") || "default";
+  return UA_PRESETS[mode] || UA_PRESETS.default;
+}
 
 export function getCookiesFromHeaders(headers) {
   const raw = headers["Set-Cookie"] || headers["set-cookie"] || "";
@@ -151,6 +168,32 @@ export async function showToast(message) {
   }
 }
 
+// Haptic Feedback Helper
+export async function triggerHaptic(type = "medium") {
+  if (localStorage.getItem("mori_haptic") === "false") return;
+  try {
+    const HapticsPlugin = window.Capacitor?.Plugins?.Haptics || Haptics;
+    if (HapticsPlugin && window.Capacitor?.isNativePlatform()) {
+      if (type === "notification" || type === "success") {
+        await HapticsPlugin.notification({ type: "SUCCESS" }).catch(() => {});
+        await HapticsPlugin.vibrate({ duration: 120 }).catch(() => {});
+      } else if (type === "heavy") {
+        await HapticsPlugin.impact({ style: "HEAVY" }).catch(() => {});
+        await HapticsPlugin.vibrate({ duration: 80 }).catch(() => {});
+      } else {
+        await HapticsPlugin.impact({ style: "MEDIUM" }).catch(() => {});
+        await HapticsPlugin.vibrate({ duration: 50 }).catch(() => {});
+      }
+    } else if (navigator.vibrate) {
+      navigator.vibrate(type === "success" ? [50, 80, 50] : 40);
+    }
+  } catch (e) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(40);
+    } catch (err) {}
+  }
+}
+
 // Clipboard Helper
 export async function copyToClipboard(text) {
   try {
@@ -256,4 +299,67 @@ export async function getVideoThumbnail(videoUri) {
 
     video.load();
   });
+}
+
+export function playCompletionSound() {
+  const isSoundEnabled = localStorage.getItem("mori_download_sound") !== "false";
+  if (!isSoundEnabled) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+    const now = ctx.currentTime;
+
+    // Ascending crisp 3-note chime (G5, C6, E6)
+    const notes = [
+      { freq: 783.99, time: now, duration: 0.14, gain: 0.35 },       // G5
+      { freq: 1046.50, time: now + 0.09, duration: 0.16, gain: 0.4 }, // C6
+      { freq: 1318.51, time: now + 0.18, duration: 0.38, gain: 0.45 }, // E6
+    ];
+
+    notes.forEach((n) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(n.freq, n.time);
+
+      gain.gain.setValueAtTime(0, n.time);
+      gain.gain.linearRampToValueAtTime(n.gain, n.time + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, n.time + n.duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(n.time);
+      osc.stop(n.time + n.duration);
+    });
+  } catch (e) {
+    console.warn("Audio Context error", e);
+  }
+}
+
+let wakeLockSentinel = null;
+export async function requestWakeLock() {
+  if (localStorage.getItem("mori_keep_awake") === "true" && "wakeLock" in navigator) {
+    try {
+      if (!wakeLockSentinel) {
+        wakeLockSentinel = await navigator.wakeLock.request("screen");
+        console.log("[WAKE LOCK] Screen active lock acquired.");
+      }
+    } catch (err) {
+      console.warn("Wake Lock request failed:", err);
+    }
+  }
+}
+
+export function releaseWakeLock() {
+  if (wakeLockSentinel) {
+    wakeLockSentinel.release().catch(() => {});
+    wakeLockSentinel = null;
+    console.log("[WAKE LOCK] Screen active lock released.");
+  }
 }

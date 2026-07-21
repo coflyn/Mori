@@ -49,6 +49,8 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Unlock Mori to access your download history</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save downloaded videos and photos to your library</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -15,23 +15,38 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/1.jpeg" width="30%">
-  <img src="assets/2.jpeg" width="30%">
-  <img src="assets/3.jpeg" width="30%">
+  <img src="assets/1.png" width="30%">
+  <img src="assets/2.png" width="30%">
+  <img src="assets/3.png" width="30%">
 </p>
 <p align="center">
-  <img src="assets/4.jpeg" width="30%">
-  <img src="assets/5.jpeg" width="30%">
-  <img src="assets/6.jpeg" width="30%">
+  <img src="assets/4.png" width="30%">
+  <img src="assets/5.png" width="30%">
+  <img src="assets/6.png" width="30%">
 </p>
 
-## Work in Progress
+## What's New in v4.0.0
 
 - **iOS Support (Capacitor)**: Mori now runs on iOS! Added full Xcode project structure, iOS-native Capacitor plugins, and platform-agnostic file system handling via `@capacitor/filesystem`.
+- **Reorganized 5-Tier Settings Suite**: Restructured all app settings into 5 perfectly categorized sub-pages: **General** (Language, Auto-Paste, Auto-Analyze, Privacy Lock, Lock Type, Incognito, Keep Screen Awake, Auto Check Updates, Auto-Clear Input, Auto-Download Link, Auto-Retry), **Storage & Download** (Video & Music Paths, Platform Subfolders, Filename Template, Total Media Size, Clear Cache, Wipe All Data), **Look & Feel** (Dark Mode, Color Accent, App Fonts, Vibration, Completion Sound, Header Quote, Home Greeting, Footer Tagline), **Network & Performance** (Preferred Server, User-Agent Mode, Request Timeout, Wi-Fi Only, Force IPv4, Anti-403 Header Guard, Cellular Data Warning, Bypass SSL Errors, Server Latency Diagnostics, Data Saver Mode), and **Advanced** (History Limits, Time-based Retention, Scheduled Auto-Backup, Auto-Play Media, Auto-Loop Media, Data Import/Export).
+- **Dedicated Network & Performance Sub-page**: Added a brand-new 5th settings section featuring Preferred Server selection (Always Ask, Server 1 Primary, Server 2 Backup), User-Agent switching (Default Scraper, Mobile Chrome, iOS Safari, Desktop Chrome), configurable request timeout limits (15s–120s), Anti-403 header spoofing, cellular warning guard, SSL error bypassing, Data Saver mode, and an interactive real-time server latency ping diagnostic tool.
+- **Universal Tactile Haptic Feedback**: Integrated native `@capacitor/haptics` with fallback direct motor vibration (`VIBRATE` permission) across all interactive elements (Buttons, Bottom Navigation Tabs, Toggle Switches, Dropdown options, and Chips) for immediate tactile touch response.
+- **Hardened Biometric Privacy Lock**: Upgraded biometric protection engine to secure both **History** and **Settings** tabs. Features real-time state synchronization (instant re-locking upon toggle ON), mandatory authentication before modifying security settings, and automatic background re-locking (`appStateChange` listener).
+- **Keep Screen Awake & Auto-Check Updates**: Integrated Web `Screen Wake Lock` API to prevent device screen sleep during heavy media downloads, and added an automated GitHub release check engine on startup in **General** settings.
+- **Download Completion Sound (Crisp Bell Chime)**: High-pitch Web Audio API triangle-wave chime feedback upon successful download completion, fully offline without extra media assets.
+- **Smart Auto-Retry Engine**: Automatic background retry mechanism for media downloads encountering network glitches or HTTP timeouts, attempting up to 3 automatic retries with status toast updates.
+- **Minimalist Header, Quote, Greeting & Footer Customization**: Added independent toggles in **Look & Feel** to hide/show top header quote, home greeting banner, and footer tagline ("Simplicity is the ultimate sophistication") for ultra-clean UI personalization.
+- **Synchronized Video Player Controls**: Custom MoriPlayer automatically synchronizes native `video.onplay` and `video.onpause` events so play/pause control icons reflect true playback status instantly on autoplay.
+- **Scheduled Auto-Backup Data**: Configurable automatic data backup interval (Off, Weekly, Monthly) that exports user history and configuration settings to local JSON backups.
+- **Time-Based Auto-Clear Cache & History Retention**: Upgraded both Auto-Clear Cache and Auto-Clear History settings from simple binary toggles to fully configurable retention menus (**Off, 1, 7, 30, 90 Days**), automatically purging old thumbnail caches and expired history items.
 - **SnapTik TikTok Photo Slideshow Patch**: Fixed Object-URL data structure changes from SnapTik API (Server 2 TikTok), enabling robust photo slide extraction and UI rendering without crashes.
 - **Safe JSON Response Parsing**: Added defensive `parseJsonResponse` error handling to catch HTML responses (Cloudflare/Rate Limits) from scraper servers gracefully instead of throwing raw JSON syntax errors.
 - **Cross-Platform Parity**: All 14 platform scrapers work identically on iOS & Android. Shared codebase — one code, two platforms.
-- **iOS-Specific Fixes**: File permission handling adapted for iOS sandbox, share sheet integration via `@capacitor/share`, biometric lock via `@capgo/capacitor-native-biometric`.
+- **iOS-Specific Fixes & Media Preview**: Resolved local file path resolution for iOS WKWebView preview modals using `Filesystem.getUri()` and `Capacitor.convertFileSrc()`, with fallback image support and inline video playback flags (`playsinline`) to prevent infinite loading spinners.
+- **Enhanced History Item Deletion UX**: Expanded touch target area for the red deletion ("X") button (`32px x 32px`, `z-index: 10`) and enabled full card click-to-delete in edit mode for seamless item removal.
+- **Accessibility (A11y) & UI Consistency**: Added `aria-label` attributes across all icon-only buttons for full screen reader support. Standardized the Language settings to match the global custom dropdown component design.
+- **Native Save to Gallery**: Integrated `@capacitor-community/media` to automatically save downloaded videos and photos directly to the iOS Camera Roll and Android Gallery, bypassing the need for manual file manager exports.
+- **Code Optimization**: Extracted hardcoded inline CSS into dedicated stylesheet classes and removed deprecated legacy dropdown logic, reducing code bloat and improving maintainability.
 
 ## Previous Updates v3.9.0
 
@@ -121,7 +136,7 @@ Mori/
 - **Share Intent Integration**: Send links directly to Mori from other apps via the system Share menu.
 - **Auto Clipboard Paste**: Automatically detects and pastes links from clipboard when you return to the app.
 - **Auto Update Check**: Checks for new versions on startup via GitHub Releases and shows a popup modal when an update is available.
-- **Biometric Privacy Lock**: Secure your history with native fingerprint, FaceID, or TouchID authentication.
+- **Hardened Biometric Privacy Lock**: Secure your history and settings menu with native fingerprint, FaceID, or TouchID authentication, featuring automatic background re-locking.
 - **Export/Import Data**: Full data portability — backup and restore your history, settings, and paths as a JSON file.
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions, dark mode, and accent colors.
