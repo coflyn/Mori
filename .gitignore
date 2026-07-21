@@ -11,11 +11,14 @@ android/local.properties
 android/app/src/main/assets/public
 *.apk
 *.aab
+*.ipa
+*.xcarchive
 android/captures/
 
 # iOS & Capacitor
 ios/App/Pods/
 ios/App/build/
+ios/App/build-output/
 ios/App/.build/
 ios/App/App.xcworkspace/xcuserdata/
 ios/App/Podfile.lock
