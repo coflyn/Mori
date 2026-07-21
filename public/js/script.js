@@ -45,6 +45,9 @@ import {
   getVideoThumbnail,
   setUtilsState,
   Share,
+  triggerHaptic,
+  requestWakeLock,
+  releaseWakeLock,
 } from "./utils.js";
 
 const APP_VERSION = "4.0.0";
@@ -103,9 +106,6 @@ const wipeDataBtn = document.getElementById("wipeDataBtn");
 const reportBugBtn = document.getElementById("reportBugBtn");
 const checkUpdateBtn = document.getElementById("checkUpdateBtn");
 const platformVal = document.getElementById("platformVal");
-const languageDropdown = document.getElementById("languageDropdown");
-const languageTrigger = document.getElementById("languageTrigger");
-const languageOptions = document.getElementById("languageOptions");
 const currentLangDisplay = document.getElementById("currentLangDisplay");
 const darkModeToggle = document.getElementById("darkModeToggle");
 const autoClearToggle = document.getElementById("autoClearToggle");
@@ -225,6 +225,7 @@ const exportDataBtn = document.getElementById("exportDataBtn");
 const importDataBtn = document.getElementById("importDataBtn");
 
 let isHistoryUnlocked = false; // Session-based unlock state
+let isSettingsUnlocked = false; // Session-based settings lock state
 
 if (autoClearHistoryToggle) {
   autoClearHistoryToggle.checked =
@@ -240,65 +241,115 @@ if (autoClearHistoryToggle) {
   });
 }
 
-if (lockTypeSelect) {
-  const lockTypeMenu = document.getElementById("lockTypeMenu");
-  const lockTypeText = document.getElementById("lockTypeText");
-  const currentLock = localStorage.getItem("mori_lock_type") || "none";
+const privacyLockToggle = document.getElementById("privacyLockToggle");
+const lockTypeMenu = document.getElementById("lockTypeMenu");
+const lockTypeText = document.getElementById("lockTypeText");
 
-  // Initial state
-  lockTypeText.textContent =
-    translations[currentLang][`lock-type-${currentLock}`];
+const isPrivacyOnInitial = localStorage.getItem("mori_privacy_lock") === "true";
+if (privacyLockToggle) {
+  privacyLockToggle.checked = isPrivacyOnInitial;
+  privacyLockToggle.addEventListener("change", async (e) => {
+    const isChecked = e.target.checked;
+    const currentLockType = localStorage.getItem("mori_lock_type") || "none";
 
-  lockTypeSelect.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isOpening = lockTypeMenu.classList.contains("hidden");
-    lockTypeMenu.classList.toggle("hidden");
-
-    // Manage z-index to prevent clipping by other sections
-    const section = lockTypeSelect.closest(".settings-section");
-    if (section) {
-      section.classList.toggle("active-section", isOpening);
-    }
-  });
-
-  document.addEventListener("click", () => {
-    lockTypeMenu.classList.add("hidden");
-    document
-      .querySelectorAll(".settings-section")
-      .forEach((s) => s.classList.remove("active-section"));
-  });
-
-  lockTypeMenu.querySelectorAll(".dropdown-item").forEach((item) => {
-    item.addEventListener("click", async (e) => {
-      const type = item.getAttribute("data-value");
-      const currentType = localStorage.getItem("mori_lock_type") || "none";
-
-      // If turning OFF security, require biometric
-      if (currentType === "biometric") {
-        try {
-          const { NativeBiometric } = Capacitor.Plugins;
-          if (NativeBiometric) {
+    if (!isChecked && currentLockType === "biometric") {
+      try {
+        const { NativeBiometric } = Capacitor.Plugins || {};
+        if (NativeBiometric) {
+          const res = await NativeBiometric.isAvailable();
+          if (res.isAvailable) {
             await NativeBiometric.verifyIdentity({
               reason: translations[currentLang]["label-biometric-reason"],
-              title: "Mori Privacy",
+              title: "Mori Privacy Lock",
               subtitle: "",
               description: "",
             });
           }
+        }
+      } catch (err) {
+        privacyLockToggle.checked = true;
+        return;
+      }
+    }
+
+    localStorage.setItem("mori_privacy_lock", isChecked ? "true" : "false");
+    if (isChecked) {
+      isHistoryUnlocked = false;
+      isSettingsUnlocked = false;
+      if (currentLockType === "none") {
+        localStorage.setItem("mori_lock_type", "biometric");
+        if (lockTypeText) {
+          lockTypeText.textContent =
+            translations[currentLang]["lock-type-biometric"] || "Biometric";
+        }
+      }
+    } else {
+      isHistoryUnlocked = true;
+      isSettingsUnlocked = true;
+    }
+
+    const lang = translations[currentLang];
+    showToast(isChecked ? lang["toast-privacy-on"] : lang["toast-privacy-off"]);
+  });
+}
+
+if (lockTypeSelect) {
+  const currentLock = localStorage.getItem("mori_lock_type") || "none";
+  if (lockTypeText) {
+    lockTypeText.textContent =
+      translations[currentLang][`lock-type-${currentLock}`] || currentLock;
+  }
+
+  lockTypeSelect.addEventListener("click", (e) => {
+    e.stopPropagation();
+    lockTypeMenu?.classList.toggle("hidden");
+  });
+
+  document.addEventListener("click", () => {
+    lockTypeMenu?.classList.add("hidden");
+  });
+
+  lockTypeMenu?.querySelectorAll(".dropdown-item").forEach((item) => {
+    item.addEventListener("click", async () => {
+      const type = item.getAttribute("data-value");
+      const currentType = localStorage.getItem("mori_lock_type") || "none";
+
+      if (type === currentType) return;
+
+      if (currentType === "biometric" && type === "none") {
+        try {
+          const { NativeBiometric } = Capacitor.Plugins || {};
+          if (NativeBiometric) {
+            const res = await NativeBiometric.isAvailable();
+            if (res.isAvailable) {
+              await NativeBiometric.verifyIdentity({
+                reason: translations[currentLang]["label-biometric-reason"],
+                title: "Mori Privacy Lock",
+                subtitle: "",
+                description: "",
+              });
+            }
+          }
         } catch (err) {
-          // Cancelled or failed
           return;
         }
       }
 
       localStorage.setItem("mori_lock_type", type);
-      lockTypeText.textContent = item.textContent;
-      isHistoryUnlocked = type === "none";
+      if (lockTypeText) lockTypeText.textContent = item.textContent;
+
+      if (type === "biometric") {
+        localStorage.setItem("mori_privacy_lock", "true");
+        if (privacyLockToggle) privacyLockToggle.checked = true;
+        isHistoryUnlocked = false;
+      } else {
+        localStorage.setItem("mori_privacy_lock", "false");
+        if (privacyLockToggle) privacyLockToggle.checked = false;
+        isHistoryUnlocked = true;
+      }
 
       const lang = translations[currentLang];
-      showToast(
-        type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"],
-      );
+      showToast(type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"]);
     });
   });
 }
@@ -388,10 +439,11 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
   const menu = document.getElementById(menuId);
   if (!select || !text || !menu) return;
 
-  const currentVal = localStorage.getItem(storageKey) || "default";
+  const defaultFallback = storageKey === "mori_prefer_server" ? "ask" : "default";
+  const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
-  const item = menu.querySelector(`[data-value="${currentVal}"]`);
+  const item = menu.querySelector(`[data-value="${currentVal}"]`) || menu.querySelector('.dropdown-item');
   if (item) {
     text.textContent = item.textContent;
   }
@@ -434,11 +486,18 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
 
       if (storageKey === "mori_accent") applyColorAccent();
       if (storageKey === "mori_font") applyFont();
+      if (storageKey === "mori_lang") switchLanguage(val);
     });
   });
 }
 
 // Initialize Dropdowns
+setupCustomSelect(
+  "languageSelect",
+  "mori_lang",
+  "currentLangDisplay",
+  "languageMenu",
+);
 setupCustomSelect(
   "filenameSelect",
   "mori_filename",
@@ -452,6 +511,229 @@ setupCustomSelect(
   "colorAccentMenu",
 );
 setupCustomSelect("fontSelect", "mori_font", "fontText", "fontMenu");
+setupCustomSelect(
+  "historyLimitSelect",
+  "mori_history_limit",
+  "historyLimitText",
+  "historyLimitMenu",
+);
+setupCustomSelect(
+  "autoClearDaysSelect",
+  "mori_auto_clear_days",
+  "autoClearDaysText",
+  "autoClearDaysMenu",
+);
+setupCustomSelect(
+  "autoClearCacheDaysSelect",
+  "mori_auto_clear_cache_days",
+  "autoClearCacheDaysText",
+  "autoClearCacheDaysMenu",
+);
+setupCustomSelect(
+  "autoBackupSelect",
+  "mori_auto_backup",
+  "autoBackupText",
+  "autoBackupMenu",
+);
+setupCustomSelect(
+  "preferServerSelect",
+  "mori_prefer_server",
+  "preferServerText",
+  "preferServerMenu",
+);
+setupCustomSelect(
+  "userAgentSelect",
+  "mori_user_agent",
+  "userAgentText",
+  "userAgentMenu",
+);
+setupCustomSelect(
+  "requestTimeoutSelect",
+  "mori_request_timeout",
+  "requestTimeoutText",
+  "requestTimeoutMenu",
+);
+
+// New Settings Toggles
+const autoAnalyzeToggle = document.getElementById("autoAnalyzeToggle");
+if (autoAnalyzeToggle) {
+  autoAnalyzeToggle.checked =
+    localStorage.getItem("mori_auto_analyze") === "true";
+  autoAnalyzeToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_auto_analyze", e.target.checked),
+  );
+}
+
+const autoClearInputToggle = document.getElementById("autoClearInputToggle");
+if (autoClearInputToggle) {
+  autoClearInputToggle.checked =
+    localStorage.getItem("mori_auto_clear_input") === "true";
+  autoClearInputToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_auto_clear_input", e.target.checked),
+  );
+}
+
+const downloadSoundToggle = document.getElementById("downloadSoundToggle");
+if (downloadSoundToggle) {
+  downloadSoundToggle.checked =
+    localStorage.getItem("mori_download_sound") !== "false";
+  downloadSoundToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_download_sound", e.target.checked),
+  );
+}
+
+const headerQuoteToggle = document.getElementById("headerQuoteToggle");
+if (headerQuoteToggle) {
+  const isShow = localStorage.getItem("mori_show_quote") !== "false";
+  headerQuoteToggle.checked = isShow;
+  const headerDesc = document.querySelector("header p");
+  if (headerDesc) {
+    if (isShow) headerDesc.classList.remove("hidden");
+    else headerDesc.classList.add("hidden");
+  }
+
+  headerQuoteToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_show_quote", e.target.checked);
+    const headerDesc = document.querySelector("header p");
+    if (headerDesc) {
+      if (e.target.checked) headerDesc.classList.remove("hidden");
+      else headerDesc.classList.add("hidden");
+    }
+  });
+}
+
+const greetingToggle = document.getElementById("greetingToggle");
+if (greetingToggle) {
+  const isShowGreeting = localStorage.getItem("mori_show_greeting") !== "false";
+  greetingToggle.checked = isShowGreeting;
+
+  greetingToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_show_greeting", e.target.checked);
+    if (typeof updateGreeting === "function") {
+      updateGreeting();
+    }
+  });
+}
+
+const footerQuoteToggle = document.getElementById("footerQuoteToggle");
+if (footerQuoteToggle) {
+  const isShowFooter = localStorage.getItem("mori_show_footer_quote") !== "false";
+  footerQuoteToggle.checked = isShowFooter;
+  const footerQuoteEl = document.querySelector(".about-quote");
+  if (footerQuoteEl) {
+    if (isShowFooter) footerQuoteEl.classList.remove("hidden");
+    else footerQuoteEl.classList.add("hidden");
+  }
+
+  footerQuoteToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_show_footer_quote", e.target.checked);
+    const footerQuoteEl = document.querySelector(".about-quote");
+    if (footerQuoteEl) {
+      if (e.target.checked) footerQuoteEl.classList.remove("hidden");
+      else footerQuoteEl.classList.add("hidden");
+    }
+  });
+}
+
+const autoRetryToggle = document.getElementById("autoRetryToggle");
+if (autoRetryToggle) {
+  autoRetryToggle.checked = localStorage.getItem("mori_auto_retry") !== "false";
+  autoRetryToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_auto_retry", e.target.checked),
+  );
+}
+
+const hapticToggle = document.getElementById("hapticToggle");
+if (hapticToggle) {
+  hapticToggle.checked = localStorage.getItem("mori_haptic") !== "false";
+  hapticToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_haptic", e.target.checked),
+  );
+}
+
+const autoFolderToggle = document.getElementById("autoFolderToggle");
+if (autoFolderToggle) {
+  autoFolderToggle.checked =
+    localStorage.getItem("mori_auto_folder") === "true";
+  autoFolderToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_auto_folder", e.target.checked),
+  );
+}
+
+const keepAwakeToggle = document.getElementById("keepAwakeToggle");
+if (keepAwakeToggle) {
+  keepAwakeToggle.checked = localStorage.getItem("mori_keep_awake") === "true";
+  keepAwakeToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_keep_awake", e.target.checked);
+    if (e.target.checked) requestWakeLock();
+    else releaseWakeLock();
+  });
+}
+
+const autoUpdateToggle = document.getElementById("autoUpdateToggle");
+if (autoUpdateToggle) {
+  autoUpdateToggle.checked =
+    localStorage.getItem("mori_auto_update") !== "false";
+  autoUpdateToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_auto_update", e.target.checked),
+  );
+}
+
+const forceIpv4Toggle = document.getElementById("forceIpv4Toggle");
+if (forceIpv4Toggle) {
+  forceIpv4Toggle.checked = localStorage.getItem("mori_force_ipv4") === "true";
+  forceIpv4Toggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_force_ipv4", e.target.checked),
+  );
+}
+
+const headerSpoofingToggle = document.getElementById("headerSpoofingToggle");
+if (headerSpoofingToggle) {
+  headerSpoofingToggle.checked =
+    localStorage.getItem("mori_header_spoofing") !== "false";
+  headerSpoofingToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_header_spoofing", e.target.checked),
+  );
+}
+
+const cellularWarningToggle = document.getElementById("cellularWarningToggle");
+if (cellularWarningToggle) {
+  cellularWarningToggle.checked =
+    localStorage.getItem("mori_cellular_warning") === "true";
+  cellularWarningToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_cellular_warning", e.target.checked),
+  );
+}
+
+const bypassSslToggle = document.getElementById("bypassSslToggle");
+if (bypassSslToggle) {
+  bypassSslToggle.checked = localStorage.getItem("mori_bypass_ssl") === "true";
+  bypassSslToggle.addEventListener("change", (e) =>
+    localStorage.setItem("mori_bypass_ssl", e.target.checked),
+  );
+}
+
+const testLatencyBtn = document.getElementById("testLatencyBtn");
+if (testLatencyBtn) {
+  testLatencyBtn.addEventListener("click", async () => {
+    const resultVal = document.getElementById("latencyResultVal");
+    if (resultVal) resultVal.textContent = "...";
+    showToast("Testing server latency...");
+    const start = Date.now();
+    try {
+      await CapacitorHttp.get({
+        url: "https://api.github.com/zen",
+        headers: { "User-Agent": "Mori-App" },
+      });
+      const duration = Date.now() - start;
+      if (resultVal) resultVal.textContent = `${duration} ms`;
+      showToast(`Server latency: ${duration} ms (Online)`);
+    } catch (err) {
+      if (resultVal) resultVal.textContent = "Error";
+      showToast("Latency check failed. Offline?");
+    }
+  });
+}
 
 // Font Switching Logic
 function applyFont() {
@@ -478,11 +760,17 @@ if (autoLoopToggle) {
   });
 }
 
-// Close dropdowns on outside click
-document.addEventListener("click", () => {
+document.addEventListener("click", (e) => {
   document
     .querySelectorAll(".dropdown-menu")
     .forEach((m) => m.classList.add("hidden"));
+
+  const interactive = e.target.closest(
+    "button, .nav-item, .settings-item, .toggle-switch, .dropdown-item, .paste-btn, .clear-btn, .chip",
+  );
+  if (interactive) {
+    triggerHaptic("medium");
+  }
 });
 
 // Download Path Logic (Video)
@@ -680,14 +968,6 @@ function updateLanguageUI() {
     currentLangDisplay.textContent = langNames[currentLang] || "English";
   }
 
-  // Highlight selected option
-  document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
-    opt.classList.toggle(
-      "selected",
-      opt.getAttribute("data-value") === currentLang,
-    );
-  });
-
   document.documentElement.lang = currentLang;
 
   updateGreeting();
@@ -696,6 +976,12 @@ function updateLanguageUI() {
 
 const dynamicGreeting = document.getElementById("dynamicGreeting");
 function updateGreeting() {
+  const isShowGreeting = localStorage.getItem("mori_show_greeting") !== "false";
+  if (dynamicGreeting) {
+    if (isShowGreeting) dynamicGreeting.classList.remove("hidden");
+    else dynamicGreeting.classList.add("hidden");
+  }
+
   const greetingText = document.getElementById("greetingText");
   const greetingStats = document.getElementById("greetingStats");
   const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
@@ -717,8 +1003,27 @@ function updateGreeting() {
 }
 
 // Initial calls
+checkAutoClearDays();
 updateLanguageUI();
 updateStorageInfo();
+
+function checkAutoClearDays() {
+  const daysVal = localStorage.getItem("mori_auto_clear_days") || "off";
+  if (daysVal === "off") return;
+  const days = parseInt(daysVal, 10);
+  if (isNaN(days) || days <= 0) return;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const initialCount = history.length;
+  const filtered = history.filter((item) => {
+    const time =
+      item.timestamp || (item.date ? new Date(item.date).getTime() : 0);
+    return time === 0 || time >= cutoff;
+  });
+  if (filtered.length !== initialCount) {
+    localStorage.setItem("mori_history", JSON.stringify(filtered));
+  }
+}
 
 async function getFolderSize(path, directory) {
   let size = 0;
@@ -756,22 +1061,6 @@ async function updateStorageInfo() {
   }
 }
 
-languageTrigger?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const isActive = languageDropdown?.classList.toggle("active");
-  languageOptions?.classList.toggle("hidden");
-
-  // Manage parent z-index
-  const parentItem = languageDropdown?.closest(".settings-item");
-  const parentSection = languageDropdown?.closest(".settings-section");
-  if (parentItem) {
-    parentItem.classList.toggle("active-dropdown", isActive);
-  }
-  if (parentSection) {
-    parentSection.classList.toggle("active-section", isActive);
-  }
-});
-
 function switchLanguage(lang) {
   currentLang = lang;
   localStorage.setItem("mori_lang", lang);
@@ -786,32 +1075,6 @@ function switchLanguage(lang) {
   if (currentLang === "ja") msg = "言語を更新しました";
   showToast(msg);
 }
-
-document.querySelectorAll(".dropdown-options .option").forEach((opt) => {
-  opt.addEventListener("click", (e) => {
-    e.stopPropagation();
-    switchLanguage(opt.getAttribute("data-value"));
-    languageOptions?.classList.add("hidden");
-    languageDropdown?.classList.remove("active");
-    languageDropdown
-      ?.closest(".settings-item")
-      ?.classList.remove("active-dropdown");
-    languageDropdown
-      ?.closest(".settings-section")
-      ?.classList.remove("active-section");
-  });
-});
-
-document.addEventListener("click", () => {
-  languageOptions?.classList.add("hidden");
-  languageDropdown?.classList.remove("active");
-  languageDropdown
-    ?.closest(".settings-item")
-    ?.classList.remove("active-dropdown");
-  languageDropdown
-    ?.closest(".settings-section")
-    ?.classList.remove("active-section");
-});
 
 async function handlePasteFromClipboard(isSilent = false) {
   try {
@@ -840,6 +1103,14 @@ async function handlePasteFromClipboard(isSilent = false) {
 
         urlInput.value = trimmed;
         urlInput.dispatchEvent(new Event("input"));
+        triggerHaptic("light");
+
+        const autoAnalyze =
+          localStorage.getItem("mori_auto_analyze") === "true";
+        if (autoAnalyze && !isSilent) {
+          setTimeout(() => downloadBtn?.click(), 300);
+        }
+
         if (isSilent) {
           const autoDownload =
             localStorage.getItem("mori_auto_download") === "true";
@@ -1003,8 +1274,10 @@ if (App) {
         }, 1500);
       }
     } else {
-      // App going to background, reset flags
+      // App going to background, reset flags & re-lock sensitive areas
       isIntentPending = false;
+      isHistoryUnlocked = false;
+      isSettingsUnlocked = false;
     }
   });
 }
@@ -1222,7 +1495,7 @@ async function checkUpdate() {
 }
 
 async function autoCheckUpdate() {
-  // Respect user skip
+  if (localStorage.getItem("mori_auto_update") === "false") return;
   if (localStorage.getItem("mori_skip_auto_update")) return;
 
   try {
@@ -1399,7 +1672,11 @@ downloadBtn.addEventListener("click", async () => {
     let data;
     if (CapacitorHttp) {
       console.log("[NATIVE] Using CapacitorHttp for:", url);
+      const preferServer = localStorage.getItem("mori_prefer_server") || "ask";
       if (url.includes("tiktok.com")) {
+        if (preferServer === "server1") setTikTokSource("tiktokio");
+        else if (preferServer === "server2") setTikTokSource("snaptik");
+        else setTikTokSource(null);
         data = await scrapeTikTok(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
@@ -1426,6 +1703,9 @@ downloadBtn.addEventListener("click", async () => {
           data = await scrapeTikTok(url);
         }
       } else if (url.includes("instagram.com")) {
+        if (preferServer === "server1") setInstagramSource("indown");
+        else if (preferServer === "server2") setInstagramSource("downreels");
+        else setInstagramSource(null);
         data = await scrapeInstagram(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
@@ -1452,6 +1732,9 @@ downloadBtn.addEventListener("click", async () => {
           data = await scrapeInstagram(url);
         }
       } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        if (preferServer === "server1") setYouTubeSource("gg");
+        else if (preferServer === "server2") setYouTubeSource("mobi");
+        else setYouTubeSource(null);
         data = await scrapeYouTube(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
@@ -1484,6 +1767,9 @@ downloadBtn.addEventListener("click", async () => {
         url.includes("fxtwitter.com") ||
         url.includes("vxtwitter.com")
       ) {
+        if (preferServer === "server1") setTwitterSource("tweeload");
+        else if (preferServer === "server2") setTwitterSource("tvd");
+        else setTwitterSource(null);
         data = await scrapeTwitter(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
@@ -1510,6 +1796,9 @@ downloadBtn.addEventListener("click", async () => {
           data = await scrapeTwitter(url);
         }
       } else if (url.includes("spotify.com")) {
+        if (preferServer === "server1") setSpotifySource("spotidown");
+        else if (preferServer === "server2") setSpotifySource("spotmate");
+        else setSpotifySource(null);
         data = await scrapeSpotify(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
@@ -1745,6 +2034,15 @@ window.addEventListener("mori_file_saved", async (e) => {
     }
     return item;
   });
+
+  const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
+  if (limitVal !== "unlimited") {
+    const maxItems = parseInt(limitVal, 10);
+    if (!isNaN(maxItems) && history.length > maxItems) {
+      history = history.slice(0, maxItems);
+    }
+  }
+
   localStorage.setItem("mori_history", JSON.stringify(history));
   renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
@@ -1830,23 +2128,62 @@ function saveToHistory(result, url) {
 
 // Auto-Clear Old History (Items > 30 days)
 function autoClearOldHistory() {
-  const isEnabled = localStorage.getItem("mori_autoclear_history") === "true";
-  if (!isEnabled) return;
+  const daysVal = localStorage.getItem("mori_auto_clear_days") || "off";
+  if (daysVal === "off") return;
+
+  const days = parseInt(daysVal, 10);
+  if (isNaN(days) || days <= 0) return;
 
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const cutoffTime = days * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
   const filtered = history.filter((item) => {
-    return now - item.timestamp < thirtyDays;
+    return now - (item.timestamp || 0) < cutoffTime;
   });
 
   if (filtered.length !== history.length) {
     console.log(
-      `[CLEANUP] Removed ${history.length - filtered.length} old history items`,
+      `[CLEANUP] Removed ${history.length - filtered.length} old history items older than ${days} days`,
     );
     localStorage.setItem("mori_history", JSON.stringify(filtered));
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
+}
+
+function autoClearOldCache() {
+  const cacheDaysVal = localStorage.getItem("mori_auto_clear_cache_days") || "off";
+  if (cacheDaysVal === "off") return;
+
+  const days = parseInt(cacheDaysVal, 10);
+  if (isNaN(days) || days <= 0) return;
+
+  const lastCleanup = parseInt(localStorage.getItem("mori_last_cache_cleanup_ts") || "0", 10);
+  const cutoffTime = days * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  if (now - lastCleanup >= cutoffTime) {
+    console.log(`[CLEANUP] Executing auto clear cache (retention: ${days} days)`);
+    clearCacheSilently();
+    localStorage.setItem("mori_last_cache_cleanup_ts", String(now));
+  }
+}
+
+function autoBackupDataCheck() {
+  const backupVal = localStorage.getItem("mori_auto_backup") || "off";
+  if (backupVal === "off") return;
+
+  const days = parseInt(backupVal, 10);
+  if (isNaN(days) || days <= 0) return;
+
+  const lastBackup = parseInt(localStorage.getItem("mori_last_backup_ts") || "0", 10);
+  const cutoffTime = days * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  if (now - lastBackup >= cutoffTime) {
+    console.log(`[BACKUP] Executing auto backup data (interval: ${days} days)`);
+    exportMoriData();
+    localStorage.setItem("mori_last_backup_ts", String(now));
   }
 }
 
@@ -1929,6 +2266,8 @@ async function importMoriData() {
 
 // Initialize App
 autoClearOldHistory();
+autoClearOldCache();
+autoBackupDataCheck();
 setUIState({ currentLang, isEditingHistory });
 renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
@@ -1937,10 +2276,11 @@ const pages = ["home", "history", "settings"];
 const navItems = document.querySelectorAll(".nav-item");
 
 async function switchPage(pageId) {
-  if (pageId === "history" && !isHistoryUnlocked) {
-    const lockType = localStorage.getItem("mori_lock_type") || "none";
+  const isPrivacyOn = localStorage.getItem("mori_privacy_lock") === "true";
+  const lockType = localStorage.getItem("mori_lock_type") || "none";
 
-    if (lockType === "biometric" && NativeBiometric) {
+  if (pageId === "history" && !isHistoryUnlocked) {
+    if (isPrivacyOn && lockType === "biometric" && NativeBiometric) {
       try {
         const result = await NativeBiometric.isAvailable();
         if (result.isAvailable) {
@@ -1958,6 +2298,28 @@ async function switchPage(pageId) {
       }
     } else {
       isHistoryUnlocked = true;
+    }
+  }
+
+  if (pageId === "settings" && !isSettingsUnlocked) {
+    if (isPrivacyOn && lockType === "biometric" && NativeBiometric) {
+      try {
+        const result = await NativeBiometric.isAvailable();
+        if (result.isAvailable) {
+          await NativeBiometric.verifyIdentity({
+            reason: translations[currentLang]["label-biometric-reason"],
+            title: "Mori Privacy Lock",
+            subtitle: "Settings Access",
+            description: translations[currentLang]["label-biometric-reason"],
+          });
+          isSettingsUnlocked = true;
+        }
+      } catch (err) {
+        console.warn("Biometric failed or cancelled for settings", err);
+        return;
+      }
+    } else {
+      isSettingsUnlocked = true;
     }
   }
 

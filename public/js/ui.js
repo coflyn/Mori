@@ -7,6 +7,12 @@ import {
   cleanUrl,
   Filesystem,
   CapacitorHttp,
+  Media,
+  App,
+  triggerHaptic,
+  playCompletionSound,
+  requestWakeLock,
+  releaseWakeLock,
 } from "./utils.js";
 
 // State pointers (will be updated from main script)
@@ -540,17 +546,26 @@ export function renderHistory(onItemClick, onDeleteClick) {
     if (!isEditingHistory) {
       card.addEventListener("click", () => onItemClick(item));
     } else {
-      card.querySelector(".delete-item-btn").addEventListener("click", (e) => {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", (e) => {
         e.stopPropagation();
         onDeleteClick(item.url);
       });
+      const delBtn = card.querySelector(".delete-item-btn");
+      if (delBtn) {
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onDeleteClick(item.url);
+        });
+      }
     }
     list.appendChild(card);
   });
   historyPage.appendChild(list);
 }
 
-export function showModal(item, onRedownload) {
+export async function showModal(item, onRedownload) {
   try {
     if (!item) return;
 
@@ -578,11 +593,41 @@ export function showModal(item, onRedownload) {
     const localFiles = item.localFiles || [];
     const displayItems = [];
 
+    const resolveNativeUrl = async (filePath) => {
+      if (!filePath) return "";
+      if (
+        filePath.startsWith("http://") ||
+        filePath.startsWith("https://") ||
+        filePath.startsWith("data:") ||
+        filePath.startsWith("blob:")
+      ) {
+        return filePath;
+      }
+      let fullPath = filePath;
+      if (
+        window.Capacitor &&
+        Filesystem &&
+        !fullPath.startsWith("file://") &&
+        !fullPath.startsWith("_capacitor_file_")
+      ) {
+        try {
+          const uriObj =
+            (await Filesystem.getUri({ path: fullPath, directory: "EXTERNAL_STORAGE" }).catch(() => null)) ||
+            (await Filesystem.getUri({ path: fullPath, directory: "DOCUMENTS" }).catch(() => null));
+          if (uriObj && uriObj.uri) {
+            fullPath = uriObj.uri;
+          }
+        } catch (e) {}
+      }
+      return window.Capacitor?.convertFileSrc(fullPath) || fullPath;
+    };
+
     if (localFiles.length > 0) {
-      localFiles.forEach((file) => {
+      for (const file of localFiles) {
         if (file && file.path) {
+          const resolvedUrl = await resolveNativeUrl(file.path);
           displayItems.push({
-            url: window.Capacitor?.convertFileSrc(file.path) || file.path,
+            url: resolvedUrl,
             type:
               file.type ||
               (file.path.toLowerCase().endsWith(".mp4")
@@ -594,10 +639,11 @@ export function showModal(item, onRedownload) {
             isLocal: true,
           });
         }
-      });
+      }
     } else if (item.localUri) {
+      const resolvedUrl = await resolveNativeUrl(item.localUri);
       displayItems.push({
-        url: window.Capacitor?.convertFileSrc(item.localUri) || item.localUri,
+        url: resolvedUrl,
         type: item.localUri.toLowerCase().endsWith(".mp4")
           ? "VIDEO"
           : item.localUri.toLowerCase().endsWith(".mp3")
@@ -611,7 +657,7 @@ export function showModal(item, onRedownload) {
     // Final fallback if nothing found
     if (displayItems.length === 0) {
       displayItems.push({
-        url: item.thumbnail || "",
+        url: item.thumbnail || item.url || "",
         type: "IMAGE",
         thumbnail: item.thumbnail,
       });
@@ -718,6 +764,9 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     if (progressContainer) progressContainer.classList.remove("hidden");
     if (progressBar) progressBar.style.width = "0%";
 
+    // Acquire Wake Lock if enabled
+    requestWakeLock();
+
     btn.innerHTML = `<div>0%</div>`;
     console.log("Starting download for:", url);
 
@@ -786,9 +835,27 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
     const musicSubfolder =
       localStorage.getItem("mori_music_path") || "Mori/Music";
-    const fullPath = isAudio
+    let fullPath = isAudio
       ? `Download/${musicSubfolder}`
       : `Download/${videoSubfolder}`;
+
+    // Auto-Categorize Subfolder per Platform
+    if (localStorage.getItem("mori_auto_folder") === "true") {
+      const src = (sourceUrl || url || "").toLowerCase();
+      let platformFolder = "Other";
+      if (src.includes("tiktok") || src.includes("douyin")) platformFolder = "TikTok";
+      else if (src.includes("instagram")) platformFolder = "Instagram";
+      else if (src.includes("youtube") || src.includes("youtu.be")) platformFolder = "YouTube";
+      else if (src.includes("twitter") || src.includes("x.com")) platformFolder = "Twitter";
+      else if (src.includes("facebook")) platformFolder = "Facebook";
+      else if (src.includes("pinterest")) platformFolder = "Pinterest";
+      else if (src.includes("bilibili") || src.includes("b23.tv")) platformFolder = "Bilibili";
+      else if (src.includes("pixiv") || src.includes("pximg")) platformFolder = "Pixiv";
+      else if (src.includes("spotify")) platformFolder = "Spotify";
+      else if (src.includes("rednote") || src.includes("xiaohongshu")) platformFolder = "RedNote";
+
+      fullPath = `${fullPath}/${platformFolder}`;
+    }
 
     await Filesystem.mkdir({
       path: fullPath,
@@ -908,42 +975,89 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
 
     let savedFile;
-    try {
-      savedFile = await Filesystem.downloadFile({
-        url: actualDownloadUrl,
-        path: fullPath + "/" + fileName,
-        directory: "EXTERNAL_STORAGE",
-        progress: true,
-        headers: downloadHeaders,
-      });
-    } catch (dlErr) {
-      console.warn(
-        "Filesystem.downloadFile failed, trying CapacitorHttp blob fallback...",
-        dlErr,
-      );
+    let attempts = 0;
+    const isAutoRetry = localStorage.getItem("mori_auto_retry") !== "false";
+    const maxAttempts = isAutoRetry ? 3 : 1;
+
+    while (attempts < maxAttempts && !savedFile) {
+      attempts++;
       try {
-        const httpRes = await CapacitorHttp.get({
+        if (attempts > 1) {
+          showToast(`Retrying download (${attempts}/${maxAttempts})...`);
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        savedFile = await Filesystem.downloadFile({
           url: actualDownloadUrl,
-          responseType: "blob",
+          path: fullPath + "/" + fileName,
+          directory: "EXTERNAL_STORAGE",
+          progress: true,
           headers: downloadHeaders,
         });
-        if (httpRes && httpRes.data && typeof httpRes.data === "string") {
-          await Filesystem.writeFile({
-            path: fullPath + "/" + fileName,
-            directory: "EXTERNAL_STORAGE",
-            data: httpRes.data,
-          });
-          savedFile = { path: fullPath + "/" + fileName };
-        } else {
-          throw dlErr;
+      } catch (dlErr) {
+        console.warn(`Download attempt ${attempts} failed:`, dlErr);
+        if (attempts >= maxAttempts) {
+          try {
+            const httpRes = await CapacitorHttp.get({
+              url: actualDownloadUrl,
+              responseType: "blob",
+              headers: downloadHeaders,
+            });
+            if (httpRes && httpRes.data && typeof httpRes.data === "string") {
+              await Filesystem.writeFile({
+                path: fullPath + "/" + fileName,
+                directory: "EXTERNAL_STORAGE",
+                data: httpRes.data,
+              });
+              savedFile = { path: fullPath + "/" + fileName };
+            } else {
+              throw dlErr;
+            }
+          } catch (fallbackErr) {
+            throw dlErr;
+          }
         }
-      } catch (fallbackErr) {
-        throw dlErr;
       }
     }
 
     if (progressBar) progressBar.style.width = "100%";
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;
+
+    // Save to Gallery natively
+    if (Media && window.Capacitor?.isNativePlatform()) {
+      try {
+        let uriToSave = savedFile.path;
+        if (!uriToSave.startsWith("file://")) {
+           const uriObj = await Filesystem.getUri({ path: savedFile.path, directory: "EXTERNAL_STORAGE" }).catch(() => null);
+           if (uriObj && uriObj.uri) uriToSave = uriObj.uri;
+        }
+        
+        if (!isAudio) {
+          if (isImage) {
+             await Media.savePhoto({ path: uriToSave, album: 'Mori' });
+          } else {
+             await Media.saveVideo({ path: uriToSave, album: 'Mori' });
+          }
+        }
+      } catch (mediaErr) {
+        console.warn("Failed to save to native gallery:", mediaErr);
+      }
+    }
+
+    // Trigger Haptic & Sound Feedback
+    triggerHaptic("success");
+    playCompletionSound();
+
+    // Auto-Clear Input Box after Download
+    if (localStorage.getItem("mori_auto_clear_input") === "true") {
+      const urlInput = document.getElementById("urlInput");
+      const clearBtn = document.getElementById("clearBtn");
+      const pasteBtn = document.getElementById("pasteBtn");
+      if (urlInput) {
+        urlInput.value = "";
+        if (clearBtn) clearBtn.classList.add("hidden");
+        if (pasteBtn) pasteBtn.classList.remove("hidden");
+      }
+    }
 
     window.dispatchEvent(
       new CustomEvent("mori_file_saved", {
@@ -973,6 +1087,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     btn.innerHTML = originalContent;
     if (progressContainer) progressContainer.classList.add("hidden");
   } finally {
+    releaseWakeLock();
     if (window._moriProgressListener) {
       await window._moriProgressListener.remove();
       window._moriProgressListener = null;

@@ -79,18 +79,15 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     video.src = videoUrl;
   }
 
-  video.onerror = (e) => {
-    playerContainer.classList.remove("mori-loading");
-    console.error("Video element loading error:", video.error);
-  };
-
   const loopSetting = localStorage.getItem("mori_loop") !== "false";
   video.loop = loopSetting;
-  video.muted = false;
   video.preload = index === 0 ? "auto" : "metadata";
   const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
   video.autoplay = index === 0 && autoPlaySetting;
   video.playsInline = true;
+  video.setAttribute("playsinline", "true");
+  video.setAttribute("webkit-playsinline", "true");
+
   let posterThumb = dl.thumbnail || resultThumbnail || "";
   const isIndownPoster =
     posterThumb.includes("indown.io") &&
@@ -108,11 +105,34 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   }
   video.poster = posterThumb;
 
-  // Add loading class
+  // Add loading & error event handlers
+  const removeLoading = () => playerContainer.classList.remove("mori-loading");
   playerContainer.classList.add("mori-loading");
+
   video.onwaiting = () => playerContainer.classList.add("mori-loading");
-  video.onplaying = () => playerContainer.classList.remove("mori-loading");
-  video.oncanplay = () => playerContainer.classList.remove("mori-loading");
+  video.onplaying = removeLoading;
+  video.oncanplay = removeLoading;
+  video.onloadeddata = removeLoading;
+  video.onloadedmetadata = removeLoading;
+  video.onstalled = removeLoading;
+  video.onpause = removeLoading;
+
+  video.onerror = (e) => {
+    removeLoading();
+    console.error("Video element loading error:", video.error);
+    if (posterThumb && !playerContainer.querySelector(".fallback-img")) {
+      const fallbackImg = document.createElement("img");
+      fallbackImg.className = "fallback-img";
+      fallbackImg.src = posterThumb;
+      fallbackImg.style.width = "100%";
+      fallbackImg.style.height = "100%";
+      fallbackImg.style.objectFit = "contain";
+      fallbackImg.style.position = "absolute";
+      fallbackImg.style.top = "0";
+      fallbackImg.style.left = "0";
+      playerContainer.appendChild(fallbackImg);
+    }
+  };
 
   // Custom Controls
   playerContainer.appendChild(video);
@@ -175,20 +195,26 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
   };
 
+  video.onplay = () => {
+    playIcon.classList.add("hidden");
+    pauseIcon.classList.remove("hidden");
+    bigPlay.classList.remove("visible");
+  };
+
+  video.onpause = () => {
+    playIcon.classList.remove("hidden");
+    pauseIcon.classList.add("hidden");
+    bigPlay.innerHTML = `<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+    bigPlay.classList.add("visible");
+  };
+
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
     if (video.paused) {
       video.loop = localStorage.getItem("mori_loop") !== "false";
       video.play().catch(() => {});
-      playIcon.classList.add("hidden");
-      pauseIcon.classList.remove("hidden");
-      bigPlay.classList.remove("visible");
     } else {
       video.pause();
-      playIcon.classList.remove("hidden");
-      pauseIcon.classList.add("hidden");
-      bigPlay.innerHTML = `<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-      bigPlay.classList.add("visible");
     }
   };
 
