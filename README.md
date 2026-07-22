@@ -2,15 +2,22 @@
   <img src="assets/icon.png" width="128" alt="Mori Logo">
 </p>
 
-<h1 align="center">Mori - Minimalist Media Downloader</h1>
+<h1 align="center">Mori</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-v4.0.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
+  <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
+  <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
 
+<div align="center">
+
 Mori is a modern, privacy-first media downloader that saves photos, videos, and audio from 14 platforms. Built with a **client-only architecture**, all scraping runs on-device — no backend, no tracking, maximum privacy.
+
+</div>
 
 ## 📸 Screenshots
 
@@ -179,6 +186,7 @@ cd android && ./gradlew assembleRelease
 ### Running & Building for iOS
 
 #### Running on Simulator or Device
+
 ```bash
 # 1. Sync web assets & iOS CocoaPods dependencies
 npx cap sync ios
@@ -190,6 +198,7 @@ npx cap open ios
 ```
 
 #### Building Unsigned IPA (For Sideloading/Distribution)
+
 If you do not have an iPhone connected or a paid Apple Developer Account, you can build a generic unsigned `.ipa` for distribution via the command line:
 
 ```bash
@@ -204,6 +213,14 @@ mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Pay
 ```
 
 This outputs `Mori v4.0.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+
+## iOS Sideloading Guide
+
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.0.0.ipa` using one of the following sideloading methods:
+
+- **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
+- **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.
+- **Scarlet / Esign**: Directly install on-device without a PC using enterprise/public developer certificates.
 
 ---
 
