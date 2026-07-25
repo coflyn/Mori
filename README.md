@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.0.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.1.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -15,7 +15,7 @@
 
 <div align="center">
 
-Mori is a modern, privacy-first media downloader that saves photos, videos, and audio from 14 platforms. Built with a **client-only architecture**, all scraping runs on-device — no backend, no tracking, maximum privacy.
+Mori is a fast and simple downloader for saving videos, photos, and music from 14 popular social media apps. Everything works directly on your device without any external servers or tracking — giving you total privacy and zero ads.
 
 </div>
 
@@ -32,7 +32,37 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in v4.0.0
+## What's New in v4.1.0
+
+- **Monotonic Floating Download Progress Toast & Zombie Timer Fix**: Refactored progress animation with strict monotonic state tracking (`updateProgress`) and global timer lifecycle management (`window._moriActiveSimInterval`), ensuring progress width never jumps or animates backwards during retries, errors, or subsequent download attempts.
+- **Clean Single-Percentage UI**: Eliminated redundant percentage text from download action buttons and progress toast status footers. Clean percentage numbers are shown exclusively in the top-right progress toast badge (`.dpt-percent`).
+- **Responsive Toast Error Formatting & Overflow Guard**: Sanitized long raw API URLs/tokens in error messages and added multi-line word-wrap CSS rules (`word-break: break-word; overflow-wrap: anywhere`) to prevent error text overflowing toast borders.
+- **Silent Background Auto-Retry Engine**: Implemented seamless silent auto-retries for background network downloads. Retries occur silently in the background while holding the UI cleanly at 95% / `Downloading...`, eliminating status text flickering and progress bar jumps until successful completion or final error reporting.
+- **Douyin Multi-Image Photo Slideshow Fix**: Resolved an issue where Douyin photo posts only displayed a single image in the preview. Re-aligned item type mapping (`PHOTO`) between `douyin.js` and `ui.js`, enabling full horizontal swipe navigation across all photos in Douyin slideshows.
+- **Server Selection Backdrop Default (Server 1)**: Enhanced the server selection modal (`confirmOverlay._onDismissOutside`) so that if a user accidentally taps outside the modal box on the backdrop overlay, the app automatically defaults to **Server 1** to proceed smoothly without hanging.
+- **Comprehensive Japanese Localization (`ja`)**: Fully localized all previously untranslated Settings menus, missing toggle labels (**Completion Sound / 完了通知音**, **Header Quote / ヘッダー名言**, **Home Greeting / ホーム挨拶**), custom select dropdown selected text re-hydration (**Default / デフォルト**, **15 Seconds / 15秒**, **Classic / クラシック**, **TEST / テスト**), and Scraper Health diagnostics.
+- **Dynamic Device Platform Detection & Share App Fix**: Replaced hardcoded platform labels in `script.js` with dynamic `window.Capacitor?.getPlatform()` detection (`iOS`, `Android`, or `Web Browser`), ensuring accurate device diagnostics and bug reporting. Fixed duplicated repo links in `share-msg` across all 6 supported languages.
+- **Static Thumbnail Image Preview for Analyzed Un-Downloaded History Items**: Updated `showModal` in `ui.js` so that items in History that have only been analyzed (not downloaded yet) display a clean static cover thumbnail image instead of initiating a network streaming video/audio player. Interactive media playback is reserved exclusively for locally saved downloaded files.
+- **Fixed Local File Preview Resolution in History Modal**: Resolved a critical bug where the History detail modal would attempt to stream media from the network instead of playing locally saved files. The root cause was that `content://` URIs (returned by `Filesystem.getUri()`) were prioritized over the relative file path in both `ui.js` (`fileSrc` selection) and `player.js` (`cleanPath` resolution). Since WebView cannot properly handle `content://` schemas for media playback via `convertFileSrc`, playback silently failed and fell back to network streaming. Fixed by preferring `file.path` (relative path → `file://` → `_capacitor_file_`) in `showModal` and `videoUrl` (pre-converted `_capacitor_file_` URI) in `createVideoPlayer`.
+- **Redesigned Monochrome History Edit Mode & Action Header**: Re-architected History edit controls into a clean inline header layout (`.history-actions-wrapper`) with strict monochrome black-and-white styling (`EDIT`, `CLEAR ALL`, `DONE`, `×`), eliminating colored accents to match Mori's minimal design system.
+- **Modal Overlay State Fix (`confirmOverlay`)**: Resolved inline `style.display = "none"` state bugs triggered by scraper choice / cellular warning popups, ensuring `showConfirm()` explicitly sets `display = "flex"` so `CLEAR ALL` and individual delete confirmation modals remain 100% interactive before and after downloads.
+- **Adaptive Real-Time Download Progress Toast**: Upgraded floating bottom progress toast with smooth adaptive dynamic scaling (0% to 85% during active transfer, jumping instantly to 100% upon disk write completion) and real-time byte tracking, eliminating the progress freeze/stuck state at 92% on chunked media streams.
+- **Smart History Matcher (`mori_file_saved`)**: Enhanced `mori_file_saved` event listener to match history entries by `url`, `sourceUrl`, or fallback to the latest history item, ensuring `localFiles` and `localUri` references are ALWAYS saved into `mori_history` in `localStorage`.
+- **Restored Android WebView Autoplay (`MainActivity.java`)**: Restored `settings.setMediaPlaybackRequiresUserGesture(false)` and `settings.setAllowFileAccess(true)` in `MainActivity.java`, enabling smooth programmatic autoplay of video previews in Android WebView.
+- **Capacitor Local HTTP URL Protection**: Protected `http://localhost` internal webserver URLs (`_capacitor_file_`) in `player.js` from unintended HTTPS rewrites while strictly enforcing `https://` upgrades for all remote media streams (TikTok, Instagram, Bilibili, etc.), eliminating `ERR_CONNECTION_REFUSED` local preview errors.
+- **Strict Monochrome Design Aesthetic**: Enforced a clean, premium black-and-white theme across all progress bars, latency diagnostic badges, edit controls, and toast notifications, eliminating noisy colored accents for visual consistency.
+- **Modular Scraper Suite Architecture (1-to-1 Platform Files)**: Deconstructed the monolithic `scrapers.js` (2,300+ lines) into clean, standalone ES modules inside `public/js/scrapers/`. Every platform has its dedicated scraper file (`tiktok.js`, `youtube.js`, `instagram.js`, `twitter.js`, `spotify.js`, `bilibili.js`, `pixiv.js`, `rednote.js`, `douyin.js`, `threads.js`, `pinterest.js`, `applemusic.js`, `facebook.js`, `bandcamp.js`), unified via `index.js` barrel export.
+- **Domain Application Managers**: Separated core app logic into dedicated manager modules (`authManager.js`, `historyManager.js`, `settingsManager.js`, `downloadManager.js`).
+- **Clean Subdirectory Project Structure**: Reorganized loose root JavaScript files into clear subdirectories (`public/js/vendor/`, `public/js/components/`, `public/js/i18n/`, `public/js/utils/`).
+- **Centralized HTTP Client & Defensive Response Parsing**: Extracted all HTTP network logic into a unified `scraperFetch` helper (`httpHelper.js`), automatically injecting active User-Agent presets, respecting custom request timeout limits, and defensively parsing HTML error pages (Cloudflare/Rate Limit blocks).
+- **Unified URL Extraction & Sanitization Engine**: Consolidated URL extraction and parameter stripping into `urlUtils.js`, standardizing protocol normalization (`https://`) and tracking parameter removal (`utm_*`, `igsh`, `s`, `t`, `si`) across all 14 platform scrapers.
+- **Redesigned Focused-Input Toast & Universal Settings Notifications**: Upgraded `.custom-toast` to mimic the focused URL input style (`1.5px solid var(--primary)` border with `4px 4px 0px var(--primary)` shadow and `105px` clearance above bottom nav), with haptic feedback vibration and localized toast notifications across all 30+ settings controls in English, Indonesian, Japanese, Spanish, Chinese, and Russian.
+- **Mobile Hardware Back Button & Double-Tap Exit Guard**: Integrated native Android back button event listener to dismiss open modals/subpages, navigate back to Home, and require double-tap back within 2 seconds to exit the app.
+- **Pixel-Perfect Settings UI Layout Polish**: Standardized Network & Performance settings dropdown row heights (`38px` fixed height) and truncated text labels to prevent multi-line text wrapping.
+- **New "Scraper Engine & Status" Settings Sub-Page**: Added a dedicated 6th settings sub-page allowing users to monitor real-time online/offline server health, active API engines, and round-trip response latency (ms) across all 14 supported platform scrapers. Features a clean, justified 2-column card layout displaying server endpoints (e.g. SnapTik, TikTokIO) with their respective latency badges (ms) positioned directly below each server title (Douyin moved after Spotify, filler words like "Engine/Extractor" removed).
+- **Enhanced Memory & Canvas Resource Cleanup**: Upgraded `getVideoThumbnail` with a centralized resource cleanup engine that revokes Object URLs (`blob:`), unbinds media event listeners, and resets `<canvas>` dimensions immediately upon completion or error.
+
+## Previous Updates v4.0.0
 
 - **iOS Support (Capacitor)**: Mori now runs on iOS! Added full Xcode project structure, iOS-native Capacitor plugins, and platform-agnostic file system handling via `@capacitor/filesystem`.
 - **Reorganized 5-Tier Settings Suite**: Restructured all app settings into 5 perfectly categorized sub-pages: **General** (Language, Auto-Paste, Auto-Analyze, Privacy Lock, Lock Type, Incognito, Keep Screen Awake, Auto Check Updates, Auto-Clear Input, Auto-Download Link, Auto-Retry), **Storage & Download** (Video & Music Paths, Platform Subfolders, Filename Template, Total Media Size, Clear Cache, Wipe All Data), **Look & Feel** (Dark Mode, Color Accent, App Fonts, Vibration, Completion Sound, Header Quote, Home Greeting, Footer Tagline), **Network & Performance** (Preferred Server, User-Agent Mode, Request Timeout, Wi-Fi Only, Force IPv4, Anti-403 Header Guard, Cellular Data Warning, Bypass SSL Errors, Server Latency Diagnostics, Data Saver Mode), and **Advanced** (History Limits, Time-based Retention, Scheduled Auto-Backup, Auto-Play Media, Auto-Loop Media, Data Import/Export).
@@ -54,37 +84,6 @@ Mori is a modern, privacy-first media downloader that saves photos, videos, and 
 - **Accessibility (A11y) & UI Consistency**: Added `aria-label` attributes across all icon-only buttons for full screen reader support. Standardized the Language settings to match the global custom dropdown component design.
 - **Native Save to Gallery**: Integrated `@capacitor-community/media` to automatically save downloaded videos and photos directly to the iOS Camera Roll and Android Gallery, bypassing the need for manual file manager exports.
 - **Code Optimization**: Extracted hardcoded inline CSS into dedicated stylesheet classes and removed deprecated legacy dropdown logic, reducing code bloat and improving maintainability.
-
-## Previous Updates v3.9.0
-
-- **Enhanced Filename Sanitization & Storage Permission Error Fix**:
-  - **URI & Hashtag Sanitization**: Strips `#` (hashtags), `%`, `&`, and special symbols from video/media titles. Hashtags in filenames were previously causing Android native URI parsers to fail with `EACCES (Permission denied)` and `ENOENT (No such file or directory)`.
-  - **Length & Unicode Optimization**: Truncates sanitized titles to a maximum of 60 characters and strips non-standard Unicode symbols, preventing filesystem path overflow errors across Android versions.
-- **Bilibili Short-Link & Season Resolution (bili.im / b23.tv)**: Overhauled Bilibili link resolution and stream extraction:
-  - **Short Link & Redirect Handling**: Robust manual parsing for non-standard HTML redirects on `bili.im` and `b23.tv` short URLs when CapacitorHttp response headers do not auto-resolve destination URLs.
-  - **Anime/Series Season Resolution**: Resolves season-only URLs (`/play/sid`) directly to active episode IDs (`ep_id`) using the Bilibili OGV episodes API (`/intl/gateway/web/v2/ogv/play/episodes`).
-  - **Upgraded Stream API**: Switched to Bilibili OGV v2 API (`/intl/gateway/v2/ogv/playurl`), delivering multi-resolution video streams (480p, 360p, 240p, 144p) and high-bitrate audio streams.
-  - **HTTPS & Referer Injection**: Enforces HTTPS protocols on all DASH video/audio stream URLs (`bilivideo.com`, `bstarstatic.com`, `akamaized.net`) and injects mandatory `Referer: https://www.bilibili.tv/` headers, eliminating cleartext HTTP download errors and 403 Forbidden file corruptions.
-- **Pixiv Ugoira Extraction & Download Engine**: Overhauled Pixiv Ugoira (animated illustration) detection & download system:
-  - **Server-Independent Detection**: Bypasses login & R-18 restriction blocks using `meta-preload-data` HTML parsing and `ugoira_meta` API validation.
-  - **Animated Media Preview**: Live animated GIF preview for Ugoira artworks in the application viewer.
-  - **Format Options**: Export Ugoiras as **MP4**, **GIF**, or **ZIP** (full original frame archive).
-  - **CapacitorHttp Blob Fallback Downloader**: Integrated a fallback download engine using `CapacitorHttp` with `responseType: "blob"` and domain-aware `Referer` routing (`ugoira.com` & `pximg.net`), ensuring downloads succeed across strict CDN redirects and anti-hotlink rules.
-- **Dual YouTube Scraper System**: Integrated dual-scraper selection menu when analyzing YouTube URLs:
-  - **Server 1 (ytmp3.gg)**: Multi-resolution video downloads (1080p, 720p, 480p, 360p) + MP3 audio.
-  - **Server 2 (ytmp3.mobi)**: Fast & stable single-quality MP4 / MP3 extraction.
-- **Dual TikTok Scraper System**: Added server selection menu for TikTok downloads:
-  - **Server 1 (TikTokIO)**: Multi Feature (HD Video, MP3 audio, and Photo Slideshow).
-  - **Server 2 (SnapTik)**: Fast & Direct (HD / MP4 Video and Photo Slideshow).
-- **Dual Instagram Scraper System**: Added server selection menu for Instagram downloads:
-  - **Server 1 (Indown)**: HD Reels, Posts, Photos extraction.
-  - **Server 2 (DownReels)**: Fast API-based Reels & media extraction.
-- **Dual Twitter/X Scraper System**: Added server selection menu for Twitter/X downloads:
-  - **Server 1 (Tweeload)**: Multi-resolution video downloads (HD/SD).
-  - **Server 2 (TVD)**: Fast TwitterVideoDownloader direct video extraction.
-- **Dual Spotify Scraper System**: Added server selection menu for Spotify track downloads:
-  - **Server 1 (SpotiDown)**: Standard MP3 track extraction.
-  - **Server 2 (SpotMate)**: Fast & Direct MP3 extraction (`spotmate.online` integration).
 
 ## Supported Platforms
 
@@ -119,14 +118,41 @@ Mori/
 │   ├── css/
 │   │   └── style.css           # Design system & all component styles
 │   ├── js/
-│   │   ├── i18n.js             # Multi-language translations (EN/ID/JA)
-│   │   ├── pdf-lib.min.js      # PDF generation library (vendor)
-│   │   ├── player.js           # Custom video player with touch controls
-│   │   ├── scrapers.js         # Platform scrapers (TikTok, IG, YT, etc.)
-│   │   ├── script.js           # App init, navigation, settings, history
-│   │   ├── ui.js               # Media slider, results, history renderer
-│   │   └── utils.js            # Filesystem, cookie utils, helpers
-│   └── index.html              # Single-page entry point
+│   │   ├── components/         # Custom UI components (MoriPlayer)
+│   │   │   └── player.js
+│   │   ├── i18n/               # Multi-language translations (EN/ID/JA/ES/ZH/RU)
+│   │   │   └── index.js
+│   │   ├── modules/            # App managers (auth, history, settings, download)
+│   │   │   ├── authManager.js
+│   │   │   ├── downloadManager.js
+│   │   │   ├── historyManager.js
+│   │   │   └── settingsManager.js
+│   │   ├── scrapers/           # Standalone scraper modules (14 platforms)
+│   │   │   ├── applemusic.js
+│   │   │   ├── bandcamp.js
+│   │   │   ├── bilibili.js
+│   │   │   ├── douyin.js
+│   │   │   ├── facebook.js
+│   │   │   ├── httpHelper.js
+│   │   │   ├── index.js
+│   │   │   ├── instagram.js
+│   │   │   ├── pinterest.js
+│   │   │   ├── pixiv.js
+│   │   │   ├── rednote.js
+│   │   │   ├── spotify.js
+│   │   │   ├── threads.js
+│   │   │   ├── tiktok.js
+│   │   │   ├── twitter.js
+│   │   │   └── youtube.js
+│   │   ├── utils/              # Helpers, URL sanitization & scraper health
+│   │   │   ├── index.js
+│   │   │   ├── scraperHealth.js
+│   │   │   └── urlUtils.js
+│   │   ├── vendor/             # Third-party libraries (pdf-lib)
+│   │   │   └── pdf-lib.min.js
+│   │   ├── script.js           # Core application init & lifecycle
+│   │   └── ui.js               # Media slider, results UI, and rendering logic
+│   └── index.html              # Single-page application entry point
 ├── capacitor.config.json       # Capacitor configuration
 ├── package.json                # Dependencies & scripts
 ├── .gitignore
@@ -144,6 +170,7 @@ Mori/
 - **Auto Clipboard Paste**: Automatically detects and pastes links from clipboard when you return to the app.
 - **Auto Update Check**: Checks for new versions on startup via GitHub Releases and shows a popup modal when an update is available.
 - **Hardened Biometric Privacy Lock**: Secure your history and settings menu with native fingerprint, FaceID, or TouchID authentication, featuring automatic background re-locking.
+- **Multi-Language Support**: Fully localized in English, Indonesian, and Japanese (`en`, `id`, `ja`).
 - **Export/Import Data**: Full data portability — backup and restore your history, settings, and paths as a JSON file.
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions, dark mode, and accent colors.
@@ -177,11 +204,43 @@ cd android && ./gradlew assembleDebug
 #    android/app/build/outputs/apk/debug/Mori v{VERSION}.apk
 ```
 
-For a release APK, generate a signed keystore and run:
+For a release APK, first generate a signing keystore (one-time):
+
+```bash
+keytool -genkey -v -keystore android/app/release.keystore -alias mori \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -storepass android123 -keypass android123 \
+  -dname "CN=Mori, OU=Development, O=MoriApp, L=Unknown, ST=Unknown, C=ID"
+```
+
+Then add `signingConfigs` block to `android/app/build.gradle`:
+
+```groovy
+android {
+    signingConfigs {
+        release {
+            storeFile file('release.keystore')
+            storePassword 'android123'
+            keyAlias 'mori'
+            keyPassword 'android123'
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            // ...
+        }
+    }
+}
+```
+
+Build the signed release APK:
 
 ```bash
 cd android && ./gradlew assembleRelease
 ```
+
+Output at: `android/app/build/outputs/apk/release/Mori v{VERSION}.apk`
 
 ### Running & Building for iOS
 
@@ -209,14 +268,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.0.0.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.1.0.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.0.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.1.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.0.0.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.1.0.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

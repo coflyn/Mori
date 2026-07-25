@@ -1,8 +1,13 @@
-import { translations } from "./i18n.js";
-import { createVideoPlayer } from "./player.js";
+import { translations } from "./i18n/index.js";
+import { createVideoPlayer } from "./components/player.js";
 import {
   truncate,
   showToast,
+  showDownloadProgressToast,
+  updateDownloadProgressToast,
+  completeDownloadProgressToast,
+  failDownloadProgressToast,
+  hideDownloadProgressToast,
   copyToClipboard,
   cleanUrl,
   Filesystem,
@@ -13,7 +18,7 @@ import {
   playCompletionSound,
   requestWakeLock,
   releaseWakeLock,
-} from "./utils.js";
+} from "./utils/index.js";
 
 // State pointers (will be updated from main script)
 let currentLang = "en";
@@ -48,7 +53,10 @@ function renderMediaSlides(container, items, resultThumbnail) {
     const slide = document.createElement("div");
     slide.className = `preview-slide ${index === 0 ? "active" : ""}`;
 
-    const rawUrl = typeof dl.url === "string" ? dl.url : (dl.url?.url || dl.url?.src || String(dl.url || ""));
+    const rawUrl =
+      typeof dl.url === "string"
+        ? dl.url
+        : dl.url?.url || dl.url?.src || String(dl.url || "");
     const lowerUrl = rawUrl.toLowerCase();
     const upperType = dl.type ? dl.type.toUpperCase() : "";
 
@@ -81,7 +89,7 @@ function renderMediaSlides(container, items, resultThumbnail) {
     const isLocal =
       dl.url.includes("_capacitor_file_") ||
       dl.url.startsWith("file://") ||
-      dl.isLocal === true;
+      dl.url.startsWith("content://");
 
     if (isVideo) {
       if (isDataSaver && !isLocal) {
@@ -128,6 +136,90 @@ function renderMediaSlides(container, items, resultThumbnail) {
       const loopSetting = localStorage.getItem("mori_loop") !== "false";
       audio.autoplay = index === 0 && autoPlaySetting;
       audio.loop = loopSetting;
+
+      let audioRetried = false;
+      let audioRemoteRetried = false;
+      audio.onerror = async () => {
+        if (
+          !audioRetried &&
+          (dl.url.includes("_capacitor_file_") || dl.url.startsWith("file://"))
+        ) {
+          audioRetried = true;
+          console.warn("Attempting local blob fallback for audio...");
+          try {
+            let cleanPath = dl.rawUri || dl.rawPath || dl.url;
+            if (cleanPath.includes("_capacitor_file_")) {
+              cleanPath = cleanPath.substring(
+                cleanPath.indexOf("_capacitor_file_") + 16,
+              );
+            }
+            if (cleanPath.startsWith("file://")) {
+              cleanPath = cleanPath.replace(/^file:\/\//, "");
+            }
+            if (!cleanPath.startsWith("/")) {
+              cleanPath = "/storage/emulated/0/" + cleanPath;
+            }
+            const rawFileUrl = "file://" + cleanPath;
+            const capSrc =
+              window.Capacitor?.convertFileSrc(rawFileUrl) || dl.url;
+
+            try {
+              const fetchRes = await fetch(capSrc);
+              if (fetchRes.ok) {
+                const blob = await fetchRes.blob();
+                audio.src = URL.createObjectURL(blob);
+                audio.load();
+                return;
+              }
+            } catch (err) {
+              console.warn("Audio fetch failed, trying filesystem:", err);
+            }
+
+            const relPath = cleanPath
+              .replace(/^.*\/storage\/emulated\/0\//, "")
+              .replace(/^\//, "");
+            let res;
+            try {
+              res = await Filesystem.readFile({
+                path: relPath,
+                directory: "EXTERNAL_STORAGE",
+              });
+            } catch (_) {}
+
+            if (!res) {
+              try {
+                res = await Filesystem.readFile({ path: cleanPath });
+              } catch (_) {}
+            }
+
+            if (res && res.data) {
+              const byteChars = atob(res.data);
+              const byteArr = new Uint8Array(byteChars.length);
+              for (let i = 0; i < byteChars.length; i++) {
+                byteArr[i] = byteChars.charCodeAt(i);
+              }
+              const blob = new Blob([byteArr], { type: "audio/mp3" });
+              audio.src = URL.createObjectURL(blob);
+              audio.load();
+              return;
+            }
+          } catch (e) {
+            console.warn("Audio blob fallback failed:", e);
+          }
+        }
+
+        if (
+          !audioRemoteRetried &&
+          dl.remoteUrl &&
+          audio.src !== dl.remoteUrl &&
+          navigator.onLine
+        ) {
+          audioRemoteRetried = true;
+          audio.src = dl.remoteUrl;
+          audio.load();
+        }
+      };
+
       slide.appendChild(audio);
     } else {
       if (isDataSaver && !isLocal) {
@@ -137,7 +229,8 @@ function renderMediaSlides(container, items, resultThumbnail) {
         slide.appendChild(placeholder);
       } else {
         const img = document.createElement("img");
-        setupImageLoading(img, dl.thumbnail || dl.url || "", resultThumbnail);
+        const imageSrc = dl.url || dl.thumbnail || "";
+        setupImageLoading(img, imageSrc, resultThumbnail);
         slide.appendChild(img);
       }
     }
@@ -181,6 +274,61 @@ function setupImageLoading(img, src, resultThumbnail) {
   img.src = src || fallbackThumb || "";
   img.referrerPolicy = "no-referrer";
   img.onerror = () => {
+    const isLocal =
+      img.src.includes("_capacitor_file_") ||
+      img.src.startsWith("file://") ||
+      img.src.startsWith("data:") ||
+      img.src.startsWith("blob:");
+
+    if (isLocal) {
+      if (
+        !img.dataset.localRetried &&
+        window.Capacitor?.isNativePlatform() &&
+        Filesystem
+      ) {
+        img.dataset.localRetried = "1";
+        let cleanPath = img.src;
+        if (cleanPath.includes("_capacitor_file_")) {
+          cleanPath = cleanPath.substring(
+            cleanPath.indexOf("_capacitor_file_") + 16,
+          );
+        }
+        if (cleanPath.startsWith("file://")) {
+          cleanPath = cleanPath.replace(/^file:\/\//, "");
+        }
+        Filesystem.readFile({ path: cleanPath })
+          .then((res) => {
+            if (res && res.data) {
+              const ext = cleanPath.split(".").pop().toLowerCase();
+              const mime =
+                ext === "png"
+                  ? "image/png"
+                  : ext === "webp"
+                    ? "image/webp"
+                    : "image/jpeg";
+              img.src = `data:${mime};base64,${res.data}`;
+            } else if (fallbackThumb && img.src !== fallbackThumb) {
+              img.src = fallbackThumb;
+            }
+          })
+          .catch(() => {
+            if (fallbackThumb && img.src !== fallbackThumb) {
+              img.src = fallbackThumb;
+            }
+          });
+      } else if (fallbackThumb && img.src !== fallbackThumb) {
+        img.src = fallbackThumb;
+      }
+      return;
+    }
+
+    if (!navigator.onLine) {
+      if (fallbackThumb && img.src !== fallbackThumb) {
+        img.src = fallbackThumb;
+      }
+      return;
+    }
+
     if (!img.dataset.retry) {
       img.dataset.retry = "1";
       const originalSrc = img.src;
@@ -307,13 +455,15 @@ export function renderResult(result, originalUrl) {
     !sliderItems.some((dl) => dl.type === "IMAGE" || dl.type === "PHOTO");
 
   if (isDouyin) {
-    const hasPhoto = sliderItems.some(
-      (dl) => dl.type?.toUpperCase() === "PHOTO",
-    );
+    const hasPhoto = sliderItems.some((dl) => {
+      const type = (dl.type || "").toUpperCase();
+      return type.includes("PHOTO") || type.includes("IMAGE");
+    });
     if (hasPhoto) {
-      sliderItems = sliderItems.filter(
-        (dl) => dl.type?.toUpperCase() === "PHOTO",
-      );
+      sliderItems = sliderItems.filter((dl) => {
+        const type = (dl.type || "").toUpperCase();
+        return type.includes("PHOTO") || type.includes("IMAGE");
+      });
     } else {
       const nonMirror = sliderItems.find((dl) => !dl.isMirror);
       sliderItems = nonMirror
@@ -402,7 +552,10 @@ export function renderResult(result, originalUrl) {
   // PDF Export Option for Galleries (Hybrid Mode)
   const imageItems = sliderItems.filter((item) => {
     const type = (item.type || "").toUpperCase();
-    const rawUrl = typeof item.url === "string" ? item.url : (item.url?.url || item.url?.src || String(item.url || ""));
+    const rawUrl =
+      typeof item.url === "string"
+        ? item.url
+        : item.url?.url || item.url?.src || String(item.url || "");
     const url = rawUrl.toLowerCase();
     const isImage =
       type.includes("PAGE") ||
@@ -476,6 +629,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
   const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
   const historyPage = document.getElementById("historyPage");
   const editHistoryBtn = document.getElementById("editHistoryBtn");
+  const historyActions = document.getElementById("historyActions");
   if (!historyPage) return;
 
   const emptyState = historyPage.querySelector(".empty-state");
@@ -483,14 +637,21 @@ export function renderHistory(onItemClick, onDeleteClick) {
   if (list) list.remove();
 
   if (history.length === 0) {
+    isEditingHistory = false;
     emptyState?.classList.remove("hidden");
     editHistoryBtn?.classList.add("hidden");
+    historyActions?.classList.add("hidden");
     return;
   }
 
   emptyState?.classList.add("hidden");
-  if (editHistoryBtn && !isEditingHistory)
-    editHistoryBtn.classList.remove("hidden");
+  if (isEditingHistory) {
+    editHistoryBtn?.classList.add("hidden");
+    historyActions?.classList.remove("hidden");
+  } else {
+    editHistoryBtn?.classList.remove("hidden");
+    historyActions?.classList.add("hidden");
+  }
 
   list = document.createElement("div");
   list.className = "history-list";
@@ -512,12 +673,17 @@ export function renderHistory(onItemClick, onDeleteClick) {
         if (first.thumbnail) {
           thumbSrc = first.thumbnail;
         } else if (first.type === "IMAGE") {
-          thumbSrc = window.Capacitor?.convertFileSrc(first.path);
+          thumbSrc = window.Capacitor?.convertFileSrc(first.uri || first.path);
         }
       } else if (item.localUri && window.Capacitor) {
         const isImage = /\.(jpg|jpeg|png|webp)/i.test(item.localUri);
         if (isImage) {
-          thumbSrc = window.Capacitor.convertFileSrc(item.localUri);
+          thumbSrc = window.Capacitor.convertFileSrc(
+            item.localUri.startsWith("file://") ||
+              item.localUri.startsWith("_capacitor_file_")
+              ? item.localUri
+              : item.localUri,
+          );
         }
       }
     }
@@ -593,101 +759,157 @@ export async function showModal(item, onRedownload) {
     const localFiles = item.localFiles || [];
     const displayItems = [];
 
-    const resolveNativeUrl = async (filePath) => {
-      if (!filePath) return "";
+    const toRawFileUrl = (pathOrUri) => {
+      if (!pathOrUri) return "";
       if (
-        filePath.startsWith("http://") ||
-        filePath.startsWith("https://") ||
-        filePath.startsWith("data:") ||
-        filePath.startsWith("blob:")
+        pathOrUri.startsWith("http://") ||
+        pathOrUri.startsWith("https://") ||
+        pathOrUri.startsWith("data:") ||
+        pathOrUri.startsWith("blob:") ||
+        pathOrUri.startsWith("content://")
       ) {
-        return filePath;
+        return pathOrUri;
       }
-      let fullPath = filePath;
-      if (
-        window.Capacitor &&
-        Filesystem &&
-        !fullPath.startsWith("file://") &&
-        !fullPath.startsWith("_capacitor_file_")
-      ) {
-        try {
-          const uriObj =
-            (await Filesystem.getUri({ path: fullPath, directory: "EXTERNAL_STORAGE" }).catch(() => null)) ||
-            (await Filesystem.getUri({ path: fullPath, directory: "DOCUMENTS" }).catch(() => null));
-          if (uriObj && uriObj.uri) {
-            fullPath = uriObj.uri;
-          }
-        } catch (e) {}
+      let full = pathOrUri;
+      if (full.includes("_capacitor_file_")) {
+        full = full.substring(full.indexOf("_capacitor_file_") + 16);
       }
-      return window.Capacitor?.convertFileSrc(fullPath) || fullPath;
+      if (full.startsWith("file://")) {
+        return full;
+      }
+      if (!full.startsWith("/")) {
+        full = "/storage/emulated/0/" + full.replace(/^\//, "");
+      }
+      return "file://" + full;
     };
 
-    if (localFiles.length > 0) {
-      for (const file of localFiles) {
-        if (file && file.path) {
-          const resolvedUrl = await resolveNativeUrl(file.path);
-          displayItems.push({
-            url: resolvedUrl,
-            type:
-              file.type ||
-              (file.path.toLowerCase().endsWith(".mp4")
-                ? "VIDEO"
-                : file.path.toLowerCase().endsWith(".mp3")
-                  ? "MP3"
-                  : "IMAGE"),
-            thumbnail: file.thumbnail,
-            isLocal: true,
-          });
-        }
-      }
-    } else if (item.localUri) {
-      const resolvedUrl = await resolveNativeUrl(item.localUri);
-      displayItems.push({
-        url: resolvedUrl,
-        type: item.localUri.toLowerCase().endsWith(".mp4")
-          ? "VIDEO"
-          : item.localUri.toLowerCase().endsWith(".mp3")
-            ? "MP3"
-            : "IMAGE",
-        thumbnail: item.localThumbnail,
-        isLocal: true,
-      });
-    }
+    const toCapacitorUrl = (pathOrUri) => {
+      const rawFile = toRawFileUrl(pathOrUri);
+      return window.Capacitor?.convertFileSrc(rawFile) || rawFile;
+    };
 
-    // Final fallback if nothing found
-    if (displayItems.length === 0) {
-      displayItems.push({
-        url: item.thumbnail || item.url || "",
-        type: "IMAGE",
-        thumbnail: item.thumbnail,
-      });
+    const hasDownloadedFiles =
+      (localFiles && localFiles.length > 0) ||
+      !!item.localUri ||
+      (item.downloads &&
+        item.downloads.some((dl) => dl && (dl.localUrl || dl.localSrc)));
+
+    if (hasDownloadedFiles) {
+      if (localFiles.length > 0) {
+        localFiles.forEach((file) => {
+          if (file && (file.path || file.uri)) {
+            const fileSrc = file.path || file.uri;
+            const mediaType =
+              file.type ||
+              (fileSrc.toLowerCase().endsWith(".mp4")
+                ? "VIDEO"
+                : fileSrc.toLowerCase().endsWith(".mp3")
+                  ? "MP3"
+                  : "IMAGE");
+
+            displayItems.push({
+              url: toCapacitorUrl(fileSrc),
+              remoteUrl: null,
+              rawPath: file.path,
+              rawUri: file.uri,
+              type: mediaType,
+              thumbnail: file.thumbnail || item.thumbnail,
+              isLocal: true,
+            });
+          }
+        });
+      } else if (item.localUri) {
+        const fileSrc = item.localUri;
+        const mediaType = fileSrc.toLowerCase().endsWith(".mp4")
+          ? "VIDEO"
+          : fileSrc.toLowerCase().endsWith(".mp3")
+            ? "MP3"
+            : "IMAGE";
+        displayItems.push({
+          url: toCapacitorUrl(fileSrc),
+          rawPath: item.localUri,
+          rawUri: item.localUri,
+          type: mediaType,
+          thumbnail: item.localThumbnail || item.thumbnail,
+          isLocal: true,
+        });
+      } else if (item.downloads && item.downloads.length > 0) {
+        item.downloads.forEach((dl) => {
+          if (dl && (dl.localUrl || dl.localSrc)) {
+            const localUrl = dl.localUrl || dl.localSrc;
+            const mediaType =
+              dl.type ||
+              (localUrl.toLowerCase().includes(".mp4")
+                ? "VIDEO"
+                : localUrl.toLowerCase().includes(".mp3")
+                  ? "MP3"
+                  : "IMAGE");
+            displayItems.push({
+              url: localUrl,
+              remoteUrl: dl.url || dl.src,
+              type: mediaType,
+              thumbnail: dl.thumbnail || item.thumbnail,
+              isLocal: true,
+            });
+          }
+        });
+      }
+    } else {
+      const photoDownloads = item.downloads
+        ? item.downloads.filter((dl) => {
+            const t = (dl?.type || "").toUpperCase();
+            return t.includes("PHOTO") || t.includes("IMAGE");
+          })
+        : [];
+
+      if (photoDownloads.length > 0) {
+        photoDownloads.forEach((dl) => {
+          displayItems.push({
+            url: dl.url || dl.src,
+            type: "IMAGE",
+            thumbnail: dl.thumbnail || item.thumbnail,
+            isLocal: false,
+          });
+        });
+      } else {
+        displayItems.push({
+          url:
+            item.thumbnail ||
+            (item.downloads && item.downloads[0]?.url) ||
+            item.url ||
+            "",
+          type: "IMAGE",
+          thumbnail: item.thumbnail,
+          isLocal: false,
+        });
+      }
     }
 
     renderMediaSlides(slidesWrapper, displayItems, item.thumbnail);
 
+    const updateModalSlider = () => {
+      const slides = slidesWrapper.querySelectorAll(".preview-slide");
+      slides.forEach((s, i) => {
+        const isActive = i === modalCurrentSlide;
+        s.classList.toggle("active", isActive);
+        const video = s.querySelector("video");
+        if (video) {
+          if (isActive) {
+            video.currentTime = 0;
+            video.loop = localStorage.getItem("mori_loop") !== "false";
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
+      });
+      const indicator = document.getElementById("modalSlideIndicator");
+      if (indicator)
+        indicator.textContent = `${modalCurrentSlide + 1} / ${displayItems.length}`;
+    };
+
     if (displayItems.length > 1) {
       if (sliderNav) sliderNav.classList.remove("hidden");
-      const indicator = document.getElementById("modalSlideIndicator");
-      const updateModalSlider = () => {
-        const slides = slidesWrapper.querySelectorAll(".preview-slide");
-        slides.forEach((s, i) => {
-          const isActive = i === modalCurrentSlide;
-          s.classList.toggle("active", isActive);
-          const video = s.querySelector("video");
-          if (video) {
-            if (isActive) {
-              video.currentTime = 0;
-              video.loop = localStorage.getItem("mori_loop") !== "false";
-              video.play().catch(() => {});
-            } else {
-              video.pause();
-            }
-          }
-        });
-        if (indicator)
-          indicator.textContent = `${modalCurrentSlide + 1} / ${displayItems.length}`;
-      };
-
       const prevBtn = document.getElementById("modalSlidePrevBtn");
       const nextBtn = document.getElementById("modalSlideNextBtn");
       if (prevBtn) {
@@ -708,6 +930,7 @@ export async function showModal(item, onRedownload) {
       updateModalSlider();
     } else {
       if (sliderNav) sliderNav.classList.add("hidden");
+      updateModalSlider();
     }
 
     if (modalUrl) {
@@ -732,6 +955,22 @@ export async function showModal(item, onRedownload) {
 }
 
 export async function startNativeDownload(url, type, title, btn, sourceUrl) {
+  if (!url || typeof url !== "string" || !url.trim()) {
+    showToast(
+      translations[currentLang]["label-error"] + ": Invalid download link",
+    );
+    return;
+  }
+
+  if (
+    url.startsWith("file://") ||
+    url.includes("_capacitor_file_") ||
+    url.startsWith("content://")
+  ) {
+    showToast("File is already stored locally");
+    return;
+  }
+
   if (!Filesystem) {
     window.open(url, "_blank");
     return;
@@ -739,9 +978,9 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
   const progressBar = document.getElementById("progressBar");
   const progressContainer = document.getElementById("progressContainer");
-  const originalContent = btn.innerHTML;
+  const originalContent = btn ? btn.innerHTML : "";
 
-  // Request permissions for Android
+  // Request permissions for Android FIRST before showing progress toast
   if (window.Capacitor?.getPlatform() === "android") {
     try {
       const status = await Filesystem.checkPermissions();
@@ -757,42 +996,96 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
   }
 
+  // Show floating progress toast ONLY AFTER validation and permissions pass
+  const platformLabel = (() => {
+    const src = (sourceUrl || url || "").toLowerCase();
+    if (src.includes("tiktok")) return "TikTok";
+    if (src.includes("instagram")) return "Instagram";
+    if (src.includes("youtube")) return "YouTube";
+    if (src.includes("twitter") || src.includes("x.com")) return "Twitter";
+    if (src.includes("facebook")) return "Facebook";
+    if (src.includes("pinterest")) return "Pinterest";
+    if (src.includes("douyin")) return "Douyin";
+    if (src.includes("bilibili") || src.includes("b23.tv")) return "Bilibili";
+    if (src.includes("spotify")) return "Spotify";
+    if (src.includes("bandcamp")) return "Bandcamp";
+    if (src.includes("pixiv") || src.includes("pximg")) return "Pixiv";
+    if (src.includes("xiaohongshu") || src.includes("rednote"))
+      return "RedNote";
+    if (src.includes("threads")) return "Threads";
+    if (src.includes("snapchat")) return "Snapchat";
+    return "Media";
+  })();
+  if (window._moriActiveSimInterval) {
+    clearInterval(window._moriActiveSimInterval);
+    window._moriActiveSimInterval = null;
+  }
+
+  showDownloadProgressToast(platformLabel, type);
   let progressListener = null;
+  let currentProgressVal = 0;
+  const updateProgress = (pct, statusText) => {
+    if (typeof pct === "number" && !isNaN(pct)) {
+      const targetPct = Math.min(
+        99,
+        Math.max(currentProgressVal, Math.round(pct)),
+      );
+      currentProgressVal = targetPct;
+    }
+    if (progressBar) progressBar.style.width = `${currentProgressVal}%`;
+    updateDownloadProgressToast(currentProgressVal, statusText);
+  };
 
   try {
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     if (progressContainer) progressContainer.classList.remove("hidden");
-    if (progressBar) progressBar.style.width = "0%";
+    updateProgress(0, "Downloading...");
 
     // Acquire Wake Lock if enabled
     requestWakeLock();
 
-    btn.innerHTML = `<div>0%</div>`;
+    if (btn) {
+      btn.innerHTML =
+        translations[currentLang]["btn-processing"] || "Processing...";
+    }
     console.log("Starting download for:", url);
+
+    // Smooth adaptive progress animation up to 95% until download completes
+    let simProgress = 0;
+    let realProgressReceived = false;
+    window._moriActiveSimInterval = setInterval(() => {
+      if (realProgressReceived) return;
+      if (simProgress < 50) {
+        simProgress += 6 + Math.random() * 4;
+      } else if (simProgress < 80) {
+        simProgress += 2.5 + Math.random() * 2.5;
+      } else if (simProgress < 95) {
+        simProgress += 0.6 + Math.random() * 0.9;
+      }
+      const currentPct = Math.min(95, Math.round(simProgress));
+      updateProgress(currentPct, "Downloading...");
+    }, 160);
 
     // Remove any existing listeners first to avoid double-firing
     if (window._moriProgressListener) {
       await window._moriProgressListener.remove();
     }
 
-    // Listen for progress
+    // Listen for real progress
     window._moriProgressListener = await Filesystem.addListener(
       "downloadProgress",
       (progress) => {
+        realProgressReceived = true;
         let percentage = 0;
         if (progress.contentLength > 0) {
           percentage = Math.round(
             (progress.bytesWritten / progress.contentLength) * 100,
           );
-        } else {
-          percentage = Math.min(
-            99,
-            Math.round(progress.bytesWritten / (1024 * 1024)),
-          );
+        } else if (progress.bytesWritten > 0) {
+          percentage = Math.min(95, Math.round(progress.bytesWritten / 10240));
         }
 
-        if (progressBar) progressBar.style.width = `${percentage}%`;
-        btn.innerHTML = `<div>${percentage}%</div>`;
+        updateProgress(Math.min(95, percentage), "Downloading...");
       },
     );
 
@@ -814,9 +1107,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const template = localStorage.getItem("mori_filename") || "default";
     let fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
 
-    if (template === "title") {
-      fileName = `${sanitizedTitle}.${ext}`;
-    } else if (template === "title-platform") {
+    // All templates produce unique filenames
+    if (template === "title-platform") {
       let platform = "Media";
       const lowerUrl = (sourceUrl || url).toLowerCase();
       if (lowerUrl.includes("tiktok")) platform = "TikTok";
@@ -826,10 +1118,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com"))
         platform = "Twitter";
       else if (lowerUrl.includes("facebook")) platform = "Facebook";
-      fileName = `${sanitizedTitle}_${platform}.${ext}`;
+      fileName = `${sanitizedTitle}_${platform}_${Date.now()}.${ext}`;
     } else if (template === "title-date") {
       const dateStr = new Date().toISOString().split("T")[0];
-      fileName = `${sanitizedTitle}_${dateStr}.${ext}`;
+      fileName = `${sanitizedTitle}_${dateStr}_${Date.now()}.${ext}`;
+    } else if (template === "title") {
+      fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
     }
 
     const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
@@ -843,16 +1137,22 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     if (localStorage.getItem("mori_auto_folder") === "true") {
       const src = (sourceUrl || url || "").toLowerCase();
       let platformFolder = "Other";
-      if (src.includes("tiktok") || src.includes("douyin")) platformFolder = "TikTok";
+      if (src.includes("tiktok") || src.includes("douyin"))
+        platformFolder = "TikTok";
       else if (src.includes("instagram")) platformFolder = "Instagram";
-      else if (src.includes("youtube") || src.includes("youtu.be")) platformFolder = "YouTube";
-      else if (src.includes("twitter") || src.includes("x.com")) platformFolder = "Twitter";
+      else if (src.includes("youtube") || src.includes("youtu.be"))
+        platformFolder = "YouTube";
+      else if (src.includes("twitter") || src.includes("x.com"))
+        platformFolder = "Twitter";
       else if (src.includes("facebook")) platformFolder = "Facebook";
       else if (src.includes("pinterest")) platformFolder = "Pinterest";
-      else if (src.includes("bilibili") || src.includes("b23.tv")) platformFolder = "Bilibili";
-      else if (src.includes("pixiv") || src.includes("pximg")) platformFolder = "Pixiv";
+      else if (src.includes("bilibili") || src.includes("b23.tv"))
+        platformFolder = "Bilibili";
+      else if (src.includes("pixiv") || src.includes("pximg"))
+        platformFolder = "Pixiv";
       else if (src.includes("spotify")) platformFolder = "Spotify";
-      else if (src.includes("rednote") || src.includes("xiaohongshu")) platformFolder = "RedNote";
+      else if (src.includes("rednote") || src.includes("xiaohongshu"))
+        platformFolder = "RedNote";
 
       fullPath = `${fullPath}/${platformFolder}`;
     }
@@ -865,9 +1165,24 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       console.warn("Mkdir failed, might already exist or permission issue", e);
     });
 
-    if (progressBar) progressBar.style.width = "100%";
-    btn.innerHTML =
-      translations[currentLang]["btn-processing"] || "Processing...";
+    // Ensure unique filename if file already exists on disk (so Gallery saves each download separately)
+    try {
+      const checkExist = await Filesystem.stat({
+        path: fullPath + "/" + fileName,
+        directory: "EXTERNAL_STORAGE",
+      }).catch(() => null);
+      if (checkExist) {
+        const dotIdx = fileName.lastIndexOf(".");
+        const baseName =
+          dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
+        fileName = `${baseName}_${Date.now()}.${ext}`;
+      }
+    } catch (e) {}
+
+    if (btn) {
+      btn.innerHTML =
+        translations[currentLang]["btn-processing"] || "Processing...";
+    }
 
     let actualDownloadUrl = url;
     const needsResolving =
@@ -886,7 +1201,13 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         const maxPolls = 15;
 
         while (!resolved && pollCount < maxPolls) {
-          btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
+          if (btn) {
+            btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
+          }
+          updateProgress(
+            Math.min(90, 10 + pollCount * 5),
+            `Resolving URL... (${pollCount + 1}/${maxPolls})`,
+          );
 
           try {
             const statusRes = await CapacitorHttp.get({
@@ -928,8 +1249,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
             await new Promise((r) => setTimeout(r, 1500)); // Faster polling
           }
         }
+        if (!resolved) {
+          throw new Error("Unable to resolve download URL");
+        }
       } catch (e) {
         console.error("Worker resolve fatal failure", e);
+        throw e;
       }
     }
 
@@ -983,8 +1308,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       attempts++;
       try {
         if (attempts > 1) {
-          showToast(`Retrying download (${attempts}/${maxAttempts})...`);
-          await new Promise((r) => setTimeout(r, 1500));
+          // Silent auto-retry: retry in background while keeping progress UI at 85% / Downloading...
+          await new Promise((r) => setTimeout(r, 1000));
         }
         savedFile = await Filesystem.downloadFile({
           url: actualDownloadUrl,
@@ -1019,28 +1344,19 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       }
     }
 
-    if (progressBar) progressBar.style.width = "100%";
-    btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;
+    if (!savedFile) {
+      throw new Error(
+        translations[currentLang]["label-error"] + ": Download failed",
+      );
+    }
 
-    // Save to Gallery natively
-    if (Media && window.Capacitor?.isNativePlatform()) {
-      try {
-        let uriToSave = savedFile.path;
-        if (!uriToSave.startsWith("file://")) {
-           const uriObj = await Filesystem.getUri({ path: savedFile.path, directory: "EXTERNAL_STORAGE" }).catch(() => null);
-           if (uriObj && uriObj.uri) uriToSave = uriObj.uri;
-        }
-        
-        if (!isAudio) {
-          if (isImage) {
-             await Media.savePhoto({ path: uriToSave, album: 'Mori' });
-          } else {
-             await Media.saveVideo({ path: uriToSave, album: 'Mori' });
-          }
-        }
-      } catch (mediaErr) {
-        console.warn("Failed to save to native gallery:", mediaErr);
-      }
+    if (window._moriActiveSimInterval) {
+      clearInterval(window._moriActiveSimInterval);
+      window._moriActiveSimInterval = null;
+    }
+    updateProgress(100, "Downloading...");
+    if (btn) {
+      btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;
     }
 
     // Trigger Haptic & Sound Feedback
@@ -1059,35 +1375,77 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       }
     }
 
+    // Resolve absolute URI for gallery and preview
+    let savedUri = savedFile.uri || savedFile.path;
+    if (
+      !savedUri.startsWith("file://") &&
+      !savedUri.startsWith("_capacitor_file_") &&
+      window.Capacitor
+    ) {
+      try {
+        const uriObj = await Filesystem.getUri({
+          path: savedFile.path,
+          directory: "EXTERNAL_STORAGE",
+        });
+        if (uriObj?.uri) savedUri = uriObj.uri;
+      } catch (_) {}
+    }
+
     window.dispatchEvent(
       new CustomEvent("mori_file_saved", {
-        detail: { url: sourceUrl || url, path: savedFile.path },
+        detail: { url: sourceUrl || url, path: savedFile.path, uri: savedUri },
       }),
     );
 
-    showToast(translations[currentLang]["label-saved"]);
+    // Morph the progress toast into the Saved confirmation toast seamlessly!
+    const completeTitle =
+      translations[currentLang]["toast-download-complete"] ||
+      "Download Complete";
+    const targetFolder = isAudio ? musicSubfolder : videoSubfolder;
+    completeDownloadProgressToast(
+      completeTitle,
+      `/Download/${targetFolder}`,
+      3000,
+    );
 
     setTimeout(() => {
-      btn.innerHTML = originalContent;
-      btn.disabled = false;
+      if (btn) {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+      }
       progressContainer?.classList.add("hidden");
     }, 2500);
   } catch (err) {
     console.error("Download failed", err);
-    let errorMsg = err.message;
+    if (window._moriActiveSimInterval) {
+      clearInterval(window._moriActiveSimInterval);
+      window._moriActiveSimInterval = null;
+    }
+    let errorMsg = err?.message || "Download failed";
     if (
       errorMsg.includes("Network") ||
       errorMsg.includes("timeout") ||
       errorMsg.includes("connection")
     ) {
-      errorMsg = translations[currentLang]["toast-connection-lost"];
+      errorMsg =
+        translations[currentLang]["toast-connection-lost"] ||
+        "Network connection error";
     }
-    showToast(translations[currentLang]["label-error"] + ": " + errorMsg);
-    btn.disabled = false;
-    btn.innerHTML = originalContent;
+
+    // Morph progress toast into Error toast seamlessly!
+    failDownloadProgressToast(errorMsg, 3500);
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
     if (progressContainer) progressContainer.classList.add("hidden");
   } finally {
     releaseWakeLock();
+    if (window._moriActiveSimInterval) {
+      clearInterval(window._moriActiveSimInterval);
+      window._moriActiveSimInterval = null;
+    }
     if (window._moriProgressListener) {
       await window._moriProgressListener.remove();
       window._moriProgressListener = null;

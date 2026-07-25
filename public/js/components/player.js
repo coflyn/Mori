@@ -1,5 +1,10 @@
-import { CapacitorHttp, Filesystem, showToast, currentLang } from "./utils.js";
-import { translations } from "./i18n.js";
+import {
+  CapacitorHttp,
+  Filesystem,
+  showToast,
+  currentLang,
+} from "../utils/index.js";
+import { translations } from "../i18n/index.js";
 
 /**
  * Creates a custom video player element with all MoriPlayer controls.
@@ -8,7 +13,6 @@ import { translations } from "./i18n.js";
  * @param {string} resultThumbnail - Fallback thumbnail URL.
  * @returns {HTMLElement} The player container element.
  */
-
 
 export function createVideoPlayer(dl, index, resultThumbnail) {
   const playerContainer = document.createElement("div");
@@ -23,26 +27,74 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   video.setAttribute("referrerpolicy", "no-referrer");
 
   let videoUrl = dl.url || "";
+  const isLocal =
+    videoUrl.includes("_capacitor_file_") ||
+    videoUrl.startsWith("file://") ||
+    videoUrl.startsWith("content://") ||
+    videoUrl.includes("localhost") ||
+    videoUrl.includes("127.0.0.1");
   const isDouyin = /douyin|snssdk/i.test(videoUrl);
 
-  if (videoUrl.startsWith("http://") && !isDouyin) {
+  if (videoUrl.startsWith("http://") && !isDouyin && !isLocal) {
     videoUrl = videoUrl.replace("http://", "https://");
   }
 
   const isBilibili = /bilibili|bilivideo/i.test(videoUrl);
   const isRedNote = /xiaohongshu|rednote|xhscdn/i.test(videoUrl);
-  const needsBypass = isDouyin || isRedNote;
+  const needsBypass = (isDouyin || isRedNote) && !isLocal;
   const isNative = window.Capacitor?.isNativePlatform();
 
-  if (needsBypass && isNative && CapacitorHttp) {
+  const removeFallbackImg = () => {
+    const fallbackImg = playerContainer.querySelector(".fallback-img");
+    if (fallbackImg) fallbackImg.remove();
+  };
+  const removeLoading = () => {
+    playerContainer.classList.remove("mori-loading");
+    removeFallbackImg();
+  };
+
+  if (isLocal && isNative) {
+    playerContainer.classList.add("mori-loading");
+    let cleanPath = videoUrl || dl.rawPath || dl.rawUri;
+
+    if (cleanPath.startsWith("content://")) {
+      const capSrc = window.Capacitor.convertFileSrc
+        ? window.Capacitor.convertFileSrc(cleanPath)
+        : cleanPath;
+      console.log("Loading content:// URI:", capSrc);
+      video.src = capSrc;
+      removeLoading();
+      return playerContainer;
+    }
+    if (cleanPath.includes("_capacitor_file_")) {
+      cleanPath = cleanPath.substring(
+        cleanPath.indexOf("_capacitor_file_") + 16,
+      );
+    }
+    if (cleanPath.startsWith("file://")) {
+      cleanPath = cleanPath.replace(/^file:\/\//, "");
+    }
+    if (!cleanPath.startsWith("/")) {
+      cleanPath = "/storage/emulated/0/" + cleanPath;
+    }
+    const rawFileUrl = "file://" + cleanPath;
+    const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
+
+    video.src = capSrc;
+    removeLoading();
+  } else if (needsBypass && isNative && CapacitorHttp) {
     playerContainer.classList.add("mori-loading");
 
     let referer = "https://www.google.com/";
-    let ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1";
+    let ua =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1";
 
     if (isBilibili) {
-      referer = videoUrl.includes("bilibili.tv") ? "https://www.bilibili.tv/" : "https://www.bilibili.com/";
-      ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+      referer = videoUrl.includes("bilibili.tv")
+        ? "https://www.bilibili.tv/"
+        : "https://www.bilibili.com/";
+      ua =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
     } else if (isDouyin) {
       referer = "https://www.douyin.com/";
     } else if (isRedNote) {
@@ -53,28 +105,42 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       url: videoUrl,
       responseType: "blob",
       headers: {
-        "Referer": referer,
+        Referer: referer,
         "User-Agent": ua,
-        "Range": "bytes=0-3145728"
-      }
-    }).then((res) => {
-      if (res.status >= 200 && res.status < 300 && res.data && (res.data instanceof Blob || res.data.constructor?.name === "Blob")) {
-        const fileUrl = URL.createObjectURL(res.data);
-        video.src = fileUrl;
-        
-        // Auto-play if active
-        const isCurrentActiveSlide = playerContainer.parentElement && playerContainer.parentElement.classList.contains("active");
-        const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
-        if ((index === 0 || isCurrentActiveSlide) && autoPlaySetting && video.paused) {
-          video.play().catch(() => {});
+        Range: "bytes=0-3145728",
+      },
+    })
+      .then((res) => {
+        if (
+          res.status >= 200 &&
+          res.status < 300 &&
+          res.data &&
+          (res.data instanceof Blob || res.data.constructor?.name === "Blob")
+        ) {
+          const fileUrl = URL.createObjectURL(res.data);
+          video.src = fileUrl;
+
+          // Auto-play if active
+          const isCurrentActiveSlide =
+            playerContainer.parentElement &&
+            playerContainer.parentElement.classList.contains("active");
+          const autoPlaySetting =
+            localStorage.getItem("mori_autoplay") !== "false";
+          if (
+            (index === 0 || isCurrentActiveSlide) &&
+            autoPlaySetting &&
+            video.paused
+          ) {
+            video.play().catch(() => {});
+          }
+        } else {
+          throw new Error(`Invalid response (Status ${res.status})`);
         }
-      } else {
-        throw new Error(`Invalid response (Status ${res.status})`);
-      }
-    }).catch((err) => {
-      console.error("Native preview fetch failed, falling back:", err);
-      video.src = videoUrl;
-    });
+      })
+      .catch((err) => {
+        console.error("Native preview fetch failed, falling back:", err);
+        video.src = videoUrl;
+      });
   } else {
     video.src = videoUrl;
   }
@@ -94,19 +160,26 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     !posterThumb.includes("url=") &&
     !posterThumb.includes("token=");
 
+  const isLocalPoster =
+    posterThumb.startsWith("data:") ||
+    posterThumb.startsWith("blob:") ||
+    posterThumb.includes("_capacitor_file_") ||
+    posterThumb.startsWith("file://");
+
   if (
     posterThumb &&
     (posterThumb.includes("logo") ||
       posterThumb.includes("placeholder") ||
       posterThumb.includes("images/") ||
-      isIndownPoster)
+      isIndownPoster ||
+      (!navigator.onLine && !isLocalPoster))
   ) {
     posterThumb = "";
   }
-  video.poster = posterThumb;
+  if (posterThumb) {
+    video.poster = posterThumb;
+  }
 
-  // Add loading & error event handlers
-  const removeLoading = () => playerContainer.classList.remove("mori-loading");
   playerContainer.classList.add("mori-loading");
 
   video.onwaiting = () => playerContainer.classList.add("mori-loading");
@@ -117,20 +190,112 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   video.onstalled = removeLoading;
   video.onpause = removeLoading;
 
-  video.onerror = (e) => {
+  let isRetryingLocal = false;
+  let isRetryingRemote = false;
+
+  video.onerror = async (e) => {
+    console.error("Video element loading error:", video.error, video.src);
+    if (
+      !isRetryingLocal &&
+      (videoUrl.includes("_capacitor_file_") ||
+        videoUrl.startsWith("file://") ||
+        isLocal)
+    ) {
+      isRetryingLocal = true;
+      console.warn("Attempting local blob fallback for video...");
+      try {
+        let cleanPath = dl.rawUri || dl.rawPath || videoUrl;
+        if (cleanPath.includes("_capacitor_file_")) {
+          cleanPath = cleanPath.substring(
+            cleanPath.indexOf("_capacitor_file_") + 16,
+          );
+        }
+        if (cleanPath.startsWith("file://")) {
+          cleanPath = cleanPath.replace(/^file:\/\//, "");
+        }
+        const relPath = cleanPath
+          .replace(/^.*\/storage\/emulated\/0\//, "")
+          .replace(/^\//, "");
+
+        let res;
+        try {
+          res = await Filesystem.readFile({
+            path: relPath,
+            directory: "EXTERNAL_STORAGE",
+          });
+        } catch (_) {}
+
+        if (!res) {
+          try {
+            res = await Filesystem.readFile({ path: cleanPath });
+          } catch (_) {}
+        }
+
+        if (res && res.data) {
+          const byteChars = atob(res.data);
+          const byteArr = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteArr[i] = byteChars.charCodeAt(i);
+          }
+          const mimeType = (dl.type || "").toLowerCase().includes("mp3")
+            ? "audio/mp3"
+            : "video/mp4";
+          const blob = new Blob([byteArr], { type: mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+          playerContainer._blobUrl = blobUrl;
+          video.src = blobUrl;
+          video.load();
+          removeLoading();
+          return;
+        }
+      } catch (fbErr) {
+        console.warn("Blob fallback failed:", fbErr);
+      }
+    }
+
+    if (
+      !isRetryingRemote &&
+      dl.remoteUrl &&
+      video.src !== dl.remoteUrl &&
+      navigator.onLine
+    ) {
+      isRetryingRemote = true;
+      console.warn("Falling back to remote stream URL:", dl.remoteUrl);
+      video.src = dl.remoteUrl;
+      video.load();
+      return;
+    }
+
     removeLoading();
-    console.error("Video element loading error:", video.error);
-    if (posterThumb && !playerContainer.querySelector(".fallback-img")) {
-      const fallbackImg = document.createElement("img");
-      fallbackImg.className = "fallback-img";
-      fallbackImg.src = posterThumb;
-      fallbackImg.style.width = "100%";
-      fallbackImg.style.height = "100%";
-      fallbackImg.style.objectFit = "contain";
-      fallbackImg.style.position = "absolute";
-      fallbackImg.style.top = "0";
-      fallbackImg.style.left = "0";
-      playerContainer.appendChild(fallbackImg);
+    if (bigPlay && bigPlay.parentNode) bigPlay.remove();
+    const ctrlEl = playerContainer.querySelector(".mori-player-controls");
+    if (ctrlEl) ctrlEl.remove();
+
+    if (!playerContainer.querySelector(".mori-player-error")) {
+      const errOverlay = document.createElement("div");
+      errOverlay.className = "mori-player-error";
+      errOverlay.style.position = "absolute";
+      errOverlay.style.top = "0";
+      errOverlay.style.left = "0";
+      errOverlay.style.width = "100%";
+      errOverlay.style.height = "100%";
+      errOverlay.style.backgroundColor = "rgba(0,0,0,0.9)";
+      errOverlay.style.display = "flex";
+      errOverlay.style.flexDirection = "column";
+      errOverlay.style.alignItems = "center";
+      errOverlay.style.justifyContent = "center";
+      errOverlay.style.color = "#fff";
+      errOverlay.style.zIndex = "10";
+      errOverlay.style.padding = "20px";
+      errOverlay.style.textAlign = "center";
+
+      errOverlay.innerHTML = `
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="#fff" style="margin-bottom:12px">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <div style="font-weight:bold;font-size:15px;margin-bottom:8px">${translations[currentLang][videoUrl.includes("_capacitor_file_") || videoUrl.startsWith("file://") || videoUrl.startsWith("content://") ? "player-error-file" : "player-error-stream"]}</div>
+      `;
+      playerContainer.appendChild(errOverlay);
     }
   };
 
@@ -138,7 +303,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   playerContainer.appendChild(video);
 
   const bigPlay = document.createElement("div");
-  bigPlay.className = "mori-player-big-play";
+  bigPlay.className = "mori-player-big-play visible";
+  bigPlay.style.cursor = "pointer";
   bigPlay.innerHTML = `<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
   playerContainer.appendChild(bigPlay);
 
@@ -196,6 +362,7 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   };
 
   video.onplay = () => {
+    removeLoading();
     playIcon.classList.add("hidden");
     pauseIcon.classList.remove("hidden");
     bigPlay.classList.remove("visible");
@@ -212,23 +379,17 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     if (e) e.stopPropagation();
     if (video.paused) {
       video.loop = localStorage.getItem("mori_loop") !== "false";
-      video.play().catch(() => {});
+      video.play().catch((err) => {
+        console.warn("video.play() failed:", err);
+      });
     } else {
       video.pause();
     }
   };
 
-  playerContainer.onclick = (e) => {
-    if (e) e.stopPropagation();
-    if (Date.now() - lastShowTime < 300) return;
-
-    if (!playerContainer.classList.contains("touching")) {
-      showControls();
-    } else {
-      togglePlay(e);
-    }
-  };
+  bigPlay.onclick = togglePlay;
   playBtn.onclick = togglePlay;
+  video.onclick = togglePlay;
 
   video.ontimeupdate = updateProgress;
   video.onloadedmetadata = () => {

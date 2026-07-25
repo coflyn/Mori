@@ -10,7 +10,7 @@ export const {
   Haptics,
 } = window.Capacitor?.Plugins || {};
 
-import { translations } from "./i18n.js";
+import { translations } from "../i18n/index.js";
 
 export let currentLang = "en";
 export function setUtilsState(state) {
@@ -106,44 +106,7 @@ export function extractFinalUrl(input) {
   return { url: raw, isRender };
 }
 
-export function cleanUrl(url) {
-  if (!url) return "";
-  try {
-    const u = new URL(url);
-    // Remove common tracking/referral params
-    const trackerParams = [
-      "igsh",
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "s",
-      "t",
-    ];
-    trackerParams.forEach((p) => u.searchParams.delete(p));
-
-    if (u.hostname.includes("tiktok.com")) {
-      u.search = ""; // TikTok usually has long tracking strings
-    }
-
-    if (u.hostname.includes("youtube.com") || u.hostname.includes("youtu.be")) {
-      // Keep "v" for youtube.com and everything for youtu.be paths
-      if (u.hostname.includes("youtube.com") && u.searchParams.has("v")) {
-        const v = u.searchParams.get("v");
-        u.search = "";
-        u.searchParams.set("v", v);
-      }
-    } else if (!u.hostname.includes("facebook.com")) {
-      // For most other platforms, strip query entirely for matching
-      if (!u.searchParams.has("id") && !u.searchParams.has("story_fbid")) {
-        u.search = "";
-      }
-    }
-
-    return u.href.replace(/\/$/, "");
-  } catch (e) {
-    return url.split("?")[0].replace(/\/$/, "");
-  }
-}
+export { cleanUrl, extractCleanUrl, getCleanUrl } from "./urlUtils.js";
 
 export function truncate(str, num = 80) {
   if (!str) return "";
@@ -152,20 +115,146 @@ export function truncate(str, num = 80) {
 
 // Toast Function
 export async function showToast(message) {
-  console.log("[TOAST]", message);
-  if (Toast) {
-    await Toast.show({ text: message, duration: "short", position: "bottom" });
-  } else {
-    const toastEl = document.createElement("div");
-    toastEl.className = "custom-toast";
-    toastEl.textContent = message;
-    document.body.appendChild(toastEl);
-    setTimeout(() => toastEl.classList.add("show"), 10);
-    setTimeout(() => {
-      toastEl.classList.remove("show");
-      setTimeout(() => toastEl.remove(), 300);
-    }, 3000);
+  if (
+    message &&
+    (message.includes("Saved to") ||
+      message.includes("Tersimpan di") ||
+      message.includes("保存されました"))
+  ) {
+    return;
   }
+  console.log("[TOAST]", message);
+  triggerHaptic("light");
+
+  const existingToasts = document.querySelectorAll(".custom-toast");
+  existingToasts.forEach((t) => t.remove());
+
+  const toastEl = document.createElement("div");
+  toastEl.className = "custom-toast";
+  toastEl.textContent = message;
+  document.body.appendChild(toastEl);
+
+  requestAnimationFrame(() => {
+    toastEl.classList.add("show");
+  });
+
+  setTimeout(() => {
+    toastEl.classList.remove("show");
+    setTimeout(() => toastEl.remove(), 300);
+  }, 2800);
+}
+
+// Floating Download Progress Toast
+export function showDownloadProgressToast(platform, type) {
+  const existing = document.body.querySelectorAll(".download-progress-toast");
+  existing.forEach((el) => el.remove());
+
+  const el = document.createElement("div");
+  el.className = "download-progress-toast";
+  el.innerHTML = `
+    <div class="dpt-header">
+      <span class="dpt-platform">${platform} · ${type}</span>
+      <span class="dpt-percent">0%</span>
+    </div>
+    <div class="dpt-bar-track">
+      <div class="dpt-bar-fill" id="dptBarFill"></div>
+    </div>
+    <div class="dpt-status">Preparing download...</div>
+  `;
+  document.body.appendChild(el);
+
+  requestAnimationFrame(() => el.classList.add("show"));
+}
+
+export function updateDownloadProgressToast(percent, statusText) {
+  const el = document.querySelector(".download-progress-toast");
+  if (
+    !el ||
+    el.classList.contains("completed") ||
+    el.classList.contains("failed")
+  )
+    return;
+
+  const fill = el.querySelector(".dpt-bar-fill");
+  const pct = el.querySelector(".dpt-percent");
+  const status = el.querySelector(".dpt-status");
+
+  if (typeof percent === "number" && !isNaN(percent)) {
+    const safePercent = Math.min(100, Math.max(0, percent));
+    if (fill) fill.style.width = `${safePercent}%`;
+    if (pct) pct.textContent = `${safePercent}%`;
+  }
+  if (status && statusText) status.textContent = statusText;
+}
+
+export function completeDownloadProgressToast(
+  titleText,
+  subtitleText,
+  autoDismissMs = 3000,
+) {
+  const el = document.querySelector(".download-progress-toast");
+  if (!el) return;
+
+  el.classList.add("completed");
+  const platform = el.querySelector(".dpt-platform");
+  const pct = el.querySelector(".dpt-percent");
+  const fill = el.querySelector(".dpt-bar-fill");
+  const status = el.querySelector(".dpt-status");
+
+  if (fill) fill.style.width = "100%";
+  if (pct) pct.textContent = "100%";
+  if (platform) platform.innerHTML = `${titleText || "Saved Successfully"}`;
+  if (status) status.textContent = subtitleText || "";
+
+  triggerHaptic("success");
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 350);
+  }, autoDismissMs);
+}
+
+export function failDownloadProgressToast(errorText, autoDismissMs = 3500) {
+  const el = document.querySelector(".download-progress-toast");
+  if (!el) return;
+
+  el.classList.add("failed");
+  const platform = el.querySelector(".dpt-platform");
+  const pct = el.querySelector(".dpt-percent");
+  const status = el.querySelector(".dpt-status");
+
+  if (pct) pct.textContent = "Error";
+  if (platform) platform.innerHTML = `Download Failed`;
+
+  let cleanErr = errorText || "Unknown error";
+  if (cleanErr.includes("http://") || cleanErr.includes("https://")) {
+    cleanErr = cleanErr.replace(/https?:\/\/[^\s]+/gi, (urlStr) => {
+      try {
+        const u = new URL(urlStr);
+        return u.hostname || "server";
+      } catch (e) {
+        return "server";
+      }
+    });
+  }
+
+  if (status) status.textContent = cleanErr;
+
+  triggerHaptic("heavy");
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 350);
+  }, autoDismissMs);
+}
+
+export function hideDownloadProgressToast(delay = 800) {
+  setTimeout(() => {
+    const el = document.querySelector(".download-progress-toast");
+    if (!el) return;
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 350);
+  }, delay);
 }
 
 // Haptic Feedback Helper
@@ -236,15 +325,29 @@ export function handleScrapeError(err, status = null) {
 export async function getVideoThumbnail(videoUri) {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.src = videoUri;
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "metadata";
+    let isCleanedUp = false;
+
+    const cleanup = () => {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
+      clearTimeout(timeout);
+      try {
+        video.removeEventListener("loadedmetadata", onMetadata);
+        video.removeEventListener("durationchange", onMetadata);
+        video.onseeked = null;
+        video.onerror = null;
+        if (video.src && video.src.startsWith("blob:")) {
+          URL.revokeObjectURL(video.src);
+        }
+        video.removeAttribute("src");
+        video.load();
+      } catch (e) {
+        console.warn("Video cleanup warning:", e);
+      }
+    };
 
     const timeout = setTimeout(() => {
-      video.src = "";
-      video.load();
+      cleanup();
       reject(new Error("Thumbnail timeout"));
     }, 10000);
 
@@ -263,16 +366,18 @@ export async function getVideoThumbnail(videoUri) {
     video.onseeked = async () => {
       try {
         const canvas = document.createElement("canvas");
-        const scale = 0.5; // Scale down for smaller file size
+        const scale = 0.5;
         canvas.width = (video.videoWidth || 640) * scale;
         canvas.height = (video.videoHeight || 360) * scale;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
-        clearTimeout(timeout);
-        video.src = "";
-        video.load();
+
+        // Free canvas context references
+        canvas.width = 0;
+        canvas.height = 0;
+        cleanup();
 
         if (window.Capacitor?.isNativePlatform() && Filesystem) {
           const fileName = `thumb_${Date.now()}.jpg`;
@@ -281,28 +386,35 @@ export async function getVideoThumbnail(videoUri) {
             data: dataUrl.split(",")[1],
             directory: "CACHE",
           });
-          resolve(fileName); // Return only filename to save in history
+          resolve(fileName);
         } else {
           resolve(dataUrl);
         }
       } catch (e) {
+        cleanup();
         console.error("Canvas thumbnail error:", e);
         reject(e);
       }
     };
 
     video.onerror = (e) => {
-      clearTimeout(timeout);
+      cleanup();
       console.error("Video thumbnail element error:", e);
       reject(new Error("Video error"));
     };
 
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.src = videoUri;
     video.load();
   });
 }
 
 export function playCompletionSound() {
-  const isSoundEnabled = localStorage.getItem("mori_download_sound") !== "false";
+  const isSoundEnabled =
+    localStorage.getItem("mori_download_sound") !== "false";
   if (!isSoundEnabled) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -315,8 +427,8 @@ export function playCompletionSound() {
 
     // Ascending crisp 3-note chime (G5, C6, E6)
     const notes = [
-      { freq: 783.99, time: now, duration: 0.14, gain: 0.35 },       // G5
-      { freq: 1046.50, time: now + 0.09, duration: 0.16, gain: 0.4 }, // C6
+      { freq: 783.99, time: now, duration: 0.14, gain: 0.35 }, // G5
+      { freq: 1046.5, time: now + 0.09, duration: 0.16, gain: 0.4 }, // C6
       { freq: 1318.51, time: now + 0.18, duration: 0.38, gain: 0.45 }, // E6
     ];
 
@@ -344,7 +456,10 @@ export function playCompletionSound() {
 
 let wakeLockSentinel = null;
 export async function requestWakeLock() {
-  if (localStorage.getItem("mori_keep_awake") === "true" && "wakeLock" in navigator) {
+  if (
+    localStorage.getItem("mori_keep_awake") === "true" &&
+    "wakeLock" in navigator
+  ) {
     try {
       if (!wakeLockSentinel) {
         wakeLockSentinel = await navigator.wakeLock.request("screen");

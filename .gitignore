@@ -13,6 +13,7 @@ android/app/src/main/assets/public
 *.aab
 *.ipa
 *.xcarchive
+*.keystore
 android/captures/
 
 # iOS & Capacitor

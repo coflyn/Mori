@@ -18,9 +18,9 @@ import {
   scrapeFacebook,
   scrapeBandcamp,
   scrapePixiv,
-} from "./scrapers.js";
+} from "./scrapers/index.js";
 
-import { translations } from "./i18n.js";
+import { translations } from "./i18n/index.js";
 import {
   setUIState,
   renderResult,
@@ -48,9 +48,14 @@ import {
   triggerHaptic,
   requestWakeLock,
   releaseWakeLock,
-} from "./utils.js";
+} from "./utils/index.js";
 
-const APP_VERSION = "4.0.0";
+import {
+  renderScraperListContainer,
+  checkAllScrapersHealth,
+} from "./utils/scraperHealth.js";
+
+const APP_VERSION = "4.1.0";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -152,6 +157,12 @@ darkModeToggle?.addEventListener("change", (e) => {
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("mori_theme", theme);
   applyColorAccent();
+  const lang = translations[currentLang] || translations.en;
+  showToast(
+    e.target.checked
+      ? lang["toast-darkmode-on"] || "Dark mode enabled"
+      : lang["toast-darkmode-off"] || "Light mode enabled",
+  );
 });
 
 // Color Accent Logic
@@ -199,6 +210,12 @@ if (autoPasteToggle) {
   autoPasteToggle.checked = localStorage.getItem("mori_auto_paste") !== "false";
   autoPasteToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_auto_paste", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autopaste-on"] || "Auto-paste enabled"
+        : lang["toast-autopaste-off"] || "Auto-paste disabled",
+    );
   });
 }
 
@@ -349,7 +366,9 @@ if (lockTypeSelect) {
       }
 
       const lang = translations[currentLang];
-      showToast(type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"]);
+      showToast(
+        type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"],
+      );
     });
   });
 }
@@ -370,7 +389,14 @@ settingsMenuItems.forEach((item) => {
     settingsMainMenu.classList.add("hidden");
     const targetPage = document.getElementById(targetId);
     if (targetPage) targetPage.classList.remove("hidden");
+    if (targetId === "settingsScraper") {
+      renderScraperListContainer();
+    }
   });
+});
+
+document.getElementById("btnTestAllScrapers")?.addEventListener("click", () => {
+  checkAllScrapersHealth();
 });
 
 settingsBackBtns.forEach((btn) => {
@@ -439,11 +465,14 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
   const menu = document.getElementById(menuId);
   if (!select || !text || !menu) return;
 
-  const defaultFallback = storageKey === "mori_prefer_server" ? "ask" : "default";
+  const defaultFallback =
+    storageKey === "mori_prefer_server" ? "ask" : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
-  const item = menu.querySelector(`[data-value="${currentVal}"]`) || menu.querySelector('.dropdown-item');
+  const item =
+    menu.querySelector(`[data-value="${currentVal}"]`) ||
+    menu.querySelector(".dropdown-item");
   if (item) {
     text.textContent = item.textContent;
   }
@@ -487,6 +516,11 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
       if (storageKey === "mori_accent") applyColorAccent();
       if (storageKey === "mori_font") applyFont();
       if (storageKey === "mori_lang") switchLanguage(val);
+
+      const labelText =
+        select.closest(".settings-item")?.querySelector(".settings-title span")
+          ?.textContent || "Setting";
+      showToast(`${labelText}: ${item.textContent.trim()}`);
     });
   });
 }
@@ -559,27 +593,45 @@ const autoAnalyzeToggle = document.getElementById("autoAnalyzeToggle");
 if (autoAnalyzeToggle) {
   autoAnalyzeToggle.checked =
     localStorage.getItem("mori_auto_analyze") === "true";
-  autoAnalyzeToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_auto_analyze", e.target.checked),
-  );
+  autoAnalyzeToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_analyze", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoanalyze-on"] || "Auto-analyze enabled"
+        : lang["toast-autoanalyze-off"] || "Auto-analyze disabled",
+    );
+  });
 }
 
 const autoClearInputToggle = document.getElementById("autoClearInputToggle");
 if (autoClearInputToggle) {
   autoClearInputToggle.checked =
     localStorage.getItem("mori_auto_clear_input") === "true";
-  autoClearInputToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_auto_clear_input", e.target.checked),
-  );
+  autoClearInputToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_clear_input", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoclearinput-on"] || "Auto-clear input enabled"
+        : lang["toast-autoclearinput-off"] || "Auto-clear input disabled",
+    );
+  });
 }
 
 const downloadSoundToggle = document.getElementById("downloadSoundToggle");
 if (downloadSoundToggle) {
   downloadSoundToggle.checked =
     localStorage.getItem("mori_download_sound") !== "false";
-  downloadSoundToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_download_sound", e.target.checked),
-  );
+  downloadSoundToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_download_sound", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-sound-on"] || "Completion sound enabled"
+        : lang["toast-sound-off"] || "Completion sound disabled",
+    );
+  });
 }
 
 const headerQuoteToggle = document.getElementById("headerQuoteToggle");
@@ -599,6 +651,12 @@ if (headerQuoteToggle) {
       if (e.target.checked) headerDesc.classList.remove("hidden");
       else headerDesc.classList.add("hidden");
     }
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-quote-on"] || "Header quote enabled"
+        : lang["toast-quote-off"] || "Header quote disabled",
+    );
   });
 }
 
@@ -612,12 +670,19 @@ if (greetingToggle) {
     if (typeof updateGreeting === "function") {
       updateGreeting();
     }
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-greeting-on"] || "Home greeting enabled"
+        : lang["toast-greeting-off"] || "Home greeting disabled",
+    );
   });
 }
 
 const footerQuoteToggle = document.getElementById("footerQuoteToggle");
 if (footerQuoteToggle) {
-  const isShowFooter = localStorage.getItem("mori_show_footer_quote") !== "false";
+  const isShowFooter =
+    localStorage.getItem("mori_show_footer_quote") !== "false";
   footerQuoteToggle.checked = isShowFooter;
   const footerQuoteEl = document.querySelector(".about-quote");
   if (footerQuoteEl) {
@@ -632,32 +697,56 @@ if (footerQuoteToggle) {
       if (e.target.checked) footerQuoteEl.classList.remove("hidden");
       else footerQuoteEl.classList.add("hidden");
     }
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-footerquote-on"] || "Footer tagline enabled"
+        : lang["toast-footerquote-off"] || "Footer tagline disabled",
+    );
   });
 }
 
 const autoRetryToggle = document.getElementById("autoRetryToggle");
 if (autoRetryToggle) {
   autoRetryToggle.checked = localStorage.getItem("mori_auto_retry") !== "false";
-  autoRetryToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_auto_retry", e.target.checked),
-  );
+  autoRetryToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_retry", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoretry-on"] || "Auto-retry engine enabled"
+        : lang["toast-autoretry-off"] || "Auto-retry engine disabled",
+    );
+  });
 }
 
 const hapticToggle = document.getElementById("hapticToggle");
 if (hapticToggle) {
   hapticToggle.checked = localStorage.getItem("mori_haptic") !== "false";
-  hapticToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_haptic", e.target.checked),
-  );
+  hapticToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_haptic", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-haptic-on"] || "Haptic vibration enabled"
+        : lang["toast-haptic-off"] || "Haptic vibration disabled",
+    );
+  });
 }
 
 const autoFolderToggle = document.getElementById("autoFolderToggle");
 if (autoFolderToggle) {
   autoFolderToggle.checked =
     localStorage.getItem("mori_auto_folder") === "true";
-  autoFolderToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_auto_folder", e.target.checked),
-  );
+  autoFolderToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_folder", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autofolder-on"] || "Platform subfolders enabled"
+        : lang["toast-autofolder-off"] || "Platform subfolders disabled",
+    );
+  });
 }
 
 const keepAwakeToggle = document.getElementById("keepAwakeToggle");
@@ -667,6 +756,12 @@ if (keepAwakeToggle) {
     localStorage.setItem("mori_keep_awake", e.target.checked);
     if (e.target.checked) requestWakeLock();
     else releaseWakeLock();
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-keepawake-on"] || "Keep screen awake enabled"
+        : lang["toast-keepawake-off"] || "Keep screen awake disabled",
+    );
   });
 }
 
@@ -674,43 +769,73 @@ const autoUpdateToggle = document.getElementById("autoUpdateToggle");
 if (autoUpdateToggle) {
   autoUpdateToggle.checked =
     localStorage.getItem("mori_auto_update") !== "false";
-  autoUpdateToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_auto_update", e.target.checked),
-  );
+  autoUpdateToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_auto_update", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoupdate-on"] || "Auto check updates enabled"
+        : lang["toast-autoupdate-off"] || "Auto check updates disabled",
+    );
+  });
 }
 
 const forceIpv4Toggle = document.getElementById("forceIpv4Toggle");
 if (forceIpv4Toggle) {
   forceIpv4Toggle.checked = localStorage.getItem("mori_force_ipv4") === "true";
-  forceIpv4Toggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_force_ipv4", e.target.checked),
-  );
+  forceIpv4Toggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_force_ipv4", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-forceipv4-on"] || "Force IPv4 enabled"
+        : lang["toast-forceipv4-off"] || "Force IPv4 disabled",
+    );
+  });
 }
 
 const headerSpoofingToggle = document.getElementById("headerSpoofingToggle");
 if (headerSpoofingToggle) {
   headerSpoofingToggle.checked =
     localStorage.getItem("mori_header_spoofing") !== "false";
-  headerSpoofingToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_header_spoofing", e.target.checked),
-  );
+  headerSpoofingToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_header_spoofing", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-anti403-on"] || "Anti-403 header guard enabled"
+        : lang["toast-anti403-off"] || "Anti-403 header guard disabled",
+    );
+  });
 }
 
 const cellularWarningToggle = document.getElementById("cellularWarningToggle");
 if (cellularWarningToggle) {
   cellularWarningToggle.checked =
     localStorage.getItem("mori_cellular_warning") === "true";
-  cellularWarningToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_cellular_warning", e.target.checked),
-  );
+  cellularWarningToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_cellular_warning", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-cellularwarning-on"] || "Cellular data warning enabled"
+        : lang["toast-cellularwarning-off"] || "Cellular data warning disabled",
+    );
+  });
 }
 
 const bypassSslToggle = document.getElementById("bypassSslToggle");
 if (bypassSslToggle) {
   bypassSslToggle.checked = localStorage.getItem("mori_bypass_ssl") === "true";
-  bypassSslToggle.addEventListener("change", (e) =>
-    localStorage.setItem("mori_bypass_ssl", e.target.checked),
-  );
+  bypassSslToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_bypass_ssl", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-bypassssl-on"] || "Bypass SSL errors enabled"
+        : lang["toast-bypassssl-off"] || "Bypass SSL errors disabled",
+    );
+  });
 }
 
 const testLatencyBtn = document.getElementById("testLatencyBtn");
@@ -750,6 +875,12 @@ if (autoPlayToggle) {
   autoPlayToggle.checked = localStorage.getItem("mori_autoplay") !== "false";
   autoPlayToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_autoplay", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoplay-on"] || "Auto-play media enabled"
+        : lang["toast-autoplay-off"] || "Auto-play media disabled",
+    );
   });
 }
 
@@ -757,6 +888,12 @@ if (autoLoopToggle) {
   autoLoopToggle.checked = localStorage.getItem("mori_loop") !== "false";
   autoLoopToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_loop", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-autoloop-on"] || "Auto-loop video enabled"
+        : lang["toast-autoloop-off"] || "Auto-loop video disabled",
+    );
   });
 }
 
@@ -952,6 +1089,83 @@ async function clearCacheSilently() {
 
 // Language Logic
 
+function updateCustomSelectsUI() {
+  const lang = translations[currentLang] || translations.en;
+
+  const currentFilename = localStorage.getItem("mori_filename") || "default";
+  const filenameText = document.getElementById("filenameText");
+  if (filenameText)
+    filenameText.textContent =
+      lang[`filename-${currentFilename}`] || currentFilename;
+
+  const currentUA = localStorage.getItem("mori_user_agent") || "default";
+  const userAgentText = document.getElementById("userAgentText");
+  if (userAgentText)
+    userAgentText.textContent = lang[`ua-${currentUA}`] || currentUA;
+
+  const currentTimeout = localStorage.getItem("mori_request_timeout") || "30";
+  const requestTimeoutText = document.getElementById("requestTimeoutText");
+  if (requestTimeoutText)
+    requestTimeoutText.textContent =
+      lang[`timeout-${currentTimeout}`] || `${currentTimeout}s`;
+
+  const currentServer = localStorage.getItem("mori_prefer_server") || "ask";
+  const preferServerText = document.getElementById("preferServerText");
+  if (preferServerText)
+    preferServerText.textContent =
+      lang[`server-${currentServer}`] || currentServer;
+
+  const currentAccent = localStorage.getItem("mori_accent") || "black";
+  const colorAccentText = document.getElementById("colorAccentText");
+  if (colorAccentText)
+    colorAccentText.textContent =
+      lang[`accent-${currentAccent}`] || currentAccent;
+
+  const currentFont = localStorage.getItem("mori_font") || "default";
+  const fontText = document.getElementById("fontText");
+  if (fontText)
+    fontText.textContent =
+      lang[`font-${currentFont}`] ||
+      (currentFont === "default"
+        ? lang["font-default"] || "Default"
+        : currentFont);
+
+  const currentLimit =
+    localStorage.getItem("mori_history_limit") || "unlimited";
+  const historyLimitText = document.getElementById("historyLimitText");
+  if (historyLimitText)
+    historyLimitText.textContent =
+      lang[`history-${currentLimit}`] || currentLimit;
+
+  const currentClearDays =
+    localStorage.getItem("mori_auto_clear_days") || "off";
+  const autoClearDaysText = document.getElementById("autoClearDaysText");
+  if (autoClearDaysText)
+    autoClearDaysText.textContent =
+      lang[`days-${currentClearDays}`] || currentClearDays;
+
+  const currentCacheDays =
+    localStorage.getItem("mori_auto_clear_cache_days") || "off";
+  const autoClearCacheDaysText = document.getElementById(
+    "autoClearCacheDaysText",
+  );
+  if (autoClearCacheDaysText)
+    autoClearCacheDaysText.textContent =
+      lang[`days-${currentCacheDays}`] || currentCacheDays;
+
+  const currentBackup = localStorage.getItem("mori_auto_backup") || "off";
+  const autoBackupText = document.getElementById("autoBackupText");
+  if (autoBackupText) {
+    if (currentBackup === "off")
+      autoBackupText.textContent = lang["backup-off"] || "Off";
+    else if (currentBackup === "7")
+      autoBackupText.textContent = lang["backup-weekly"] || "Weekly (7 Days)";
+    else if (currentBackup === "30")
+      autoBackupText.textContent =
+        lang["backup-monthly"] || "Monthly (30 Days)";
+  }
+}
+
 function updateLanguageUI() {
   const lang = translations[currentLang];
   document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -970,6 +1184,7 @@ function updateLanguageUI() {
 
   document.documentElement.lang = currentLang;
 
+  updateCustomSelectsUI();
   updateGreeting();
   setUtilsState({ currentLang });
 }
@@ -1287,41 +1502,39 @@ function showConfirm(title, message, onConfirm) {
   confirmTitle.innerHTML = title;
   confirmMessage.innerHTML = message;
   confirmOverlay.classList.remove("hidden");
+  confirmOverlay.style.display = "flex";
 
   okConfirmBtn.onclick = () => {
     onConfirm();
-    confirmOverlay.classList.add("hidden");
+    hideConfirm();
   };
 
   cancelConfirmBtn.onclick = () => {
-    confirmOverlay.classList.add("hidden");
+    hideConfirm();
   };
 
   // Reset button states when showing
   cancelConfirmBtn.classList.remove("hidden");
   okConfirmBtn.textContent = "CONFIRM";
+  okConfirmBtn.style.color = "";
 }
 
 // History Edit Handlers
 editHistoryBtn?.addEventListener("click", () => {
   isEditingHistory = true;
   setUIState({ isEditingHistory });
-  editHistoryBtn.classList.add("hidden");
-  historyActions.classList.remove("hidden");
   renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 });
 
 doneEditBtn?.addEventListener("click", () => {
   isEditingHistory = false;
   setUIState({ isEditingHistory });
-  editHistoryBtn.classList.remove("hidden");
-  historyActions.classList.add("hidden");
   renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 });
 
 clearAllBtn?.addEventListener("click", () => {
   showConfirm(
-    "Clear All",
+    translations[currentLang]["btn-clear-all"] || "Clear All",
     "Are you sure you want to delete all download history?",
     async () => {
       // Clean up physical thumbnail files
@@ -1344,17 +1557,20 @@ clearAllBtn?.addEventListener("click", () => {
       localStorage.removeItem("mori_history");
       isEditingHistory = false;
       setUIState({ isEditingHistory });
-      editHistoryBtn.classList.remove("hidden");
-      historyActions.classList.add("hidden");
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
     },
   );
 });
 
 if (platformVal) {
-  platformVal.textContent = window.Capacitor?.isNativePlatform()
-    ? "Android"
-    : "Web Browser";
+  const capPlatform = window.Capacitor?.getPlatform();
+  if (capPlatform === "ios") {
+    platformVal.textContent = "iOS";
+  } else if (capPlatform === "android") {
+    platformVal.textContent = "Android";
+  } else {
+    platformVal.textContent = "Web Browser";
+  }
 }
 
 clearCacheBtn?.addEventListener("click", () => {
@@ -1690,11 +1906,17 @@ downloadBtn.addEventListener("click", async () => {
           confirmOverlay.classList.remove("hidden");
           confirmOverlay.style.display = "flex";
           const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("tiktokio");
+            };
             okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("tiktokio");
             };
             cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("snaptik");
             };
@@ -1719,11 +1941,17 @@ downloadBtn.addEventListener("click", async () => {
           confirmOverlay.classList.remove("hidden");
           confirmOverlay.style.display = "flex";
           const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("indown");
+            };
             okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("indown");
             };
             cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("downreels");
             };
@@ -1748,11 +1976,17 @@ downloadBtn.addEventListener("click", async () => {
           confirmOverlay.classList.remove("hidden");
           confirmOverlay.style.display = "flex";
           const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("gg");
+            };
             okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("gg");
             };
             cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("mobi");
             };
@@ -1783,11 +2017,17 @@ downloadBtn.addEventListener("click", async () => {
           confirmOverlay.classList.remove("hidden");
           confirmOverlay.style.display = "flex";
           const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("tweeload");
+            };
             okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("tweeload");
             };
             cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("tvd");
             };
@@ -1812,11 +2052,17 @@ downloadBtn.addEventListener("click", async () => {
           confirmOverlay.classList.remove("hidden");
           confirmOverlay.style.display = "flex";
           const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("spotidown");
+            };
             okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("spotidown");
             };
             cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
               hideConfirm();
               resolve("spotmate");
             };
@@ -1832,7 +2078,8 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeFacebook(url);
       } else if (
         url.includes("xiaohongshu.com") ||
-        url.includes("xhslink.com")
+        url.includes("xhslink.com") ||
+        url.includes("xhslink.cn")
       ) {
         data = await scrapeRedNote(url);
       } else if (url.includes("douyin.com")) {
@@ -1869,14 +2116,12 @@ downloadBtn.addEventListener("click", async () => {
           const match = existing.localFiles.find((lf) => lf.type === dl.type);
           if (match && Filesystem) {
             try {
-              // Verify file still exists on disk
-              const stat = await Filesystem.stat({
+              const uriObj = await Filesystem.getUri({
                 path: match.path,
                 directory: "EXTERNAL_STORAGE",
-              });
-              if (stat) {
-                dl.url = window.Capacitor.convertFileSrc(match.path);
-                dl.isLocal = true;
+              }).catch(() => null);
+              if (uriObj && uriObj.uri) {
+                dl.localUrl = window.Capacitor.convertFileSrc(uriObj.uri);
               }
             } catch (e) {
               console.warn(
@@ -1971,6 +2216,15 @@ closeModal?.addEventListener("click", hideModal);
 modalOverlay?.addEventListener("click", (e) => {
   if (e.target === modalOverlay) hideModal();
 });
+confirmOverlay?.addEventListener("click", (e) => {
+  if (e.target === confirmOverlay) {
+    if (typeof confirmOverlay._onDismissOutside === "function") {
+      confirmOverlay._onDismissOutside();
+    } else {
+      hideConfirm();
+    }
+  }
+});
 
 // History Callbacks
 function onHistoryItemClick(item) {
@@ -2004,6 +2258,36 @@ async function onHistoryDeleteClick(url) {
       }
     }
 
+    // Delete physical media file if exists
+    if (itemToDelete && itemToDelete.localFiles && Filesystem) {
+      for (const lf of itemToDelete.localFiles) {
+        if (lf.path) {
+          try {
+            let cleanPath = lf.path;
+            if (cleanPath.includes("_capacitor_file_")) {
+              cleanPath = cleanPath.substring(
+                cleanPath.indexOf("_capacitor_file_") + 16,
+              );
+            }
+            if (cleanPath.startsWith("file://")) {
+              cleanPath = cleanPath.replace(/^file:\/\//, "");
+            }
+            const relPath = cleanPath
+              .replace(/^.*\/storage\/emulated\/0\//, "")
+              .replace(/^\//, "");
+            await Filesystem.deleteFile({
+              path: relPath,
+              directory: "EXTERNAL_STORAGE",
+            }).catch(() => {
+              return Filesystem.deleteFile({ path: cleanPath });
+            });
+          } catch (e) {
+            console.warn("Could not delete local file:", e);
+          }
+        }
+      }
+    }
+
     history = history.filter((h) => h.url !== url);
     localStorage.setItem("mori_history", JSON.stringify(history));
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
@@ -2012,25 +2296,41 @@ async function onHistoryDeleteClick(url) {
 
 // Global Event for File Saved (Syncing UI and History)
 window.addEventListener("mori_file_saved", async (e) => {
-  const { url, path } = e.detail;
+  const { url, path, uri } = e.detail;
   const target = cleanUrl(url);
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
 
   const isVideo = path.toLowerCase().endsWith(".mp4");
   const isAudio = path.toLowerCase().endsWith(".mp3");
   const isImage = /\.(jpg|jpeg|png|webp)/i.test(path);
+  const fileUri = uri || path;
 
-  history = history.map((item) => {
-    if (cleanUrl(item.url) === target) {
+  let matched = false;
+  history = history.map((item, index) => {
+    const itemClean = cleanUrl(item.url);
+    const sourceClean = item.sourceUrl ? cleanUrl(item.sourceUrl) : "";
+    const isUrlMatch =
+      itemClean === target ||
+      (sourceClean && sourceClean === target) ||
+      (item.url && item.url.includes(url)) ||
+      (url && url.includes(item.url));
+
+    if (
+      !matched &&
+      (isUrlMatch ||
+        (index === 0 && (!item.localFiles || item.localFiles.length === 0)))
+    ) {
+      matched = true;
       const localFiles = item.localFiles || [];
       if (!localFiles.find((f) => f.path === path)) {
         localFiles.push({
           path,
+          uri: fileUri,
           type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
           thumbnail: null,
         });
       }
-      return { ...item, localFiles, localUri: path };
+      return { ...item, localFiles, localUri: fileUri };
     }
     return item;
   });
@@ -2048,7 +2348,7 @@ window.addEventListener("mori_file_saved", async (e) => {
 
   if (isVideo && window.Capacitor) {
     try {
-      const videoSrc = window.Capacitor.convertFileSrc(path);
+      const videoSrc = window.Capacitor.convertFileSrc(fileUri);
       const localThumbnail = await getVideoThumbnail(videoSrc);
 
       if (localThumbnail) {
@@ -2063,8 +2363,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
-              versionCode: 9,
-              versionName: "4.0.0",
+              versionCode: 10,
+              versionName: "4.1.0",
             };
           }
           return item;
@@ -2100,7 +2400,10 @@ function saveToHistory(result, url) {
     title: cleanTitle,
     thumbnail: result.thumbnail,
     url: url, // Keep the latest URL version
+    sourceUrl: result.sourceUrl || url,
     timestamp: Date.now(),
+    downloads:
+      result.downloads || (existingItem ? existingItem.downloads || [] : []),
     localFiles: existingItem ? existingItem.localFiles || [] : [],
     localUri: existingItem ? existingItem.localUri : null,
     localThumbnail: existingItem ? existingItem.localThumbnail : null,
@@ -2152,18 +2455,24 @@ function autoClearOldHistory() {
 }
 
 function autoClearOldCache() {
-  const cacheDaysVal = localStorage.getItem("mori_auto_clear_cache_days") || "off";
+  const cacheDaysVal =
+    localStorage.getItem("mori_auto_clear_cache_days") || "off";
   if (cacheDaysVal === "off") return;
 
   const days = parseInt(cacheDaysVal, 10);
   if (isNaN(days) || days <= 0) return;
 
-  const lastCleanup = parseInt(localStorage.getItem("mori_last_cache_cleanup_ts") || "0", 10);
+  const lastCleanup = parseInt(
+    localStorage.getItem("mori_last_cache_cleanup_ts") || "0",
+    10,
+  );
   const cutoffTime = days * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
   if (now - lastCleanup >= cutoffTime) {
-    console.log(`[CLEANUP] Executing auto clear cache (retention: ${days} days)`);
+    console.log(
+      `[CLEANUP] Executing auto clear cache (retention: ${days} days)`,
+    );
     clearCacheSilently();
     localStorage.setItem("mori_last_cache_cleanup_ts", String(now));
   }
@@ -2176,7 +2485,10 @@ function autoBackupDataCheck() {
   const days = parseInt(backupVal, 10);
   if (isNaN(days) || days <= 0) return;
 
-  const lastBackup = parseInt(localStorage.getItem("mori_last_backup_ts") || "0", 10);
+  const lastBackup = parseInt(
+    localStorage.getItem("mori_last_backup_ts") || "0",
+    10,
+  );
   const cutoffTime = days * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
@@ -2420,3 +2732,42 @@ setTimeout(() => {
     }
   }
 }, 2000);
+
+// Hardware Back Button Handler for Mobile
+let lastBackPressTime = 0;
+if (window.Capacitor?.isNativePlatform() && App) {
+  App.addListener("backButton", () => {
+    const openModal = document.querySelector(".modal-overlay:not(.hidden)");
+    if (openModal) {
+      openModal.classList.add("hidden");
+      return;
+    }
+
+    const activeSubPage = document.querySelector(
+      ".settings-sub-page:not(.hidden)",
+    );
+    if (activeSubPage) {
+      activeSubPage.classList.add("hidden");
+      document.getElementById("settingsMainMenu")?.classList.remove("hidden");
+      return;
+    }
+
+    const activeNavItem = document.querySelector(".nav-item.active");
+    const currentPage = activeNavItem
+      ? activeNavItem.getAttribute("data-page")
+      : "home";
+    if (currentPage !== "home") {
+      switchPage("home");
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastBackPressTime < 2000) {
+      App.exitApp();
+    } else {
+      lastBackPressTime = now;
+      const lang = translations[currentLang] || translations.en;
+      showToast(lang["toast-press-back-exit"] || "Press back again to exit");
+    }
+  });
+}
