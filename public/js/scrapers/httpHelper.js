@@ -67,14 +67,111 @@ export async function scraperFetch(options, serverName = "Server") {
     httpConfig.responseType = options.responseType;
 
   let response;
-  if (method === "POST") {
-    response = await CapacitorHttp.post(httpConfig);
-  } else if (method === "PUT") {
-    response = await CapacitorHttp.put(httpConfig);
-  } else if (method === "DELETE") {
-    response = await CapacitorHttp.delete(httpConfig);
+  const invoke =
+    window.__TAURI__?.core?.invoke ||
+    window.__TAURI_INTERNALS__?.invoke ||
+    window.__TAURI__?.invoke;
+
+  if (CapacitorHttp) {
+    if (method === "POST") {
+      response = await CapacitorHttp.post(httpConfig);
+    } else if (method === "PUT") {
+      response = await CapacitorHttp.put(httpConfig);
+    } else if (method === "DELETE") {
+      response = await CapacitorHttp.delete(httpConfig);
+    } else {
+      response = await CapacitorHttp.get(httpConfig);
+    }
+  } else if (invoke) {
+    // Native Rust reqwest for Tauri Desktop (100% CORS-free)
+    let fetchUrl = options.url;
+    if (options.params) {
+      const q = new URLSearchParams(options.params).toString();
+      if (q) fetchUrl += (fetchUrl.includes("?") ? "&" : "?") + q;
+    }
+
+    let bodyString = undefined;
+    if (options.data !== undefined) {
+      if (
+        typeof options.data === "object" &&
+        !(options.data instanceof FormData) &&
+        !(options.data instanceof URLSearchParams)
+      ) {
+        if (
+          headers["Content-Type"]?.includes(
+            "application/x-www-form-urlencoded",
+          )
+        ) {
+          bodyString = new URLSearchParams(options.data).toString();
+        } else {
+          bodyString = JSON.stringify(options.data);
+          if (!headers["Content-Type"])
+            headers["Content-Type"] = "application/json";
+        }
+      } else {
+        bodyString = String(options.data);
+      }
+    }
+
+    response = await invoke("tauri_http_request", {
+      url: fetchUrl,
+      method: method,
+      headers: headers,
+      body: bodyString,
+    });
   } else {
-    response = await CapacitorHttp.get(httpConfig);
+    // Standard browser fetch fallback
+    let fetchUrl = options.url;
+    if (options.params) {
+      const q = new URLSearchParams(options.params).toString();
+      if (q) fetchUrl += (fetchUrl.includes("?") ? "&" : "?") + q;
+    }
+
+    let body = undefined;
+    if (options.data !== undefined) {
+      if (
+        typeof options.data === "object" &&
+        !(options.data instanceof FormData) &&
+        !(options.data instanceof URLSearchParams)
+      ) {
+        if (
+          headers["Content-Type"]?.includes(
+            "application/x-www-form-urlencoded",
+          )
+        ) {
+          body = new URLSearchParams(options.data).toString();
+        } else {
+          body = JSON.stringify(options.data);
+          if (!headers["Content-Type"])
+            headers["Content-Type"] = "application/json";
+        }
+      } else {
+        body = options.data;
+      }
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      getRequestTimeout(),
+    );
+    const res = await fetch(fetchUrl, {
+      method,
+      headers,
+      body,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const resData =
+      options.responseType === "arraybuffer"
+        ? await res.arrayBuffer()
+        : await res.text();
+    response = {
+      status: res.status,
+      headers: Object.fromEntries(res.headers.entries()),
+      data: resData,
+    };
   }
 
   if (options.rawResponse) {

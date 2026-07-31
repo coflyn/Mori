@@ -14,6 +14,7 @@ import {
   scrapeSpotify,
   setSpotifySource,
   scrapePinterest,
+  setPinterestSource,
   scrapeAppleMusic,
   scrapeFacebook,
   scrapeBandcamp,
@@ -1886,10 +1887,8 @@ downloadBtn.addEventListener("click", async () => {
 
   try {
     let data;
-    if (CapacitorHttp) {
-      console.log("[NATIVE] Using CapacitorHttp for:", url);
-      const preferServer = localStorage.getItem("mori_prefer_server") || "ask";
-      if (url.includes("tiktok.com")) {
+    const preferServer = localStorage.getItem("mori_prefer_server") || "ask";
+    if (url.includes("tiktok.com")) {
         if (preferServer === "server1") setTikTokSource("tiktokio");
         else if (preferServer === "server2") setTikTokSource("snaptik");
         else setTikTokSource(null);
@@ -1897,7 +1896,7 @@ downloadBtn.addEventListener("click", async () => {
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
           confirmMessage.textContent =
-            "Server 1: Multi Feature (HD Video · MP3 · Photo Slideshow)\nServer 2: Fast & Direct (HD/MP4 Video · Photo Slideshow)";
+            "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
           if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
           if (okConfirmBtn) {
             okConfirmBtn.textContent = "SERVER 1";
@@ -1932,7 +1931,7 @@ downloadBtn.addEventListener("click", async () => {
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
           confirmMessage.textContent =
-            "Server 1: Reels, Posts & Photos\nServer 2: Reels, Posts & Photos";
+            "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
           if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
           if (okConfirmBtn) {
             okConfirmBtn.textContent = "SERVER 1";
@@ -1967,7 +1966,7 @@ downloadBtn.addEventListener("click", async () => {
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
           confirmMessage.textContent =
-            "Server 1: Multi Resolution (1080p - 360p + MP3)\nServer 2: Fast & Stable (MP4 / MP3)";
+            "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
           if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
           if (okConfirmBtn) {
             okConfirmBtn.textContent = "SERVER 1";
@@ -2008,7 +2007,7 @@ downloadBtn.addEventListener("click", async () => {
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
           confirmMessage.textContent =
-            "Server 1: Multi Resolution (HD / SD Video)\nServer 2: Multi Resolution (HD / SD Video)";
+            "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
           if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
           if (okConfirmBtn) {
             okConfirmBtn.textContent = "SERVER 1";
@@ -2037,13 +2036,13 @@ downloadBtn.addEventListener("click", async () => {
         }
       } else if (url.includes("spotify.com")) {
         if (preferServer === "server1") setSpotifySource("spotidown");
-        else if (preferServer === "server2") setSpotifySource("spotmate");
+        else if (preferServer === "server2") setSpotifySource("soundloaders");
         else setSpotifySource(null);
         data = await scrapeSpotify(url);
         if (data && data.requireSource) {
           confirmTitle.textContent = "Choose Server";
           confirmMessage.textContent =
-            "Server 1: High Quality Audio (MP3)\nServer 2: High Quality Audio (MP3)";
+            "Server 1: SpotiDown (MP3)\nServer 2: SoundLoaders (MP3)";
           if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
           if (okConfirmBtn) {
             okConfirmBtn.textContent = "SERVER 1";
@@ -2064,14 +2063,47 @@ downloadBtn.addEventListener("click", async () => {
             cancelConfirmBtn.onclick = () => {
               confirmOverlay._onDismissOutside = null;
               hideConfirm();
-              resolve("spotmate");
+              resolve("soundloaders");
             };
           });
           setSpotifySource(chosen);
           data = await scrapeSpotify(url);
         }
       } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
+        if (preferServer === "server1") setPinterestSource("pindown");
+        else if (preferServer === "server2") setPinterestSource("pindirect");
+        else setPinterestSource(null);
         data = await scrapePinterest(url);
+        if (data && data.requireSource) {
+          confirmTitle.textContent = "Choose Server";
+          confirmMessage.textContent =
+            "Server 1: PinDown (Image/Video)\nServer 2: PinDirect (Image/Video)";
+          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+          if (okConfirmBtn) {
+            okConfirmBtn.textContent = "SERVER 1";
+            okConfirmBtn.style.color = "var(--primary)";
+          }
+          confirmOverlay.classList.remove("hidden");
+          confirmOverlay.style.display = "flex";
+          const chosen = await new Promise((resolve) => {
+            confirmOverlay._onDismissOutside = () => {
+              hideConfirm();
+              resolve("pindown");
+            };
+            okConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
+              hideConfirm();
+              resolve("pindown");
+            };
+            cancelConfirmBtn.onclick = () => {
+              confirmOverlay._onDismissOutside = null;
+              hideConfirm();
+              resolve("pindirect");
+            };
+          });
+          setPinterestSource(chosen);
+          data = await scrapePinterest(url);
+        }
       } else if (url.includes("music.apple.com")) {
         data = await scrapeAppleMusic(url);
       } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
@@ -2100,10 +2132,6 @@ downloadBtn.addEventListener("click", async () => {
       } else {
         data = { status: false, message: "URL not supported yet." };
       }
-    } else {
-      console.log("[PROXY] Falling back to server proxy");
-      data = await scrapeProxy(url);
-    }
 
     if (data && data.status) {
       // SMART LOCAL DETECTION: Check if we have this content in history and on disk

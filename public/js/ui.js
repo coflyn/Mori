@@ -971,8 +971,21 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     return;
   }
 
-  if (!Filesystem) {
-    window.open(url, "_blank");
+  const tauriInvoke =
+    window.__TAURI__?.core?.invoke ||
+    window.__TAURI_INTERNALS__?.invoke ||
+    window.__TAURI__?.invoke;
+
+  if (!Filesystem && !tauriInvoke) {
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "";
+      a.target = "_blank";
+      a.click();
+    } catch (_) {
+      window.open(url, "_blank");
+    }
     return;
   }
 
@@ -980,16 +993,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
   const progressContainer = document.getElementById("progressContainer");
   const originalContent = btn ? btn.innerHTML : "";
 
-  // Request permissions for Android FIRST before showing progress toast
+  // Request permissions for Android FIRST before showing progress toast (non-blocking for Android 13+)
   if (window.Capacitor?.getPlatform() === "android") {
     try {
       const status = await Filesystem.checkPermissions();
       if (status.publicStorage !== "granted") {
-        const request = await Filesystem.requestPermissions();
-        if (request.publicStorage !== "granted") {
-          showToast(translations[currentLang]["toast-storage-denied"]);
-          return;
-        }
+        await Filesystem.requestPermissions().catch(() => {});
       }
     } catch (e) {
       console.warn("Permission check failed", e);
@@ -1068,26 +1077,38 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     // Remove any existing listeners first to avoid double-firing
     if (window._moriProgressListener) {
-      await window._moriProgressListener.remove();
+      try {
+        await window._moriProgressListener.remove();
+      } catch (_) {}
+      window._moriProgressListener = null;
     }
 
-    // Listen for real progress
-    window._moriProgressListener = await Filesystem.addListener(
-      "downloadProgress",
-      (progress) => {
-        realProgressReceived = true;
-        let percentage = 0;
-        if (progress.contentLength > 0) {
-          percentage = Math.round(
-            (progress.bytesWritten / progress.contentLength) * 100,
-          );
-        } else if (progress.bytesWritten > 0) {
-          percentage = Math.min(95, Math.round(progress.bytesWritten / 10240));
-        }
+    // Listen for real progress if Filesystem exists
+    if (Filesystem?.addListener) {
+      try {
+        window._moriProgressListener = await Filesystem.addListener(
+          "downloadProgress",
+          (progress) => {
+            realProgressReceived = true;
+            let percentage = 0;
+            if (progress.contentLength > 0) {
+              percentage = Math.round(
+                (progress.bytesWritten / progress.contentLength) * 100,
+              );
+            } else if (progress.bytesWritten > 0) {
+              percentage = Math.min(
+                95,
+                Math.round(progress.bytesWritten / 10240),
+              );
+            }
 
-        updateProgress(Math.min(95, percentage), "Downloading...");
-      },
-    );
+            updateProgress(Math.min(95, percentage), "Downloading...");
+          },
+        );
+      } catch (e) {
+        console.warn("Could not attach Filesystem progress listener:", e);
+      }
+    }
 
     const isAudio = /mp3|audio|128k|48k|m4a/i.test(type);
     const isImage =
@@ -1129,6 +1150,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
     const musicSubfolder =
       localStorage.getItem("mori_music_path") || "Mori/Music";
+    const targetFolder = isAudio ? musicSubfolder : videoSubfolder;
     let fullPath = isAudio
       ? `Download/${musicSubfolder}`
       : `Download/${videoSubfolder}`;
@@ -1157,27 +1179,38 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       fullPath = `${fullPath}/${platformFolder}`;
     }
 
-    await Filesystem.mkdir({
-      path: fullPath,
-      directory: "EXTERNAL_STORAGE",
-      recursive: true,
-    }).catch((e) => {
-      console.warn("Mkdir failed, might already exist or permission issue", e);
-    });
+    const directoriesToTry = ["EXTERNAL_STORAGE", "DOCUMENTS", "EXTERNAL"];
+    let successfulDir = "EXTERNAL_STORAGE";
 
-    // Ensure unique filename if file already exists on disk (so Gallery saves each download separately)
-    try {
-      const checkExist = await Filesystem.stat({
-        path: fullPath + "/" + fileName,
-        directory: "EXTERNAL_STORAGE",
-      }).catch(() => null);
-      if (checkExist) {
-        const dotIdx = fileName.lastIndexOf(".");
-        const baseName =
-          dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
-        fileName = `${baseName}_${Date.now()}.${ext}`;
+    if (Filesystem) {
+      for (const dir of directoriesToTry) {
+        await Filesystem.mkdir({
+          path: fullPath,
+          directory: dir,
+          recursive: true,
+        }).catch((e) => {
+          console.warn(`Mkdir on ${dir} failed or exists:`, e);
+        });
       }
-    } catch (e) {}
+
+      // Ensure unique filename if file already exists on disk (so Gallery saves each download separately)
+      try {
+        let checkExist = null;
+        for (const dir of directoriesToTry) {
+          checkExist = await Filesystem.stat({
+            path: fullPath + "/" + fileName,
+            directory: dir,
+          }).catch(() => null);
+          if (checkExist) break;
+        }
+        if (checkExist) {
+          const dotIdx = fileName.lastIndexOf(".");
+          const baseName =
+            dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
+          fileName = `${baseName}_${Date.now()}.${ext}`;
+        }
+      } catch (e) {}
+    }
 
     if (btn) {
       btn.innerHTML =
@@ -1304,41 +1337,68 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const isAutoRetry = localStorage.getItem("mori_auto_retry") !== "false";
     const maxAttempts = isAutoRetry ? 3 : 1;
 
-    while (attempts < maxAttempts && !savedFile) {
-      attempts++;
+    if (tauriInvoke) {
       try {
-        if (attempts > 1) {
-          // Silent auto-retry: retry in background while keeping progress UI at 85% / Downloading...
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-        savedFile = await Filesystem.downloadFile({
+        const desktopRes = await tauriInvoke("tauri_download_file", {
           url: actualDownloadUrl,
-          path: fullPath + "/" + fileName,
-          directory: "EXTERNAL_STORAGE",
-          progress: true,
-          headers: downloadHeaders,
+          filename: fileName,
+          folder: targetFolder || "",
+          headers: downloadHeaders || {},
         });
-      } catch (dlErr) {
-        console.warn(`Download attempt ${attempts} failed:`, dlErr);
-        if (attempts >= maxAttempts) {
+        if (desktopRes && desktopRes.status) {
+          savedFile = { path: desktopRes.path, uri: desktopRes.uri };
+        }
+      } catch (tErr) {
+        console.warn("Tauri native download failed:", tErr);
+        throw new Error(
+          typeof tErr === "string"
+            ? tErr
+            : tErr?.message || JSON.stringify(tErr),
+        );
+      }
+    }
+
+    if (!savedFile && Filesystem) {
+      for (const dir of directoriesToTry) {
+        if (savedFile) break;
+        attempts = 0;
+        while (attempts < maxAttempts && !savedFile) {
+          attempts++;
           try {
-            const httpRes = await CapacitorHttp.get({
+            if (attempts > 1) {
+              // Silent auto-retry: retry in background while keeping progress UI at 85% / Downloading...
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+            savedFile = await Filesystem.downloadFile({
               url: actualDownloadUrl,
-              responseType: "blob",
+              path: fullPath + "/" + fileName,
+              directory: dir,
+              progress: true,
               headers: downloadHeaders,
             });
-            if (httpRes && httpRes.data && typeof httpRes.data === "string") {
-              await Filesystem.writeFile({
-                path: fullPath + "/" + fileName,
-                directory: "EXTERNAL_STORAGE",
-                data: httpRes.data,
-              });
-              savedFile = { path: fullPath + "/" + fileName };
-            } else {
-              throw dlErr;
+            successfulDir = dir;
+          } catch (dlErr) {
+            console.warn(`Download attempt ${attempts} on ${dir} failed:`, dlErr);
+            if (attempts >= maxAttempts) {
+              try {
+                const httpRes = await CapacitorHttp.get({
+                  url: actualDownloadUrl,
+                  responseType: "blob",
+                  headers: downloadHeaders,
+                });
+                if (httpRes && httpRes.data && typeof httpRes.data === "string") {
+                  await Filesystem.writeFile({
+                    path: fullPath + "/" + fileName,
+                    directory: dir,
+                    data: httpRes.data,
+                  });
+                  savedFile = { path: fullPath + "/" + fileName };
+                  successfulDir = dir;
+                }
+              } catch (fallbackErr) {
+                console.warn(`Http blob fallback on ${dir} failed:`, fallbackErr);
+              }
             }
-          } catch (fallbackErr) {
-            throw dlErr;
           }
         }
       }
@@ -1385,7 +1445,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       try {
         const uriObj = await Filesystem.getUri({
           path: savedFile.path,
-          directory: "EXTERNAL_STORAGE",
+          directory: successfulDir,
         });
         if (uriObj?.uri) savedUri = uriObj.uri;
       } catch (_) {}
@@ -1401,7 +1461,6 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const completeTitle =
       translations[currentLang]["toast-download-complete"] ||
       "Download Complete";
-    const targetFolder = isAudio ? musicSubfolder : videoSubfolder;
     completeDownloadProgressToast(
       completeTitle,
       `/Download/${targetFolder}`,

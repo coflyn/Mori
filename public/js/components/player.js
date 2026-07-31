@@ -53,12 +53,22 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     removeFallbackImg();
   };
 
-  if (isLocal && isNative) {
+  const tauriInvoke =
+    window.__TAURI__?.core?.invoke ||
+    window.__TAURI_INTERNALS__?.invoke ||
+    window.__TAURI__?.invoke;
+
+  const tauriConvertFileSrc =
+    window.__TAURI__?.core?.convertFileSrc ||
+    window.__TAURI_INTERNALS__?.convertFileSrc ||
+    window.__TAURI__?.convertFileSrc;
+
+  if (isLocal && (isNative || tauriConvertFileSrc || tauriInvoke)) {
     playerContainer.classList.add("mori-loading");
     let cleanPath = videoUrl || dl.rawPath || dl.rawUri;
 
     if (cleanPath.startsWith("content://")) {
-      const capSrc = window.Capacitor.convertFileSrc
+      const capSrc = window.Capacitor?.convertFileSrc
         ? window.Capacitor.convertFileSrc(cleanPath)
         : cleanPath;
       console.log("Loading content:// URI:", capSrc);
@@ -74,14 +84,23 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     if (cleanPath.startsWith("file://")) {
       cleanPath = cleanPath.replace(/^file:\/\//, "");
     }
-    if (!cleanPath.startsWith("/")) {
-      cleanPath = "/storage/emulated/0/" + cleanPath;
-    }
-    const rawFileUrl = "file://" + cleanPath;
-    const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
 
-    video.src = capSrc;
-    removeLoading();
+    if (tauriConvertFileSrc) {
+      const tauriSrc = tauriConvertFileSrc(cleanPath);
+      video.src = tauriSrc;
+      removeLoading();
+    } else if (isNative) {
+      if (!cleanPath.startsWith("/")) {
+        cleanPath = "/storage/emulated/0/" + cleanPath;
+      }
+      const rawFileUrl = "file://" + cleanPath;
+      const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
+
+      video.src = capSrc;
+      removeLoading();
+    } else {
+      video.src = "file://" + cleanPath;
+    }
   } else if (needsBypass && isNative && CapacitorHttp) {
     playerContainer.classList.add("mori-loading");
 
@@ -213,40 +232,64 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         if (cleanPath.startsWith("file://")) {
           cleanPath = cleanPath.replace(/^file:\/\//, "");
         }
-        const relPath = cleanPath
-          .replace(/^.*\/storage\/emulated\/0\//, "")
-          .replace(/^\//, "");
+        const mimeType = (dl.type || "").toLowerCase().includes("mp3")
+          ? "audio/mp3"
+          : "video/mp4";
 
-        let res;
-        try {
-          res = await Filesystem.readFile({
-            path: relPath,
-            directory: "EXTERNAL_STORAGE",
-          });
-        } catch (_) {}
-
-        if (!res) {
+        if (tauriInvoke) {
           try {
-            res = await Filesystem.readFile({ path: cleanPath });
-          } catch (_) {}
+            const bytes = await tauriInvoke("tauri_read_file_bytes", {
+              path: cleanPath,
+            });
+            if (bytes && bytes.length > 0) {
+              const blob = new Blob([new Uint8Array(bytes)], {
+                type: mimeType,
+              });
+              const blobUrl = URL.createObjectURL(blob);
+              playerContainer._blobUrl = blobUrl;
+              video.src = blobUrl;
+              video.load();
+              removeLoading();
+              return;
+            }
+          } catch (tErr) {
+            console.warn("Tauri read file fallback error:", tErr);
+          }
         }
 
-        if (res && res.data) {
-          const byteChars = atob(res.data);
-          const byteArr = new Uint8Array(byteChars.length);
-          for (let i = 0; i < byteChars.length; i++) {
-            byteArr[i] = byteChars.charCodeAt(i);
+        if (Filesystem) {
+          const relPath = cleanPath
+            .replace(/^.*\/storage\/emulated\/0\//, "")
+            .replace(/^\//, "");
+
+          let res;
+          try {
+            res = await Filesystem.readFile({
+              path: relPath,
+              directory: "EXTERNAL_STORAGE",
+            });
+          } catch (_) {}
+
+          if (!res) {
+            try {
+              res = await Filesystem.readFile({ path: cleanPath });
+            } catch (_) {}
           }
-          const mimeType = (dl.type || "").toLowerCase().includes("mp3")
-            ? "audio/mp3"
-            : "video/mp4";
-          const blob = new Blob([byteArr], { type: mimeType });
-          const blobUrl = URL.createObjectURL(blob);
-          playerContainer._blobUrl = blobUrl;
-          video.src = blobUrl;
-          video.load();
-          removeLoading();
-          return;
+
+          if (res && res.data) {
+            const byteChars = atob(res.data);
+            const byteArr = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) {
+              byteArr[i] = byteChars.charCodeAt(i);
+            }
+            const blob = new Blob([byteArr], { type: mimeType });
+            const blobUrl = URL.createObjectURL(blob);
+            playerContainer._blobUrl = blobUrl;
+            video.src = blobUrl;
+            video.load();
+            removeLoading();
+            return;
+          }
         }
       } catch (fbErr) {
         console.warn("Blob fallback failed:", fbErr);

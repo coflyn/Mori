@@ -12,6 +12,7 @@ android/app/src/main/assets/public
 *.apk
 *.aab
 *.ipa
+*.dmg
 *.xcarchive
 *.keystore
 android/captures/
@@ -34,3 +35,7 @@ npm-debug.log*
 .vscode/
 .idea/
 *.iml
+
+# Tauri Desktop Build
+src-tauri/target/
+src-tauri/gen/

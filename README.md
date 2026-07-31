@@ -5,12 +5,12 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.1.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.2.0-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
 
 <div align="center">
@@ -32,7 +32,21 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in v4.1.0
+## What's New in v4.2.0
+
+- **macOS & Windows Desktop Support (Tauri v2)**: Added native desktop application support for macOS (`.dmg`, `.app`) and Windows (`.exe`, `.msi`) powered by Tauri v2.
+- **Native CORS-Free Desktop HTTP Engine**: Integrated native Rust HTTP client (`tauri_http_request` via `reqwest`) to handle cross-origin network requests on Desktop, eliminating WebKit CORS blocks and header restriction errors (`Load failed`).
+- **Native Desktop File Downloading**: Implemented direct Rust disk writer (`tauri_download_file`), automatically saving downloaded media directly to user's native Downloads folder (`~/Downloads/Mori/` on macOS, `C:\Users\<Username>\Downloads\Mori\` on Windows).
+- **Desktop Local Media Preview Player**: Integrated Tauri native asset streaming protocol (`convertFileSrc`) and fallback Rust binary byte reader (`tauri_read_file_bytes`), enabling instant local video and audio playback in History across macOS and Windows.
+- **Pinterest Dual-Server & PinDirect**: Pinterest now has two selectable servers — **Server 1 (PinDown)** for scraper-based downloads and **Server 2 (PinDirect)** for direct extraction from Pinterest HTML. Users can choose via the server selection dialog.
+- **PinDown Image Classification Fix**: Fixed a bug where the PinDown scraper incorrectly classified image downloads as `VIDEO` type. Now only URLs ending with `.mp4` are marked as video, so image pins properly download as images.
+- **Pinterest Multi-Image Support**: PinDirect mode extracts all available original-resolution images from a pin page, including gallery pins with multiple photos.
+- **Spotify SoundLoaders Server Replacement**: Replaced the non-functional SpotMate server with **SoundLoaders** as Spotify Server 2. SoundLoaders integrates Turnstile challenge bypass via `/api/userverify` for reliable track downloads.
+- **Android Storage Permission & `EACCES` Fix**: Resolved `Permission denied (EACCES)` errors on Android 13+ and restricted devices. Removed hard permission check aborts for deprecated `WRITE_EXTERNAL_STORAGE` and implemented an automatic multi-directory fallback chain (`EXTERNAL_STORAGE` → `DOCUMENTS` → `EXTERNAL`), ensuring downloads succeed seamlessly across all Android versions (Android 10-15).
+- **Explicit Web Scraper Names in Server Selection Pop-ups**: Standardized the server selection modal text across all multi-server platforms (TikTok, Instagram, YouTube, Twitter, Spotify, Pinterest) to explicitly label each server with its official web scraper provider name (e.g. TikTokIO / SnapTik, InDown / DownReels, YTMP3.gg / YTMP3.mobi, TweeLoad / TVD, SpotiDown / SoundLoaders, PinDown / PinDirect).
+- **SpotMate Removed**: The SpotMate scraper has been fully removed from the codebase.
+
+## Previous Updates v4.1.0
 
 - **Monotonic Floating Download Progress Toast & Zombie Timer Fix**: Refactored progress animation with strict monotonic state tracking (`updateProgress`) and global timer lifecycle management (`window._moriActiveSimInterval`), ensuring progress width never jumps or animates backwards during retries, errors, or subsequent download attempts.
 - **Clean Single-Percentage UI**: Eliminated redundant percentage text from download action buttons and progress toast status footers. Clean percentage numbers are shown exclusively in the top-right progress toast badge (`.dpt-percent`).
@@ -62,45 +76,23 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **New "Scraper Engine & Status" Settings Sub-Page**: Added a dedicated 6th settings sub-page allowing users to monitor real-time online/offline server health, active API engines, and round-trip response latency (ms) across all 14 supported platform scrapers. Features a clean, justified 2-column card layout displaying server endpoints (e.g. SnapTik, TikTokIO) with their respective latency badges (ms) positioned directly below each server title (Douyin moved after Spotify, filler words like "Engine/Extractor" removed).
 - **Enhanced Memory & Canvas Resource Cleanup**: Upgraded `getVideoThumbnail` with a centralized resource cleanup engine that revokes Object URLs (`blob:`), unbinds media event listeners, and resets `<canvas>` dimensions immediately upon completion or error.
 
-## Previous Updates v4.0.0
-
-- **iOS Support (Capacitor)**: Mori now runs on iOS! Added full Xcode project structure, iOS-native Capacitor plugins, and platform-agnostic file system handling via `@capacitor/filesystem`.
-- **Reorganized 5-Tier Settings Suite**: Restructured all app settings into 5 perfectly categorized sub-pages: **General** (Language, Auto-Paste, Auto-Analyze, Privacy Lock, Lock Type, Incognito, Keep Screen Awake, Auto Check Updates, Auto-Clear Input, Auto-Download Link, Auto-Retry), **Storage & Download** (Video & Music Paths, Platform Subfolders, Filename Template, Total Media Size, Clear Cache, Wipe All Data), **Look & Feel** (Dark Mode, Color Accent, App Fonts, Vibration, Completion Sound, Header Quote, Home Greeting, Footer Tagline), **Network & Performance** (Preferred Server, User-Agent Mode, Request Timeout, Wi-Fi Only, Force IPv4, Anti-403 Header Guard, Cellular Data Warning, Bypass SSL Errors, Server Latency Diagnostics, Data Saver Mode), and **Advanced** (History Limits, Time-based Retention, Scheduled Auto-Backup, Auto-Play Media, Auto-Loop Media, Data Import/Export).
-- **Dedicated Network & Performance Sub-page**: Added a brand-new 5th settings section featuring Preferred Server selection (Always Ask, Server 1 Primary, Server 2 Backup), User-Agent switching (Default Scraper, Mobile Chrome, iOS Safari, Desktop Chrome), configurable request timeout limits (15s–120s), Anti-403 header spoofing, cellular warning guard, SSL error bypassing, Data Saver mode, and an interactive real-time server latency ping diagnostic tool.
-- **Universal Tactile Haptic Feedback**: Integrated native `@capacitor/haptics` with fallback direct motor vibration (`VIBRATE` permission) across all interactive elements (Buttons, Bottom Navigation Tabs, Toggle Switches, Dropdown options, and Chips) for immediate tactile touch response.
-- **Hardened Biometric Privacy Lock**: Upgraded biometric protection engine to secure both **History** and **Settings** tabs. Features real-time state synchronization (instant re-locking upon toggle ON), mandatory authentication before modifying security settings, and automatic background re-locking (`appStateChange` listener).
-- **Keep Screen Awake & Auto-Check Updates**: Integrated Web `Screen Wake Lock` API to prevent device screen sleep during heavy media downloads, and added an automated GitHub release check engine on startup in **General** settings.
-- **Download Completion Sound (Crisp Bell Chime)**: High-pitch Web Audio API triangle-wave chime feedback upon successful download completion, fully offline without extra media assets.
-- **Smart Auto-Retry Engine**: Automatic background retry mechanism for media downloads encountering network glitches or HTTP timeouts, attempting up to 3 automatic retries with status toast updates.
-- **Minimalist Header, Quote, Greeting & Footer Customization**: Added independent toggles in **Look & Feel** to hide/show top header quote, home greeting banner, and footer tagline ("Simplicity is the ultimate sophistication") for ultra-clean UI personalization.
-- **Synchronized Video Player Controls**: Custom MoriPlayer automatically synchronizes native `video.onplay` and `video.onpause` events so play/pause control icons reflect true playback status instantly on autoplay.
-- **Scheduled Auto-Backup Data**: Configurable automatic data backup interval (Off, Weekly, Monthly) that exports user history and configuration settings to local JSON backups.
-- **Time-Based Auto-Clear Cache & History Retention**: Upgraded both Auto-Clear Cache and Auto-Clear History settings from simple binary toggles to fully configurable retention menus (**Off, 1, 7, 30, 90 Days**), automatically purging old thumbnail caches and expired history items.
-- **SnapTik TikTok Photo Slideshow Patch**: Fixed Object-URL data structure changes from SnapTik API (Server 2 TikTok), enabling robust photo slide extraction and UI rendering without crashes.
-- **Safe JSON Response Parsing**: Added defensive `parseJsonResponse` error handling to catch HTML responses (Cloudflare/Rate Limits) from scraper servers gracefully instead of throwing raw JSON syntax errors.
-- **Cross-Platform Parity**: All 14 platform scrapers work identically on iOS & Android. Shared codebase — one code, two platforms.
-- **iOS-Specific Fixes & Media Preview**: Resolved local file path resolution for iOS WKWebView preview modals using `Filesystem.getUri()` and `Capacitor.convertFileSrc()`, with fallback image support and inline video playback flags (`playsinline`) to prevent infinite loading spinners.
-- **Enhanced History Item Deletion UX**: Expanded touch target area for the red deletion ("X") button (`32px x 32px`, `z-index: 10`) and enabled full card click-to-delete in edit mode for seamless item removal.
-- **Accessibility (A11y) & UI Consistency**: Added `aria-label` attributes across all icon-only buttons for full screen reader support. Standardized the Language settings to match the global custom dropdown component design.
-- **Native Save to Gallery**: Integrated `@capacitor-community/media` to automatically save downloaded videos and photos directly to the iOS Camera Roll and Android Gallery, bypassing the need for manual file manager exports.
-- **Code Optimization**: Extracted hardcoded inline CSS into dedicated stylesheet classes and removed deprecated legacy dropdown logic, reducing code bloat and improving maintainability.
-
 ## Supported Platforms
 
-| Platform                                                                                                                                                              | Features               | Platform                                                                            | Features                 |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | MP3 Audio              | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | Video / Images           |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | MP3 Audio              | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
-| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
+| Platform                                                                                                                                                              | Features               | Platform                                                                            | Features                             |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------------------- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos             |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs                      |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | MP3 Audio              | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | PinDown & PinDirect (Video / Images) |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | MP3 Audio              | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video                     |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos                       |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4              |
+| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track                    |
 
 ## Built With
 
 - **JavaScript (ES6+)**: Core application logic and scraping engine.
 - **HTML5 & CSS3**: Custom design system without bloated frameworks.
+- **Tauri v2**: Ultra-lightweight desktop engine for macOS & Windows (.dmg, .app, .msi, .exe).
 - **CapacitorJS**: Native Android and iOS bridge for filesystem, share sheet, clipboard, and biometrics.
 - **pdf-lib**: Client-side PDF generation and bundling.
 
@@ -113,6 +105,10 @@ Mori/
 │   └── gradle/                 # Gradle wrapper & build config
 ├── ios/                        # Capacitor iOS Xcode workspace
 │   └── App/                    # iOS Xcode project, Info.plist, and Pods
+├── src-tauri/                  # Tauri v2 Desktop Rust backend & configuration
+│   ├── capabilities/           # Application capabilities & permissions
+│   ├── src/                    # Rust native HTTP & file commands (tauri_http_request, tauri_download_file)
+│   └── tauri.conf.json         # Desktop configuration & window bounds
 ├── assets/                     # Screenshots & branding assets
 ├── public/
 │   ├── css/
@@ -174,6 +170,15 @@ Mori/
 - **Export/Import Data**: Full data portability — backup and restore your history, settings, and paths as a JSON file.
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions, dark mode, and accent colors.
+
+## Security & Safety Notice
+
+Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trackers**. All network requests and file downloads run locally on your device without external analytics servers.
+
+> [!TIP]
+> **Doubtful or concerned about false-positive security warnings?**  
+> Because Mori release binaries (`.apk`, `.dmg`, `.exe`, `.ipa`) are open-source builds compiled without expensive commercial enterprise signing certificates, some security software or browsers may display standard false-positive warnings.  
+> If you have any doubts, you can upload and scan any release file directly on **[VirusTotal](https://www.virustotal.com/)** before installing!
 
 ## How to Use
 
@@ -241,6 +246,25 @@ cd android && ./gradlew assembleRelease
 ```
 
 Output at: `android/app/build/outputs/apk/release/Mori v{VERSION}.apk`
+
+### Running & Building for Desktop (macOS & Windows)
+
+Mori uses **Tauri v2** for lightweight, high-performance desktop apps on macOS (.dmg, .app) and Windows (.msi, .exe).
+
+#### Development Mode
+
+```bash
+npm run tauri:dev
+```
+
+#### Building Release Installers
+
+```bash
+npm run tauri:build
+```
+
+- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.0_aarch64.dmg` & `Mori.app`
+- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.0_x64_en-US.msi` & `.exe`
 
 ### Running & Building for iOS
 
