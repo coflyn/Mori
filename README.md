@@ -35,15 +35,21 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 ## What's New in v4.2.0
 
 - **macOS & Windows Desktop Support (Tauri v2)**: Added native desktop application support for macOS (`.dmg`, `.app`) and Windows (`.exe`, `.msi`) powered by Tauri v2.
-- **Native CORS-Free Desktop HTTP Engine**: Integrated native Rust HTTP client (`tauri_http_request` via `reqwest`) to handle cross-origin network requests on Desktop, eliminating WebKit CORS blocks and header restriction errors (`Load failed`).
-- **Native Desktop File Downloading**: Implemented direct Rust disk writer (`tauri_download_file`), automatically saving downloaded media directly to user's native Downloads folder (`~/Downloads/Mori/` on macOS, `C:\Users\<Username>\Downloads\Mori\` on Windows).
-- **Desktop Local Media Preview Player**: Integrated Tauri native asset streaming protocol (`convertFileSrc`) and fallback Rust binary byte reader (`tauri_read_file_bytes`), enabling instant local video and audio playback in History across macOS and Windows.
+- **Native CORS-Free Desktop HTTP Engine**: Integrated native Rust HTTP client (`tauri_http_request` & `tauri_fetch_bytes` via `reqwest`) to handle cross-origin network requests and binary file streaming on Desktop, eliminating WebKit CORS blocks and header restriction errors (`Load failed`).
+- **Native Desktop File Saving**: Implemented direct Rust disk writers (`tauri_download_file` & `tauri_save_bytes_file`), automatically saving downloaded media files and exported PDF galleries directly to the user's native Downloads folder (`~/Downloads/Mori/` on macOS, `C:\Users\<Username>\Downloads\Mori\` on Windows).
+- **Desktop Native Browser Launcher & Auto-Update Engine**: Integrated native Rust URL process launcher (`tauri_open_url`) and semantic version comparison (`isNewerVersion`), ensuring "UPDATE" and "Report Bug" links launch directly in the user's default desktop browser (Safari/Chrome/Arc) without WKWebView pop-up blocks. Fixed `autoCheckUpdate()` and `checkUpdate()` on macOS Desktop by parsing Rust HTTP response objects (`res.data`).
+- **Pixiv Ugoira Live MP4 Video Preview**: Fixed Pixiv Ugoira (animated illustration) preview playback on macOS/Windows Desktop. Integrated native Rust CORS-bypass streaming (`tauri_fetch_bytes`) with custom `Referer: https://www.pixiv.net/` headers to fetch and loop MP4 video animations smoothly inside the preview modal.
+- **Cross-Platform PDF Gallery Exporter**: Resolved `undefined is not an object (evaluating 'CapacitorHttp.get')` and `CHROME_UA` reference errors during PDF generation on Desktop. Implemented cross-platform fetch fallbacks and native Rust file saving into the Mori folder on macOS and Windows.
+- **Desktop Local Media & Audio Preview Player**: Integrated Rust binary file byte reader (`tauri_read_file_bytes`) with dynamic Blob URL stream generation (`blob:http://...`) and platform-aware path resolution in `ui.js` & `player.js`, eliminating macOS WebKit local file restrictions, Android legacy path overrides (`/storage/emulated/0/`), and HTML5 player `▶ Error` states for smooth video and MP3 audio playback in History.
 - **Pinterest Dual-Server & PinDirect**: Pinterest now has two selectable servers — **Server 1 (PinDown)** for scraper-based downloads and **Server 2 (PinDirect)** for direct extraction from Pinterest HTML. Users can choose via the server selection dialog.
 - **PinDown Image Classification Fix**: Fixed a bug where the PinDown scraper incorrectly classified image downloads as `VIDEO` type. Now only URLs ending with `.mp4` are marked as video, so image pins properly download as images.
 - **Pinterest Multi-Image Support**: PinDirect mode extracts all available original-resolution images from a pin page, including gallery pins with multiple photos.
 - **Spotify SoundLoaders Server Replacement**: Replaced the non-functional SpotMate server with **SoundLoaders** as Spotify Server 2. SoundLoaders integrates Turnstile challenge bypass via `/api/userverify` for reliable track downloads.
 - **Android Storage Permission & `EACCES` Fix**: Resolved `Permission denied (EACCES)` errors on Android 13+ and restricted devices. Removed hard permission check aborts for deprecated `WRITE_EXTERNAL_STORAGE` and implemented an automatic multi-directory fallback chain (`EXTERNAL_STORAGE` → `DOCUMENTS` → `EXTERNAL`), ensuring downloads succeed seamlessly across all Android versions (Android 10-15).
 - **Explicit Web Scraper Names in Server Selection Pop-ups**: Standardized the server selection modal text across all multi-server platforms (TikTok, Instagram, YouTube, Twitter, Spotify, Pinterest) to explicitly label each server with its official web scraper provider name (e.g. TikTokIO / SnapTik, InDown / DownReels, YTMP3.gg / YTMP3.mobi, TweeLoad / TVD, SpotiDown / SoundLoaders, PinDown / PinDirect).
+- **Clean Filename Template Options & Default Setting**: Removed the redundant "Default" option and set **Title Only** (`title`) as the default filename template. Fixed a bug where filename options forcibly appended a 13-digit timestamp to downloaded files. "Title Only" now produces clean output (`Title.mp3`), while duplicate file collisions on disk automatically use clean incremental counters (`Title_1.mp3`, `Title_2.mp3`) across both Mobile and Desktop.
+- **Desktop Biometric & Haptics Guard**: Implemented platform-aware guards for Privacy Lock and Haptics (`window.Capacitor?.isNativePlatform()`). Mobile biometric authentication (`@capgo/capacitor-native-biometric`) is preserved for Android and iOS, while Desktop platforms (macOS/Windows) automatically bypass mobile biometric checks and hide mobile lock and haptic settings to prevent navigation freezes or unhandled plugin exceptions.
+- **Color Accent Setting Removed**: Removed the Color Accent dropdown setting from the UI to enforce Mori's minimal black-and-white design system.
 - **SpotMate Removed**: The SpotMate scraper has been fully removed from the codebase.
 
 ## Previous Updates v4.1.0
@@ -292,14 +298,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.1.0.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.0.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.1.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.2.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.1.0.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.0.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

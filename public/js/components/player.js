@@ -23,9 +23,6 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   playerContainer.style.justifyContent = "center";
   playerContainer.style.maxHeight = "80vh";
 
-  const video = document.createElement("video");
-  video.setAttribute("referrerpolicy", "no-referrer");
-
   let videoUrl = dl.url || "";
   const isLocal =
     videoUrl.includes("_capacitor_file_") ||
@@ -39,9 +36,50 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     videoUrl = videoUrl.replace("http://", "https://");
   }
 
+  // Detect audio-only type (MP3, M4A, etc.) → use <audio> element on Desktop
+  const dlTypeLower = (dl.type || "").toLowerCase();
+  const fileNameLower = (dl.filename || dl.title || videoUrl || "").toLowerCase();
+  const isAudioOnly =
+    dlTypeLower.includes("mp3") ||
+    dlTypeLower.includes("audio") ||
+    dlTypeLower.includes("m4a") ||
+    fileNameLower.endsWith(".mp3") ||
+    fileNameLower.endsWith(".m4a") ||
+    fileNameLower.endsWith(".aac") ||
+    fileNameLower.endsWith(".opus") ||
+    fileNameLower.endsWith(".flac") ||
+    fileNameLower.endsWith(".wav");
+
+  const tauriConvertFileSrcCheck =
+    window.__TAURI__?.core?.convertFileSrc ||
+    window.__TAURI_INTERNALS__?.convertFileSrc ||
+    window.__TAURI__?.convertFileSrc;
+  const isDesktop = !!tauriConvertFileSrcCheck && !window.Capacitor?.isNativePlatform();
+
+  // Use <audio> for audio-only files on Desktop for better WKWebView compatibility
+  const video = (isAudioOnly && isDesktop)
+    ? (() => {
+        const audio = document.createElement("audio");
+        audio.setAttribute("referrerpolicy", "no-referrer");
+        audio.controls = false;
+        audio.style.width = "100%";
+        audio.style.maxWidth = "340px";
+        audio.style.display = "block";
+        // Give player container a music-player look for audio
+        playerContainer.style.backgroundColor = "rgba(18,18,18,0.97)";
+        playerContainer.style.minHeight = "120px";
+        return audio;
+      })()
+    : (() => {
+        const v = document.createElement("video");
+        v.setAttribute("referrerpolicy", "no-referrer");
+        return v;
+      })();
+
   const isBilibili = /bilibili|bilivideo/i.test(videoUrl);
   const isRedNote = /xiaohongshu|rednote|xhscdn/i.test(videoUrl);
-  const needsBypass = (isDouyin || isRedNote) && !isLocal;
+  const isPixiv = /pixiv|ugoira/i.test(videoUrl) || (dl.type || "").toLowerCase().includes("ugoira");
+  const needsBypass = (isBilibili || isDouyin || isRedNote || isPixiv) && !isLocal;
   const isNative = window.Capacitor?.isNativePlatform();
 
   const removeFallbackImg = () => {
@@ -85,9 +123,37 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       cleanPath = cleanPath.replace(/^file:\/\//, "");
     }
 
-    if (tauriConvertFileSrc) {
-      const tauriSrc = tauriConvertFileSrc(cleanPath);
-      video.src = tauriSrc;
+    if (tauriInvoke) {
+      // Desktop: read file bytes via Rust → Blob URL (no asset protocol permission needed)
+      const mimeType = isAudioOnly
+        ? (fileNameLower.endsWith(".m4a") ? "audio/mp4" : "audio/mpeg")
+        : "video/mp4";
+      tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
+        .then((bytes) => {
+          if (bytes && bytes.length > 0) {
+            const blob = new Blob([new Uint8Array(bytes)], { type: mimeType });
+            const blobUrl = URL.createObjectURL(blob);
+            playerContainer._blobUrl = blobUrl;
+            video.src = blobUrl;
+            video.load();
+            removeLoading();
+          } else {
+            // fallback to convertFileSrc
+            if (tauriConvertFileSrc) {
+              video.src = tauriConvertFileSrc(cleanPath);
+              removeLoading();
+            }
+          }
+        })
+        .catch(() => {
+          // fallback to convertFileSrc
+          if (tauriConvertFileSrc) {
+            video.src = tauriConvertFileSrc(cleanPath);
+            removeLoading();
+          }
+        });
+    } else if (tauriConvertFileSrc) {
+      video.src = tauriConvertFileSrc(cleanPath);
       removeLoading();
     } else if (isNative) {
       if (!cleanPath.startsWith("/")) {
@@ -101,7 +167,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     } else {
       video.src = "file://" + cleanPath;
     }
-  } else if (needsBypass && isNative && CapacitorHttp) {
+  }
+
+  if (needsBypass) {
     playerContainer.classList.add("mori-loading");
 
     let referer = "https://www.google.com/";
@@ -118,49 +186,92 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       referer = "https://www.douyin.com/";
     } else if (isRedNote) {
       referer = "https://www.xiaohongshu.com/";
+    } else if (isPixiv) {
+      referer = "https://www.pixiv.net/";
+      ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     }
 
-    CapacitorHttp.get({
-      url: videoUrl,
-      responseType: "blob",
-      headers: {
-        Referer: referer,
-        "User-Agent": ua,
-        Range: "bytes=0-3145728",
-      },
-    })
-      .then((res) => {
-        if (
-          res.status >= 200 &&
-          res.status < 300 &&
-          res.data &&
-          (res.data instanceof Blob || res.data.constructor?.name === "Blob")
-        ) {
-          const fileUrl = URL.createObjectURL(res.data);
-          video.src = fileUrl;
-
-          // Auto-play if active
-          const isCurrentActiveSlide =
-            playerContainer.parentElement &&
-            playerContainer.parentElement.classList.contains("active");
-          const autoPlaySetting =
-            localStorage.getItem("mori_autoplay") !== "false";
-          if (
-            (index === 0 || isCurrentActiveSlide) &&
-            autoPlaySetting &&
-            video.paused
-          ) {
-            video.play().catch(() => {});
-          }
-        } else {
-          throw new Error(`Invalid response (Status ${res.status})`);
-        }
+    if (isNative && CapacitorHttp) {
+      CapacitorHttp.get({
+        url: videoUrl,
+        responseType: "blob",
+        headers: {
+          Referer: referer,
+          "User-Agent": ua,
+          Range: "bytes=0-3145728",
+        },
       })
-      .catch((err) => {
-        console.error("Native preview fetch failed, falling back:", err);
-        video.src = videoUrl;
-      });
-  } else {
+        .then((res) => {
+          if (
+            res.status >= 200 &&
+            res.status < 300 &&
+            res.data &&
+            (res.data instanceof Blob || res.data.constructor?.name === "Blob")
+          ) {
+            const fileUrl = URL.createObjectURL(res.data);
+            playerContainer._blobUrl = fileUrl;
+            video.src = fileUrl;
+
+            // Auto-play if active
+            const isCurrentActiveSlide =
+              playerContainer.parentElement &&
+              playerContainer.parentElement.classList.contains("active");
+            const autoPlaySetting =
+              localStorage.getItem("mori_autoplay") !== "false";
+            if (
+              (index === 0 || isCurrentActiveSlide) &&
+              autoPlaySetting &&
+              video.paused
+            ) {
+              video.play().catch(() => {});
+            }
+          } else {
+            throw new Error(`Invalid response (Status ${res.status})`);
+          }
+        })
+        .catch((err) => {
+          console.error("Native preview fetch failed, falling back:", err);
+          video.src = videoUrl;
+        });
+    } else if (tauriInvoke) {
+      tauriInvoke("tauri_fetch_bytes", {
+        url: videoUrl,
+        headers: { Referer: referer, "User-Agent": ua },
+      })
+        .then((bytes) => {
+          if (bytes && bytes.length > 0) {
+            const blob = new Blob([new Uint8Array(bytes)], { type: "video/mp4" });
+            const blobUrl = URL.createObjectURL(blob);
+            playerContainer._blobUrl = blobUrl;
+            video.src = blobUrl;
+            removeLoading();
+
+            const isCurrentActiveSlide =
+              playerContainer.parentElement &&
+              playerContainer.parentElement.classList.contains("active");
+            const autoPlaySetting =
+              localStorage.getItem("mori_autoplay") !== "false";
+            if (
+              (index === 0 || isCurrentActiveSlide) &&
+              autoPlaySetting &&
+              video.paused
+            ) {
+              video.play().catch(() => {});
+            }
+          } else {
+            video.src = videoUrl;
+            removeLoading();
+          }
+        })
+        .catch((err) => {
+          console.error("Desktop preview fetch failed, falling back:", err);
+          video.src = videoUrl;
+          removeLoading();
+        });
+    } else {
+      video.src = videoUrl;
+    }
+  } else if (!isLocal) {
     video.src = videoUrl;
   }
 
@@ -232,8 +343,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         if (cleanPath.startsWith("file://")) {
           cleanPath = cleanPath.replace(/^file:\/\//, "");
         }
-        const mimeType = (dl.type || "").toLowerCase().includes("mp3")
-          ? "audio/mp3"
+        const mimeType = isAudioOnly
+          ? (fileNameLower.endsWith(".m4a") ? "audio/mp4" : "audio/mpeg")
           : "video/mp4";
 
         if (tauriInvoke) {
@@ -314,31 +425,44 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     const ctrlEl = playerContainer.querySelector(".mori-player-controls");
     if (ctrlEl) ctrlEl.remove();
 
-    if (!playerContainer.querySelector(".mori-player-error")) {
-      const errOverlay = document.createElement("div");
-      errOverlay.className = "mori-player-error";
-      errOverlay.style.position = "absolute";
-      errOverlay.style.top = "0";
-      errOverlay.style.left = "0";
-      errOverlay.style.width = "100%";
-      errOverlay.style.height = "100%";
-      errOverlay.style.backgroundColor = "rgba(0,0,0,0.9)";
-      errOverlay.style.display = "flex";
-      errOverlay.style.flexDirection = "column";
-      errOverlay.style.alignItems = "center";
-      errOverlay.style.justifyContent = "center";
-      errOverlay.style.color = "#fff";
-      errOverlay.style.zIndex = "10";
-      errOverlay.style.padding = "20px";
-      errOverlay.style.textAlign = "center";
+    if (!playerContainer.querySelector(".mori-player-error") && !playerContainer.querySelector(".fallback-img")) {
+      const fallbackSrc = posterThumb || dl.thumbnail || resultThumbnail || "";
+      if (fallbackSrc) {
+        const fbImg = document.createElement("img");
+        fbImg.className = "fallback-img";
+        fbImg.src = fallbackSrc;
+        fbImg.style.width = "100%";
+        fbImg.style.maxHeight = "100%";
+        fbImg.style.objectFit = "contain";
+        fbImg.style.borderRadius = "8px";
+        fbImg.setAttribute("referrerpolicy", "no-referrer");
+        playerContainer.appendChild(fbImg);
+      } else {
+        const errOverlay = document.createElement("div");
+        errOverlay.className = "mori-player-error";
+        errOverlay.style.position = "absolute";
+        errOverlay.style.top = "0";
+        errOverlay.style.left = "0";
+        errOverlay.style.width = "100%";
+        errOverlay.style.height = "100%";
+        errOverlay.style.backgroundColor = "rgba(0,0,0,0.9)";
+        errOverlay.style.display = "flex";
+        errOverlay.style.flexDirection = "column";
+        errOverlay.style.alignItems = "center";
+        errOverlay.style.justifyContent = "center";
+        errOverlay.style.color = "#fff";
+        errOverlay.style.zIndex = "10";
+        errOverlay.style.padding = "20px";
+        errOverlay.style.textAlign = "center";
 
-      errOverlay.innerHTML = `
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="#fff" style="margin-bottom:12px">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
-        <div style="font-weight:bold;font-size:15px;margin-bottom:8px">${translations[currentLang][videoUrl.includes("_capacitor_file_") || videoUrl.startsWith("file://") || videoUrl.startsWith("content://") ? "player-error-file" : "player-error-stream"]}</div>
-      `;
-      playerContainer.appendChild(errOverlay);
+        errOverlay.innerHTML = `
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="#fff" style="margin-bottom:12px">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <div style="font-weight:bold;font-size:15px;margin-bottom:8px">${translations[currentLang][videoUrl.includes("_capacitor_file_") || videoUrl.startsWith("file://") || videoUrl.startsWith("content://") ? "player-error-file" : "player-error-stream"]}</div>
+        `;
+        playerContainer.appendChild(errOverlay);
+      }
     }
   };
 

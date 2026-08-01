@@ -56,7 +56,7 @@ import {
   checkAllScrapersHealth,
 } from "./utils/scraperHealth.js";
 
-const APP_VERSION = "4.1.0";
+const APP_VERSION = "4.2.0";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -169,23 +169,12 @@ darkModeToggle?.addEventListener("change", (e) => {
 // Color Accent Logic
 const accentColors = {
   black: { light: "#1a1917", dark: "#fffbf2" },
-  blue: { light: "#1a73e8", dark: "#8ab4f8" },
-  green: { light: "#1e8e3e", dark: "#81c995" },
-  purple: { light: "#9334e6", dark: "#c58af9" },
-  orange: { light: "#e8710a", dark: "#fcad70" },
 };
 
 function applyColorAccent() {
-  const accent = localStorage.getItem("mori_accent") || "black";
   const theme = localStorage.getItem("mori_theme") || "light";
-  const color = accentColors[accent][theme];
+  const color = accentColors.black[theme] || "#1a1917";
   document.documentElement.style.setProperty("--primary", color);
-
-  const accentText = document.getElementById("colorAccentText");
-  if (accentText) {
-    const lang = translations[currentLang];
-    accentText.textContent = lang[`accent-${accent}`] || accent;
-  }
 }
 
 applyColorAccent();
@@ -263,6 +252,24 @@ const privacyLockToggle = document.getElementById("privacyLockToggle");
 const lockTypeMenu = document.getElementById("lockTypeMenu");
 const lockTypeText = document.getElementById("lockTypeText");
 
+const isNativePlatform = window.Capacitor?.isNativePlatform();
+
+if (!isNativePlatform) {
+  // Desktop platforms (macOS/Windows) do not support mobile Capacitor Biometric plugin or Haptics.
+  // Hide privacy lock & haptics items on Desktop and ensure navigation is 100% unlocked.
+  const privacyItem = privacyLockToggle?.closest(".settings-item");
+  const lockTypeItem = lockTypeSelect?.closest(".settings-item");
+  const hapticToggle = document.getElementById("hapticToggle");
+  const hapticItem = hapticToggle?.closest(".settings-item");
+  if (privacyItem) privacyItem.style.display = "none";
+  if (lockTypeItem) lockTypeItem.style.display = "none";
+  if (hapticItem) hapticItem.style.display = "none";
+  localStorage.setItem("mori_privacy_lock", "false");
+  localStorage.setItem("mori_lock_type", "none");
+  isHistoryUnlocked = true;
+  isSettingsUnlocked = true;
+}
+
 const isPrivacyOnInitial = localStorage.getItem("mori_privacy_lock") === "true";
 if (privacyLockToggle) {
   privacyLockToggle.checked = isPrivacyOnInitial;
@@ -270,7 +277,7 @@ if (privacyLockToggle) {
     const isChecked = e.target.checked;
     const currentLockType = localStorage.getItem("mori_lock_type") || "none";
 
-    if (!isChecked && currentLockType === "biometric") {
+    if (!isChecked && currentLockType === "biometric" && isNativePlatform) {
       try {
         const { NativeBiometric } = Capacitor.Plugins || {};
         if (NativeBiometric) {
@@ -539,12 +546,7 @@ setupCustomSelect(
   "filenameText",
   "filenameMenu",
 );
-setupCustomSelect(
-  "colorAccentSelect",
-  "mori_accent",
-  "colorAccentText",
-  "colorAccentMenu",
-);
+
 setupCustomSelect("fontSelect", "mori_font", "fontText", "fontMenu");
 setupCustomSelect(
   "historyLimitSelect",
@@ -847,10 +849,14 @@ if (testLatencyBtn) {
     showToast("Testing server latency...");
     const start = Date.now();
     try {
-      await CapacitorHttp.get({
-        url: "https://api.github.com/zen",
-        headers: { "User-Agent": "Mori-App" },
-      });
+      if (CapacitorHttp) {
+        await CapacitorHttp.get({
+          url: "https://api.github.com/zen",
+          headers: { "User-Agent": "Mori-App" },
+        });
+      } else {
+        await fetch("https://api.github.com/zen");
+      }
       const duration = Date.now() - start;
       if (resultVal) resultVal.textContent = `${duration} ms`;
       showToast(`Server latency: ${duration} ms (Online)`);
@@ -1093,7 +1099,7 @@ async function clearCacheSilently() {
 function updateCustomSelectsUI() {
   const lang = translations[currentLang] || translations.en;
 
-  const currentFilename = localStorage.getItem("mori_filename") || "default";
+  const currentFilename = localStorage.getItem("mori_filename") || "title";
   const filenameText = document.getElementById("filenameText");
   if (filenameText)
     filenameText.textContent =
@@ -1116,11 +1122,7 @@ function updateCustomSelectsUI() {
     preferServerText.textContent =
       lang[`server-${currentServer}`] || currentServer;
 
-  const currentAccent = localStorage.getItem("mori_accent") || "black";
-  const colorAccentText = document.getElementById("colorAccentText");
-  if (colorAccentText)
-    colorAccentText.textContent =
-      lang[`accent-${currentAccent}`] || currentAccent;
+
 
   const currentFont = localStorage.getItem("mori_font") || "default";
   const fontText = document.getElementById("fontText");
@@ -1663,35 +1665,85 @@ reportBugBtn?.addEventListener("click", () => {
   );
   const whatsappUrl = `https://wa.me/6285194858996?text=${text}`;
   showToast(translations[currentLang]["label-opening-wa"]);
-  window.open(whatsappUrl, "_blank");
+  openExternalUrl(whatsappUrl);
 });
+
+function openExternalUrl(targetUrl) {
+  const tauriInvoke =
+    window.__TAURI__?.core?.invoke ||
+    window.__TAURI_INTERNALS__?.invoke ||
+    window.__TAURI__?.invoke;
+  if (tauriInvoke) {
+    tauriInvoke("tauri_open_url", { url: targetUrl }).catch(() => {
+      window.open(targetUrl, "_blank");
+    });
+  } else {
+    window.open(targetUrl, "_blank");
+  }
+}
+
+function isNewerVersion(latest, current) {
+  if (!latest || !current) return false;
+  const parse = (v) => v.split(".").map((n) => parseInt(n, 10) || 0);
+  const l = parse(latest);
+  const c = parse(current);
+  for (let i = 0; i < Math.max(l.length, c.length); i++) {
+    const numL = l[i] || 0;
+    const numC = c[i] || 0;
+    if (numL > numC) return true;
+    if (numL < numC) return false;
+  }
+  return false;
+}
 
 async function checkUpdate() {
   const actionLabel = checkUpdateBtn.querySelector(".action-label");
   actionLabel.textContent = translations[currentLang]["btn-processing"];
 
   try {
-    const res = await CapacitorHttp.get({
-      url: UPDATE_CHECK_URL,
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "Mori-App",
-      },
-    });
-    const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-    const latest = (data.tag_name || "").replace(/^v/i, "");
+    let data;
+    const tauriInvoke =
+      window.__TAURI__?.core?.invoke ||
+      window.__TAURI_INTERNALS__?.invoke ||
+      window.__TAURI__?.invoke;
 
-    if (latest && latest !== APP_VERSION) {
+    if (CapacitorHttp) {
+      const res = await CapacitorHttp.get({
+        url: UPDATE_CHECK_URL,
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "Mori-App",
+        },
+      });
+      data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    } else if (tauriInvoke) {
+      const res = await tauriInvoke("tauri_http_request", {
+        url: UPDATE_CHECK_URL,
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "Mori-App",
+        },
+      });
+      const rawData = res?.data || res?.body || res;
+      data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+    } else {
+      const res = await fetch(UPDATE_CHECK_URL);
+      data = await res.json();
+    }
+    const latest = (data?.tag_name || "").replace(/^v/i, "");
+
+    if (latest && isNewerVersion(latest, APP_VERSION)) {
       actionLabel.textContent = translations[currentLang]["btn-update"];
       const lang = translations[currentLang];
       const title = lang["label-update-available"];
-      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="manualUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;">${lang["btn-update"] || "Open Repository"}</span>`;
+      const msg = `${lang["label-update-available"]} (v${latest})<br><br><span id="manualUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;cursor:pointer;">${lang["btn-update"] || "Open Repository"}</span>`;
       showInfoModal(title, msg);
       setTimeout(() => {
         const el = document.getElementById("manualUpdateLink");
         if (el)
           el.onclick = () => {
-            window.location.href = REPO_URL;
+            openExternalUrl(REPO_URL);
           };
       }, 50);
     } else {
@@ -1716,17 +1768,39 @@ async function autoCheckUpdate() {
   if (localStorage.getItem("mori_skip_auto_update")) return;
 
   try {
-    const res = await CapacitorHttp.get({
-      url: UPDATE_CHECK_URL,
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "Mori-App",
-      },
-    });
-    const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-    const latest = (data.tag_name || "").replace(/^v/i, "");
+    let data;
+    const tauriInvoke =
+      window.__TAURI__?.core?.invoke ||
+      window.__TAURI_INTERNALS__?.invoke ||
+      window.__TAURI__?.invoke;
 
-    if (latest && latest !== APP_VERSION) {
+    if (CapacitorHttp) {
+      const res = await CapacitorHttp.get({
+        url: UPDATE_CHECK_URL,
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "Mori-App",
+        },
+      });
+      data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    } else if (tauriInvoke) {
+      const res = await tauriInvoke("tauri_http_request", {
+        url: UPDATE_CHECK_URL,
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "Mori-App",
+        },
+      });
+      const rawData = res?.data || res?.body || res;
+      data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+    } else {
+      const res = await fetch(UPDATE_CHECK_URL);
+      data = await res.json();
+    }
+    const latest = (data?.tag_name || "").replace(/^v/i, "");
+
+    if (latest && isNewerVersion(latest, APP_VERSION)) {
       const lang = translations[currentLang];
       const title = lang["label-update-available"];
       const msg = `<div style="text-align:center;padding:8px 0;"><span style="font-size:2rem;display:block;margin-bottom:8px;">🎉</span>${lang["label-update-available"]} <strong>v${latest}</strong><br><br><span id="autoUpdateLink" style="color:var(--primary);text-decoration:underline;font-weight:600;cursor:pointer;">${lang["btn-update"] || "Open Repository"}</span></div>`;
@@ -1739,12 +1813,12 @@ async function autoCheckUpdate() {
         const el = document.getElementById("autoUpdateLink");
         if (el)
           el.onclick = () => {
-            window.location.href = REPO_URL;
+            openExternalUrl(REPO_URL);
           };
       }, 50);
     }
   } catch (e) {
-    // Silent fail on startup
+    console.warn("Auto update check failed:", e);
   }
 }
 
@@ -2392,7 +2466,7 @@ window.addEventListener("mori_file_saved", async (e) => {
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
               versionCode: 10,
-              versionName: "4.1.0",
+              versionName: "4.2.0",
             };
           }
           return item;
@@ -2616,11 +2690,17 @@ const pages = ["home", "history", "settings"];
 const navItems = document.querySelectorAll(".nav-item");
 
 async function switchPage(pageId) {
+  const isNative = window.Capacitor?.isNativePlatform();
   const isPrivacyOn = localStorage.getItem("mori_privacy_lock") === "true";
   const lockType = localStorage.getItem("mori_lock_type") || "none";
 
+  if (!isNative) {
+    isHistoryUnlocked = true;
+    isSettingsUnlocked = true;
+  }
+
   if (pageId === "history" && !isHistoryUnlocked) {
-    if (isPrivacyOn && lockType === "biometric" && NativeBiometric) {
+    if (isPrivacyOn && lockType === "biometric" && isNative && NativeBiometric) {
       try {
         const result = await NativeBiometric.isAvailable();
         if (result.isAvailable) {
@@ -2630,6 +2710,8 @@ async function switchPage(pageId) {
             subtitle: "History Tab",
             description: translations[currentLang]["label-biometric-reason"],
           });
+          isHistoryUnlocked = true;
+        } else {
           isHistoryUnlocked = true;
         }
       } catch (err) {
@@ -2642,7 +2724,7 @@ async function switchPage(pageId) {
   }
 
   if (pageId === "settings" && !isSettingsUnlocked) {
-    if (isPrivacyOn && lockType === "biometric" && NativeBiometric) {
+    if (isPrivacyOn && lockType === "biometric" && isNative && NativeBiometric) {
       try {
         const result = await NativeBiometric.isAvailable();
         if (result.isAvailable) {
@@ -2652,6 +2734,8 @@ async function switchPage(pageId) {
             subtitle: "Settings Access",
             description: translations[currentLang]["label-biometric-reason"],
           });
+          isSettingsUnlocked = true;
+        } else {
           isSettingsUnlocked = true;
         }
       } catch (err) {

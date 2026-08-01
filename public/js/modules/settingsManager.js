@@ -4,23 +4,12 @@ import { getHistory, saveHistory } from "./historyManager.js";
 
 export const accentColors = {
   black: { light: "#1a1917", dark: "#fffbf2" },
-  blue: { light: "#1a73e8", dark: "#8ab4f8" },
-  green: { light: "#1e8e3e", dark: "#81c995" },
-  purple: { light: "#9334e6", dark: "#c58af9" },
-  orange: { light: "#e8710a", dark: "#fcad70" },
 };
 
-export function applyColorAccent(currentLang = "en") {
-  const accent = localStorage.getItem("mori_accent") || "black";
+export function applyColorAccent() {
   const theme = localStorage.getItem("mori_theme") || "light";
-  const color = accentColors[accent]?.[theme] || accentColors.black[theme];
+  const color = accentColors.black[theme];
   document.documentElement.style.setProperty("--primary", color);
-
-  const accentText = document.getElementById("colorAccentText");
-  if (accentText && translations[currentLang]) {
-    const lang = translations[currentLang];
-    accentText.textContent = lang[`accent-${accent}`] || accent;
-  }
 }
 
 export function applyFont() {
@@ -31,7 +20,7 @@ export function applyFont() {
 export function exportMoriData() {
   try {
     const backup = {
-      version: "4.1.0",
+      version: "4.2.0",
       timestamp: Date.now(),
       settings: { ...localStorage },
       history: getHistory(),

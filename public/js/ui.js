@@ -12,6 +12,7 @@ import {
   cleanUrl,
   Filesystem,
   CapacitorHttp,
+  CHROME_UA,
   Media,
   App,
   triggerHaptic,
@@ -65,8 +66,10 @@ function renderMediaSlides(container, items, resultThumbnail) {
       lowerUrl.includes(".jpeg") ||
       lowerUrl.includes(".png") ||
       lowerUrl.includes(".webp") ||
-      /\.(jpg|jpeg|png|webp)/i.test(lowerUrl) ||
+      lowerUrl.includes(".gif") ||
+      /\.(jpg|jpeg|png|webp|gif)/i.test(lowerUrl) ||
       upperType.includes("IMAGE") ||
+      upperType.includes("GIF") ||
       upperType.includes("PHOTO");
 
     const isAudio =
@@ -129,7 +132,6 @@ function renderMediaSlides(container, items, resultThumbnail) {
       }
 
       const audio = document.createElement("audio");
-      audio.src = dl.url;
       audio.controls = true;
       audio.style.width = "100%";
       const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
@@ -137,44 +139,65 @@ function renderMediaSlides(container, items, resultThumbnail) {
       audio.autoplay = index === 0 && autoPlaySetting;
       audio.loop = loopSetting;
 
+      const tauriInvoke =
+        window.__TAURI__?.core?.invoke ||
+        window.__TAURI_INTERNALS__?.invoke ||
+        window.__TAURI__?.invoke;
+
+      let cleanPath = dl.rawUri || dl.rawPath || dl.url || "";
+      if (cleanPath.includes("_capacitor_file_")) {
+        cleanPath = cleanPath.substring(
+          cleanPath.indexOf("_capacitor_file_") + 16,
+        );
+      }
+      if (cleanPath.startsWith("file://")) {
+        cleanPath = cleanPath.replace(/^file:\/\//, "");
+      }
+
+      if (tauriInvoke && isLocal) {
+        const mime = cleanPath.toLowerCase().endsWith(".m4a")
+          ? "audio/mp4"
+          : "audio/mpeg";
+        tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
+          .then((bytes) => {
+            if (bytes && bytes.length > 0) {
+              const blob = new Blob([new Uint8Array(bytes)], { type: mime });
+              const blobUrl = URL.createObjectURL(blob);
+              audio.src = blobUrl;
+              audio.load();
+            } else if (dl.remoteUrl && navigator.onLine) {
+              audio.src = dl.remoteUrl;
+              audio.load();
+            } else {
+              audio.style.display = "none";
+            }
+          })
+          .catch((e) => {
+            console.warn("Tauri audio read error:", e);
+            if (dl.remoteUrl && navigator.onLine) {
+              audio.src = dl.remoteUrl;
+              audio.load();
+            } else {
+              audio.style.display = "none";
+            }
+          });
+      } else {
+        audio.src = dl.url;
+      }
+
       let audioRetried = false;
       let audioRemoteRetried = false;
       audio.onerror = async () => {
         if (
           !audioRetried &&
-          (dl.url.includes("_capacitor_file_") || dl.url.startsWith("file://"))
+          (dl.url.includes("_capacitor_file_") ||
+            dl.url.startsWith("file://")) &&
+          window.Capacitor?.isNativePlatform() &&
+          Filesystem
         ) {
           audioRetried = true;
           console.warn("Attempting local blob fallback for audio...");
           try {
-            let cleanPath = dl.rawUri || dl.rawPath || dl.url;
-            if (cleanPath.includes("_capacitor_file_")) {
-              cleanPath = cleanPath.substring(
-                cleanPath.indexOf("_capacitor_file_") + 16,
-              );
-            }
-            if (cleanPath.startsWith("file://")) {
-              cleanPath = cleanPath.replace(/^file:\/\//, "");
-            }
-            if (!cleanPath.startsWith("/")) {
-              cleanPath = "/storage/emulated/0/" + cleanPath;
-            }
-            const rawFileUrl = "file://" + cleanPath;
-            const capSrc =
-              window.Capacitor?.convertFileSrc(rawFileUrl) || dl.url;
-
-            try {
-              const fetchRes = await fetch(capSrc);
-              if (fetchRes.ok) {
-                const blob = await fetchRes.blob();
-                audio.src = URL.createObjectURL(blob);
-                audio.load();
-                return;
-              }
-            } catch (err) {
-              console.warn("Audio fetch failed, trying filesystem:", err);
-            }
-
             const relPath = cleanPath
               .replace(/^.*\/storage\/emulated\/0\//, "")
               .replace(/^\//, "");
@@ -217,7 +240,10 @@ function renderMediaSlides(container, items, resultThumbnail) {
           audioRemoteRetried = true;
           audio.src = dl.remoteUrl;
           audio.load();
+          return;
         }
+
+        audio.style.display = "none";
       };
 
       slide.appendChild(audio);
@@ -229,7 +255,11 @@ function renderMediaSlides(container, items, resultThumbnail) {
         slide.appendChild(placeholder);
       } else {
         const img = document.createElement("img");
-        const imageSrc = dl.url || dl.thumbnail || "";
+        const imageSrc =
+          dl.thumbnail ||
+          (typeof dl.url === "string" ? dl.url : "") ||
+          resultThumbnail ||
+          "";
         setupImageLoading(img, imageSrc, resultThumbnail);
         slide.appendChild(img);
       }
@@ -362,25 +392,27 @@ function setupImageLoading(img, src, resultThumbnail) {
       )
         referer = "https://www.bilibili.com/";
 
-      CapacitorHttp.get({
-        url: targetUrl,
-        responseType: "blob",
-        headers: {
-          Referer: referer,
-          "User-Agent":
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
-        },
-      })
-        .then((res) => {
-          if (res.data) {
-            const reader = new FileReader();
-            reader.onloadend = () => (img.src = reader.result);
-            reader.readAsDataURL(res.data);
-          }
+      if (CapacitorHttp) {
+        CapacitorHttp.get({
+          url: targetUrl,
+          responseType: "blob",
+          headers: {
+            Referer: referer,
+            "User-Agent":
+              "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+          },
         })
-        .catch(() => {
-          img.style.display = "none";
-        });
+          .then((res) => {
+            if (res.data) {
+              const reader = new FileReader();
+              reader.onloadend = () => (img.src = reader.result);
+              reader.readAsDataURL(res.data);
+            }
+          })
+          .catch(() => {
+            img.style.display = "none";
+          });
+      }
     } else {
       img.style.display = "none";
     }
@@ -777,10 +809,15 @@ export async function showModal(item, onRedownload) {
       if (full.startsWith("file://")) {
         return full;
       }
-      if (!full.startsWith("/")) {
+      if (
+        !full.startsWith("/") &&
+        window.Capacitor?.getPlatform() === "android"
+      ) {
         full = "/storage/emulated/0/" + full.replace(/^\//, "");
       }
-      return "file://" + full;
+      return full.startsWith("file://")
+        ? full
+        : "file://" + (full.startsWith("/") ? full : "/" + full);
     };
 
     const toCapacitorUrl = (pathOrUri) => {
@@ -1125,25 +1162,32 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     if (!sanitizedTitle) sanitizedTitle = "Mori_Media";
 
-    const template = localStorage.getItem("mori_filename") || "default";
-    let fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
+    const template = localStorage.getItem("mori_filename") || "title";
+    let fileName = `${sanitizedTitle}.${ext}`;
 
-    // All templates produce unique filenames
     if (template === "title-platform") {
       let platform = "Media";
-      const lowerUrl = (sourceUrl || url).toLowerCase();
-      if (lowerUrl.includes("tiktok")) platform = "TikTok";
+      const lowerUrl = (sourceUrl || url || "").toLowerCase();
+      if (lowerUrl.includes("tiktok") || lowerUrl.includes("douyin"))
+        platform = "TikTok";
       else if (lowerUrl.includes("instagram")) platform = "Instagram";
       else if (lowerUrl.includes("youtube") || lowerUrl.includes("youtu.be"))
         platform = "YouTube";
       else if (lowerUrl.includes("twitter") || lowerUrl.includes("x.com"))
         platform = "Twitter";
       else if (lowerUrl.includes("facebook")) platform = "Facebook";
-      fileName = `${sanitizedTitle}_${platform}_${Date.now()}.${ext}`;
+      else if (lowerUrl.includes("pinterest")) platform = "Pinterest";
+      else if (lowerUrl.includes("spotify")) platform = "Spotify";
+      else if (lowerUrl.includes("rednote") || lowerUrl.includes("xiaohongshu"))
+        platform = "RedNote";
+      fileName = `${sanitizedTitle}_${platform}.${ext}`;
     } else if (template === "title-date") {
       const dateStr = new Date().toISOString().split("T")[0];
-      fileName = `${sanitizedTitle}_${dateStr}_${Date.now()}.${ext}`;
+      fileName = `${sanitizedTitle}_${dateStr}.${ext}`;
     } else if (template === "title") {
+      fileName = `${sanitizedTitle}.${ext}`;
+    } else {
+      // default: Title_Timestamp
       fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
     }
 
@@ -1193,7 +1237,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         });
       }
 
-      // Ensure unique filename if file already exists on disk (so Gallery saves each download separately)
+      // Ensure unique filename if file already exists on disk
       try {
         let checkExist = null;
         for (const dir of directoriesToTry) {
@@ -1207,7 +1251,24 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           const dotIdx = fileName.lastIndexOf(".");
           const baseName =
             dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
-          fileName = `${baseName}_${Date.now()}.${ext}`;
+          let counter = 1;
+          let newFileName = `${baseName}_${counter}.${ext}`;
+          while (true) {
+            let exist = null;
+            for (const dir of directoriesToTry) {
+              exist = await Filesystem.stat({
+                path: fullPath + "/" + newFileName,
+                directory: dir,
+              }).catch(() => null);
+              if (exist) break;
+            }
+            if (!exist) {
+              fileName = newFileName;
+              break;
+            }
+            counter++;
+            newFileName = `${baseName}_${counter}.${ext}`;
+          }
         }
       } catch (e) {}
     }
@@ -1378,15 +1439,22 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
             });
             successfulDir = dir;
           } catch (dlErr) {
-            console.warn(`Download attempt ${attempts} on ${dir} failed:`, dlErr);
-            if (attempts >= maxAttempts) {
+            console.warn(
+              `Download attempt ${attempts} on ${dir} failed:`,
+              dlErr,
+            );
+            if (attempts >= maxAttempts && CapacitorHttp) {
               try {
                 const httpRes = await CapacitorHttp.get({
                   url: actualDownloadUrl,
                   responseType: "blob",
                   headers: downloadHeaders,
                 });
-                if (httpRes && httpRes.data && typeof httpRes.data === "string") {
+                if (
+                  httpRes &&
+                  httpRes.data &&
+                  typeof httpRes.data === "string"
+                ) {
                   await Filesystem.writeFile({
                     path: fullPath + "/" + fileName,
                     directory: dir,
@@ -1396,7 +1464,10 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
                   successfulDir = dir;
                 }
               } catch (fallbackErr) {
-                console.warn(`Http blob fallback on ${dir} failed:`, fallbackErr);
+                console.warn(
+                  `Http blob fallback on ${dir} failed:`,
+                  fallbackErr,
+                );
               }
             }
           }
@@ -1529,14 +1600,41 @@ async function exportGalleryToPdf(title, items) {
         if (item.url.includes("snaptik.app")) referer = "https://snaptik.app/";
         if (item.url.includes("instagram.com"))
           referer = "https://www.instagram.com/";
+        if (item.url.includes("pixiv.net") || item.url.includes("pximg.net"))
+          referer = "https://www.pixiv.net/";
 
-        return CapacitorHttp.get({
-          url: item.url,
-          responseType: "arraybuffer",
-          connectTimeout: 30000,
-          readTimeout: 60000,
-          headers: { Referer: referer },
-        }).catch((err) => ({ status: 0, error: err }));
+        const tauriInvoke =
+          window.__TAURI__?.core?.invoke ||
+          window.__TAURI_INTERNALS__?.invoke ||
+          window.__TAURI__?.invoke;
+
+        if (CapacitorHttp) {
+          return CapacitorHttp.get({
+            url: item.url,
+            responseType: "arraybuffer",
+            connectTimeout: 30000,
+            readTimeout: 60000,
+            headers: { Referer: referer, "User-Agent": CHROME_UA },
+          }).catch((err) => ({ status: 0, error: err }));
+        } else if (tauriInvoke) {
+          return tauriInvoke("tauri_fetch_bytes", {
+            url: item.url,
+            headers: { Referer: referer, "User-Agent": CHROME_UA },
+          })
+            .then((bytes) => {
+              if (bytes && bytes.length > 0) {
+                const arr = new Uint8Array(bytes);
+                return { status: 200, data: arr.buffer };
+              }
+              throw new Error("Empty image bytes");
+            })
+            .catch((err) => ({ status: 0, error: err }));
+        } else {
+          return fetch(item.url, { headers: { Referer: referer } })
+            .then((res) => res.arrayBuffer())
+            .then((buf) => ({ status: 200, data: buf }))
+            .catch((err) => ({ status: 0, error: err }));
+        }
       });
 
       const results = await Promise.all(downloadPromises);
@@ -1690,12 +1788,42 @@ async function exportGalleryToPdf(title, items) {
         showToast(translations[currentLang]["toast-memory-error"]);
       reader.readAsDataURL(blob);
     } else {
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      link.click();
-      showToast(translations[currentLang]["toast-pdf-downloaded"]);
+      const tauriInvoke =
+        window.__TAURI__?.core?.invoke ||
+        window.__TAURI_INTERNALS__?.invoke ||
+        window.__TAURI__?.invoke;
+
+      let savedTauri = false;
+      if (tauriInvoke) {
+        try {
+          const customFolder =
+            localStorage.getItem("mori_download_path") || "Mori";
+          await tauriInvoke("tauri_save_bytes_file", {
+            bytes: Array.from(pdfBytes),
+            filename: fileName,
+            folder: customFolder,
+          });
+          savedTauri = true;
+          showToast(
+            translations[currentLang]["pdf-toast-saved"] ||
+              "PDF saved to Mori folder!",
+          );
+        } catch (e) {
+          console.warn(
+            "Tauri save PDF failed, falling back to browser download:",
+            e,
+          );
+        }
+      }
+
+      if (!savedTauri) {
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        showToast(translations[currentLang]["toast-pdf-downloaded"]);
+      }
     }
   } catch (err) {
     console.error("PDF Export failed", err);
