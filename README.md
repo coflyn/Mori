@@ -183,8 +183,19 @@ Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trac
 
 > [!TIP]
 > **Doubtful or concerned about false-positive security warnings?**  
-> Because Mori release binaries (`.apk`, `.dmg`, `.exe`, `.ipa`) are open-source builds compiled without expensive commercial enterprise signing certificates, some security software or browsers may display standard false-positive warnings.  
+> Because Mori release binaries (`.apk`, `.dmg`, `.exe`, `.ipa`) are open-source builds compiled without expensive commercial enterprise signing certificates, some OS security software or browsers may display standard false-positive warnings.  
 > If you have any doubts, you can upload and scan any release file directly on **[VirusTotal](https://www.virustotal.com/)** before installing!
+
+> [!NOTE]
+> **macOS Gatekeeper Warning ("Mori" is damaged and can't be opened):**  
+> When downloading the `.dmg` or `.app` via web browsers (Brave, Safari, Chrome), macOS flags unnotarized internet downloads with a quarantine attribute (`com.apple.quarantine`).  
+> To open Mori smoothly on macOS:
+> 1. Run in Terminal: `sudo xattr -cr /Applications/Mori.app`  
+> 2. Or **Right-Click** (Control + Click) `Mori.app` in Finder → Select **Open** → Click **Open**.
+
+> [!NOTE]
+> **Android Play Protect Warning:**  
+> When installing the `.apk` manually (sideloading outside Google Play Store), Play Protect may display a prompt. Tap **"More Details"** → **"Install Anyway"**.
 
 ## How to Use
 
