@@ -54,12 +54,46 @@ export async function scraperFetch(options, serverName = "Server") {
     headers["User-Agent"] = getUserAgent();
   }
 
+  const isHeaderSpoofing =
+    localStorage.getItem("mori_header_spoofing") !== "false";
+  const isBypassSsl = localStorage.getItem("mori_bypass_ssl") === "true";
+  const isForceIpv4 = localStorage.getItem("mori_force_ipv4") === "true";
+
+  if (isHeaderSpoofing) {
+    try {
+      const parsedUrl = new URL(options.url);
+      if (!headers["Referer"] && !headers["referer"]) {
+        headers["Referer"] = `${parsedUrl.protocol}//${parsedUrl.hostname}/`;
+      }
+    } catch (_) {}
+    if (!headers["Accept"] && !headers["accept"]) {
+      headers["Accept"] =
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8";
+    }
+    if (!headers["Accept-Language"] && !headers["accept-language"]) {
+      headers["Accept-Language"] = "en-US,en;q=0.9,id;q=0.8";
+    }
+    if (!headers["Sec-Fetch-Dest"] && !headers["sec-fetch-dest"]) {
+      headers["Sec-Fetch-Dest"] = "empty";
+    }
+    if (!headers["Sec-Fetch-Mode"] && !headers["sec-fetch-mode"]) {
+      headers["Sec-Fetch-Mode"] = "cors";
+    }
+  }
+
   const httpConfig = {
     url: options.url,
     headers: headers,
     connectTimeout: getRequestTimeout(),
     readTimeout: getRequestTimeout(),
   };
+
+  if (isBypassSsl) {
+    httpConfig.disableSSLValidation = true;
+  }
+  if (isForceIpv4) {
+    httpConfig.ipv4Only = true;
+  }
 
   if (options.data !== undefined) httpConfig.data = options.data;
   if (options.params !== undefined) httpConfig.params = options.params;

@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.2.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.2.1-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -32,7 +32,19 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in v4.2.0
+## What's New in v4.2.1 (Unreleased)
+
+- **4-Digit PIN Passcode Lock System**: Added `PIN Code` as a brand new Lock Type option alongside Biometric. Includes a sleek, custom-built 4-dot monochrome keypad modal for passcode entry, creation, and confirmation. Works cross-platform on Desktop (macOS & Windows) as well as Android and iOS devices. Automatically adapts to Desktop by displaying `None` and `PIN Code` while hiding native mobile biometric options.
+- **Audio Background Playback Fix**: Resolved an issue where audio previews (MP3/Spotify/Apple Music) continued playing in the background after closing modal details or preview cards. Implemented centralized `stopAllMedia()` helper to pause and reset both `<audio>` and `<video>` elements, revoke Object URLs, and trigger container cleanup hooks upon closing modals (`hideModal`), closing result cards (`closeResult`), or switching navigation tabs (`switchPage`).
+- **Complete Removal of Data Export/Import & Scheduled Auto-Backup**: Completely removed legacy data export (`exportMoriData`), data import (`importMoriData`), and scheduled auto-backup (`autoBackupDataCheck`) from the settings UI and codebase to keep app storage logic lightweight, fast, and zero-overhead.
+- **Full Network Settings Integration**: Fully wired up Anti-403 Header Guard (`mori_header_spoofing`), Cellular Data Warning Guard (`mori_cellular_warning`), Bypass SSL Errors (`mori_bypass_ssl`), and Force IPv4 Mode (`mori_force_ipv4`) into `scraperFetch()` and download lifecycle.
+- **Cellular Data Warning Modal Guard**: Integrated an interactive confirmation prompt when attempting media downloads over cellular data connection (2G/3G/4G/5G).
+- **Anti-403 Browser Header Injection**: Automatic spoofing of browser headers (`Referer`, `Accept`, `Accept-Language`, `Sec-Fetch-Dest`, `Sec-Fetch-Mode`) to bypass 403 Forbidden blocks across social media scrapers.
+- **Settings Layout Refinement**: Repositioned **Check Server Latency** directly below **Timeout Limit** in _Network & Performance_, and removed redundant Export & Import Data actions.
+- **Streamlined Settings UI**: Removed unused/redundant Scraper Engine & Status subpage to keep Mori's Settings menu clean, fast, and minimalist.
+- **App Version Bump**: Bumped version to `v4.2.1` across all platform manifests (`package.json`, `tauri.conf.json`, `build.gradle`, `project.pbxproj`, and app UI).
+
+## Previous Updates v4.2.0
 
 - **macOS & Windows Desktop Support (Tauri v2)**: Added native desktop application support for macOS (`.dmg`, `.app`) and Windows (`.exe`, `.msi`) powered by Tauri v2.
 - **Native CORS-Free Desktop HTTP Engine**: Integrated native Rust HTTP client (`tauri_http_request` & `tauri_fetch_bytes` via `reqwest`) to handle cross-origin network requests and binary file streaming on Desktop, eliminating WebKit CORS blocks and header restriction errors (`Load failed`).
@@ -51,36 +63,6 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **Desktop Biometric & Haptics Guard**: Implemented platform-aware guards for Privacy Lock and Haptics (`window.Capacitor?.isNativePlatform()`). Mobile biometric authentication (`@capgo/capacitor-native-biometric`) is preserved for Android and iOS, while Desktop platforms (macOS/Windows) automatically bypass mobile biometric checks and hide mobile lock and haptic settings to prevent navigation freezes or unhandled plugin exceptions.
 - **Color Accent Setting Removed**: Removed the Color Accent dropdown setting from the UI to enforce Mori's minimal black-and-white design system.
 - **SpotMate Removed**: The SpotMate scraper has been fully removed from the codebase.
-
-## Previous Updates v4.1.0
-
-- **Monotonic Floating Download Progress Toast & Zombie Timer Fix**: Refactored progress animation with strict monotonic state tracking (`updateProgress`) and global timer lifecycle management (`window._moriActiveSimInterval`), ensuring progress width never jumps or animates backwards during retries, errors, or subsequent download attempts.
-- **Clean Single-Percentage UI**: Eliminated redundant percentage text from download action buttons and progress toast status footers. Clean percentage numbers are shown exclusively in the top-right progress toast badge (`.dpt-percent`).
-- **Responsive Toast Error Formatting & Overflow Guard**: Sanitized long raw API URLs/tokens in error messages and added multi-line word-wrap CSS rules (`word-break: break-word; overflow-wrap: anywhere`) to prevent error text overflowing toast borders.
-- **Silent Background Auto-Retry Engine**: Implemented seamless silent auto-retries for background network downloads. Retries occur silently in the background while holding the UI cleanly at 95% / `Downloading...`, eliminating status text flickering and progress bar jumps until successful completion or final error reporting.
-- **Douyin Multi-Image Photo Slideshow Fix**: Resolved an issue where Douyin photo posts only displayed a single image in the preview. Re-aligned item type mapping (`PHOTO`) between `douyin.js` and `ui.js`, enabling full horizontal swipe navigation across all photos in Douyin slideshows.
-- **Server Selection Backdrop Default (Server 1)**: Enhanced the server selection modal (`confirmOverlay._onDismissOutside`) so that if a user accidentally taps outside the modal box on the backdrop overlay, the app automatically defaults to **Server 1** to proceed smoothly without hanging.
-- **Comprehensive Japanese Localization (`ja`)**: Fully localized all previously untranslated Settings menus, missing toggle labels (**Completion Sound / 完了通知音**, **Header Quote / ヘッダー名言**, **Home Greeting / ホーム挨拶**), custom select dropdown selected text re-hydration (**Default / デフォルト**, **15 Seconds / 15秒**, **Classic / クラシック**, **TEST / テスト**), and Scraper Health diagnostics.
-- **Dynamic Device Platform Detection & Share App Fix**: Replaced hardcoded platform labels in `script.js` with dynamic `window.Capacitor?.getPlatform()` detection (`iOS`, `Android`, or `Web Browser`), ensuring accurate device diagnostics and bug reporting. Fixed duplicated repo links in `share-msg` across all 6 supported languages.
-- **Static Thumbnail Image Preview for Analyzed Un-Downloaded History Items**: Updated `showModal` in `ui.js` so that items in History that have only been analyzed (not downloaded yet) display a clean static cover thumbnail image instead of initiating a network streaming video/audio player. Interactive media playback is reserved exclusively for locally saved downloaded files.
-- **Fixed Local File Preview Resolution in History Modal**: Resolved a critical bug where the History detail modal would attempt to stream media from the network instead of playing locally saved files. The root cause was that `content://` URIs (returned by `Filesystem.getUri()`) were prioritized over the relative file path in both `ui.js` (`fileSrc` selection) and `player.js` (`cleanPath` resolution). Since WebView cannot properly handle `content://` schemas for media playback via `convertFileSrc`, playback silently failed and fell back to network streaming. Fixed by preferring `file.path` (relative path → `file://` → `_capacitor_file_`) in `showModal` and `videoUrl` (pre-converted `_capacitor_file_` URI) in `createVideoPlayer`.
-- **Redesigned Monochrome History Edit Mode & Action Header**: Re-architected History edit controls into a clean inline header layout (`.history-actions-wrapper`) with strict monochrome black-and-white styling (`EDIT`, `CLEAR ALL`, `DONE`, `×`), eliminating colored accents to match Mori's minimal design system.
-- **Modal Overlay State Fix (`confirmOverlay`)**: Resolved inline `style.display = "none"` state bugs triggered by scraper choice / cellular warning popups, ensuring `showConfirm()` explicitly sets `display = "flex"` so `CLEAR ALL` and individual delete confirmation modals remain 100% interactive before and after downloads.
-- **Adaptive Real-Time Download Progress Toast**: Upgraded floating bottom progress toast with smooth adaptive dynamic scaling (0% to 85% during active transfer, jumping instantly to 100% upon disk write completion) and real-time byte tracking, eliminating the progress freeze/stuck state at 92% on chunked media streams.
-- **Smart History Matcher (`mori_file_saved`)**: Enhanced `mori_file_saved` event listener to match history entries by `url`, `sourceUrl`, or fallback to the latest history item, ensuring `localFiles` and `localUri` references are ALWAYS saved into `mori_history` in `localStorage`.
-- **Restored Android WebView Autoplay (`MainActivity.java`)**: Restored `settings.setMediaPlaybackRequiresUserGesture(false)` and `settings.setAllowFileAccess(true)` in `MainActivity.java`, enabling smooth programmatic autoplay of video previews in Android WebView.
-- **Capacitor Local HTTP URL Protection**: Protected `http://localhost` internal webserver URLs (`_capacitor_file_`) in `player.js` from unintended HTTPS rewrites while strictly enforcing `https://` upgrades for all remote media streams (TikTok, Instagram, Bilibili, etc.), eliminating `ERR_CONNECTION_REFUSED` local preview errors.
-- **Strict Monochrome Design Aesthetic**: Enforced a clean, premium black-and-white theme across all progress bars, latency diagnostic badges, edit controls, and toast notifications, eliminating noisy colored accents for visual consistency.
-- **Modular Scraper Suite Architecture (1-to-1 Platform Files)**: Deconstructed the monolithic `scrapers.js` (2,300+ lines) into clean, standalone ES modules inside `public/js/scrapers/`. Every platform has its dedicated scraper file (`tiktok.js`, `youtube.js`, `instagram.js`, `twitter.js`, `spotify.js`, `bilibili.js`, `pixiv.js`, `rednote.js`, `douyin.js`, `threads.js`, `pinterest.js`, `applemusic.js`, `facebook.js`, `bandcamp.js`), unified via `index.js` barrel export.
-- **Domain Application Managers**: Separated core app logic into dedicated manager modules (`authManager.js`, `historyManager.js`, `settingsManager.js`, `downloadManager.js`).
-- **Clean Subdirectory Project Structure**: Reorganized loose root JavaScript files into clear subdirectories (`public/js/vendor/`, `public/js/components/`, `public/js/i18n/`, `public/js/utils/`).
-- **Centralized HTTP Client & Defensive Response Parsing**: Extracted all HTTP network logic into a unified `scraperFetch` helper (`httpHelper.js`), automatically injecting active User-Agent presets, respecting custom request timeout limits, and defensively parsing HTML error pages (Cloudflare/Rate Limit blocks).
-- **Unified URL Extraction & Sanitization Engine**: Consolidated URL extraction and parameter stripping into `urlUtils.js`, standardizing protocol normalization (`https://`) and tracking parameter removal (`utm_*`, `igsh`, `s`, `t`, `si`) across all 14 platform scrapers.
-- **Redesigned Focused-Input Toast & Universal Settings Notifications**: Upgraded `.custom-toast` to mimic the focused URL input style (`1.5px solid var(--primary)` border with `4px 4px 0px var(--primary)` shadow and `105px` clearance above bottom nav), with haptic feedback vibration and localized toast notifications across all 30+ settings controls in English, Indonesian, Japanese, Spanish, Chinese, and Russian.
-- **Mobile Hardware Back Button & Double-Tap Exit Guard**: Integrated native Android back button event listener to dismiss open modals/subpages, navigate back to Home, and require double-tap back within 2 seconds to exit the app.
-- **Pixel-Perfect Settings UI Layout Polish**: Standardized Network & Performance settings dropdown row heights (`38px` fixed height) and truncated text labels to prevent multi-line text wrapping.
-- **New "Scraper Engine & Status" Settings Sub-Page**: Added a dedicated 6th settings sub-page allowing users to monitor real-time online/offline server health, active API engines, and round-trip response latency (ms) across all 14 supported platform scrapers. Features a clean, justified 2-column card layout displaying server endpoints (e.g. SnapTik, TikTokIO) with their respective latency badges (ms) positioned directly below each server title (Douyin moved after Spotify, filler words like "Engine/Extractor" removed).
-- **Enhanced Memory & Canvas Resource Cleanup**: Upgraded `getVideoThumbnail` with a centralized resource cleanup engine that revokes Object URLs (`blob:`), unbinds media event listeners, and resets `<canvas>` dimensions immediately upon completion or error.
 
 ## Supported Platforms
 
@@ -190,7 +172,8 @@ Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trac
 > **macOS Gatekeeper Warning ("Mori" is damaged and can't be opened):**  
 > When downloading the `.dmg` or `.app` via web browsers (Brave, Safari, Chrome), macOS flags unnotarized internet downloads with a quarantine attribute (`com.apple.quarantine`).  
 > To open Mori smoothly on macOS:
-> 1. Run in Terminal: `sudo xattr -cr /Applications/Mori.app`  
+>
+> 1. Run in Terminal: `sudo xattr -cr /Applications/Mori.app`
 > 2. Or **Right-Click** (Control + Click) `Mori.app` in Finder → Select **Open** → Click **Open**.
 
 > [!NOTE]

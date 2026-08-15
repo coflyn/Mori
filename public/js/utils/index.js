@@ -478,3 +478,44 @@ export function releaseWakeLock() {
     console.log("[WAKE LOCK] Screen active lock released.");
   }
 }
+
+/**
+ * Stops, pauses, and cleans up all active video and audio playback elements,
+ * revoking Object URLs and executing container cleanup hooks.
+ * @param {HTMLElement|Document} rootEl - Container element or document
+ */
+export function stopAllMedia(rootEl = document) {
+  if (!rootEl) return;
+
+  try {
+    const mediaElements = rootEl.querySelectorAll
+      ? rootEl.querySelectorAll("video, audio")
+      : [];
+
+    mediaElements.forEach((el) => {
+      try {
+        el.pause();
+        if (el.src && el.src.startsWith("blob:")) {
+          URL.revokeObjectURL(el.src);
+        }
+        el.removeAttribute("src");
+        el.load();
+      } catch (e) {
+        console.warn("Error pausing media element:", e);
+      }
+    });
+
+    const cleanupElements = rootEl.querySelectorAll
+      ? rootEl.querySelectorAll("*")
+      : [];
+    cleanupElements.forEach((el) => {
+      if (typeof el._cleanup === "function") {
+        try {
+          el._cleanup();
+        } catch (e) {}
+      }
+    });
+  } catch (err) {
+    console.warn("stopAllMedia error:", err);
+  }
+}

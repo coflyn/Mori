@@ -19,6 +19,7 @@ import {
   playCompletionSound,
   requestWakeLock,
   releaseWakeLock,
+  stopAllMedia,
 } from "./utils/index.js";
 
 // State pointers (will be updated from main script)
@@ -430,18 +431,20 @@ export function updateSliderUI() {
   const slideNextBtn = document.getElementById("slideNextBtn");
 
   slides.forEach((slide, index) => {
-    const video = slide.querySelector("video");
+    const media = slide.querySelector("video, audio");
     if (index === currentSlideIndex) {
       slide.classList.add("active");
-      if (video) {
-        if (video.readyState < 1) video.load();
-        video.currentTime = 0;
-        video.loop = localStorage.getItem("mori_loop") !== "false";
-        video.play().catch(() => {});
+      if (media) {
+        if (media.readyState < 1) media.load();
+        media.currentTime = 0;
+        media.loop = localStorage.getItem("mori_loop") !== "false";
+        if (localStorage.getItem("mori_autoplay") !== "false") {
+          media.play().catch(() => {});
+        }
       }
     } else {
       slide.classList.remove("active");
-      if (video) video.pause();
+      if (media) media.pause();
     }
   });
 
@@ -464,6 +467,7 @@ export function renderResult(result, originalUrl) {
   const urlInput = document.getElementById("urlInput");
 
   if (!slidesWrapper) return;
+  stopAllMedia(slidesWrapper);
   slidesWrapper.innerHTML = "";
   if (downloadList) downloadList.innerHTML = "";
 
@@ -785,6 +789,7 @@ export async function showModal(item, onRedownload) {
 
     if (modalTitle)
       modalTitle.textContent = truncate(item.title || "Detail", 100);
+    stopAllMedia(slidesWrapper);
     slidesWrapper.innerHTML = "";
     modalCurrentSlide = 0;
 
@@ -929,14 +934,16 @@ export async function showModal(item, onRedownload) {
       slides.forEach((s, i) => {
         const isActive = i === modalCurrentSlide;
         s.classList.toggle("active", isActive);
-        const video = s.querySelector("video");
-        if (video) {
+        const media = s.querySelector("video, audio");
+        if (media) {
           if (isActive) {
-            video.currentTime = 0;
-            video.loop = localStorage.getItem("mori_loop") !== "false";
-            video.play().catch(() => {});
+            media.currentTime = 0;
+            media.loop = localStorage.getItem("mori_loop") !== "false";
+            if (localStorage.getItem("mori_autoplay") !== "false") {
+              media.play().catch(() => {});
+            }
           } else {
-            video.pause();
+            media.pause();
           }
         }
       });
@@ -978,6 +985,7 @@ export async function showModal(item, onRedownload) {
     if (redownloadBtn) {
       redownloadBtn.onclick = (e) => {
         e.stopPropagation();
+        stopAllMedia(slidesWrapper);
         modalOverlay.classList.add("hidden");
         modalOverlay.style.display = "none";
         onRedownload(item.url);

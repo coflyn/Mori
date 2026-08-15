@@ -49,14 +49,12 @@ import {
   triggerHaptic,
   requestWakeLock,
   releaseWakeLock,
+  stopAllMedia,
 } from "./utils/index.js";
 
-import {
-  renderScraperListContainer,
-  checkAllScrapersHealth,
-} from "./utils/scraperHealth.js";
+import { initAuthListeners, verifyLock } from "./modules/authManager.js";
 
-const APP_VERSION = "4.2.0";
+const APP_VERSION = "4.2.1";
 const GITHUB_REPO = "coflyn/Mori";
 const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -228,8 +226,6 @@ const autoClearHistoryToggle = document.getElementById(
 );
 const lockTypeSelect = document.getElementById("lockTypeSelect");
 const setPinBtn = document.getElementById("setPinBtn");
-const exportDataBtn = document.getElementById("exportDataBtn");
-const importDataBtn = document.getElementById("importDataBtn");
 
 let isHistoryUnlocked = false; // Session-based unlock state
 let isSettingsUnlocked = false; // Session-based settings lock state
@@ -248,141 +244,12 @@ if (autoClearHistoryToggle) {
   });
 }
 
-const privacyLockToggle = document.getElementById("privacyLockToggle");
-const lockTypeMenu = document.getElementById("lockTypeMenu");
-const lockTypeText = document.getElementById("lockTypeText");
-
 const isNativePlatform = window.Capacitor?.isNativePlatform();
-
 if (!isNativePlatform) {
-  // Desktop platforms (macOS/Windows) do not support mobile Capacitor Biometric plugin or Haptics.
-  // Hide privacy lock & haptics items on Desktop and ensure navigation is 100% unlocked.
-  const privacyItem = privacyLockToggle?.closest(".settings-item");
-  const lockTypeItem = lockTypeSelect?.closest(".settings-item");
   const hapticToggle = document.getElementById("hapticToggle");
   const hapticItem = hapticToggle?.closest(".settings-item");
-  if (privacyItem) privacyItem.style.display = "none";
-  if (lockTypeItem) lockTypeItem.style.display = "none";
   if (hapticItem) hapticItem.style.display = "none";
-  localStorage.setItem("mori_privacy_lock", "false");
-  localStorage.setItem("mori_lock_type", "none");
-  isHistoryUnlocked = true;
-  isSettingsUnlocked = true;
 }
-
-const isPrivacyOnInitial = localStorage.getItem("mori_privacy_lock") === "true";
-if (privacyLockToggle) {
-  privacyLockToggle.checked = isPrivacyOnInitial;
-  privacyLockToggle.addEventListener("change", async (e) => {
-    const isChecked = e.target.checked;
-    const currentLockType = localStorage.getItem("mori_lock_type") || "none";
-
-    if (!isChecked && currentLockType === "biometric" && isNativePlatform) {
-      try {
-        const { NativeBiometric } = Capacitor.Plugins || {};
-        if (NativeBiometric) {
-          const res = await NativeBiometric.isAvailable();
-          if (res.isAvailable) {
-            await NativeBiometric.verifyIdentity({
-              reason: translations[currentLang]["label-biometric-reason"],
-              title: "Mori Privacy Lock",
-              subtitle: "",
-              description: "",
-            });
-          }
-        }
-      } catch (err) {
-        privacyLockToggle.checked = true;
-        return;
-      }
-    }
-
-    localStorage.setItem("mori_privacy_lock", isChecked ? "true" : "false");
-    if (isChecked) {
-      isHistoryUnlocked = false;
-      isSettingsUnlocked = false;
-      if (currentLockType === "none") {
-        localStorage.setItem("mori_lock_type", "biometric");
-        if (lockTypeText) {
-          lockTypeText.textContent =
-            translations[currentLang]["lock-type-biometric"] || "Biometric";
-        }
-      }
-    } else {
-      isHistoryUnlocked = true;
-      isSettingsUnlocked = true;
-    }
-
-    const lang = translations[currentLang];
-    showToast(isChecked ? lang["toast-privacy-on"] : lang["toast-privacy-off"]);
-  });
-}
-
-if (lockTypeSelect) {
-  const currentLock = localStorage.getItem("mori_lock_type") || "none";
-  if (lockTypeText) {
-    lockTypeText.textContent =
-      translations[currentLang][`lock-type-${currentLock}`] || currentLock;
-  }
-
-  lockTypeSelect.addEventListener("click", (e) => {
-    e.stopPropagation();
-    lockTypeMenu?.classList.toggle("hidden");
-  });
-
-  document.addEventListener("click", () => {
-    lockTypeMenu?.classList.add("hidden");
-  });
-
-  lockTypeMenu?.querySelectorAll(".dropdown-item").forEach((item) => {
-    item.addEventListener("click", async () => {
-      const type = item.getAttribute("data-value");
-      const currentType = localStorage.getItem("mori_lock_type") || "none";
-
-      if (type === currentType) return;
-
-      if (currentType === "biometric" && type === "none") {
-        try {
-          const { NativeBiometric } = Capacitor.Plugins || {};
-          if (NativeBiometric) {
-            const res = await NativeBiometric.isAvailable();
-            if (res.isAvailable) {
-              await NativeBiometric.verifyIdentity({
-                reason: translations[currentLang]["label-biometric-reason"],
-                title: "Mori Privacy Lock",
-                subtitle: "",
-                description: "",
-              });
-            }
-          }
-        } catch (err) {
-          return;
-        }
-      }
-
-      localStorage.setItem("mori_lock_type", type);
-      if (lockTypeText) lockTypeText.textContent = item.textContent;
-
-      if (type === "biometric") {
-        localStorage.setItem("mori_privacy_lock", "true");
-        if (privacyLockToggle) privacyLockToggle.checked = true;
-        isHistoryUnlocked = false;
-      } else {
-        localStorage.setItem("mori_privacy_lock", "false");
-        if (privacyLockToggle) privacyLockToggle.checked = false;
-        isHistoryUnlocked = true;
-      }
-
-      const lang = translations[currentLang];
-      showToast(
-        type === "none" ? lang["toast-privacy-off"] : lang["toast-privacy-on"],
-      );
-    });
-  });
-}
-
-exportDataBtn?.addEventListener("click", exportMoriData);
-importDataBtn?.addEventListener("click", importMoriData);
 
 // User Guide Logic
 const guideOverlay = document.getElementById("guideOverlay");
@@ -397,14 +264,7 @@ settingsMenuItems.forEach((item) => {
     settingsMainMenu.classList.add("hidden");
     const targetPage = document.getElementById(targetId);
     if (targetPage) targetPage.classList.remove("hidden");
-    if (targetId === "settingsScraper") {
-      renderScraperListContainer();
-    }
   });
-});
-
-document.getElementById("btnTestAllScrapers")?.addEventListener("click", () => {
-  checkAllScrapersHealth();
 });
 
 settingsBackBtns.forEach((btn) => {
@@ -566,12 +426,7 @@ setupCustomSelect(
   "autoClearCacheDaysText",
   "autoClearCacheDaysMenu",
 );
-setupCustomSelect(
-  "autoBackupSelect",
-  "mori_auto_backup",
-  "autoBackupText",
-  "autoBackupMenu",
-);
+
 setupCustomSelect(
   "preferServerSelect",
   "mori_prefer_server",
@@ -1122,8 +977,6 @@ function updateCustomSelectsUI() {
     preferServerText.textContent =
       lang[`server-${currentServer}`] || currentServer;
 
-
-
   const currentFont = localStorage.getItem("mori_font") || "default";
   const fontText = document.getElementById("fontText");
   if (fontText)
@@ -1392,10 +1245,10 @@ clearBtn.addEventListener("click", () => {
 });
 
 closeResult?.addEventListener("click", () => {
-  document.querySelectorAll(".preview-slide video").forEach((v) => {
-    v.pause();
-    v.src = "";
-  });
+  const slidesWrapper = document.getElementById("slidesWrapper");
+  if (slidesWrapper) {
+    stopAllMedia(slidesWrapper);
+  }
   resultSection.classList.add("hidden");
   const supportedSection = document.querySelector(".supported-section");
   if (supportedSection) supportedSection.classList.remove("hidden");
@@ -1501,7 +1354,7 @@ if (App) {
 }
 
 // Custom Confirm Function
-function showConfirm(title, message, onConfirm) {
+function showConfirm(title, message, onConfirm, onCancel = null) {
   confirmTitle.innerHTML = title;
   confirmMessage.innerHTML = message;
   confirmOverlay.classList.remove("hidden");
@@ -1513,6 +1366,7 @@ function showConfirm(title, message, onConfirm) {
   };
 
   cancelConfirmBtn.onclick = () => {
+    if (onCancel) onCancel();
     hideConfirm();
   };
 
@@ -1937,6 +1791,39 @@ downloadBtn.addEventListener("click", async () => {
     }
   }
 
+  // Cellular Data Warning Guard Check
+  const isCellularWarning =
+    localStorage.getItem("mori_cellular_warning") === "true";
+  if (isCellularWarning && window.Capacitor?.getPlatform() !== "web") {
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+    if (connection) {
+      const type = (connection.type || "").toLowerCase();
+      const isCellular =
+        type === "cellular" ||
+        type === "mobile" ||
+        type.includes("2g") ||
+        type.includes("3g") ||
+        type.includes("4g") ||
+        type.includes("5g");
+
+      if (isCellular) {
+        const confirmed = await new Promise((resolve) => {
+          showConfirm(
+            "Cellular Data Warning",
+            translations[currentLang]["msg-cellular-warning"] ||
+              "You are connected to Cellular Data. Proceed with media download?",
+            () => resolve(true),
+            () => resolve(false),
+          );
+        });
+        if (!confirmed) return;
+      }
+    }
+  }
+
   const phrases = translations[currentLang]["loader-phrases"];
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
   const loaderText = loader.querySelector("p");
@@ -1963,249 +1850,249 @@ downloadBtn.addEventListener("click", async () => {
     let data;
     const preferServer = localStorage.getItem("mori_prefer_server") || "ask";
     if (url.includes("tiktok.com")) {
-        if (preferServer === "server1") setTikTokSource("tiktokio");
-        else if (preferServer === "server2") setTikTokSource("snaptik");
-        else setTikTokSource(null);
+      if (preferServer === "server1") setTikTokSource("tiktokio");
+      else if (preferServer === "server2") setTikTokSource("snaptik");
+      else setTikTokSource(null);
+      data = await scrapeTikTok(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("tiktokio");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("tiktokio");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("snaptik");
+          };
+        });
+        setTikTokSource(chosen);
         data = await scrapeTikTok(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("tiktokio");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("tiktokio");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("snaptik");
-            };
-          });
-          setTikTokSource(chosen);
-          data = await scrapeTikTok(url);
-        }
-      } else if (url.includes("instagram.com")) {
-        if (preferServer === "server1") setInstagramSource("indown");
-        else if (preferServer === "server2") setInstagramSource("downreels");
-        else setInstagramSource(null);
-        data = await scrapeInstagram(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("indown");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("indown");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("downreels");
-            };
-          });
-          setInstagramSource(chosen);
-          data = await scrapeInstagram(url);
-        }
-      } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
-        if (preferServer === "server1") setYouTubeSource("gg");
-        else if (preferServer === "server2") setYouTubeSource("mobi");
-        else setYouTubeSource(null);
-        data = await scrapeYouTube(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("gg");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("gg");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("mobi");
-            };
-          });
-          setYouTubeSource(chosen);
-          data = await scrapeYouTube(url);
-        }
-      } else if (
-        url.includes("twitter.com") ||
-        url.includes("x.com") ||
-        url.includes("fixupx.com") ||
-        url.includes("fxtwitter.com") ||
-        url.includes("vxtwitter.com")
-      ) {
-        if (preferServer === "server1") setTwitterSource("tweeload");
-        else if (preferServer === "server2") setTwitterSource("tvd");
-        else setTwitterSource(null);
-        data = await scrapeTwitter(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("tweeload");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("tweeload");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("tvd");
-            };
-          });
-          setTwitterSource(chosen);
-          data = await scrapeTwitter(url);
-        }
-      } else if (url.includes("spotify.com")) {
-        if (preferServer === "server1") setSpotifySource("spotidown");
-        else if (preferServer === "server2") setSpotifySource("soundloaders");
-        else setSpotifySource(null);
-        data = await scrapeSpotify(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: SpotiDown (MP3)\nServer 2: SoundLoaders (MP3)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("spotidown");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("spotidown");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("soundloaders");
-            };
-          });
-          setSpotifySource(chosen);
-          data = await scrapeSpotify(url);
-        }
-      } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
-        if (preferServer === "server1") setPinterestSource("pindown");
-        else if (preferServer === "server2") setPinterestSource("pindirect");
-        else setPinterestSource(null);
-        data = await scrapePinterest(url);
-        if (data && data.requireSource) {
-          confirmTitle.textContent = "Choose Server";
-          confirmMessage.textContent =
-            "Server 1: PinDown (Image/Video)\nServer 2: PinDirect (Image/Video)";
-          if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-          if (okConfirmBtn) {
-            okConfirmBtn.textContent = "SERVER 1";
-            okConfirmBtn.style.color = "var(--primary)";
-          }
-          confirmOverlay.classList.remove("hidden");
-          confirmOverlay.style.display = "flex";
-          const chosen = await new Promise((resolve) => {
-            confirmOverlay._onDismissOutside = () => {
-              hideConfirm();
-              resolve("pindown");
-            };
-            okConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("pindown");
-            };
-            cancelConfirmBtn.onclick = () => {
-              confirmOverlay._onDismissOutside = null;
-              hideConfirm();
-              resolve("pindirect");
-            };
-          });
-          setPinterestSource(chosen);
-          data = await scrapePinterest(url);
-        }
-      } else if (url.includes("music.apple.com")) {
-        data = await scrapeAppleMusic(url);
-      } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
-        data = await scrapeFacebook(url);
-      } else if (
-        url.includes("xiaohongshu.com") ||
-        url.includes("xhslink.com") ||
-        url.includes("xhslink.cn")
-      ) {
-        data = await scrapeRedNote(url);
-      } else if (url.includes("douyin.com")) {
-        data = await scrapeDouyin(url);
-      } else if (
-        url.includes("bilibili.com") ||
-        url.includes("b23.tv") ||
-        url.includes("bili.im") ||
-        url.includes("bilibili.tv")
-      ) {
-        data = await scrapeBilibili(url);
-      } else if (url.includes("threads.net") || url.includes("threads.com")) {
-        data = await scrapeThreads(url);
-      } else if (url.includes("bandcamp.com")) {
-        data = await scrapeBandcamp(url);
-      } else if (url.includes("pixiv.net")) {
-        data = await scrapePixiv(url);
-      } else {
-        data = { status: false, message: "URL not supported yet." };
       }
+    } else if (url.includes("instagram.com")) {
+      if (preferServer === "server1") setInstagramSource("indown");
+      else if (preferServer === "server2") setInstagramSource("downreels");
+      else setInstagramSource(null);
+      data = await scrapeInstagram(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("indown");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("indown");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("downreels");
+          };
+        });
+        setInstagramSource(chosen);
+        data = await scrapeInstagram(url);
+      }
+    } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      if (preferServer === "server1") setYouTubeSource("gg");
+      else if (preferServer === "server2") setYouTubeSource("mobi");
+      else setYouTubeSource(null);
+      data = await scrapeYouTube(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("gg");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("gg");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("mobi");
+          };
+        });
+        setYouTubeSource(chosen);
+        data = await scrapeYouTube(url);
+      }
+    } else if (
+      url.includes("twitter.com") ||
+      url.includes("x.com") ||
+      url.includes("fixupx.com") ||
+      url.includes("fxtwitter.com") ||
+      url.includes("vxtwitter.com")
+    ) {
+      if (preferServer === "server1") setTwitterSource("tweeload");
+      else if (preferServer === "server2") setTwitterSource("tvd");
+      else setTwitterSource(null);
+      data = await scrapeTwitter(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("tweeload");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("tweeload");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("tvd");
+          };
+        });
+        setTwitterSource(chosen);
+        data = await scrapeTwitter(url);
+      }
+    } else if (url.includes("spotify.com")) {
+      if (preferServer === "server1") setSpotifySource("spotidown");
+      else if (preferServer === "server2") setSpotifySource("soundloaders");
+      else setSpotifySource(null);
+      data = await scrapeSpotify(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: SpotiDown (MP3)\nServer 2: SoundLoaders (MP3)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("spotidown");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("spotidown");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("soundloaders");
+          };
+        });
+        setSpotifySource(chosen);
+        data = await scrapeSpotify(url);
+      }
+    } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
+      if (preferServer === "server1") setPinterestSource("pindown");
+      else if (preferServer === "server2") setPinterestSource("pindirect");
+      else setPinterestSource(null);
+      data = await scrapePinterest(url);
+      if (data && data.requireSource) {
+        confirmTitle.textContent = "Choose Server";
+        confirmMessage.textContent =
+          "Server 1: PinDown (Image/Video)\nServer 2: PinDirect (Image/Video)";
+        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
+        if (okConfirmBtn) {
+          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.style.color = "var(--primary)";
+        }
+        confirmOverlay.classList.remove("hidden");
+        confirmOverlay.style.display = "flex";
+        const chosen = await new Promise((resolve) => {
+          confirmOverlay._onDismissOutside = () => {
+            hideConfirm();
+            resolve("pindown");
+          };
+          okConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("pindown");
+          };
+          cancelConfirmBtn.onclick = () => {
+            confirmOverlay._onDismissOutside = null;
+            hideConfirm();
+            resolve("pindirect");
+          };
+        });
+        setPinterestSource(chosen);
+        data = await scrapePinterest(url);
+      }
+    } else if (url.includes("music.apple.com")) {
+      data = await scrapeAppleMusic(url);
+    } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
+      data = await scrapeFacebook(url);
+    } else if (
+      url.includes("xiaohongshu.com") ||
+      url.includes("xhslink.com") ||
+      url.includes("xhslink.cn")
+    ) {
+      data = await scrapeRedNote(url);
+    } else if (url.includes("douyin.com")) {
+      data = await scrapeDouyin(url);
+    } else if (
+      url.includes("bilibili.com") ||
+      url.includes("b23.tv") ||
+      url.includes("bili.im") ||
+      url.includes("bilibili.tv")
+    ) {
+      data = await scrapeBilibili(url);
+    } else if (url.includes("threads.net") || url.includes("threads.com")) {
+      data = await scrapeThreads(url);
+    } else if (url.includes("bandcamp.com")) {
+      data = await scrapeBandcamp(url);
+    } else if (url.includes("pixiv.net")) {
+      data = await scrapePixiv(url);
+    } else {
+      data = { status: false, message: "URL not supported yet." };
+    }
 
     if (data && data.status) {
       // SMART LOCAL DETECTION: Check if we have this content in history and on disk
@@ -2289,11 +2176,7 @@ slideNextBtn?.addEventListener("click", () => {
 const hideModal = () => {
   const slidesWrapper = document.getElementById("modalSlidesWrapper");
   if (slidesWrapper) {
-    slidesWrapper.querySelectorAll("video").forEach((v) => {
-      v.pause();
-      v.src = "";
-      v.load();
-    });
+    stopAllMedia(slidesWrapper);
     slidesWrapper.innerHTML = "";
   }
   if (modalOverlay) {
@@ -2466,7 +2349,7 @@ window.addEventListener("mori_file_saved", async (e) => {
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
               versionCode: 10,
-              versionName: "4.2.0",
+              versionName: "4.2.1",
             };
           }
           return item;
@@ -2580,108 +2463,10 @@ function autoClearOldCache() {
   }
 }
 
-function autoBackupDataCheck() {
-  const backupVal = localStorage.getItem("mori_auto_backup") || "off";
-  if (backupVal === "off") return;
-
-  const days = parseInt(backupVal, 10);
-  if (isNaN(days) || days <= 0) return;
-
-  const lastBackup = parseInt(
-    localStorage.getItem("mori_last_backup_ts") || "0",
-    10,
-  );
-  const cutoffTime = days * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-
-  if (now - lastBackup >= cutoffTime) {
-    console.log(`[BACKUP] Executing auto backup data (interval: ${days} days)`);
-    exportMoriData();
-    localStorage.setItem("mori_last_backup_ts", String(now));
-  }
-}
-
-// Export/Import Logic
-async function exportMoriData() {
-  try {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith("mori_")) {
-        data[key] = localStorage.getItem(key);
-      }
-    }
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const fileName = `mori_backup_${new Date().toISOString().split("T")[0]}.json`;
-
-    if (window.Capacitor?.isNativePlatform() && Filesystem) {
-      const base64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(",")[1]);
-        reader.readAsDataURL(blob);
-      });
-
-      const saved = await Filesystem.writeFile({
-        path: fileName,
-        data: base64,
-        directory: "CACHE",
-      });
-
-      await Share.share({
-        title: "Mori Backup Data",
-        text: "My Mori App settings and history backup.",
-        url: saved.uri,
-        dialogTitle: "Export Backup",
-      });
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    showToast(translations[currentLang]["toast-export-success"]);
-  } catch (err) {
-    console.error("Export failed", err);
-    showToast("Export failed: " + err.message);
-  }
-}
-
-async function importMoriData() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json";
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-        Object.keys(data).forEach((key) => {
-          if (key.startsWith("mori_")) {
-            localStorage.setItem(key, data[key]);
-          }
-        });
-        showToast(translations[currentLang]["toast-import-success"]);
-        setTimeout(() => window.location.reload(), 1500);
-      } catch (err) {
-        showToast("Import failed: invalid file");
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-
 // Initialize App
 autoClearOldHistory();
 autoClearOldCache();
-autoBackupDataCheck();
+initAuthListeners(currentLang);
 setUIState({ currentLang, isEditingHistory });
 renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
@@ -2700,22 +2485,11 @@ async function switchPage(pageId) {
   }
 
   if (pageId === "history" && !isHistoryUnlocked) {
-    if (isPrivacyOn && lockType === "biometric" && isNative && NativeBiometric) {
-      try {
-        const result = await NativeBiometric.isAvailable();
-        if (result.isAvailable) {
-          await NativeBiometric.verifyIdentity({
-            reason: translations[currentLang]["label-biometric-reason"],
-            title: "Mori Privacy Lock",
-            subtitle: "History Tab",
-            description: translations[currentLang]["label-biometric-reason"],
-          });
-          isHistoryUnlocked = true;
-        } else {
-          isHistoryUnlocked = true;
-        }
-      } catch (err) {
-        console.warn("Biometric failed or cancelled", err);
+    if (isPrivacyOn && lockType !== "none") {
+      const verified = await verifyLock("label-biometric-reason", currentLang);
+      if (verified) {
+        isHistoryUnlocked = true;
+      } else {
         return;
       }
     } else {
@@ -2724,22 +2498,11 @@ async function switchPage(pageId) {
   }
 
   if (pageId === "settings" && !isSettingsUnlocked) {
-    if (isPrivacyOn && lockType === "biometric" && isNative && NativeBiometric) {
-      try {
-        const result = await NativeBiometric.isAvailable();
-        if (result.isAvailable) {
-          await NativeBiometric.verifyIdentity({
-            reason: translations[currentLang]["label-biometric-reason"],
-            title: "Mori Privacy Lock",
-            subtitle: "Settings Access",
-            description: translations[currentLang]["label-biometric-reason"],
-          });
-          isSettingsUnlocked = true;
-        } else {
-          isSettingsUnlocked = true;
-        }
-      } catch (err) {
-        console.warn("Biometric failed or cancelled for settings", err);
+    if (isPrivacyOn && lockType !== "none") {
+      const verified = await verifyLock("label-biometric-reason", currentLang);
+      if (verified) {
+        isSettingsUnlocked = true;
+      } else {
         return;
       }
     } else {
@@ -2759,7 +2522,7 @@ async function switchPage(pageId) {
   document
     .querySelectorAll(".page-content")
     .forEach((page) => page.classList.add("hidden"));
-  document.querySelectorAll("video").forEach((v) => v.pause());
+  stopAllMedia(document);
 
   const targetPage = document.getElementById(targetPageId);
   if (targetPage) targetPage.classList.remove("hidden");
