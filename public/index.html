@@ -37,8 +37,8 @@
         <!-- Home Page -->
         <div id="homePage" class="page-content">
           <div class="input-section">
-            <div class="input-wrapper">
-              <span class="search-icon">
+            <div class="input-wrapper" id="inputWrapper">
+              <span class="search-icon" id="searchIcon">
                 <svg
                   viewBox="0 0 24 24"
                   width="20"
@@ -57,6 +57,30 @@
                 autocomplete="off"
                 data-i18n-placeholder="input-placeholder"
               />
+              <textarea
+                id="batchUrlInput"
+                class="batch-url-textarea hidden"
+                placeholder="Paste multiple links (one per line)..."
+                autocomplete="off"
+                data-i18n-placeholder="batch-input-placeholder"
+              ></textarea>
+              <button
+                id="batchToggleBtn"
+                class="input-action-btn batch-toggle-btn"
+                aria-label="Toggle Batch Mode"
+                title="Batch Mode"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                  />
+                </svg>
+              </button>
               <button
                 id="pasteBtn"
                 class="input-action-btn"
@@ -1326,7 +1350,7 @@
               <h3 data-i18n="menu-network-title">Network & Performance</h3>
             </div>
             <div class="settings-list">
-              <!-- Preferred Server -->
+              <!-- Preferred Scraper Server -->
               <div class="settings-item">
                 <div class="item-label">
                   <svg
@@ -1336,18 +1360,14 @@
                     fill="currentColor"
                   >
                     <path
-                      d="M19 15v4H5v-4h14m1-2H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM19 5v4H5V5h14m1-2H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zM7 8.5c-.83 0-1.5-.67-1.5-1.5S6.17 5.5 7 5.5s1.5.67 1.5 1.5S7.83 8.5 7 8.5z"
+                      d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zm-1 5h-2v-2h2v2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zm-1 5h-2V6h2v2z"
                     />
                   </svg>
-                  <span data-i18n="label-prefer-server">Preferred Server</span>
+                  <span data-i18n="label-prefer-server">Prefer Scraper Server</span>
                 </div>
                 <div class="custom-select" id="preferServerSelect">
-                  <div
-                    class="selected-text"
-                    id="preferServerText"
-                    data-i18n="server-ask"
-                  >
-                    Always Ask
+                  <div class="selected-text" id="preferServerText">
+                    Ask / Auto
                   </div>
                   <div class="dropdown-arrow">
                     <svg
@@ -1365,14 +1385,14 @@
                       data-value="ask"
                       data-i18n="server-ask"
                     >
-                      Always Ask
+                      Ask / Auto Choice
                     </div>
                     <div
                       class="dropdown-item"
                       data-value="server1"
                       data-i18n="server-1"
                     >
-                      Server 1 (Primary)
+                      Server 1 (Default)
                     </div>
                     <div
                       class="dropdown-item"
@@ -1380,6 +1400,60 @@
                       data-i18n="server-2"
                     >
                       Server 2 (Backup)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Batch Photo Mode -->
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"
+                    />
+                  </svg>
+                  <span data-i18n="label-batch-photo-mode">Batch Photo Mode</span>
+                </div>
+                <div class="custom-select" id="batchPhotoModeSelect">
+                  <div class="selected-text" id="batchPhotoModeText">
+                    Download All Photos
+                  </div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="batchPhotoModeMenu">
+                    <div
+                      class="dropdown-item"
+                      data-value="all"
+                      data-i18n="batch-photo-all"
+                    >
+                      Download All Photos
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="pdf"
+                      data-i18n="batch-photo-pdf"
+                    >
+                      Combine into Single PDF
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="first"
+                      data-i18n="batch-photo-first"
+                    >
+                      Download First Photo Only
                     </div>
                   </div>
                 </div>
@@ -2361,6 +2435,21 @@
             <button class="pin-key pin-cancel" id="pinCancelBtn">✕</button>
             <button class="pin-key" data-key="0">0</button>
             <button class="pin-key pin-backspace" id="pinBackspaceBtn">⌫</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batch Download Progress Modal -->
+      <div id="batchModalOverlay" class="modal-overlay hidden">
+        <div class="modal-content batch-modal">
+          <div class="batch-header">
+            <h3 id="batchModalTitle" data-i18n="batch-modal-title">Batch Download Queue</h3>
+            <span id="batchModalCounter" class="batch-counter">0 / 0</span>
+          </div>
+          <div id="batchProgressList" class="batch-progress-list"></div>
+          <div class="batch-modal-actions">
+            <button id="batchDownloadAllBtn" class="primary-btn hidden" data-i18n="batch-download-all">DOWNLOAD ALL (0)</button>
+            <button id="batchCloseBtn" class="secondary-btn" data-i18n="btn-close">CLOSE</button>
           </div>
         </div>
       </div>

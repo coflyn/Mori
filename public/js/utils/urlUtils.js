@@ -66,6 +66,11 @@ export function cleanUrl(url) {
         u.search = "";
         u.searchParams.set("v", v);
       }
+    } else if (
+      u.hostname.includes("xiaohongshu.com") ||
+      u.hostname.includes("rednote.com")
+    ) {
+      // Keep xsec_token for Xiaohongshu / RedNote security validation
     } else if (!u.hostname.includes("facebook.com")) {
       if (!u.searchParams.has("id") && !u.searchParams.has("story_fbid")) {
         u.search = "";

@@ -14,7 +14,6 @@ import {
   scrapeSpotify,
   setSpotifySource,
   scrapePinterest,
-  setPinterestSource,
   scrapeAppleMusic,
   scrapeFacebook,
   scrapeBandcamp,
@@ -28,6 +27,7 @@ import {
   renderHistory,
   showModal,
   updateSliderUI,
+  startNativeDownload,
 } from "./ui.js";
 
 import {
@@ -53,6 +53,8 @@ import {
 } from "./utils/index.js";
 
 import { initAuthListeners, verifyLock } from "./modules/authManager.js";
+import { extractBatchUrls, analyzeUrlSilent } from "./modules/batchManager.js";
+import { convertImagesToPdf } from "./utils/pdfHelper.js";
 
 const APP_VERSION = "4.2.1";
 const GITHUB_REPO = "coflyn/Mori";
@@ -60,9 +62,62 @@ const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/l
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 const urlInput = document.getElementById("urlInput");
+const batchUrlInput = document.getElementById("batchUrlInput");
+const batchToggleBtn = document.getElementById("batchToggleBtn");
 const clearBtn = document.getElementById("clearBtn");
 const pasteBtn = document.getElementById("pasteBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+
+const batchModalOverlay = document.getElementById("batchModalOverlay");
+const batchModalTitle = document.getElementById("batchModalTitle");
+const batchModalCounter = document.getElementById("batchModalCounter");
+const batchProgressList = document.getElementById("batchProgressList");
+const batchDownloadAllBtn = document.getElementById("batchDownloadAllBtn");
+const batchCloseBtn = document.getElementById("batchCloseBtn");
+
+const inputWrapper = document.getElementById("inputWrapper");
+const searchIcon = document.getElementById("searchIcon");
+
+let isBatchMode = false;
+
+function decodeHtmlEntities(str) {
+  if (!str || typeof str !== "string") return "";
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+}
+
+if (batchToggleBtn) {
+  batchToggleBtn.addEventListener("click", () => {
+    isBatchMode = !isBatchMode;
+    const lang = translations[currentLang];
+    if (isBatchMode) {
+      batchToggleBtn.classList.add("active");
+      inputWrapper?.classList.add("batch-active");
+      urlInput.classList.add("hidden");
+      batchUrlInput.classList.remove("hidden");
+      downloadBtn.textContent = lang["btn-analyze-batch"] || "ANALYZE BATCH";
+      const isEmpty = batchUrlInput ? batchUrlInput.value === "" : true;
+      clearBtn.classList.toggle("hidden", isEmpty);
+      pasteBtn.classList.toggle("hidden", !isEmpty);
+    } else {
+      batchToggleBtn.classList.remove("active");
+      inputWrapper?.classList.remove("batch-active");
+      urlInput.classList.remove("hidden");
+      batchUrlInput.classList.add("hidden");
+      downloadBtn.textContent = lang["btn-analyze"] || "ANALYZE";
+      const isEmpty = urlInput.value === "";
+      clearBtn.classList.toggle("hidden", isEmpty);
+      pasteBtn.classList.toggle("hidden", !isEmpty);
+    }
+  });
+}
+
+if (batchCloseBtn) {
+  batchCloseBtn.addEventListener("click", () => {
+    batchModalOverlay?.classList.add("hidden");
+  });
+}
 const loader = document.getElementById("loader");
 const resultSection = document.getElementById("resultSection");
 const resultTitle = document.getElementById("resultTitle");
@@ -432,6 +487,12 @@ setupCustomSelect(
   "mori_prefer_server",
   "preferServerText",
   "preferServerMenu",
+);
+setupCustomSelect(
+  "batchPhotoModeSelect",
+  "mori_batch_photo_mode",
+  "batchPhotoModeText",
+  "batchPhotoModeMenu",
 );
 setupCustomSelect(
   "userAgentSelect",
@@ -1170,11 +1231,24 @@ async function handlePasteFromClipboard(isSilent = false) {
         trimmed.includes("youtu.be");
 
       if (isUrl) {
-        if (urlInput.value.trim() === trimmed) return;
+        if (isBatchMode) {
+          // Guard: Do not execute silent auto-paste on app open/resume in Batch Mode
+          if (isSilent) return;
 
-        urlInput.value = trimmed;
-        urlInput.dispatchEvent(new Event("input"));
-        triggerHaptic("light");
+          const existing = batchUrlInput.value.trim();
+          if (!existing) {
+            batchUrlInput.value = trimmed;
+          } else if (!existing.includes(trimmed)) {
+            batchUrlInput.value = existing + "\n" + trimmed;
+          }
+          triggerHaptic("light");
+          return;
+        } else {
+          if (urlInput.value.trim() === trimmed) return;
+          urlInput.value = trimmed;
+          urlInput.dispatchEvent(new Event("input"));
+          triggerHaptic("light");
+        }
 
         const autoAnalyze =
           localStorage.getItem("mori_auto_analyze") === "true";
@@ -1232,16 +1306,34 @@ async function handlePasteFromClipboard(isSilent = false) {
 pasteBtn?.addEventListener("click", () => handlePasteFromClipboard());
 
 urlInput.addEventListener("input", () => {
-  const isEmpty = urlInput.value === "";
-  clearBtn.classList.toggle("hidden", isEmpty);
-  pasteBtn.classList.toggle("hidden", !isEmpty);
+  if (!isBatchMode) {
+    const isEmpty = urlInput.value === "";
+    clearBtn.classList.toggle("hidden", isEmpty);
+    pasteBtn.classList.toggle("hidden", !isEmpty);
+  }
+});
+
+batchUrlInput?.addEventListener("input", () => {
+  if (isBatchMode) {
+    const isEmpty = batchUrlInput.value === "";
+    clearBtn.classList.toggle("hidden", isEmpty);
+    pasteBtn.classList.toggle("hidden", !isEmpty);
+  }
 });
 
 clearBtn.addEventListener("click", () => {
-  urlInput.value = "";
+  if (isBatchMode) {
+    if (batchUrlInput) batchUrlInput.value = "";
+  } else {
+    urlInput.value = "";
+  }
   clearBtn.classList.add("hidden");
   pasteBtn.classList.remove("hidden");
-  urlInput.focus();
+  if (isBatchMode && batchUrlInput) {
+    batchUrlInput.focus();
+  } else {
+    urlInput.focus();
+  }
 });
 
 closeResult?.addEventListener("click", () => {
@@ -1761,6 +1853,215 @@ shareAppBtn?.addEventListener("click", async () => {
 });
 
 downloadBtn.addEventListener("click", async () => {
+  if (isBatchMode) {
+    const rawBatchText = batchUrlInput ? batchUrlInput.value : "";
+    const batchUrls = extractBatchUrls(rawBatchText);
+
+    if (batchUrls.length === 0) {
+      showToast(
+        translations[currentLang]["toast-no-batch-urls"] ||
+          "No valid URLs found in text",
+      );
+      return;
+    }
+
+    const preferServer = localStorage.getItem("mori_prefer_server") || "auto";
+
+    if (batchModalOverlay && batchProgressList) {
+      batchProgressList.innerHTML = "";
+      if (batchModalCounter) {
+        batchModalCounter.textContent = `0 / ${batchUrls.length}`;
+      }
+      if (batchDownloadAllBtn) batchDownloadAllBtn.classList.add("hidden");
+      batchModalOverlay.classList.remove("hidden");
+
+      const batchResults = [];
+      let completedCount = 0;
+
+      // Render initial pending queue list
+      batchUrls.forEach((bUrl, idx) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = "batch-item";
+        itemEl.id = `batchItem_${idx}`;
+        itemEl.innerHTML = `
+          <div class="batch-item-info">
+            <div class="batch-item-title">Link ${idx + 1}</div>
+            <div class="batch-item-url">${bUrl}</div>
+          </div>
+          <div class="batch-item-status pending">PENDING</div>
+        `;
+        batchProgressList.appendChild(itemEl);
+      });
+
+      // Execute sequential analysis
+      for (let i = 0; i < batchUrls.length; i++) {
+        const bUrl = batchUrls[i];
+        const statusEl = document.querySelector(`#batchItem_${i} .batch-item-status`);
+        const titleEl = document.querySelector(`#batchItem_${i} .batch-item-title`);
+
+        if (statusEl) {
+          statusEl.className = "batch-item-status analyzing";
+          statusEl.textContent = "ANALYZING...";
+        }
+
+        const data = await analyzeUrlSilent(bUrl, preferServer);
+        completedCount++;
+        if (batchModalCounter) {
+          batchModalCounter.textContent = `${completedCount} / ${batchUrls.length}`;
+        }
+
+        if (data && data.status) {
+          const decodedTitle = decodeHtmlEntities(data.result?.title || "Media File");
+          batchResults.push({ url: bUrl, data });
+          if (titleEl) {
+            titleEl.textContent = decodedTitle;
+          }
+          if (statusEl) {
+            statusEl.className = "batch-item-status success";
+            statusEl.textContent = "READY";
+          }
+
+          // Save to history automatically (each batch item saved as an individual separate entry)
+          const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+          const newHistoryItem = {
+            id: Date.now() + i + Math.floor(Math.random() * 1000),
+            url: bUrl,
+            title: decodedTitle,
+            author: data.result.author || "Creator",
+            thumbnail: data.result.thumbnail || "",
+            downloads: data.result.downloads || [],
+            date: new Date().toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            timestamp: Date.now() + i,
+          };
+
+          history.unshift(newHistoryItem);
+          localStorage.setItem("mori_history", JSON.stringify(history));
+          if (typeof updateGreeting === "function") updateGreeting();
+        } else {
+          if (statusEl) {
+            statusEl.className = "batch-item-status error";
+            statusEl.textContent = "FAILED";
+          }
+        }
+      }
+
+      if (batchResults.length > 0 && batchDownloadAllBtn) {
+        const dlAllText = translations[currentLang]["batch-download-all"] || "DOWNLOAD ALL";
+        batchDownloadAllBtn.textContent = `${dlAllText} (${batchResults.length})`;
+        batchDownloadAllBtn.classList.remove("hidden");
+
+        batchDownloadAllBtn.onclick = async () => {
+          batchDownloadAllBtn.disabled = true;
+          const batchPhotoMode = localStorage.getItem("mori_batch_photo_mode") || "all";
+
+          for (let i = 0; i < batchResults.length; i++) {
+            const item = batchResults[i];
+            const idx = batchUrls.indexOf(item.url);
+            const statusEl = document.querySelector(`#batchItem_${idx} .batch-item-status`);
+            if (statusEl) {
+              statusEl.className = "batch-item-status downloading";
+              statusEl.textContent = "DOWNLOADING...";
+            }
+
+            const downloadsList = item.data.result?.downloads || [];
+            const itemTitle = decodeHtmlEntities(item.data.result?.title || "Media");
+
+            if (downloadsList.length > 0) {
+              const isVideoPost = downloadsList.some((d) =>
+                /video/i.test(d.type) || /\.mp4/i.test(d.url) || d.type === "MP4",
+              );
+
+              if (isVideoPost) {
+                // Video posts (TikTok, Reels, Shorts, etc.) -> download primary video only
+                const primaryVideo = downloadsList[0];
+                await startNativeDownload(primaryVideo.url, primaryVideo.type, itemTitle, null, item.url);
+              } else {
+                // Photo Carousel / Slideshow posts -> apply Batch Photo Mode
+                if (batchPhotoMode === "first") {
+                  const dlObj = downloadsList[0];
+                  await startNativeDownload(dlObj.url, dlObj.type, itemTitle, null, item.url);
+                } else if (batchPhotoMode === "pdf") {
+                  const imageItems = downloadsList.filter((d) =>
+                    /image|photo|jpg|png|webp/i.test(d.type) ||
+                    /\.(jpg|jpeg|png|webp)/i.test(d.url),
+                  );
+
+                  if (imageItems.length > 1) {
+                    try {
+                      const imageUrls = imageItems.map((img) => img.url);
+                      const pdfBuffer = await convertImagesToPdf(imageUrls);
+                      const sanitizedTitle = itemTitle
+                        .replace(/[\\/:*?"<>|#%&{}[\]()@$^+=~`';,]/g, "")
+                        .trim()
+                        .substring(0, 60) || "Mori_Batch_Album";
+
+                      const pdfFileName = `${sanitizedTitle}.pdf`;
+
+                      if (window.Capacitor?.isNativePlatform() && Filesystem) {
+                        const base64Pdf = btoa(
+                          pdfBuffer.reduce((acc, byte) => acc + String.fromCharCode(byte), ""),
+                        );
+                        await Filesystem.writeFile({
+                          path: `Download/Mori/${pdfFileName}`,
+                          directory: "EXTERNAL_STORAGE",
+                          data: base64Pdf,
+                          recursive: true,
+                        }).catch(() => {
+                          return Filesystem.writeFile({
+                            path: `Download/Mori/${pdfFileName}`,
+                            directory: "DOCUMENTS",
+                            data: base64Pdf,
+                            recursive: true,
+                          });
+                        });
+                      } else {
+                        const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+                        const a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = pdfFileName;
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                      }
+                    } catch (pdfErr) {
+                      console.warn("PDF generation failed, falling back to all photos download:", pdfErr);
+                      for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
+                        const dlObj = downloadsList[dIdx];
+                        const titleWithIdx = downloadsList.length > 1 ? `${itemTitle}_${dIdx + 1}` : itemTitle;
+                        await startNativeDownload(dlObj.url, dlObj.type, titleWithIdx, null, item.url);
+                      }
+                    }
+                  } else {
+                    const dlObj = downloadsList[0];
+                    await startNativeDownload(dlObj.url, dlObj.type, itemTitle, null, item.url);
+                  }
+                } else {
+                  // "all" (Default): Download all slide photos in carousel
+                  for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
+                    const dlObj = downloadsList[dIdx];
+                    const titleWithIdx = downloadsList.length > 1 ? `${itemTitle}_${dIdx + 1}` : itemTitle;
+                    await startNativeDownload(dlObj.url, dlObj.type, titleWithIdx, null, item.url);
+                  }
+                }
+              }
+            }
+
+            if (statusEl) {
+              statusEl.className = "batch-item-status completed";
+              statusEl.textContent = "SAVED";
+            }
+          }
+          batchDownloadAllBtn.disabled = false;
+          showToast(translations[currentLang]["label-download-complete"] || "Batch download complete!");
+        };
+      }
+    }
+    return;
+  }
+
   const url = urlInput.value.trim();
   if (!url) return;
 
@@ -2031,46 +2332,14 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeSpotify(url);
       }
     } else if (url.includes("pinterest.com") || url.includes("pin.it")) {
-      if (preferServer === "server1") setPinterestSource("pindown");
-      else if (preferServer === "server2") setPinterestSource("pindirect");
-      else setPinterestSource(null);
       data = await scrapePinterest(url);
-      if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: PinDown (Image/Video)\nServer 2: PinDirect (Image/Video)";
-        if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
-        if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
-          okConfirmBtn.style.color = "var(--primary)";
-        }
-        confirmOverlay.classList.remove("hidden");
-        confirmOverlay.style.display = "flex";
-        const chosen = await new Promise((resolve) => {
-          confirmOverlay._onDismissOutside = () => {
-            hideConfirm();
-            resolve("pindown");
-          };
-          okConfirmBtn.onclick = () => {
-            confirmOverlay._onDismissOutside = null;
-            hideConfirm();
-            resolve("pindown");
-          };
-          cancelConfirmBtn.onclick = () => {
-            confirmOverlay._onDismissOutside = null;
-            hideConfirm();
-            resolve("pindirect");
-          };
-        });
-        setPinterestSource(chosen);
-        data = await scrapePinterest(url);
-      }
     } else if (url.includes("music.apple.com")) {
       data = await scrapeAppleMusic(url);
     } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
       data = await scrapeFacebook(url);
     } else if (
       url.includes("xiaohongshu.com") ||
+      url.includes("rednote.com") ||
       url.includes("xhslink.com") ||
       url.includes("xhslink.cn")
     ) {
@@ -2095,7 +2364,6 @@ downloadBtn.addEventListener("click", async () => {
     }
 
     if (data && data.status) {
-      // SMART LOCAL DETECTION: Check if we have this content in history and on disk
       const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
       const existing = history.find(
         (item) => cleanUrl(item.url) === cleanUrl(url),
@@ -2211,12 +2479,27 @@ confirmOverlay?.addEventListener("click", (e) => {
   }
 });
 
+function switchToSingleMode(url) {
+  if (isBatchMode) {
+    isBatchMode = false;
+    batchToggleBtn?.classList.remove("active");
+    inputWrapper?.classList.remove("batch-active");
+    urlInput?.classList.remove("hidden");
+    batchUrlInput?.classList.add("hidden");
+    const lang = translations[currentLang];
+    downloadBtn.textContent = lang["btn-analyze"] || "ANALYZE";
+  }
+  if (url && urlInput) {
+    urlInput.value = url;
+    urlInput.dispatchEvent(new Event("input"));
+  }
+}
+
 // History Callbacks
 function onHistoryItemClick(item) {
   showModal(item, (url) => {
-    urlInput.value = url;
-    urlInput.dispatchEvent(new Event("input"));
-    document.querySelector('.nav-item[data-page="home"]').click();
+    switchToSingleMode(url);
+    document.querySelector('.nav-item[data-page="home"]')?.click();
     downloadBtn.click();
   });
 }

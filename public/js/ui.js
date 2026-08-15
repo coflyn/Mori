@@ -1159,7 +1159,10 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     const isImage =
       /image|photo|jpg|png|webp/i.test(type) ||
       /\.(jpg|jpeg|png|webp)/i.test(url);
-    const ext = isAudio ? "MP3" : isImage ? "JPG" : "MP4";
+    let ext = isAudio ? "MP3" : isImage ? "JPG" : "MP4";
+    if (/\.png(\?|$)/i.test(url) || type.toLowerCase().includes("png")) ext = "PNG";
+    if (/\.webp(\?|$)/i.test(url) || type.toLowerCase().includes("webp")) ext = "WEBP";
+    if (/\.mp4(\?|$)/i.test(url) || type.toLowerCase().includes("video")) ext = "MP4";
 
     let sanitizedTitle = (title || "Mori Media")
       .replace(/[\\/:*?"<>|#%&{}[\]()@$^+=~`';,]/g, "")
@@ -1211,22 +1214,32 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     if (localStorage.getItem("mori_auto_folder") === "true") {
       const src = (sourceUrl || url || "").toLowerCase();
       let platformFolder = "Other";
-      if (src.includes("tiktok") || src.includes("douyin"))
+      if (src.includes("tiktok") || src.includes("douyin") || src.includes("iesdouyin"))
         platformFolder = "TikTok";
-      else if (src.includes("instagram")) platformFolder = "Instagram";
+      else if (src.includes("instagram") || src.includes("instagr.am"))
+        platformFolder = "Instagram";
       else if (src.includes("youtube") || src.includes("youtu.be"))
         platformFolder = "YouTube";
-      else if (src.includes("twitter") || src.includes("x.com"))
+      else if (src.includes("twitter") || src.includes("x.com") || src.includes("t.co"))
         platformFolder = "Twitter";
-      else if (src.includes("facebook")) platformFolder = "Facebook";
-      else if (src.includes("pinterest")) platformFolder = "Pinterest";
-      else if (src.includes("bilibili") || src.includes("b23.tv"))
-        platformFolder = "Bilibili";
-      else if (src.includes("pixiv") || src.includes("pximg"))
-        platformFolder = "Pixiv";
-      else if (src.includes("spotify")) platformFolder = "Spotify";
-      else if (src.includes("rednote") || src.includes("xiaohongshu"))
+      else if (src.includes("facebook") || src.includes("fb.watch") || src.includes("fb.com"))
+        platformFolder = "Facebook";
+      else if (src.includes("pinterest") || src.includes("pin.it"))
+        platformFolder = "Pinterest";
+      else if (src.includes("spotify") || src.includes("spoti.fi"))
+        platformFolder = "Spotify";
+      else if (src.includes("music.apple.com") || src.includes("apple.com"))
+        platformFolder = "AppleMusic";
+      else if (src.includes("threads.net") || src.includes("threads.com"))
+        platformFolder = "Threads";
+      else if (src.includes("rednote") || src.includes("xiaohongshu") || src.includes("xhslink"))
         platformFolder = "RedNote";
+      else if (src.includes("bilibili") || src.includes("b23.tv") || src.includes("bili.im"))
+        platformFolder = "Bilibili";
+      else if (src.includes("pixiv") || src.includes("pximg") || src.includes("pixiv.me"))
+        platformFolder = "Pixiv";
+      else if (src.includes("bandcamp") || src.includes("bandcamp.com"))
+        platformFolder = "Bandcamp";
 
       fullPath = `${fullPath}/${platformFolder}`;
     }
@@ -1389,10 +1402,32 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           url.includes("b23.tv") ||
           url.includes("bili.im")));
 
+    if (actualDownloadUrl.includes("pindown.io") && actualDownloadUrl.includes("file=")) {
+      try {
+        const match = actualDownloadUrl.match(/file=(https?%3A%2F%2F[^&]+|https?:\/\/[^&]+)/i);
+        if (match && match[1]) {
+          actualDownloadUrl = decodeURIComponent(match[1]);
+        }
+      } catch (e) {}
+    }
+
+    const isPinterest =
+      actualDownloadUrl.includes("pindown.io") ||
+      actualDownloadUrl.includes("pinimg.com") ||
+      (url && (url.includes("pinterest.com") || url.includes("pin.it"))) ||
+      (sourceUrl && (sourceUrl.includes("pinterest.com") || sourceUrl.includes("pin.it")));
+
     if (isYoutube) downloadHeaders["Referer"] = "https://ytmp3.mobi/";
     if (isPixivDirect) downloadHeaders["Referer"] = "https://www.pixiv.net/";
     if (isUgoiraCom) downloadHeaders["Referer"] = "https://ugoira.com/";
     if (isBilibili) downloadHeaders["Referer"] = "https://www.bilibili.tv/";
+    if (isPinterest) {
+      if (actualDownloadUrl.includes("pindown.io")) {
+        downloadHeaders["Referer"] = "https://pindown.io/";
+      } else {
+        downloadHeaders["Referer"] = "https://www.pinterest.com/";
+      }
+    }
     if (isTwitter) {
       if (actualDownloadUrl.includes("twimg.com")) {
         downloadHeaders["Referer"] = "https://twitter.com/";

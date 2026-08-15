@@ -30,6 +30,8 @@ export const UA_PRESETS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 };
 
+export const SAFARI_MOBILE_UA = UA_PRESETS.safari;
+
 export function getUserAgent() {
   const mode = localStorage.getItem("mori_user_agent") || "default";
   return UA_PRESETS[mode] || UA_PRESETS.default;
