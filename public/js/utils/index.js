@@ -1,14 +1,13 @@
-export const {
-  CapacitorHttp,
-  Filesystem,
-  Toast,
-  Clipboard,
-  App,
-  Share,
-  NativeBiometric,
-  Media,
-  Haptics,
-} = window.Capacitor?.Plugins || {};
+export const CapacitorHttp = window.Capacitor?.Plugins?.CapacitorHttp;
+export const Filesystem = window.Capacitor?.Plugins?.Filesystem;
+export const Toast = window.Capacitor?.Plugins?.Toast;
+export const Clipboard = window.Capacitor?.Plugins?.Clipboard;
+export const App = window.Capacitor?.Plugins?.App;
+export const Share = window.Capacitor?.Plugins?.Share;
+export const NativeBiometric = window.Capacitor?.Plugins?.NativeBiometric;
+export const Media = window.Capacitor?.Plugins?.Media;
+export const Haptics = window.Capacitor?.Plugins?.Haptics;
+export const Network = window.Capacitor?.Plugins?.Network;
 
 import { translations } from "../i18n/index.js";
 
@@ -113,6 +112,19 @@ export { cleanUrl, extractCleanUrl, getCleanUrl } from "./urlUtils.js";
 export function truncate(str, num = 80) {
   if (!str) return "";
   return str.length > num ? str.slice(0, num) + "..." : str;
+}
+
+export function autoClearInputBox() {
+  if (localStorage.getItem("mori_auto_clear_input") === "true") {
+    const urlInput = document.getElementById("urlInput");
+    const batchUrlInput = document.getElementById("batchUrlInput");
+    const clearBtn = document.getElementById("clearBtn");
+    const pasteBtn = document.getElementById("pasteBtn");
+    if (urlInput) urlInput.value = "";
+    if (batchUrlInput) batchUrlInput.value = "";
+    if (clearBtn) clearBtn.classList.add("hidden");
+    if (pasteBtn) pasteBtn.classList.remove("hidden");
+  }
 }
 
 // Toast Function
@@ -264,7 +276,7 @@ export async function triggerHaptic(type = "medium") {
   if (localStorage.getItem("mori_haptic") === "false") return;
   try {
     const HapticsPlugin = window.Capacitor?.Plugins?.Haptics || Haptics;
-    if (HapticsPlugin && window.Capacitor?.isNativePlatform()) {
+    if (HapticsPlugin && window.Capacitor?.isNativePlatform?.()) {
       if (type === "notification" || type === "success") {
         await HapticsPlugin.notification({ type: "SUCCESS" }).catch(() => {});
         await HapticsPlugin.vibrate({ duration: 120 }).catch(() => {});
@@ -288,12 +300,12 @@ export async function triggerHaptic(type = "medium") {
 // Clipboard Helper
 export async function copyToClipboard(text) {
   try {
-    if (window.Capacitor?.isNativePlatform() && Clipboard) {
+    if (window.Capacitor?.isNativePlatform?.() && Clipboard) {
       await Clipboard.write({ string: text });
     } else {
       await navigator.clipboard.writeText(text);
     }
-    if (!window.Capacitor?.isNativePlatform()) {
+    if (!window.Capacitor?.isNativePlatform?.()) {
       showToast(translations[currentLang]["toast-copy-success"]);
     }
   } catch (err) {
@@ -381,7 +393,7 @@ export async function getVideoThumbnail(videoUri) {
         canvas.height = 0;
         cleanup();
 
-        if (window.Capacitor?.isNativePlatform() && Filesystem) {
+        if (window.Capacitor?.isNativePlatform?.() && Filesystem) {
           const fileName = `thumb_${Date.now()}.jpg`;
           await Filesystem.writeFile({
             path: fileName,
@@ -414,46 +426,125 @@ export async function getVideoThumbnail(videoUri) {
   });
 }
 
+const CHIME_DATA_URI =
+  "data:audio/wav;base64,UklGRhTBAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YfDAAAAAAAAAAgAFAAoADwAVABmAHQAhACUAJwApACoAKwAsACwALAAqACcAIAAWAA8ABwACAP7/9v/s/+b/4P/c/9n/2P/Y/9n/3P/g/+b/7P/3/wIAEwAoAD0AVgBuAIsApgDDAOQA+wETAicCSQJkAoACngK9AtkC9wIRAjACVAKGAq8CzAL2AiIDVwJ8AqoC0gLvAhgDTwJ4AqYCzgLyAhYDTgJ2AqcCzgLzAhcDTwJ2AqcCzALvAhYDSgJxAoICiQKPApQCmQKcApsCmQKVAI8AhQB3AGgAWABFAAwAh/++/+T/9v8ZAEsAcQCbAMAA4gAFAQ4BHwE2AVABbAGAAZQBqAG0AbcBuQG4AbUBsQGqAaEBkwGAAW0BVQE5AR4BCwEAAOz/0//D/7L/pP+d/5v/n/+q/7r/zf/h//X/CgAoAFEAdACfAMcA7gAVATcBWQF5AZ4BvAHVAPIA/wEJARgBHwEhAR8BGgEUAQkAAADp/8n/r/+N/33/c/9q/2j/af9t/3X/f/6Q/qL+tv7S/ub+9v78/vv+/f7//v/+f/6L/o/+nv6w/sf+2f7j/ub+6v7s/u3+8P70/vb+/P4BAAwAGwApADgASABSAFsAYQBmAGgAagBsAG0AbgBtAGwAawBpAGcAZABiAF4AWABRAEkAQAA3AC4AJgAeABYADgAGAP3/+/8BAP7/+/8AAAAA";
+
+let unlockedAudioCtx = null;
+export function unlockAudioContext() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!unlockedAudioCtx) {
+      unlockedAudioCtx = new AudioCtx();
+    }
+    if (unlockedAudioCtx.state === "suspended") {
+      unlockedAudioCtx.resume().catch(() => {});
+    }
+  } catch (e) {}
+}
+
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    unlockAudioContext();
+    const chimeEl = document.getElementById("completionChimeAudio");
+    if (chimeEl) {
+      chimeEl
+        .play()
+        .then(() => {
+          chimeEl.pause();
+          chimeEl.currentTime = 0;
+        })
+        .catch(() => {});
+    }
+  };
+  window.addEventListener("click", unlock, { once: true, passive: true });
+  window.addEventListener("touchstart", unlock, { once: true, passive: true });
+}
+
 export function playCompletionSound() {
   const isSoundEnabled =
     localStorage.getItem("mori_download_sound") !== "false";
   if (!isSoundEnabled) return;
+
+  // Single clean chime playback via local audio asset
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (ctx.state === "suspended") {
-      ctx.resume();
+    const chimeEl = document.getElementById("completionChimeAudio");
+    if (chimeEl) {
+      chimeEl.currentTime = 0;
+      chimeEl.volume = 1.0;
+      const p = chimeEl.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          const a = new Audio("./chime.wav");
+          a.volume = 1.0;
+          a.play().catch(() => {});
+        });
+      }
+    } else {
+      const a = new Audio("./chime.wav");
+      a.volume = 1.0;
+      a.play().catch(() => {});
     }
-    const now = ctx.currentTime;
+  } catch (e) {}
 
-    // Ascending crisp 3-note chime (G5, C6, E6)
-    const notes = [
-      { freq: 783.99, time: now, duration: 0.14, gain: 0.35 }, // G5
-      { freq: 1046.5, time: now + 0.09, duration: 0.16, gain: 0.4 }, // C6
-      { freq: 1318.51, time: now + 0.18, duration: 0.38, gain: 0.45 }, // E6
-    ];
+  try {
+    triggerHaptic("success");
+  } catch (e) {}
+}
 
-    notes.forEach((n) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(n.freq, n.time);
-
-      gain.gain.setValueAtTime(0, n.time);
-      gain.gain.linearRampToValueAtTime(n.gain, n.time + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, n.time + n.duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(n.time);
-      osc.stop(n.time + n.duration);
-    });
-  } catch (e) {
-    console.warn("Audio Context error", e);
+export async function getNetworkStatus() {
+  const NetworkPlugin = window.Capacitor?.Plugins?.Network;
+  if (NetworkPlugin && typeof NetworkPlugin.getStatus === "function") {
+    try {
+      const status = await NetworkPlugin.getStatus();
+      return status;
+    } catch (e) {}
   }
+
+  const conn =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection;
+  if (conn) {
+    const type = (conn.type || "").toLowerCase();
+    const effectiveType = (conn.effectiveType || "").toLowerCase();
+    const isCellular =
+      type === "cellular" ||
+      type === "mobile" ||
+      type.includes("2g") ||
+      type.includes("3g") ||
+      type.includes("4g") ||
+      type.includes("5g") ||
+      (type === "unknown" &&
+        (effectiveType.includes("2g") ||
+          effectiveType.includes("3g") ||
+          effectiveType.includes("4g")));
+    return {
+      connected: navigator.onLine !== false,
+      connectionType: isCellular
+        ? "cellular"
+        : type === "wifi"
+          ? "wifi"
+          : "unknown",
+    };
+  }
+
+  return { connected: navigator.onLine !== false, connectionType: "unknown" };
+}
+
+export async function checkWifiOnlyGuard() {
+  const isWifiOnly = localStorage.getItem("mori_wifi_only") === "true";
+  if (!isWifiOnly) return true; // Allowed
+
+  const status = await getNetworkStatus();
+  if (status.connectionType !== "wifi") {
+    showToast(
+      translations[currentLang]?.["toast-wifi-needed"] ||
+        "Wi-Fi connection required",
+    );
+    return false; // Blocked
+  }
+  return true; // Allowed
 }
 
 let wakeLockSentinel = null;
@@ -479,6 +570,24 @@ export function releaseWakeLock() {
     wakeLockSentinel = null;
     console.log("[WAKE LOCK] Screen active lock released.");
   }
+}
+
+/**
+ * Safely pauses all active video and audio playback elements without destroying their src.
+ * @param {HTMLElement|Document} rootEl - Container element or document
+ */
+export function pauseAllMedia(rootEl = document) {
+  if (!rootEl) return;
+  try {
+    const mediaElements = rootEl.querySelectorAll
+      ? rootEl.querySelectorAll("video, audio")
+      : [];
+    mediaElements.forEach((el) => {
+      try {
+        el.pause();
+      } catch (e) {}
+    });
+  } catch (err) {}
 }
 
 /**

@@ -1,16 +1,11 @@
 import { translations } from "../i18n/index.js";
 import { showToast } from "../utils/index.js";
-
-export let isHistoryUnlocked = false;
-export let isSettingsUnlocked = false;
-
-export function setHistoryUnlocked(state) {
-  isHistoryUnlocked = state;
-}
-
-export function setSettingsUnlocked(state) {
-  isSettingsUnlocked = state;
-}
+import {
+  isHistoryUnlocked,
+  isSettingsUnlocked,
+  setHistoryUnlocked,
+  setSettingsUnlocked,
+} from "./core.js";
 
 export async function verifyBiometric(
   reasonLabel = "label-biometric-reason",
@@ -206,8 +201,8 @@ export function initAuthListeners(currentLang = "en") {
 
       localStorage.setItem("mori_privacy_lock", isChecked ? "true" : "false");
       if (isChecked) {
-        isHistoryUnlocked = false;
-        isSettingsUnlocked = false;
+        setHistoryUnlocked(false);
+        setSettingsUnlocked(false);
         if (currentLockType === "none") {
           const hasPin = !!localStorage.getItem("mori_pin");
           const defaultType = hasPin ? "pin" : "biometric";
@@ -219,8 +214,8 @@ export function initAuthListeners(currentLang = "en") {
           }
         }
       } else {
-        isHistoryUnlocked = true;
-        isSettingsUnlocked = true;
+        setHistoryUnlocked(true);
+        setSettingsUnlocked(true);
       }
 
       const lang = translations[currentLang];
@@ -231,7 +226,7 @@ export function initAuthListeners(currentLang = "en") {
   }
 
   if (lockTypeSelect) {
-    const isNative = window.Capacitor?.isNativePlatform();
+    const isNative = window.Capacitor?.isNativePlatform?.();
     if (!isNative && lockTypeMenu) {
       const bioItem = lockTypeMenu.querySelector('[data-value="biometric"]');
       if (bioItem) bioItem.style.display = "none";
@@ -285,11 +280,11 @@ export function initAuthListeners(currentLang = "en") {
         if (type !== "none") {
           localStorage.setItem("mori_privacy_lock", "true");
           if (privacyLockToggle) privacyLockToggle.checked = true;
-          isHistoryUnlocked = false;
+          setHistoryUnlocked(false);
         } else {
           localStorage.setItem("mori_privacy_lock", "false");
           if (privacyLockToggle) privacyLockToggle.checked = false;
-          isHistoryUnlocked = true;
+          setHistoryUnlocked(true);
         }
 
         const lang = translations[currentLang];
@@ -308,8 +303,8 @@ export function initAuthListeners(currentLang = "en") {
       "appStateChange",
       ({ isActive }) => {
         if (!isActive && localStorage.getItem("mori_privacy_lock") === "true") {
-          isHistoryUnlocked = false;
-          isSettingsUnlocked = false;
+          setHistoryUnlocked(false);
+          setSettingsUnlocked(false);
         }
       },
     );

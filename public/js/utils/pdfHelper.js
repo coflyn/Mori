@@ -20,8 +20,11 @@ export async function convertImagesToPdf(imageUrls) {
   for (const url of imageUrls) {
     try {
       let arrayBuffer;
-      if (window.Capacitor?.isNativePlatform() && CapacitorHttp) {
-        const res = await CapacitorHttp.get({ url, responseType: "arraybuffer" });
+      if (window.Capacitor?.isNativePlatform?.() && CapacitorHttp) {
+        const res = await CapacitorHttp.get({
+          url,
+          responseType: "arraybuffer",
+        });
         if (res && res.data) {
           const binaryStr = atob(res.data);
           const len = binaryStr.length;

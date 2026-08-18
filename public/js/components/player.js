@@ -38,7 +38,12 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
 
   // Detect audio-only type (MP3, M4A, etc.) → use <audio> element on Desktop
   const dlTypeLower = (dl.type || "").toLowerCase();
-  const fileNameLower = (dl.filename || dl.title || videoUrl || "").toLowerCase();
+  const fileNameLower = (
+    dl.filename ||
+    dl.title ||
+    videoUrl ||
+    ""
+  ).toLowerCase();
   const isAudioOnly =
     dlTypeLower.includes("mp3") ||
     dlTypeLower.includes("audio") ||
@@ -54,33 +59,38 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     window.__TAURI__?.core?.convertFileSrc ||
     window.__TAURI_INTERNALS__?.convertFileSrc ||
     window.__TAURI__?.convertFileSrc;
-  const isDesktop = !!tauriConvertFileSrcCheck && !window.Capacitor?.isNativePlatform();
+  const isDesktop =
+    !!tauriConvertFileSrcCheck && !window.Capacitor?.isNativePlatform?.();
 
   // Use <audio> for audio-only files on Desktop for better WKWebView compatibility
-  const video = (isAudioOnly && isDesktop)
-    ? (() => {
-        const audio = document.createElement("audio");
-        audio.setAttribute("referrerpolicy", "no-referrer");
-        audio.controls = false;
-        audio.style.width = "100%";
-        audio.style.maxWidth = "340px";
-        audio.style.display = "block";
-        // Give player container a music-player look for audio
-        playerContainer.style.backgroundColor = "rgba(18,18,18,0.97)";
-        playerContainer.style.minHeight = "120px";
-        return audio;
-      })()
-    : (() => {
-        const v = document.createElement("video");
-        v.setAttribute("referrerpolicy", "no-referrer");
-        return v;
-      })();
+  const video =
+    isAudioOnly && isDesktop
+      ? (() => {
+          const audio = document.createElement("audio");
+          audio.setAttribute("referrerpolicy", "no-referrer");
+          audio.controls = false;
+          audio.style.width = "100%";
+          audio.style.maxWidth = "340px";
+          audio.style.display = "block";
+          // Give player container a music-player look for audio
+          playerContainer.style.backgroundColor = "rgba(18,18,18,0.97)";
+          playerContainer.style.minHeight = "120px";
+          return audio;
+        })()
+      : (() => {
+          const v = document.createElement("video");
+          v.setAttribute("referrerpolicy", "no-referrer");
+          return v;
+        })();
 
   const isBilibili = /bilibili|bilivideo/i.test(videoUrl);
   const isRedNote = /xiaohongshu|rednote|xhscdn/i.test(videoUrl);
-  const isPixiv = /pixiv|ugoira/i.test(videoUrl) || (dl.type || "").toLowerCase().includes("ugoira");
-  const needsBypass = (isBilibili || isDouyin || isRedNote || isPixiv) && !isLocal;
-  const isNative = window.Capacitor?.isNativePlatform();
+  const isPixiv =
+    /pixiv|ugoira/i.test(videoUrl) ||
+    (dl.type || "").toLowerCase().includes("ugoira");
+  const needsBypass =
+    (isBilibili || isDouyin || isRedNote || isPixiv) && !isLocal;
+  const isNative = window.Capacitor?.isNativePlatform?.();
 
   const removeFallbackImg = () => {
     const fallbackImg = playerContainer.querySelector(".fallback-img");
@@ -126,7 +136,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     if (tauriInvoke) {
       // Desktop: read file bytes via Rust → Blob URL (no asset protocol permission needed)
       const mimeType = isAudioOnly
-        ? (fileNameLower.endsWith(".m4a") ? "audio/mp4" : "audio/mpeg")
+        ? fileNameLower.endsWith(".m4a")
+          ? "audio/mp4"
+          : "audio/mpeg"
         : "video/mp4";
       tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
         .then((bytes) => {
@@ -188,7 +200,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       referer = "https://www.xiaohongshu.com/";
     } else if (isPixiv) {
       referer = "https://www.pixiv.net/";
-      ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+      ua =
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     }
 
     if (isNative && CapacitorHttp) {
@@ -240,7 +253,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       })
         .then((bytes) => {
           if (bytes && bytes.length > 0) {
-            const blob = new Blob([new Uint8Array(bytes)], { type: "video/mp4" });
+            const blob = new Blob([new Uint8Array(bytes)], {
+              type: "video/mp4",
+            });
             const blobUrl = URL.createObjectURL(blob);
             playerContainer._blobUrl = blobUrl;
             video.src = blobUrl;
@@ -344,7 +359,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
           cleanPath = cleanPath.replace(/^file:\/\//, "");
         }
         const mimeType = isAudioOnly
-          ? (fileNameLower.endsWith(".m4a") ? "audio/mp4" : "audio/mpeg")
+          ? fileNameLower.endsWith(".m4a")
+            ? "audio/mp4"
+            : "audio/mpeg"
           : "video/mp4";
 
         if (tauriInvoke) {
@@ -425,7 +442,10 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     const ctrlEl = playerContainer.querySelector(".mori-player-controls");
     if (ctrlEl) ctrlEl.remove();
 
-    if (!playerContainer.querySelector(".mori-player-error") && !playerContainer.querySelector(".fallback-img")) {
+    if (
+      !playerContainer.querySelector(".mori-player-error") &&
+      !playerContainer.querySelector(".fallback-img")
+    ) {
       const fallbackSrc = posterThumb || dl.thumbnail || resultThumbnail || "";
       if (fallbackSrc) {
         const fbImg = document.createElement("img");

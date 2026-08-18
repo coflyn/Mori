@@ -24,6 +24,7 @@
     "@capacitor/filesystem": "^7.1.8",
     "@capacitor/haptics": "^7.0.0",
     "@capacitor/ios": "^7.6.8",
+    "@capacitor/network": "^7.0.4",
     "@capacitor/share": "^7.0.4",
     "@capgo/capacitor-native-biometric": "^7.6.0",
     "axios": "^1.16.0",
