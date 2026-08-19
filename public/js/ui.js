@@ -61,7 +61,9 @@ export function renderHistory(onItemClick, onDeleteClick) {
       : item.thumbnail;
 
     if (!isDataSaver) {
-      if (item.localThumbnail) {
+      if (item.thumbnail) {
+        thumbSrc = item.thumbnail;
+      } else if (item.localThumbnail) {
         thumbSrc = item.localThumbnail;
       } else if (item.localFiles && item.localFiles.length > 0) {
         const first = item.localFiles[0];
@@ -73,12 +75,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
       } else if (item.localUri && window.Capacitor) {
         const isImage = /\.(jpg|jpeg|png|webp)/i.test(item.localUri);
         if (isImage) {
-          thumbSrc = window.Capacitor.convertFileSrc(
-            item.localUri.startsWith("file://") ||
-              item.localUri.startsWith("_capacitor_file_")
-              ? item.localUri
-              : item.localUri,
-          );
+          thumbSrc = window.Capacitor.convertFileSrc(item.localUri);
         }
       }
     }

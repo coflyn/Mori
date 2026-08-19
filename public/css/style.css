@@ -730,6 +730,38 @@ input[type="text"]:focus {
   font-size: 0.8rem;
 }
 
+.dl-item.dl-track-item {
+  gap: 12px;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+.dl-item .track-title {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.88rem;
+  text-transform: none;
+  line-height: 1.35;
+  color: var(--text-main);
+}
+
+.dl-item .dl-badge {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dl-item.dl-track-item:hover .dl-badge {
+  transform: scale(1.05);
+}
+
 .pdf-btn {
   border-radius: var(--radius-l) !important;
   border: 1px solid var(--primary) !important;

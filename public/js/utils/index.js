@@ -165,9 +165,10 @@ export function showDownloadProgressToast(platform, type) {
 
   const el = document.createElement("div");
   el.className = "download-progress-toast";
+  const cleanType = (type || "").replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "").trim();
   el.innerHTML = `
     <div class="dpt-header">
-      <span class="dpt-platform">${platform} · ${type}</span>
+      <span class="dpt-platform">${platform} · ${cleanType}</span>
       <span class="dpt-percent">0%</span>
     </div>
     <div class="dpt-bar-track">

@@ -546,7 +546,7 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent = "Choose Server";
         confirmMessage.textContent =
-          "Server 1: SpotiDown (MP3)\nServer 2: SoundLoaders (MP3)";
+          "Server 1: SpotiDown (Playlist & Single Track)\nServer 2: SoundLoaders (Playlist & Single Track)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
         if (okConfirmBtn) {
           okConfirmBtn.textContent = "SERVER 1";

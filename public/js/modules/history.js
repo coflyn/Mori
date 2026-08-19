@@ -155,14 +155,17 @@ window.addEventListener("mori_file_saved", async (e) => {
     ) {
       matched = true;
       const localFiles = item.localFiles || [];
+      const trackTitle = e.detail.title;
       if (!localFiles.find((f) => f.path === path)) {
         localFiles.push({
           path,
           uri: fileUri,
           type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
           thumbnail: null,
+          title: trackTitle || item.title,
         });
       }
+      // Preserve original playlist title & playlist thumbnail intact!
       return { ...item, localFiles, localUri: fileUri };
     }
     return item;

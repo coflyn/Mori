@@ -641,8 +641,21 @@ export function renderResult(result, originalUrl) {
     result.downloads.forEach((dl, index) => {
       const btn = document.createElement("button");
       btn.className = "dl-item";
-      const label = dl.quality ? `${dl.type} - ${dl.quality}` : dl.type;
-      btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${label}</span>`;
+
+      // Clean UI display label by removing raw [MP3]/[MP4] tags
+      let cleanType = (dl.type || "")
+        .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "")
+        .trim();
+      const isTrackItem = /^\d+\.\s+/.test(cleanType);
+
+      if (isTrackItem) {
+        btn.classList.add("dl-track-item");
+        btn.innerHTML = `<span class="track-title">${cleanType}</span><div class="dl-badge">${translations[currentLang]["label-download"]}</div>`;
+      } else {
+        const label = dl.quality ? `${cleanType} - ${dl.quality}` : cleanType;
+        btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${label}</span>`;
+      }
+
       btn.addEventListener("click", (e) =>
         startNativeDownload(
           dl.url,
