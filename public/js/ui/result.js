@@ -17,6 +17,7 @@ import {
   setSlideData,
 } from "../modules/core.js";
 import { startNativeDownload } from "./nativeDownload.js";
+import { escapeHtml } from "../ui.js";
 
 export function renderMediaSlides(container, items, resultThumbnail) {
   if (!container) return;
@@ -650,10 +651,10 @@ export function renderResult(result, originalUrl) {
 
       if (isTrackItem) {
         btn.classList.add("dl-track-item");
-        btn.innerHTML = `<span class="track-title">${cleanType}</span><div class="dl-badge">${translations[currentLang]["label-download"]}</div>`;
+        btn.innerHTML = `<span class="track-title">${escapeHtml(cleanType)}</span><div class="dl-badge">${translations[currentLang]["label-download"]}</div>`;
       } else {
         const label = dl.quality ? `${cleanType} - ${dl.quality}` : cleanType;
-        btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${label}</span>`;
+        btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${escapeHtml(label)}</span>`;
       }
 
       btn.addEventListener("click", (e) =>

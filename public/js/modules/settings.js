@@ -13,6 +13,7 @@ import { setUIState, renderHistory } from "../ui.js";
 import { showConfirm } from "./modals.js";
 import { onHistoryItemClick, onHistoryDeleteClick } from "./history.js";
 import {
+  APP_VERSION,
   autoClearHistoryToggle,
   autoClearToggle,
   clearCacheBtn,
@@ -33,6 +34,7 @@ import {
   incognitoToggle,
   musicPathVal,
   okConfirmBtn,
+  openExternalUrl,
   pathVal,
   wifiOnlyToggle,
 } from "./core.js";
@@ -332,77 +334,7 @@ if (downloadSoundToggle) {
   });
 }
 
-const headerQuoteToggle = document.getElementById("headerQuoteToggle");
-if (headerQuoteToggle) {
-  const isShow = localStorage.getItem("mori_show_quote") !== "false";
-  headerQuoteToggle.checked = isShow;
-  const headerDesc = document.querySelector("header p");
-  if (headerDesc) {
-    if (isShow) headerDesc.classList.remove("hidden");
-    else headerDesc.classList.add("hidden");
-  }
 
-  headerQuoteToggle.addEventListener("change", (e) => {
-    localStorage.setItem("mori_show_quote", e.target.checked);
-    const headerDesc = document.querySelector("header p");
-    if (headerDesc) {
-      if (e.target.checked) headerDesc.classList.remove("hidden");
-      else headerDesc.classList.add("hidden");
-    }
-    const lang = translations[currentLang] || translations.en;
-    showToast(
-      e.target.checked
-        ? lang["toast-quote-on"] || "Header quote enabled"
-        : lang["toast-quote-off"] || "Header quote disabled",
-    );
-  });
-}
-
-const greetingToggle = document.getElementById("greetingToggle");
-if (greetingToggle) {
-  const isShowGreeting = localStorage.getItem("mori_show_greeting") !== "false";
-  greetingToggle.checked = isShowGreeting;
-
-  greetingToggle.addEventListener("change", (e) => {
-    localStorage.setItem("mori_show_greeting", e.target.checked);
-    if (typeof updateGreeting === "function") {
-      updateGreeting();
-    }
-    const lang = translations[currentLang] || translations.en;
-    showToast(
-      e.target.checked
-        ? lang["toast-greeting-on"] || "Home greeting enabled"
-        : lang["toast-greeting-off"] || "Home greeting disabled",
-    );
-  });
-}
-
-const footerQuoteToggle = document.getElementById("footerQuoteToggle");
-if (footerQuoteToggle) {
-  const isShowFooter =
-    localStorage.getItem("mori_show_footer_quote") !== "false";
-  footerQuoteToggle.checked = isShowFooter;
-  const footerQuoteEl = document.querySelector(".about-quote");
-  if (footerQuoteEl) {
-    if (isShowFooter) footerQuoteEl.classList.remove("hidden");
-    else footerQuoteEl.classList.add("hidden");
-  }
-
-  footerQuoteToggle.addEventListener("change", (e) => {
-    localStorage.setItem("mori_show_footer_quote", e.target.checked);
-    const footerQuoteEl = document.querySelector(".about-quote");
-    if (footerQuoteEl) {
-      if (e.target.checked) footerQuoteEl.classList.remove("hidden");
-      else footerQuoteEl.classList.add("hidden");
-    }
-    const lang = translations[currentLang] || translations.en;
-    showToast(
-      e.target.checked
-        ? lang["toast-footerquote-on"] || "Footer tagline enabled"
-        : lang["toast-footerquote-off"] || "Footer tagline disabled",
-    );
-  });
-}
 
 const autoRetryToggle = document.getElementById("autoRetryToggle");
 if (autoRetryToggle) {
@@ -890,33 +822,7 @@ export function updateLanguageUI() {
   setUtilsState({ currentLang });
 }
 
-const dynamicGreeting = document.getElementById("dynamicGreeting");
-export function updateGreeting() {
-  const isShowGreeting = localStorage.getItem("mori_show_greeting") !== "false";
-  if (dynamicGreeting) {
-    if (isShowGreeting) dynamicGreeting.classList.remove("hidden");
-    else dynamicGreeting.classList.add("hidden");
-  }
-
-  const greetingText = document.getElementById("greetingText");
-  const greetingStats = document.getElementById("greetingStats");
-  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-  const lang = translations[currentLang];
-
-  if (!greetingText || !greetingStats) return;
-
-  const hours = new Date().getHours();
-  let greeting = lang["greeting-ready"];
-  if (hours >= 5 && hours < 12) greeting = lang["greeting-morning"];
-  else if (hours >= 12 && hours < 15) greeting = lang["greeting-afternoon"];
-  else if (hours >= 15 && hours < 18)
-    greeting = lang["greeting-sore"] || lang["greeting-afternoon"];
-  else if (hours >= 18 && hours < 21) greeting = lang["greeting-evening"];
-  else greeting = lang["greeting-night"] || lang["greeting-evening"];
-
-  greetingText.textContent = greeting;
-  greetingStats.textContent = `${history.length} ${lang["items-history"]}`;
-}
+export function updateGreeting() {}
 
 // Initial calls
 checkAutoClearDays();

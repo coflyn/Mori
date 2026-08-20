@@ -32,21 +32,20 @@ doneEditBtn?.addEventListener("click", () => {
 clearAllBtn?.addEventListener("click", () => {
   showConfirm(
     translations[currentLang]["btn-clear-all"] || "Clear All",
-    "Are you sure you want to delete all download history?",
+    translations[currentLang]["msg-clear-all-confirm"] ||
+      "Are you sure you want to delete all download history?",
     async () => {
       // Clean up physical thumbnail files
       const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+      const thumbs = [];
       for (const item of history) {
-        if (
-          item.thumbnail &&
-          item.thumbnail.startsWith("thumb_") &&
-          Filesystem
-        ) {
+        thumbs.push(item.thumbnail, item.localThumbnail);
+        for (const f of item.localFiles || []) thumbs.push(f.thumbnail);
+      }
+      for (const t of thumbs) {
+        if (t && t.startsWith("thumb_") && Filesystem) {
           try {
-            await Filesystem.deleteFile({
-              path: item.thumbnail,
-              directory: "CACHE",
-            });
+            await Filesystem.deleteFile({ path: t, directory: "CACHE" });
           } catch (e) {}
         }
       }
@@ -69,61 +68,40 @@ export function onHistoryItemClick(item) {
 }
 
 export async function onHistoryDeleteClick(url) {
-  showConfirm("Delete Item", "Remove this item from history?", async () => {
-    let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-    const itemToDelete = history.find((h) => h.url === url);
+  showConfirm(
+    translations[currentLang]["btn-delete"] || "Delete Item",
+    translations[currentLang]["msg-delete-item-confirm"] ||
+      "Remove this item from history?",
+    async () => {
+      let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+      const index = history.findIndex((h) => h.url === url);
+      if (index === -1) return;
+      const itemToDelete = history[index];
 
-    // Delete physical thumbnail if it exists
-    if (
-      itemToDelete &&
-      itemToDelete.thumbnail &&
-      itemToDelete.thumbnail.startsWith("thumb_") &&
-      Filesystem
-    ) {
-      try {
-        await Filesystem.deleteFile({
-          path: itemToDelete.thumbnail,
-          directory: "CACHE",
-        });
-      } catch (e) {
-        console.warn("Could not delete thumbnail file:", e);
-      }
-    }
-
-    // Delete physical media file if exists
-    if (itemToDelete && itemToDelete.localFiles && Filesystem) {
-      for (const lf of itemToDelete.localFiles) {
-        if (lf.path) {
+      // Delete physical thumbnail if it exists
+      const thumbs = [
+        itemToDelete.thumbnail,
+        itemToDelete.localThumbnail,
+        ...(itemToDelete.localFiles || []).map((f) => f.thumbnail),
+      ];
+      for (const t of thumbs) {
+        if (t && t.startsWith("thumb_") && Filesystem) {
           try {
-            let cleanPath = lf.path;
-            if (cleanPath.includes("_capacitor_file_")) {
-              cleanPath = cleanPath.substring(
-                cleanPath.indexOf("_capacitor_file_") + 16,
-              );
-            }
-            if (cleanPath.startsWith("file://")) {
-              cleanPath = cleanPath.replace(/^file:\/\//, "");
-            }
-            const relPath = cleanPath
-              .replace(/^.*\/storage\/emulated\/0\//, "")
-              .replace(/^\//, "");
             await Filesystem.deleteFile({
-              path: relPath,
-              directory: "EXTERNAL_STORAGE",
-            }).catch(() => {
-              return Filesystem.deleteFile({ path: cleanPath });
+              path: t,
+              directory: "CACHE",
             });
           } catch (e) {
-            console.warn("Could not delete local file:", e);
+            console.warn("Could not delete thumbnail file:", e);
           }
         }
       }
-    }
 
-    history = history.filter((h) => h.url !== url);
-    localStorage.setItem("mori_history", JSON.stringify(history));
-    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
-  });
+      history.splice(index, 1);
+      localStorage.setItem("mori_history", JSON.stringify(history));
+      renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+    }
+  );
 }
 
 // Global Event for File Saved (Syncing UI and History)
@@ -143,16 +121,13 @@ window.addEventListener("mori_file_saved", async (e) => {
     const itemClean = cleanUrl(item.url);
     const sourceClean = item.sourceUrl ? cleanUrl(item.sourceUrl) : "";
     const isUrlMatch =
-      itemClean === target ||
+      (itemClean && itemClean === target) ||
       (sourceClean && sourceClean === target) ||
       (item.url && item.url.includes(url)) ||
-      (url && url.includes(item.url));
+      (url && url.includes(item.url)) ||
+      (item.sourceUrl && (item.sourceUrl.includes(url) || url.includes(item.sourceUrl)));
 
-    if (
-      !matched &&
-      (isUrlMatch ||
-        (index === 0 && (!item.localFiles || item.localFiles.length === 0)))
-    ) {
+    if (!matched && isUrlMatch) {
       matched = true;
       const localFiles = item.localFiles || [];
       const trackTitle = e.detail.title;
@@ -199,8 +174,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
-              versionCode: 10,
-              versionName: "4.2.1",
+              versionCode: 13,
+              versionName: "4.2.2",
             };
           }
           return item;
@@ -252,8 +227,14 @@ export function saveToHistory(result, url) {
 
   history.unshift(newItem);
 
-  // Limit to 100 items for better performance
-  localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 100)));
+  // Apply user-configured history limit
+  const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
+  let maxItems = 100;
+  if (limitVal !== "unlimited") {
+    const parsed = parseInt(limitVal, 10);
+    if (!isNaN(parsed) && parsed > 0) maxItems = parsed;
+  }
+  localStorage.setItem("mori_history", JSON.stringify(history.slice(0, maxItems)));
 
   // Refresh UI if defined
   if (typeof renderHistory === "function") {
@@ -266,7 +247,7 @@ export function saveToHistory(result, url) {
 }
 
 // Auto-Clear Old History (Items > 30 days)
-export function autoClearOldHistory() {
+export async function autoClearOldHistory() {
   const daysVal = localStorage.getItem("mori_auto_clear_days") || "off";
   if (daysVal === "off") return;
 
@@ -287,6 +268,28 @@ export function autoClearOldHistory() {
     );
     localStorage.setItem("mori_history", JSON.stringify(filtered));
     renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+
+    // Delete orphaned thumbnail files to prevent storage bloat
+    if (Filesystem) {
+      const removed = history.filter((item) => !filtered.includes(item));
+      for (const item of removed) {
+        const thumbs = [
+          item.thumbnail,
+          item.localThumbnail,
+          ...(item.localFiles || []).map((f) => f.thumbnail),
+        ];
+        for (const t of thumbs) {
+          if (t && t.startsWith("thumb_") && Filesystem) {
+            try {
+              await Filesystem.deleteFile({
+                path: t,
+                directory: "CACHE",
+              });
+            } catch (e) {}
+          }
+        }
+      }
+    }
   }
 }
 

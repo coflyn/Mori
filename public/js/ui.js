@@ -9,6 +9,16 @@ import {
   setSlideData,
 } from "./modules/core.js";
 
+// Escape HTML to prevent XSS from scraped titles
+export function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // State lives in core.js (shared across modules)
 
 export function setUIState(state) {
@@ -86,10 +96,10 @@ export function renderHistory(onItemClick, onDeleteClick) {
           ${item.localFiles && item.localFiles.length > 1 ? `<div class="multi-indicator">${item.localFiles.length}</div>` : ""}
       </div>
       <div class="history-info">
-          <h3>${truncate(item.title, 60)}</h3>
+          <h3>${truncate(escapeHtml(item.title), 60)}</h3>
           <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
       </div>
-      ${isEditingHistory ? `<button class="delete-item-btn" data-url="${item.url}">×</button>` : ""}
+      ${isEditingHistory ? `<button class="delete-item-btn" data-url="${escapeHtml(item.url)}">×</button>` : ""}
     `;
 
     const img = card.querySelector(".hist-img");

@@ -57,7 +57,6 @@ import {
   confirmOverlay,
   okConfirmBtn,
   cancelConfirmBtn,
-  dynamicGreeting,
   updateGreeting,
 } from "./core.js";
 
@@ -144,6 +143,7 @@ downloadBtn.addEventListener("click", async () => {
             const newHistoryItem = {
               id: Date.now() + i + Math.floor(Math.random() * 1000),
               url: bUrl,
+              sourceUrl: data.result.sourceUrl || bUrl,
               title: decodedTitle,
               author: data.result.author || "Creator",
               thumbnail: data.result.thumbnail || "",
@@ -162,8 +162,13 @@ downloadBtn.addEventListener("click", async () => {
           }
         } else {
           if (statusEl) {
-            statusEl.className = "batch-item-status error";
-            statusEl.textContent = "FAILED";
+            if (data && data.isPlaylist) {
+              statusEl.className = "batch-item-status skipped";
+              statusEl.textContent = "SKIPPED (PLAYLIST)";
+            } else {
+              statusEl.className = "batch-item-status error";
+              statusEl.textContent = "FAILED";
+            }
           }
         }
       }
@@ -237,7 +242,7 @@ downloadBtn.addEventListener("click", async () => {
                       const pdfBuffer = await convertImagesToPdf(imageUrls);
                       const sanitizedTitle =
                         itemTitle
-                          .replace(/[\\/:*?"<>|#%&{}[\]()@$^+=~`';,]/g, "")
+                          .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
                           .trim()
                           .substring(0, 60) || "Mori_Batch_Album";
 
@@ -376,7 +381,6 @@ downloadBtn.addEventListener("click", async () => {
   resultSection.classList.add("hidden");
   // Hide supportedSection when starting a download/preview
   if (supportedSection) supportedSection.classList.add("hidden");
-  if (dynamicGreeting) dynamicGreeting.classList.add("hidden");
 
   // Stop any previous media playing in background
   document.querySelectorAll("video").forEach((v) => {
@@ -647,7 +651,7 @@ downloadBtn.addEventListener("click", async () => {
       if (localStorage.getItem("mori_auto_download") === "true") {
         setTimeout(() => {
           const dlBtn = document.querySelector(
-            "#resultSection .btn-download, #resultSection .dl-btn, #resultSection [data-url]",
+            "#resultSection .dl-item, #resultSection .btn-download, #resultSection .dl-btn, #resultSection [data-url]",
           );
           if (dlBtn) dlBtn.click();
         }, 500);

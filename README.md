@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.2.1-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.2.2-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -32,9 +32,27 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## Work in progress
+## What's New in (v4.2.2)
 
+- **History Item Deletion Fix**: Resolved an issue where deleting an item from the download history inadvertently deleted the original media file from physical device storage. History deletion now strictly clears the app history record while leaving saved files in storage completely untouched.
+- **Batch Mode Playlist & Album Skipping**: Configured Batch Mode to automatically detect and skip full playlist and album URLs (Spotify, Apple Music, YouTube playlists). Skipped items display a distinct `SKIPPED (PLAYLIST)` badge in the batch queue modal.
+- **Batch History Isolation & URL Match Fix**: Resolved an issue where downloading multiple links in Batch Mode (such as multiple TikTok, IG, or Twitter posts) caused saved files to mistakenly merge into a single history card. Removed inaccurate index fallback logic in `mori_file_saved` listener and added `sourceUrl` tracking to guarantee that each downloaded media file is mapped and isolated strictly to its own separate history item.
 - **Spotify & Apple Music Playlist / Album Support**: Full support for parsing and downloading entire playlists and albums from Spotify (via SpotiDown & SoundLoaders) and Apple Music (via Aplmate).
+- **UI Simplification & Quote/Tagline Removal**: Streamlining the application interface by removing the header description ("Minimalist Media Downloader"), Home greeting/stats ("Ready to save?" / history item counter), and footer quote tagline ("Simplicity is the ultimate sophistication"), as well as removing their redundant toggles (_Header Quote_, _Home Greeting_, _Footer Tagline_) from Settings Appearance for an ultra-clean design.
+- **Auto-Download Feature Fix**: Resolved an issue where the Auto-Download setting never triggered because the click automation searched for a legacy button class (`.btn-download`) instead of the actual rendered class (`.dl-item`). Auto-Download now correctly fires the first download button after analysis.
+- **History Limit Setting Fix**: The history list is now properly capped according to the user-configured `History Limit` setting instead of being hard-locked to 100 items regardless of user preference.
+- **History Item Deletion Fix (Match-By-Index)**: Deleting a history item now uses its array index rather than brittle URL string matching, so items with redirects or changed URLs (TikTok/IG short links) can be reliably removed. Physical thumbnail files in the cache are also cleaned up on deletion.
+- **Security Fix — History XSS**: Scraped titles and URLs rendered into the history list are now HTML-escaped, preventing malicious content in scraped page titles from injecting scripts into the app.
+- **Batch Mode YouTube Playlist Detection Fix**: Videos shared with a playlist context (`youtube.com/watch?v=xxx&list=yyy`) are no longer skipped in Batch Mode — only pure playlist URLs (`/playlist?list=`) are skipped, so individual videos inside playlists download normally.
+- **Auto-Clear History Thumbnail Cleanup**: Auto-cleanup of old history entries now also deletes orphaned local thumbnail files (`thumb_*.jpg`) from the device cache, preventing storage bloat over time.
+- **Track Number Padding Fix (Spotify)**: Playlists and albums with 100+ tracks now generate correctly sorted file prefixes (`001.`, `002.`, ...) instead of breaking sort order with `100.` before `09.`.
+- **Filename Sanitizer Improvement**: Parentheses are no longer stripped from filenames — tracks like `Blinding Lights (feat. The Weeknd)` keep their original formatting.
+- **Modal Dismissal Stale-Handler Fix**: The confirm overlay's outside-dismiss handler is now cleared on every `hideConfirm()`, eliminating stale closures and potential memory leaks when switching servers repeatedly.
+- **Download Timeout on Blob Fallback**: The HTTP blob fallback path now respects the configurable timeout limit instead of hanging indefinitely on unresponsive servers.
+- **i18n — Confirmation Messages Localized**: "Clear All" and "Delete Item" confirmation dialogs now use localized strings (English / Indonesian / Japanese) instead of hardcoded English.
+- **Auto Analyze on Auto Paste Fix**: Resolved an issue where silent automatic pasting on app launch or resume did not trigger automatic link analysis even when `Auto Analyze` was enabled. Auto Analyze now seamlessly triggers immediate link analysis upon auto-pasting link from clipboard.
+- **Desktop (Tauri) HTTP Timeout Fix**: The Rust-native HTTP commands (`tauri_http_request`, `tauri_download_file`, `tauri_fetch_bytes`) previously had no timeout — a stalled scraper request could hang the app indefinitely on macOS/Windows. Requests now timeout at 30s (scraper calls), 120s (file downloads), and 60s (thumbnail fetches), preventing frozen downloads.
+- **Security Fix — Result Download Button XSS**: Download quality labels and track titles scraped from third-party servers are now HTML-escaped before rendering into the result list, closing a script-injection vector on both desktop and mobile.
 
 ## Previous Updates (v4.2.1)
 
@@ -72,7 +90,7 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 | <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
 | <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
 | <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/douyin/000000" width="16" style="display:none;" /><img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
 
 ## Built With
 
@@ -100,23 +118,28 @@ Mori/
 │   ├── css/
 │   │   └── style.css           # Design system & all component styles
 │   ├── js/
-│   │   ├── components/         # Custom UI components (MoriPlayer)
-│   │   │   └── player.js
+│   │   ├── app.js              # Entry point — module wiring & startup init
+│   │   ├── components/         # Custom UI components
+│   │   │   └── player.js       # Mori media player (video/audio)
 │   │   ├── i18n/               # Multi-language translations (EN/ID/JA)
 │   │   │   └── index.js
-│   │   ├── modules/            # App managers (auth, history, settings, batch)
-│   │   │   ├── authManager.js
-│   │   │   ├── batchManager.js # Batch queue, multi-link extraction, auto-retry
-│   │   │   ├── downloadManager.js
-│   │   │   ├── historyManager.js
-│   │   │   └── settingsManager.js
+│   │   ├── modules/            # Core app managers & state
+│   │   │   ├── authManager.js  # PIN & biometric lock
+│   │   │   ├── batchManager.js # Batch queue, multi-link extraction, playlist skip
+│   │   │   ├── core.js         # Shared state, DOM refs, constants
+│   │   │   ├── download.js     # Main analyze/download flow
+│   │   │   ├── history.js      # History CRUD, auto-clear, thumbnail cleanup
+│   │   │   ├── intents.js      # Clipboard paste, share intents, deep links
+│   │   │   ├── modals.js       # Confirm & info modal system
+│   │   │   ├── settings.js     # Settings UI & localStorage wiring
+│   │   │   └── update.js       # Update checker
 │   │   ├── scrapers/           # Standalone scraper modules (14 platforms)
 │   │   │   ├── applemusic.js
 │   │   │   ├── bandcamp.js
 │   │   │   ├── bilibili.js
 │   │   │   ├── douyin.js
 │   │   │   ├── facebook.js
-│   │   │   ├── httpHelper.js
+│   │   │   ├── httpHelper.js   # Centralized HTTP client (timeout, headers, UA)
 │   │   │   ├── index.js
 │   │   │   ├── instagram.js
 │   │   │   ├── pinterest.js
@@ -127,15 +150,17 @@ Mori/
 │   │   │   ├── tiktok.js
 │   │   │   ├── twitter.js
 │   │   │   └── youtube.js
-│   │   ├── utils/              # Helpers, URL sanitization, PDF compilation
-│   │   │   ├── index.js
+│   │   ├── ui/                 # UI rendering & native download layer
+│   │   │   ├── nativeDownload.js # Native download flow, resolve URLs, retries
+│   │   │   ├── result.js       # Result section, media slider, PDF export
+│   │   │   └── resultModal.js  # Detail modal with slides & preview
+│   │   ├── ui.js               # History rendering + re-exports
+│   │   ├── utils/              # Shared helpers
+│   │   │   ├── index.js        # Toast, Filesystem, wake lock, stopAllMedia
 │   │   │   ├── pdfHelper.js    # PDF bundling via vendor pdf-lib
-│   │   │   ├── scraperHealth.js
-│   │   │   └── urlUtils.js
-│   │   ├── vendor/             # Third-party libraries (pdf-lib)
-│   │   │   └── pdf-lib.min.js
-│   │   ├── script.js           # Core application init & lifecycle
-│   │   └── ui.js               # Media slider, results UI, and rendering logic
+│   │   │   └── urlUtils.js     # URL extraction & tracker cleanup
+│   │   └── vendor/             # Third-party libraries (pdf-lib)
+│   │       └── pdf-lib.min.js
 │   └── index.html              # Single-page application entry point
 ├── capacitor.config.json       # Capacitor configuration
 ├── package.json                # Dependencies & scripts
@@ -264,8 +289,8 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.0_aarch64.dmg` & `Mori.app`
-- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.0_x64_en-US.msi` & `.exe`
+- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.2_aarch64.dmg` & `Mori.app`
+- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.2_x64_en-US.msi` & `.exe`
 
 ### Running & Building for iOS
 
@@ -293,14 +318,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.0.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.2.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.2.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.2.2.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.0.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.2.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

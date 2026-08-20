@@ -18,6 +18,8 @@ export const hideConfirm = () => {
   if (confirmOverlay) {
     confirmOverlay.classList.add("hidden");
     confirmOverlay.style.display = "none";
+    // Reset to prevent stale closures from previous server prompts
+    confirmOverlay._onDismissOutside = null;
   }
   if (cancelConfirmBtn) cancelConfirmBtn.textContent = "CANCEL";
   if (okConfirmBtn) {

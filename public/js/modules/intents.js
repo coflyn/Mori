@@ -24,7 +24,6 @@ import {
   setLastHandledLinkTime,
   setHistoryUnlocked,
   setSettingsUnlocked,
-  dynamicGreeting,
   updateGreeting,
 } from "./core.js";
 
@@ -72,11 +71,9 @@ export async function handlePasteFromClipboard(isSilent = false) {
 
         const autoAnalyze =
           localStorage.getItem("mori_auto_analyze") === "true";
-        if (autoAnalyze && !isSilent) {
+        if (autoAnalyze) {
           setTimeout(() => downloadBtn?.click(), 300);
-        }
-
-        if (isSilent) {
+        } else if (isSilent) {
           const autoDownload =
             localStorage.getItem("mori_auto_download") === "true";
           if (autoDownload) {
@@ -140,7 +137,6 @@ closeResult?.addEventListener("click", () => {
   resultSection.classList.add("hidden");
   const supportedSection = document.querySelector(".supported-section");
   if (supportedSection) supportedSection.classList.remove("hidden");
-  if (dynamicGreeting) dynamicGreeting.classList.remove("hidden");
   updateGreeting();
 });
 

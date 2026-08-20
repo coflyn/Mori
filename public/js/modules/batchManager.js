@@ -58,6 +58,31 @@ export function extractBatchUrls(rawText) {
  * @returns {Promise<Object>} Scraper result
  */
 export async function analyzeUrlSilent(url, preferServer = "auto") {
+  // Check if URL is a Playlist or Album link -> Skip in Batch Mode
+  const isPlaylistOrAlbumUrl = (() => {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      const parsed = new URL(url.includes("youtu.be") ? "https://" + url : url);
+      return (
+        parsed.hostname.includes("youtube.com") &&
+        parsed.pathname.startsWith("/playlist") &&
+        (parsed.searchParams.has("list") || parsed.pathname !== "/playlist/")
+      );
+    }
+    return (
+      url.includes("/playlist/") ||
+      url.includes("/playlist?") ||
+      url.includes("/album/")
+    );
+  })();
+
+  if (isPlaylistOrAlbumUrl) {
+    return {
+      status: false,
+      isPlaylist: true,
+      message: "Playlist and Album links are skipped in Batch Mode.",
+    };
+  }
+
   const isServer2 = preferServer === "server2";
 
   try {
@@ -146,6 +171,17 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       data = await scrapePixiv(url);
     } else {
       data = { status: false, message: "URL not supported yet." };
+    }
+
+    if (data && data.status && data.result) {
+      const title = data.result.title || "";
+      if (title.includes("(Playlist)") || title.includes("(Album)")) {
+        return {
+          status: false,
+          isPlaylist: true,
+          message: "Playlist and Album links are skipped in Batch Mode.",
+        };
+      }
     }
 
     return data;

@@ -2,7 +2,7 @@
 import { translations } from "../i18n/index.js";
 import { Filesystem } from "../utils/index.js";
 
-export const APP_VERSION = "4.2.1";
+export const APP_VERSION = "4.2.2";
 export const GITHUB_REPO = "coflyn/Mori";
 export const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 export const REPO_URL = `https://github.com/${GITHUB_REPO}`;
@@ -149,7 +149,6 @@ export const settingsMenuItems = document.querySelectorAll(
 export const settingsBackBtns = document.querySelectorAll(".back-btn-settings");
 
 export const loaderText = document.getElementById("loaderText");
-export const dynamicGreeting = document.getElementById("dynamicGreeting");
 
 export const guideOverlay = document.getElementById("guideOverlay");
 export const hideGuideCheckbox = document.getElementById("hideGuideCheckbox");
@@ -230,33 +229,7 @@ export async function updateStorageInfo() {
   }
 }
 
-export function updateGreeting() {
-  const isShowGreeting = localStorage.getItem("mori_show_greeting") !== "false";
-  const dynamicGreeting = document.getElementById("dynamicGreeting");
-  if (dynamicGreeting) {
-    if (isShowGreeting) dynamicGreeting.classList.remove("hidden");
-    else dynamicGreeting.classList.add("hidden");
-  }
-
-  const greetingText = document.getElementById("greetingText");
-  const greetingStats = document.getElementById("greetingStats");
-  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-  const lang = translations[currentLang];
-
-  if (!greetingText || !greetingStats) return;
-
-  const hours = new Date().getHours();
-  let greeting = lang["greeting-ready"];
-  if (hours >= 5 && hours < 12) greeting = lang["greeting-morning"];
-  else if (hours >= 12 && hours < 15) greeting = lang["greeting-afternoon"];
-  else if (hours >= 15 && hours < 18)
-    greeting = lang["greeting-sore"] || lang["greeting-afternoon"];
-  else if (hours >= 18 && hours < 21) greeting = lang["greeting-evening"];
-  else greeting = lang["greeting-night"] || lang["greeting-evening"];
-
-  greetingText.textContent = greeting;
-  greetingStats.textContent = `${history.length} ${lang["items-history"]}`;
-}
+export function updateGreeting() {}
 
 export async function clearCacheSilently() {
   if (!Filesystem) return;

@@ -30,7 +30,6 @@
     <div class="app-container">
       <header>
         <h1>Mori</h1>
-        <p data-i18n="app-desc">Minimalist Media Downloader</p>
       </header>
 
       <main>
@@ -193,12 +192,6 @@
             </div>
           </div>
 
-          <div id="dynamicGreeting" class="dynamic-greeting">
-            <span id="greetingText" data-i18n="greeting-ready"
-              >Ready to save?</span
-            >
-            <span id="greetingStats">0 items in your history</span>
-          </div>
           <div class="supported-section">
             <span class="section-label" data-i18n="label-platforms"
               >Supported Platforms</span
@@ -583,7 +576,6 @@
                   </div>
                 </div>
               </div>
-
 
               <div class="settings-menu-item" data-target="settingsAdvanced">
                 <div class="menu-icon">
@@ -1089,63 +1081,6 @@
                 </div>
               </div>
               <!-- Header Quote -->
-              <div class="settings-item">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
-                  </svg>
-                  <span data-i18n="label-header-quote">Header Quote</span>
-                </div>
-                <div class="toggle-switch">
-                  <input type="checkbox" id="headerQuoteToggle" />
-                  <label for="headerQuoteToggle"></label>
-                </div>
-              </div>
-              <!-- Home Greeting -->
-              <div class="settings-item">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"
-                    />
-                  </svg>
-                  <span data-i18n="label-home-greeting">Home Greeting</span>
-                </div>
-                <div class="toggle-switch">
-                  <input type="checkbox" id="greetingToggle" />
-                  <label for="greetingToggle"></label>
-                </div>
-              </div>
-              <!-- Footer Tagline -->
-              <div class="settings-item">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 14H4c-.55 0-1-.45-1-1v-2h18v2c0 .55-.45 1-1 1z"
-                    />
-                  </svg>
-                  <span data-i18n="label-footer-quote">Footer Tagline</span>
-                </div>
-                <div class="toggle-switch">
-                  <input type="checkbox" id="footerQuoteToggle" />
-                  <label for="footerQuoteToggle"></label>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1241,7 +1176,13 @@
                   <span data-i18n="label-filename-template">Filename</span>
                 </div>
                 <div class="custom-select" id="filenameSelect">
-                  <div class="selected-text" id="filenameText" data-i18n="filename-title">Title Only</div>
+                  <div
+                    class="selected-text"
+                    id="filenameText"
+                    data-i18n="filename-title"
+                  >
+                    Title Only
+                  </div>
                   <div class="dropdown-arrow">
                     <svg
                       viewBox="0 0 24 24"
@@ -1363,7 +1304,9 @@
                       d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zm-1 5h-2v-2h2v2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zm-1 5h-2V6h2v2z"
                     />
                   </svg>
-                  <span data-i18n="label-prefer-server">Prefer Scraper Server</span>
+                  <span data-i18n="label-prefer-server"
+                    >Prefer Scraper Server</span
+                  >
                 </div>
                 <div class="custom-select" id="preferServerSelect">
                   <div class="selected-text" id="preferServerText">
@@ -1413,11 +1356,11 @@
                     height="18"
                     fill="currentColor"
                   >
-                    <path
-                      d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"
-                    />
+                    <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
                   </svg>
-                  <span data-i18n="label-batch-photo-mode">Batch Photo Mode</span>
+                  <span data-i18n="label-batch-photo-mode"
+                    >Batch Photo Mode</span
+                  >
                 </div>
                 <div class="custom-select" id="batchPhotoModeSelect">
                   <div class="selected-text" id="batchPhotoModeText">
@@ -1972,10 +1915,8 @@
                   <label for="autoLoopToggle"></label>
                 </div>
               </div>
-
             </div>
           </div>
-
 
           <!-- Sub-page: About & Help -->
           <div id="settingsAbout" class="settings-sub-page hidden">
@@ -2010,7 +1951,7 @@
                   <span data-i18n="label-version">Version</span>
                 </div>
                 <div class="update-info">
-                  <span class="info-val">&nbsp;4.2.1</span>
+                  <span class="info-val">&nbsp;4.2.2</span>
                   <span class="action-label" data-i18n="btn-check">CHECK</span>
                 </div>
               </div>
@@ -2414,7 +2355,9 @@
       <div id="pinModalOverlay" class="modal-overlay hidden">
         <div class="modal-content pin-modal">
           <div class="pin-header">
-            <h3 id="pinModalTitle" data-i18n="pin-enter-title">Enter 4-Digit PIN</h3>
+            <h3 id="pinModalTitle" data-i18n="pin-enter-title">
+              Enter 4-Digit PIN
+            </h3>
           </div>
           <div class="pin-dots-container" id="pinDots">
             <span class="pin-dot"></span>
@@ -2434,7 +2377,9 @@
             <button class="pin-key" data-key="9">9</button>
             <button class="pin-key pin-cancel" id="pinCancelBtn">✕</button>
             <button class="pin-key" data-key="0">0</button>
-            <button class="pin-key pin-backspace" id="pinBackspaceBtn">⌫</button>
+            <button class="pin-key pin-backspace" id="pinBackspaceBtn">
+              ⌫
+            </button>
           </div>
         </div>
       </div>
@@ -2443,20 +2388,31 @@
       <div id="batchModalOverlay" class="modal-overlay hidden">
         <div class="modal-content batch-modal">
           <div class="batch-header">
-            <h3 id="batchModalTitle" data-i18n="batch-modal-title">Batch Download Queue</h3>
+            <h3 id="batchModalTitle" data-i18n="batch-modal-title">
+              Batch Download Queue
+            </h3>
             <span id="batchModalCounter" class="batch-counter">0 / 0</span>
           </div>
           <div id="batchProgressList" class="batch-progress-list"></div>
           <div class="batch-modal-actions">
-            <button id="batchDownloadAllBtn" class="primary-btn hidden" data-i18n="batch-download-all">DOWNLOAD ALL (0)</button>
-            <button id="batchCloseBtn" class="secondary-btn" data-i18n="btn-close">CLOSE</button>
+            <button
+              id="batchDownloadAllBtn"
+              class="primary-btn hidden"
+              data-i18n="batch-download-all"
+            >
+              DOWNLOAD ALL (0)
+            </button>
+            <button
+              id="batchCloseBtn"
+              class="secondary-btn"
+              data-i18n="btn-close"
+            >
+              CLOSE
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="about-quote" data-i18n="quote-simplicity">
-        "Simplicity is the ultimate sophistication."
-      </div>
     </div>
     <audio id="completionChimeAudio" src="./chime.wav" preload="auto"></audio>
     <script type="module" src="js/app.js"></script>

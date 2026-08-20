@@ -447,16 +447,6 @@ export function unlockAudioContext() {
 if (typeof window !== "undefined") {
   const unlock = () => {
     unlockAudioContext();
-    const chimeEl = document.getElementById("completionChimeAudio");
-    if (chimeEl) {
-      chimeEl
-        .play()
-        .then(() => {
-          chimeEl.pause();
-          chimeEl.currentTime = 0;
-        })
-        .catch(() => {});
-    }
   };
   window.addEventListener("click", unlock, { once: true, passive: true });
   window.addEventListener("touchstart", unlock, { once: true, passive: true });

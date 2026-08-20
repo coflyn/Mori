@@ -14,15 +14,15 @@
 }
 
 [data-theme="dark"] {
-  --bg-color: #1a1917;
-  --bg-rgb: 26, 25, 23;
-  --surface: #242220;
-  --surface-rgb: 36, 34, 32;
-  --primary: #fffbf2;
-  --primary-rgb: 255, 251, 242;
-  --on-primary: #1a1917;
-  --text-main: #fffbf2;
-  --text-secondary: #a09a90;
+  --bg-color: #141416;
+  --bg-rgb: 20, 20, 22;
+  --surface: #1e1e22;
+  --surface-rgb: 30, 30, 34;
+  --primary: #f8f8fa;
+  --primary-rgb: 248, 248, 250;
+  --on-primary: #141416;
+  --text-main: #f8f8fa;
+  --text-secondary: #94949e;
 }
 
 /* Font Presets */
@@ -1522,7 +1522,7 @@ input[type="text"]:focus {
 }
 
 [data-theme="dark"] .guide-modal {
-  background: #242220; /* Deep dark for Seal vibe */
+  background: var(--surface);
 }
 
 .guide-header h2 {
@@ -2529,6 +2529,11 @@ input[type="text"]:focus {
 .batch-item-status.error {
   background: rgba(231, 76, 60, 0.2);
   color: #e74c3c;
+}
+
+.batch-item-status.skipped {
+  background: rgba(230, 126, 34, 0.2);
+  color: #e67e22;
 }
 
 .batch-modal-actions {

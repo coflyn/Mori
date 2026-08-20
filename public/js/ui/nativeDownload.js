@@ -16,6 +16,7 @@ import {
   autoClearInputBox,
 } from "../utils/index.js";
 import { currentLang } from "../modules/core.js";
+import { getRequestTimeout } from "../scrapers/httpHelper.js";
 
 export async function startNativeDownload(url, type, title, btn, sourceUrl) {
   if (!url || typeof url !== "string" || !url.trim()) {
@@ -203,7 +204,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
 
     let sanitizedTitle = effectiveTitle
-      .replace(/[\\/:*?"<>|#%&{}[\]()@$^+=~`';,]/g, "")
+      .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
       .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
       .trim()
       .replace(/\s+/g, " ")
@@ -673,6 +674,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
                   url: actualDownloadUrl,
                   responseType: "blob",
                   headers: downloadHeaders,
+                  connectTimeout: getRequestTimeout(),
+                  readTimeout: getRequestTimeout(),
                 });
                 if (
                   httpRes &&
