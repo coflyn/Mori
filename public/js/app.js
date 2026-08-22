@@ -222,7 +222,11 @@ async function switchPage(pageId) {
 
   // Refresh history if entering history page
   if (pageId === "history") {
-    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+    if (typeof window.checkAndMergePendingHistory === "function") {
+      window.checkAndMergePendingHistory();
+    } else {
+      renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+    }
   }
 }
 

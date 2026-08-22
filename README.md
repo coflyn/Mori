@@ -32,7 +32,11 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in (v4.2.2)
+## Work In Progress
+
+- **Android Quick Save Share Overlay (`ShareActivity`)**: Added a native translucent bottom-sheet dialog overlay triggered directly when sharing media links from 14+ supported platforms (TikTok, Instagram, YouTube, Twitter/X, Spotify, Pinterest, RedNote, Bilibili, etc.) via Android's native `ACTION_SEND` share menu. Allows instant background media downloading without opening the main Mori app UI, featuring dual-server selection (`mori_prefer_server`), instant Gallery indexing (`MediaScannerConnection`), fail-safe history synchronization into Mori's main History tab, and full theme & font preset inheritance (`Plus Jakarta Sans`, `Outfit`, `Space Mono`, `Inter`, `Georgia`).
+
+## Previous Updates (v4.2.2)
 
 - **History Item Deletion Fix**: Resolved an issue where deleting an item from the download history inadvertently deleted the original media file from physical device storage. History deletion now strictly clears the app history record while leaving saved files in storage completely untouched.
 - **Batch Mode Playlist & Album Skipping**: Configured Batch Mode to automatically detect and skip full playlist and album URLs (Spotify, Apple Music, YouTube playlists). Skipped items display a distinct `SKIPPED (PLAYLIST)` badge in the batch queue modal.
@@ -54,43 +58,17 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **Desktop (Tauri) HTTP Timeout Fix**: The Rust-native HTTP commands (`tauri_http_request`, `tauri_download_file`, `tauri_fetch_bytes`) previously had no timeout — a stalled scraper request could hang the app indefinitely on macOS/Windows. Requests now timeout at 30s (scraper calls), 120s (file downloads), and 60s (thumbnail fetches), preventing frozen downloads.
 - **Security Fix — Result Download Button XSS**: Download quality labels and track titles scraped from third-party servers are now HTML-escaped before rendering into the result list, closing a script-injection vector on both desktop and mobile.
 
-## Previous Updates (v4.2.1)
-
-- **Multi-Link Batch Download Mode**: Added a dedicated Batch Mode toggle button and multi-line text area allowing users to paste and analyze multiple social media links (TikTok, IG, YouTube, Twitter, Spotify, RedNote, etc.) simultaneously. Includes a real-time Batch Queue Modal displaying live item status (`ANALYZING`, `READY`, `DOWNLOADING`, `SAVED`) and a one-click `DOWNLOAD ALL` button. Bypasses interactive server selection popups by utilizing preferred server settings and silent retry fallbacks.
-- **Batch Photo Mode Setting**: Added a new `Batch Photo Mode` dropdown in Settings (_Network & Performance_) with 3 customizable options for multi-photo / carousel posts (TikTok Photo Mode, Instagram carousels, RedNote albums):
-  1. `Download All Photos` (Default): Automatically saves every individual slide photo in a carousel post.
-  2. `Combine into Single PDF`: Merges all slide photos of a carousel into a single multi-page PDF document using `pdf-lib`.
-  3. `Download First Photo Only`: Downloads only the 1st cover photo of the carousel post.
-- **Smart Media Type Differentiation**: Batch mode intelligently distinguishes single video posts (such as TikTok videos with SD, HD, and MP3 quality mirrors) from genuine photo slideshow carousels, ensuring video posts download only 1 primary video file while carousel posts apply the user's selected Batch Photo Mode.
-- **100% 14-Platform Subfolder Coverage**: Enhanced per-platform auto-categorization (`mori_auto_folder`) to cover all 14 supported social media platforms and short link domains (TikTok/Douyin, Instagram, YouTube, Twitter/X, Facebook, Pinterest, Spotify, Apple Music, Threads, RedNote, Bilibili, Pixiv, and Bandcamp), ensuring downloaded files are routed into dedicated platform folders (`/TikTok`, `/AppleMusic`, `/Threads`, `/Bandcamp`, etc.).
-- **4-Digit PIN Passcode Lock System**: Added `PIN Code` as a brand new Lock Type option alongside Biometric. Includes a sleek, custom-built 4-dot monochrome keypad modal for passcode entry, creation, and confirmation. Works cross-platform on Desktop (macOS & Windows) as well as Android and iOS devices. Automatically adapts to Desktop by displaying `None` and `PIN Code` while hiding native mobile biometric options.
-- **Audio Background Playback Fix**: Resolved an issue where audio previews (MP3/Spotify/Apple Music) continued playing in the background after closing modal details or preview cards. Implemented centralized `stopAllMedia()` helper to pause and reset both `<audio>` and `<video>` elements, revoke Object URLs, and trigger container cleanup hooks upon closing modals (`hideModal`), closing result cards (`closeResult`), or switching navigation tabs (`switchPage`).
-- **Pinterest PinDirect Removal**: Completely removed PinDirect server option and server selection popup for Pinterest, streamlining execution to use PinDown directly with automatic direct page fallback.
-- **RedNote / Xiaohongshu Scraper Fix**: Replaced third-party API with direct HTML state extraction (`window.__INITIAL_STATE__`), resolving `V2OB HAS BEEN UPDATED` errors on `/red_video/` and `/explore/` links, and added native domain support for `rednote.com`.
-- **Bilibili.tv Scraper Fix**: Resolved `Unsupported service providers` error on anime/play URLs (such as `/play/2342192`) by fixing `episode_id` property resolution and enabling direct `season_id` fallback in Bilibili OGV v2 API calls.
-- **YouTube Scraper (YTMP3.gg) Fix**: Converted conversion API requests from parallel bursts to sequential calls with delay guards to prevent `Server.Concurrency limit exceeded` error, and configured automatic fallback to YTMP3.mobi engine if needed.
-- **Twitter/X Scraper (TVD) Resolution Label Fix**: Enhanced resolution label parser (`formatResolutionLabel`) to filter out "Get Premium" upsell text and dynamically extract resolution dimensions (`720x1280`, `1080x1920`, etc.) directly from Twitter CDN media URLs.
-- **Instagram Scraper Server 1 & Server 2 Fixes**: Resolved JSON parse errors (`Unexpected token '<'`) on Server 2 (DownReels) by adding HTML error response guards, and fixed redirect loops on Server 1 (InDown) by adding missing POST form payload parameters.
-- **Instagram Direct Embed Fallback Engine**: Integrated direct Instagram embed parsing (`/p/{shortcode}/embed/captioned/`) with Mobile Safari User-Agent (`SAFARI_MOBILE_UA`) as an automatic fallback for both servers, extracting original-resolution Reels, single photos, videos, and multi-slide carousels seamlessly.
-- **Complete Removal of Data Export/Import & Scheduled Auto-Backup**: Completely removed legacy data export (`exportMoriData`), data import (`importMoriData`), and scheduled auto-backup (`autoBackupDataCheck`) from the settings UI and codebase to keep app storage logic lightweight, fast, and zero-overhead.
-- **Full Network Settings Integration**: Fully wired up Anti-403 Header Guard (`mori_header_spoofing`), Cellular Data Warning Guard (`mori_cellular_warning`), Bypass SSL Errors (`mori_bypass_ssl`), and Force IPv4 Mode (`mori_force_ipv4`) into `scraperFetch()` and download lifecycle.
-- **Cellular Data Warning Modal Guard**: Integrated an interactive confirmation prompt when attempting media downloads over cellular data connection (2G/3G/4G/5G).
-- **Anti-403 Browser Header Injection**: Automatic spoofing of browser headers (`Referer`, `Accept`, `Accept-Language`, `Sec-Fetch-Dest`, `Sec-Fetch-Mode`) to bypass 403 Forbidden blocks across social media scrapers.
-- **Settings Layout Refinement**: Repositioned **Check Server Latency** directly below **Timeout Limit** in _Network & Performance_, and removed redundant Export & Import Data actions.
-- **Streamlined Settings UI**: Removed unused/redundant Scraper Engine & Status subpage to keep Mori's Settings menu clean, fast, and minimalist.
-- **App Version Bump**: Bumped version to `v4.2.1` across all platform manifests (`package.json`, `tauri.conf.json`, `build.gradle`, `project.pbxproj`, and app UI).
-
 ## Supported Platforms
 
-| Platform                                                                                                                                                              | Features               | Platform                                                                            | Features                 |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**                                                                                         | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**                                                                                       | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**                                                                                       | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | PinDown (Video / Images) |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music**                                                                                | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
-| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**                                                                                   | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
-| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**                                                                                     | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
+| Platform                                                                               | Features               | Platform                                                                            | Features                 |
+| :------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**          | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | PinDown (Video / Images) |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**    | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**      | Video / Audio (DASH)   | <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**         | Gallery / Ugoira to MP4  |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin**          | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**   | Album / MP3 Track        |
 
 ## Built With
 

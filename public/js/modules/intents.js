@@ -26,6 +26,8 @@ import {
   setSettingsUnlocked,
   updateGreeting,
 } from "./core.js";
+import { renderHistory } from "../ui.js";
+import { onHistoryItemClick, onHistoryDeleteClick } from "./history.js";
 
 export async function handlePasteFromClipboard(isSilent = false) {
   try {
@@ -212,9 +214,13 @@ if (App && typeof App.addListener === "function") {
     });
   }
 
-  // App State Change (Auto-detect clipboard on resume)
   App.addListener("appStateChange", ({ isActive }) => {
     if (isActive) {
+      try {
+        renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+        updateGreeting();
+      } catch (_) {}
+
       const loopSetting = localStorage.getItem("mori_loop") !== "false";
       const autoPaste = localStorage.getItem("mori_auto_paste") !== "false";
       if (autoPaste) {
@@ -238,3 +244,80 @@ if (App && typeof App.addListener === "function") {
     }
   });
 }
+
+export function mergePendingHistorySync() {
+  try {
+    let raw = null;
+    if (window.MoriMainBridge?.getPendingHistoryList) {
+      raw = window.MoriMainBridge.getPendingHistoryList();
+    } else if (window.MoriShareBridge?.getPendingHistoryList) {
+      raw = window.MoriShareBridge.getPendingHistoryList();
+    }
+
+    if (!raw || raw === "[]") return false;
+
+    const itemsRaw = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!Array.isArray(itemsRaw) || itemsRaw.length === 0) return false;
+
+    const items = itemsRaw.map((x) =>
+      typeof x === "string" ? JSON.parse(x) : x,
+    );
+    let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+
+    items.forEach((newItem) => {
+      if (!newItem || !newItem.title) return;
+      const targetClean = cleanUrl(newItem.url);
+      const existingIdx = history.findIndex(
+        (h) => cleanUrl(h.url) === targetClean,
+      );
+      if (existingIdx !== -1) {
+        const existing = history[existingIdx];
+        if (
+          (!newItem.localFiles || newItem.localFiles.length === 0) &&
+          existing.localFiles
+        ) {
+          newItem.localFiles = existing.localFiles;
+        }
+        if (!newItem.localUri && existing.localUri) {
+          newItem.localUri = existing.localUri;
+        }
+        history.splice(existingIdx, 1);
+      }
+      history.unshift(newItem);
+    });
+
+    localStorage.setItem("mori_history", JSON.stringify(history.slice(0, 100)));
+
+    if (window.MoriMainBridge?.clearPendingHistoryList) {
+      window.MoriMainBridge.clearPendingHistoryList();
+    } else if (window.MoriShareBridge?.clearPendingHistoryList) {
+      window.MoriShareBridge.clearPendingHistoryList();
+    }
+    return true;
+  } catch (e) {
+    console.error("Merge pending history error", e);
+    return false;
+  }
+}
+
+export function checkAndMergePendingHistory() {
+  mergePendingHistorySync();
+  if (typeof renderHistory === "function") {
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
+}
+
+window.checkAndMergePendingHistorySync = mergePendingHistorySync;
+window.checkAndMergePendingHistory = checkAndMergePendingHistory;
+window.moriMergeShareHistoryList = checkAndMergePendingHistory;
+
+window.moriRefreshHistory = function () {
+  checkAndMergePendingHistory();
+};
+
+window.addEventListener("focus", () => {
+  checkAndMergePendingHistory();
+});
+
+// Run once immediately on intents.js module load
+setTimeout(() => checkAndMergePendingHistory(), 100);

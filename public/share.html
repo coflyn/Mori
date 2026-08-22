@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mori – Quick Save</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    html, body {
+      background: transparent !important;
+      height: 100%;
+      overflow: hidden;
+    }
+    button, input, select, textarea {
+      font-family: inherit;
+    }
+
+    /* Backdrop Blur Overlay */
+    #backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      animation: fadeIn .2s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    /* Bottom Sheet Panel using Mori design tokens */
+    #panel {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-color, #141416);
+      border-top: 1px solid var(--surface, #1e1e22);
+      border-radius: 20px 20px 0 0;
+      padding: 12px 20px 32px;
+      animation: slideUp .25s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 85vh;
+      overflow-y: auto;
+      color: var(--text-main, #f8f8fa);
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+
+    /* Drag handle */
+    .drag-handle {
+      width: 36px; height: 4px;
+      background: var(--surface, #2e2e34);
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+
+    /* Header */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .panel-icon {
+      width: 36px; height: 36px;
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .panel-icon svg { fill: var(--text-main, #f8f8fa); }
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main, #f8f8fa);
+      letter-spacing: -0.01em;
+    }
+    .panel-sub {
+      font-size: 12px;
+      color: var(--text-secondary, #94949e);
+      margin-top: 1px;
+    }
+
+    /* URL Preview */
+    .url-preview {
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: var(--radius-l, 12px);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text-secondary, #94949e);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .platform-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--on-primary, #141416);
+      background: var(--primary, #f8f8fa);
+      border-radius: 4px;
+      padding: 3px 7px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Section Header */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary, #94949e);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    /* Server Pills */
+    #serverSection { margin-bottom: 18px; }
+    .server-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .server-pill {
+      flex: 1;
+      height: 48px;
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: var(--radius-l, 12px);
+      background: var(--surface, #1e1e22);
+      color: var(--text-secondary, #94949e);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: var(--transition, all 0.2s ease);
+    }
+    .server-pill.active {
+      border-color: var(--primary, #f8f8fa);
+      background: var(--primary, #f8f8fa);
+      color: var(--on-primary, #141416);
+    }
+    .server-pill .pill-name { font-size: 12px; font-weight: 700; }
+    .server-pill .pill-sub  { font-size: 10px; opacity: 0.7; }
+
+    /* Download List */
+    #downloadListSection { margin-bottom: 18px; display: none; }
+    .dl-item-btn {
+      width: 100%;
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: var(--radius-l, 12px);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main, #f8f8fa);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: var(--transition, all 0.2s ease);
+    }
+    .dl-item-btn:active {
+      opacity: 0.8;
+    }
+    .dl-item-btn .dl-type { font-size: 11px; color: var(--text-secondary, #94949e); margin-top: 2px; font-weight: 400; }
+    .dl-badge {
+      font-size: 11px; font-weight: 700;
+      color: var(--on-primary, #141416);
+      background: var(--primary, #f8f8fa);
+      border-radius: 4px;
+      padding: 4px 10px;
+      letter-spacing: 0.5px;
+    }
+    .dl-item-btn.downloading .dl-badge { opacity: 0.6; }
+
+    /* Status Spinner */
+    #statusSection { margin-bottom: 18px; display: none; }
+    .status-box {
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: var(--radius-l, 12px);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border, #2e2e34);
+      border-top-color: var(--primary, #f8f8fa);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-text { font-size: 13px; color: var(--text-secondary, #94949e); }
+
+    /* Error Box */
+    #errorSection { margin-bottom: 18px; display: none; }
+    .error-box {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-l, 12px);
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #ef4444;
+    }
+
+    /* Action Buttons */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .btn {
+      flex: 1;
+      height: 44px;
+      border-radius: var(--radius-l, 8px);
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: var(--transition, all 0.2s ease);
+      letter-spacing: 0.3px;
+    }
+    .btn-cancel {
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      color: var(--text-main, #f8f8fa);
+    }
+    .btn-cancel:active { opacity: 0.8; }
+    .btn-primary {
+      background: var(--primary, #f8f8fa);
+      color: var(--on-primary, #141416);
+    }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--primary, #f8f8fa);
+      color: var(--on-primary, #141416);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="backdrop" onclick="dismissPanel()"></div>
+
+  <div id="panel">
+    <div class="drag-handle"></div>
+
+    <div class="panel-header">
+      <div class="panel-icon">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="panel-title">Mori Quick Save</div>
+        <div class="panel-sub">Configure & download media</div>
+      </div>
+    </div>
+
+    <div class="url-preview">
+      <span class="platform-badge" id="platformBadge">LINK</span>
+      <span id="urlPreview" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+    </div>
+
+    <div id="serverSection" style="display:none;">
+      <div class="section-label">Server Options</div>
+      <div class="server-pills" id="serverPills"></div>
+    </div>
+
+    <div id="statusSection">
+      <div class="status-box">
+        <div class="status-spinner"></div>
+        <div class="status-text" id="statusText">Analyzing link…</div>
+      </div>
+    </div>
+
+    <div id="errorSection">
+      <div class="error-box" id="errorText"></div>
+    </div>
+
+    <div id="downloadListSection">
+      <div class="section-label">Available Downloads</div>
+      <div id="downloadList"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-cancel" id="cancelBtn" onclick="dismissPanel()">
+        Cancel
+      </button>
+      <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalyze()">
+        Analyze
+      </button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module" src="js/share.js"></script>
+</body>
+</html>

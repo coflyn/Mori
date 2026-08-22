@@ -31,6 +31,9 @@ export function setUIState(state) {
 }
 
 export function renderHistory(onItemClick, onDeleteClick) {
+  if (typeof window.checkAndMergePendingHistorySync === "function") {
+    window.checkAndMergePendingHistorySync();
+  }
   const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
   const historyPage = document.getElementById("historyPage");
   const editHistoryBtn = document.getElementById("editHistoryBtn");

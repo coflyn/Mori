@@ -106,7 +106,24 @@ export async function scraperFetch(options, serverName = "Server") {
     window.__TAURI_INTERNALS__?.invoke ||
     window.__TAURI__?.invoke;
 
-  if (CapacitorHttp) {
+  // Share overlay: use native Android bridge (MoriShareBridge) when CapacitorHttp is unavailable
+  if (window.MoriShareBridge?.httpRequest) {
+    let fetchUrl = options.url;
+    if (options.params) {
+      const q = new URLSearchParams(options.params).toString();
+      if (q) fetchUrl += (fetchUrl.includes("?") ? "&" : "?") + q;
+    }
+    const bridgeOpts = {
+      url: fetchUrl,
+      method,
+      headers,
+      responseType: options.responseType,
+    };
+    if (options.data !== undefined) bridgeOpts.data = typeof options.data === "object" ? JSON.stringify(options.data) : String(options.data);
+    const raw = window.MoriShareBridge.httpRequest(JSON.stringify(bridgeOpts));
+    const parsed = JSON.parse(raw);
+    response = { status: parsed.status, headers: parsed.headers || {}, data: parsed.data };
+  } else if (CapacitorHttp) {
     if (method === "POST") {
       response = await CapacitorHttp.post(httpConfig);
     } else if (method === "PUT") {

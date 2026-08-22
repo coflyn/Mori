@@ -1,8 +1,11 @@
 package com.mori.downloader;
  
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -10,12 +13,34 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
  
 public class MainActivity extends BridgeActivity {
+
+    public class MoriMainBridge {
+        @JavascriptInterface
+        public String getPendingHistoryList() {
+            try {
+                SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                return prefs.getString("mori_pending_share_history_list", "[]");
+            } catch (Exception e) {
+                return "[]";
+            }
+        }
+
+        @JavascriptInterface
+        public void clearPendingHistoryList() {
+            try {
+                SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                prefs.edit().remove("mori_pending_share_history_list").commit();
+            } catch (Exception ignored) {}
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         WebView webView = getBridge().getWebView();
         if (webView != null) {
+            webView.addJavascriptInterface(new MoriMainBridge(), "MoriMainBridge");
             WebSettings settings = webView.getSettings();
             settings.setAllowFileAccess(true);
             settings.setAllowContentAccess(true);
@@ -59,9 +84,17 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
+    public void onResume() {
+        super.onResume();
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    getBridge().getWebView().evaluateJavascript(
+                        "if (typeof window.checkAndMergePendingHistory === 'function') window.checkAndMergePendingHistory();", null);
+                }
+            }, 300);
+        }
     }
 
     private void handleIntent(Intent intent) {
