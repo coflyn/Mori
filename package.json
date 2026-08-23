@@ -34,5 +34,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4"
+  },
+  "overrides": {
+    "tar": "7.5.21"
   }
 }
