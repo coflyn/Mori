@@ -252,7 +252,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       : `Download/${videoSubfolder}`;
 
     // Auto-Categorize Subfolder per Platform
-    if (localStorage.getItem("mori_auto_folder") === "true") {
+    if (localStorage.getItem("mori_auto_folder") !== "false") {
       const src = (sourceUrl || url || "").toLowerCase();
       let platformFolder = "Other";
       if (

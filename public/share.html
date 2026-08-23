@@ -282,8 +282,8 @@
         </svg>
       </div>
       <div>
-        <div class="panel-title">Mori Quick Save</div>
-        <div class="panel-sub">Configure & download media</div>
+        <div class="panel-title" data-i18n="share-panel-title">Mori Quick Save</div>
+        <div class="panel-sub" data-i18n="share-panel-sub">Configure & download media</div>
       </div>
     </div>
 
@@ -293,14 +293,14 @@
     </div>
 
     <div id="serverSection" style="display:none;">
-      <div class="section-label">Server Options</div>
+      <div class="section-label" data-i18n="label-server-options">Server Options</div>
       <div class="server-pills" id="serverPills"></div>
     </div>
 
     <div id="statusSection">
       <div class="status-box">
         <div class="status-spinner"></div>
-        <div class="status-text" id="statusText">Analyzing link…</div>
+        <div class="status-text" id="statusText" data-i18n="loader-analyzing">Analyzing link…</div>
       </div>
     </div>
 
@@ -309,15 +309,15 @@
     </div>
 
     <div id="downloadListSection">
-      <div class="section-label">Available Downloads</div>
+      <div class="section-label" data-i18n="label-available-downloads">Available Downloads</div>
       <div id="downloadList"></div>
     </div>
 
     <div class="action-row">
-      <button class="btn btn-cancel" id="cancelBtn" onclick="dismissPanel()">
+      <button class="btn btn-cancel" id="cancelBtn" onclick="dismissPanel()" data-i18n="btn-cancel">
         Cancel
       </button>
-      <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalyze()">
+      <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalyze()" data-i18n="btn-analyze">
         Analyze
       </button>
     </div>

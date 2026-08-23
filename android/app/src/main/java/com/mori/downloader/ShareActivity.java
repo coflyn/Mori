@@ -157,12 +157,30 @@ public class ShareActivity extends AppCompatActivity {
     }
 
     private void injectConfig() {
+        SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        String lang = prefs.getString("mori_lang", "en");
+        String theme = prefs.getString("mori_theme", "dark");
+        String font = prefs.getString("mori_font", "display");
+        String preferServer = prefs.getString("mori_prefer_server", "ask");
+        String downloadPath = prefs.getString("mori_download_path", "Mori");
+        String autoFolder = prefs.getString("mori_auto_folder", "true");
+        String filenameTemplate = prefs.getString("mori_filename", "title");
+
         String escapedUrl = sharedUrl
                 .replace("\\", "\\\\")
                 .replace("'", "\\'")
                 .replace("\n", " ")
                 .replace("\r", "");
         String js = "window.__MORI_SHARE_URL = '" + escapedUrl + "';" +
+                "try { " +
+                "  localStorage.setItem('mori_lang', '" + lang + "');" +
+                "  localStorage.setItem('mori_theme', '" + theme + "');" +
+                "  localStorage.setItem('mori_font', '" + font + "');" +
+                "  localStorage.setItem('mori_prefer_server', '" + preferServer + "');" +
+                "  localStorage.setItem('mori_download_path', '" + downloadPath + "');" +
+                "  localStorage.setItem('mori_auto_folder', '" + autoFolder + "');" +
+                "  localStorage.setItem('mori_filename', '" + filenameTemplate + "');" +
+                "} catch(e) {};" +
                 "if (typeof window.onMoriConfigReady === 'function') window.onMoriConfigReady();";
         webView.evaluateJavascript(js, null);
     }
@@ -358,18 +376,49 @@ public class ShareActivity extends AppCompatActivity {
 
                     // MediaScanner scanFile trigger for Android Gallery indexing
                     final File saved = targetFile;
-                    String lowerName = filename.toLowerCase();
-                    String mimeType = "video/mp4";
-                    if (lowerName.endsWith(".mp3") || lowerName.endsWith(".m4a")) mimeType = "audio/mpeg";
-                    else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) mimeType = "image/jpeg";
-                    else if (lowerName.endsWith(".png")) mimeType = "image/png";
+                    String savedName = saved.getName().toLowerCase();
+                    String mimeType = null;
+                    int dotIdx = savedName.lastIndexOf('.');
+                    if (dotIdx >= 0 && dotIdx < savedName.length() - 1) {
+                        String ext = savedName.substring(dotIdx + 1);
+                        mimeType = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                    }
+
+                    if (mimeType == null) {
+                        if (savedName.endsWith(".mp3") || savedName.endsWith(".m4a") || savedName.endsWith(".flac") || savedName.endsWith(".aac") || savedName.endsWith(".wav")) {
+                            mimeType = "audio/*";
+                        } else if (savedName.endsWith(".jpg") || savedName.endsWith(".jpeg") || savedName.endsWith(".png") || savedName.endsWith(".webp") || savedName.endsWith(".gif")) {
+                            mimeType = "image/*";
+                        } else if (savedName.endsWith(".mp4") || savedName.endsWith(".mov") || savedName.endsWith(".webm") || savedName.endsWith(".mkv")) {
+                            mimeType = "video/*";
+                        }
+                    }
 
                     final String finalMime = mimeType;
                     android.media.MediaScannerConnection.scanFile(
                             getApplicationContext(),
                             new String[]{saved.getAbsolutePath()},
-                            new String[]{finalMime},
-                            (path, uri) -> Log.d(TAG, "MediaScanner indexed: " + path + " -> " + uri));
+                            finalMime != null ? new String[]{finalMime} : null,
+                            (path, uri) -> {
+                                Log.d(TAG, "MediaScanner indexed: " + path + " -> " + uri);
+                                if (uri != null) {
+                                    try {
+                                        ContentValues values = new ContentValues();
+                                        long nowSec = System.currentTimeMillis() / 1000;
+                                        long nowMs = System.currentTimeMillis();
+                                        values.put(MediaStore.MediaColumns.DATE_MODIFIED, nowSec);
+                                        values.put(MediaStore.MediaColumns.DATE_ADDED, nowSec);
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                            values.put(MediaStore.MediaColumns.DATE_TAKEN, nowMs);
+                                        }
+                                        values.put(MediaStore.Video.VideoColumns.DATE_TAKEN, nowMs);
+                                        values.put(MediaStore.Images.ImageColumns.DATE_TAKEN, nowMs);
+                                        getContentResolver().update(uri, values, null, null);
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "Failed to update MediaStore timestamp: " + e.getMessage());
+                                    }
+                                }
+                            });
 
                     // Broadcast intent fallback for older gallery apps
                     try {

@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.2.2-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.2.3-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -32,13 +32,18 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## Work In Progress
+## What's New in v4.2.3
 
+- **Android Share Overlay Language & Font Synchronization**: Fixed an issue where the native Share Intent overlay (`ShareActivity`) defaulted to English and default font due to Webview origin isolation (`https://localhost` vs `file:///android_asset/public/share.html`). Added a native `SharedPreferences` bridge (`saveSetting` & `injectConfig`) to seamlessly synchronize all user preferences (`mori_lang`, `mori_font`, `mori_theme`, `mori_prefer_server`, `mori_download_path`, `mori_auto_folder`, `mori_filename`) directly into the Share Overlay.
+- **Share Overlay Internationalization (i18n)**: Fully audited and localized all Share Overlay UI elements (panel headers, status spinners, server option pills, download badges, toast notifications, error messages) across **5 supported languages** (English, Indonesian, Japanese, Korean, and Simplified Chinese).
+- **Settings Dropdown i18n Fix (Lock Type & Batch Photo Mode)**: Resolved an issue where changing languages and switching back caused the `Lock Type` (`lockTypeText`) and `Batch Photo Mode` (`batchPhotoModeText`) dropdown text displays to remain stuck in the previously selected language. Added missing UI refresh hooks to `updateCustomSelectsUI()`.
+- **Default Font Preset & Label Refresh**: Set **Display Bold** (`Outfit`) as Mori's default font preset across app launch, Share Overlay, and native Android `ShareActivity`. Updated the legacy "Default" label in font options to explicitly display its real typeface name (**"Inter"**) across all 5 supported languages.
+- **Optimized Defaults (Auto-Subfolders & Haptics)**: Enabled **Subfolder per Platform** (`mori_auto_folder`) by default to automatically organize downloads into platform-specific directories (`TikTok`, `Instagram`, `YouTube`, etc.), and set **Haptic Vibration** (`mori_haptic`) to disabled by default to give users full control.
+- **Dependency Security Hardening (`node-tar`)**: Upgraded `tar` dependency to **`v7.5.21`** with explicit `package.json` `overrides` enforcement to fix CVE-2026-59873 (PAX path numeric type confusion, decompression DoS, and file smuggling).
 - **YouTube Playlist & Single Link Resolution**: Integrated full support for YouTube playlists (`youtube.com/playlist?list=...` and `music.youtube.com/playlist?list=...`) with clean single-click MP3 track listing and dynamic deferred resolution powered by `ytmp3.gg` and fallback servers.
-- **Android Quick Save Share Overlay (`ShareActivity`)**: Added a native translucent bottom-sheet dialog overlay triggered directly when sharing media links from 14+ supported platforms (TikTok, Instagram, YouTube, Twitter/X, Spotify, Pinterest, RedNote, Bilibili, etc.) via Android's native `ACTION_SEND` share menu. Allows instant background media downloading without opening the main Mori app UI, featuring dual-server selection (`mori_prefer_server`), instant Gallery indexing (`MediaScannerConnection`), fail-safe history synchronization into Mori's main History tab, and full theme & font preset inheritance (`Plus Jakarta Sans`, `Outfit`, `Space Mono`, `Inter`, `Georgia`).
-- **i18n Expansion & Synchronization**: Fully audited and expanded the internationalization engine (`public/js/i18n/index.js`). Added complete translations for **Korean (`ko`)** and **Simplified Chinese (`zh`)** alongside English (`en`), Indonesian (`id`), and Japanese (`ja`).
 - **Desktop (Tauri) Download Crash Fix**: Resolved a critical issue on Windows/macOS where URL resolution (e.g., Apple Music, Spotify, Soundloaders) crashed with a `Cannot read properties of undefined` error because it incorrectly attempted to invoke `CapacitorHttp` (which is mobile-only). All URL resolution and download fallbacks now use the centralized cross-platform `scraperFetch` helper.
-- **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs, fully restoring compatibility with SoundLoaders and SpotiDown.
+- **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs.
+- **Douyin Short Link & First-Attempt Resolution Fix**: Resolved an issue where analyzing Douyin short links (`v.douyin.com`) failed on the initial attempt due to missing `window._ROUTER_DATA` SSR markers. Upgraded scraper with a multi-stage resolution pipeline that extracts item IDs, queries the direct `iesdouyin` API endpoint, parses multiple SSR data markers (`_ROUTER_DATA`, `_SSR_DATA`, `_RENDER_DATA`, `__INIT_PROPS__`), and automatically decodes URI-encoded payloads.
 
 ## Previous Updates (v4.2.2)
 
@@ -87,7 +92,9 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 ```
 Mori/
 ├── android/                    # Capacitor Android native project
-│   ├── app/src/main/           # Android manifest, resources, assets
+│   ├── app/src/main/java/com/mori/downloader/
+│   │   ├── MainActivity.java   # Main Capacitor Activity + SharedPreferences native bridge
+│   │   └── ShareActivity.java  # Native Share Intent Quick Save overlay activity & MediaStore indexer
 │   └── gradle/                 # Gradle wrapper & build config
 ├── ios/                        # Capacitor iOS Xcode workspace
 │   └── App/                    # iOS Xcode project, Info.plist, and Pods
@@ -103,7 +110,7 @@ Mori/
 │   │   ├── app.js              # Entry point — module wiring & startup init
 │   │   ├── components/         # Custom UI components
 │   │   │   └── player.js       # Mori media player (video/audio)
-│   │   ├── i18n/               # Multi-language translations (EN/ID/JA)
+│   │   ├── i18n/               # Multi-language translations (EN/ID/JA/KO/ZH)
 │   │   │   └── index.js
 │   │   ├── modules/            # Core app managers & state
 │   │   │   ├── authManager.js  # PIN & biometric lock
@@ -136,6 +143,7 @@ Mori/
 │   │   │   ├── nativeDownload.js # Native download flow, resolve URLs, retries
 │   │   │   ├── result.js       # Result section, media slider, PDF export
 │   │   │   └── resultModal.js  # Detail modal with slides & preview
+│   │   ├── share.js            # Share Overlay UI controller & theme/i18n manager
 │   │   ├── ui.js               # History rendering + re-exports
 │   │   ├── utils/              # Shared helpers
 │   │   │   ├── index.js        # Toast, Filesystem, wake lock, stopAllMedia
@@ -143,7 +151,8 @@ Mori/
 │   │   │   └── urlUtils.js     # URL extraction & tracker cleanup
 │   │   └── vendor/             # Third-party libraries (pdf-lib)
 │   │       └── pdf-lib.min.js
-│   └── index.html              # Single-page application entry point
+│   ├── index.html              # Main single-page application entry point
+│   └── share.html              # Standalone Android Quick Save Share Overlay layout
 ├── capacitor.config.json       # Capacitor configuration
 ├── package.json                # Dependencies & scripts
 ├── .gitignore
@@ -153,17 +162,18 @@ Mori/
 
 ## Key Features
 
-- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (Reels/Posts/Photos), YouTube, Twitter (X), Spotify, Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
-- **Multi-Link Batch Download & Queue**: Paste and process multiple social media links simultaneously with real-time status monitoring (`ANALYZING`, `READY`, `DOWNLOADING`, `SAVED`), one-click `DOWNLOAD ALL`, and automatic server fallbacks.
+- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (Reels/Posts/Photos), YouTube (Videos, Shorts, Playlists), Twitter (X), Spotify (Tracks, Albums, Playlists, Short Links), Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
+- **Android Quick Save Share Overlay (`ShareActivity`)**: Share media links directly from any app via Android's native `ACTION_SEND` menu to trigger a translucent bottom-sheet dialog overlay. Features background one-tap media downloading without opening the main app UI, dual-server selection (`mori_prefer_server`), real-time MediaStore Gallery indexing, background history sync, and complete theme, font, and language preference inheritance.
+- **Multi-Link Batch Download & Queue**: Paste and process multiple social media links simultaneously with real-time status monitoring (`ANALYZING`, `READY`, `DOWNLOADING`, `SAVED`), one-click `DOWNLOAD ALL`, playlist skipping, and automatic server fallbacks.
 - **Batch Photo Mode Options**: Configurable carousel photo handling in Settings: `Download All Photos` (default), `Combine into Single PDF`, or `Download First Photo Only`.
 - **Live Media Previews**: View images, play videos, and listen to audio directly within the app before downloading.
 - **Standalone PDF Document Export**: Convert image galleries and multi-photo carousel posts from any platform into high-quality PDF files for offline viewing via `pdf-lib`.
 - **Private History Manager**: Downloaded files are managed internally with individual history cards, local playback support, and offline badge detection.
-- **Share Intent Integration**: Send links directly to Mori from other apps via the system Share menu.
 - **Auto Clipboard Paste**: Automatically detects and pastes links from clipboard when returning to the app (smartly disabled in Batch mode to preserve drafts).
 - **Auto Update Check**: Checks for new versions on startup via GitHub Releases and shows a popup modal when an update is available.
 - **Hardened Passcode & Biometric Privacy Lock**: Secure your history and settings with 4-Digit PIN Passcode or native Biometric authentication (Fingerprint, FaceID, TouchID) featuring background re-locking.
-- **Multi-Language Support**: Fully localized in English, Indonesian, Japanese, Korean, and Simplified Chinese (`en`, `id`, `ja`, `ko`, `zh`).
+- **Multi-Language Support**: Fully localized in 5 languages: English, Indonesian, Japanese, Korean, and Simplified Chinese (`en`, `id`, `ja`, `ko`, `zh`).
+- **Typography & Design Personalization**: Built-in curated font presets (**Display Bold**, **Inter**, **Plus Jakarta Sans**, **Classic Serif**, **Modern Mono**) with custom subfolder categorization per platform (`mori_auto_folder`).
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions and dark mode.
 
@@ -271,8 +281,8 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.2_aarch64.dmg` & `Mori.app`
-- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.2_x64_en-US.msi` & `.exe`
+- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.3_aarch64.dmg` & `Mori.app`
+- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.3_x64_en-US.msi` & `.exe`
 
 ### Running & Building for iOS
 
@@ -300,14 +310,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.2.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.3.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.2.2.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.2.3.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.2.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.3.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

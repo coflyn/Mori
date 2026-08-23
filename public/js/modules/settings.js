@@ -39,6 +39,38 @@ import {
   wifiOnlyToggle,
 } from "./core.js";
 
+// Helper to sync setting to Android SharedPreferences for ShareActivity
+export function syncSettingToNative(key, val) {
+  if (window.MoriMainBridge?.saveSetting) {
+    try {
+      window.MoriMainBridge.saveSetting(key, String(val));
+    } catch (e) {
+      console.error("syncSettingToNative error", e);
+    }
+  }
+}
+
+export function syncAllSettingsToNative() {
+  const keys = [
+    "mori_lang",
+    "mori_theme",
+    "mori_font",
+    "mori_prefer_server",
+    "mori_download_path",
+    "mori_auto_folder",
+    "mori_filename",
+    "mori_incognito",
+    "mori_auto_download",
+    "mori_wifi_only",
+  ];
+  keys.forEach((key) => {
+    const val = localStorage.getItem(key);
+    if (val !== null) {
+      syncSettingToNative(key, val);
+    }
+  });
+}
+
 // Init Theme
 const savedTheme = localStorage.getItem("mori_theme") || "light";
 document.documentElement.setAttribute("data-theme", savedTheme);
@@ -48,6 +80,7 @@ darkModeToggle?.addEventListener("change", (e) => {
   const theme = e.target.checked ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("mori_theme", theme);
+  syncSettingToNative("mori_theme", theme);
   applyColorAccent();
   const lang = translations[currentLang] || translations.en;
   showToast(
@@ -170,7 +203,7 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
   if (!select || !text || !menu) return;
 
   const defaultFallback =
-    storageKey === "mori_prefer_server" ? "ask" : "default";
+    storageKey === "mori_prefer_server" ? "ask" : storageKey === "mori_font" ? "display" : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -213,6 +246,7 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
     item.addEventListener("click", () => {
       const val = item.getAttribute("data-value");
       localStorage.setItem(storageKey, val);
+      syncSettingToNative(storageKey, val);
       text.textContent = item.textContent;
       menu.classList.add("hidden");
       menu.classList.remove("open-up"); // Clean up on selection
@@ -350,7 +384,7 @@ if (autoRetryToggle) {
 
 const hapticToggle = document.getElementById("hapticToggle");
 if (hapticToggle) {
-  hapticToggle.checked = localStorage.getItem("mori_haptic") !== "false";
+  hapticToggle.checked = localStorage.getItem("mori_haptic") === "true";
   hapticToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_haptic", e.target.checked);
     const lang = translations[currentLang] || translations.en;
@@ -365,7 +399,7 @@ if (hapticToggle) {
 const autoFolderToggle = document.getElementById("autoFolderToggle");
 if (autoFolderToggle) {
   autoFolderToggle.checked =
-    localStorage.getItem("mori_auto_folder") === "true";
+    localStorage.getItem("mori_auto_folder") !== "false";
   autoFolderToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_auto_folder", e.target.checked);
     const lang = translations[currentLang] || translations.en;
@@ -495,7 +529,7 @@ if (testLatencyBtn) {
 // Font Switching Logic
 export function applyFont() {
   if (!document.body) return;
-  const font = localStorage.getItem("mori_font") || "default";
+  const font = localStorage.getItem("mori_font") || "display";
   document.body.className = (document.body.className || "").replace(
     /\bfont-\S+/g,
     "",
@@ -752,7 +786,7 @@ export function updateCustomSelectsUI() {
     preferServerText.textContent =
       lang[`server-${currentServer}`] || currentServer;
 
-  const currentFont = localStorage.getItem("mori_font") || "default";
+  const currentFont = localStorage.getItem("mori_font") || "display";
   const fontText = document.getElementById("fontText");
   if (fontText)
     fontText.textContent =
@@ -783,6 +817,19 @@ export function updateCustomSelectsUI() {
   if (autoClearCacheDaysText)
     autoClearCacheDaysText.textContent =
       lang[`days-${currentCacheDays}`] || currentCacheDays;
+
+  const currentLock = localStorage.getItem("mori_lock_type") || "none";
+  const lockTypeText = document.getElementById("lockTypeText");
+  if (lockTypeText)
+    lockTypeText.textContent =
+      lang[`lock-type-${currentLock}`] || currentLock;
+
+  const currentBatchPhoto =
+    localStorage.getItem("mori_batch_photo_mode") || "all";
+  const batchPhotoModeText = document.getElementById("batchPhotoModeText");
+  if (batchPhotoModeText)
+    batchPhotoModeText.textContent =
+      lang[`batch-photo-${currentBatchPhoto}`] || currentBatchPhoto;
 
   const currentBackup = localStorage.getItem("mori_auto_backup") || "off";
   const autoBackupText = document.getElementById("autoBackupText");
@@ -884,6 +931,7 @@ export async function updateStorageInfo() {
 export function switchLanguage(lang) {
   setCurrentLang(lang);
   localStorage.setItem("mori_lang", lang);
+  syncSettingToNative("mori_lang", lang);
   setUIState({ currentLang });
   setUtilsState({ currentLang });
   updateLanguageUI();
@@ -1032,3 +1080,6 @@ document.addEventListener("click", (e) => {
     if (mainMenu) mainMenu.classList.remove("hidden");
   }
 });
+
+// Sync settings to native storage on startup
+syncAllSettingsToNative();

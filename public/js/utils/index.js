@@ -274,7 +274,7 @@ export function hideDownloadProgressToast(delay = 800) {
 
 // Haptic Feedback Helper
 export async function triggerHaptic(type = "medium") {
-  if (localStorage.getItem("mori_haptic") === "false") return;
+  if (localStorage.getItem("mori_haptic") !== "true") return;
   try {
     const HapticsPlugin = window.Capacitor?.Plugins?.Haptics || Haptics;
     if (HapticsPlugin && window.Capacitor?.isNativePlatform?.()) {

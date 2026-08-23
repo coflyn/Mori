@@ -22,6 +22,23 @@ import {
 } from "./scrapers/index.js";
 import { cleanUrl } from "./utils/urlUtils.js";
 import { getUserAgent } from "./utils/index.js";
+import { translations } from "./i18n/index.js";
+
+let currentLang = localStorage.getItem("mori_lang") || "en";
+let lang = translations[currentLang] || translations.en;
+
+function applyShareLanguage() {
+  currentLang = localStorage.getItem("mori_lang") || "en";
+  lang = translations[currentLang] || translations.en;
+  document.documentElement.lang = currentLang;
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (lang[key]) {
+      el.textContent = lang[key];
+    }
+  });
+}
 
 // DOM elements
 const platformBadge = document.getElementById("platformBadge");
@@ -97,11 +114,13 @@ function detectPlatform(url) {
 }
 
 function initUI() {
+  applyShareLanguage();
+
   const theme = localStorage.getItem("mori_theme") || "dark";
   if (theme === "light") document.body.classList.add("light-theme");
   else document.body.classList.remove("light-theme");
 
-  const font = localStorage.getItem("mori_font") || "default";
+  const font = localStorage.getItem("mori_font") || "display";
   document.body.classList.remove(
     "font-default",
     "font-jakarta",
@@ -138,7 +157,8 @@ function renderServerPills(list) {
   list.forEach((srv) => {
     const btn = document.createElement("button");
     btn.className = `server-pill ${srv.id === selectedServer ? "active" : ""}`;
-    btn.innerHTML = `<div class="pill-name">${srv.name}</div><div class="pill-sub">${srv.sub}</div>`;
+    const serverName = srv.name.replace("Server", lang["label-server"] || "Server");
+    btn.innerHTML = `<div class="pill-name">${serverName}</div><div class="pill-sub">${srv.sub}</div>`;
     btn.onclick = () => {
       selectedServer = srv.id;
       document
@@ -171,7 +191,7 @@ window.startAnalyze = async function () {
   errorSection.style.display = "none";
   downloadListSection.style.display = "none";
   statusSection.style.display = "block";
-  statusText.textContent = "Analyzing link...";
+  statusText.textContent = lang["loader-analyzing"] || "Analyzing link...";
   analyzeBtn.disabled = true;
 
   try {
@@ -210,7 +230,7 @@ window.startAnalyze = async function () {
     } else if (currentPlatform === "pixiv") {
       data = await scrapePixiv(targetUrl);
     } else {
-      data = { status: false, message: "Unsupported platform link." };
+      data = { status: false, message: lang["share-err-unsupported"] || "Unsupported platform link." };
     }
 
     statusSection.style.display = "none";
@@ -222,12 +242,12 @@ window.startAnalyze = async function () {
       saveHistory(activeResult, targetUrl);
       renderDownloadList(activeResult);
     } else {
-      showError(data?.message || "Failed to parse link.");
+      showError(data?.message || lang["share-err-failed"] || "Failed to parse link.");
     }
   } catch (err) {
     statusSection.style.display = "none";
     analyzeBtn.disabled = false;
-    showError(err.message || "An error occurred during analysis.");
+    showError(err.message || lang["share-err-error"] || "An error occurred during analysis.");
   }
 };
 
@@ -240,23 +260,26 @@ function renderDownloadList(result) {
   downloadList.innerHTML = "";
   const downloads = result.downloads || [];
   if (downloads.length === 0) {
-    showError("No download links found.");
+    showError(lang["share-err-no-links"] || "No download links found.");
     return;
   }
+
+  const optionLabel = lang["label-option"] || "Option";
+  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
 
   downloads.forEach((dl, idx) => {
     const btn = document.createElement("button");
     btn.className = "dl-item-btn";
     btn.id = `dl_btn_${idx}`;
-    let label = dl.type || "Download";
+    let label = dl.type || (lang["label-download"] || "Download");
     if (dl.quality) label += ` - ${dl.quality}`;
 
     btn.innerHTML = `
       <div style="text-align: left; flex: 1; min-width: 0; padding-right: 12px;">
-        <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Option ${idx + 1}</div>
+        <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${optionLabel} ${idx + 1}</div>
         <div class="dl-type" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${label}</div>
       </div>
-      <div class="dl-badge" style="flex-shrink: 0;">DOWNLOAD</div>
+      <div class="dl-badge" style="flex-shrink: 0;">${downloadBadgeText}</div>
     `;
 
     btn.onclick = () => triggerDownload(dl, result.title || "Mori_Media", idx);
@@ -272,7 +295,7 @@ async function triggerDownload(dlItem, title, idx) {
   if (btn) {
     btn.classList.add("downloading");
     const badge = btn.querySelector(".dl-badge");
-    if (badge) badge.textContent = "SAVING...";
+    if (badge) badge.textContent = lang["label-saving"] || "SAVING...";
   }
 
   const filename = generateFilename(title, dlItem.type, idx);
@@ -448,7 +471,7 @@ function getFolderForPlatform(platform) {
   };
   const base = localStorage.getItem("mori_download_path") || "Mori";
   const sub = subfolders[platform] || "";
-  const autoFolder = localStorage.getItem("mori_auto_folder") === "true";
+  const autoFolder = localStorage.getItem("mori_auto_folder") !== "false";
   return autoFolder && sub ? `${base}/${sub}` : base;
 }
 
@@ -596,12 +619,13 @@ function updateHistorySavedFile(filename, savedPath) {
 
 window.onDownloadComplete = function (filename, savedPath) {
   if (savedPath) updateHistorySavedFile(filename, savedPath);
-  window.showToast(`Saved: ${filename}`);
+  window.showToast(`${lang["toast-saved"] || "Saved:"} ${filename}`);
   
+  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
   document.querySelectorAll(".dl-item-btn").forEach((btn) => {
     btn.classList.remove("downloading");
     const badge = btn.querySelector(".dl-badge");
-    if (badge) badge.textContent = "DOWNLOAD";
+    if (badge) badge.textContent = downloadBadgeText;
   });
 
   const isMulti = activeResult && activeResult.downloads && activeResult.downloads.length > 1;
@@ -611,11 +635,12 @@ window.onDownloadComplete = function (filename, savedPath) {
 };
 
 window.onDownloadFailed = function (filename, error) {
-  window.showToast(`Failed: ${error}`);
+  window.showToast(`${lang["toast-failed"] || "Failed:"} ${error}`);
+  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
   document.querySelectorAll(".dl-item-btn").forEach((btn) => {
     btn.classList.remove("downloading");
     const badge = btn.querySelector(".dl-badge");
-    if (badge) badge.textContent = "DOWNLOAD";
+    if (badge) badge.textContent = downloadBadgeText;
   });
 };
 

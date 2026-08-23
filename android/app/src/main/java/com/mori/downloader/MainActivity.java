@@ -32,6 +32,15 @@ public class MainActivity extends BridgeActivity {
                 prefs.edit().remove("mori_pending_share_history_list").commit();
             } catch (Exception ignored) {}
         }
+
+        @JavascriptInterface
+        public void saveSetting(String key, String value) {
+            try {
+                if (key == null || value == null) return;
+                SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                prefs.edit().putString(key, value).commit();
+            } catch (Exception ignored) {}
+        }
     }
 
     @Override
