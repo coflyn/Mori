@@ -14,9 +14,10 @@ import {
   releaseWakeLock,
   checkWifiOnlyGuard,
   autoClearInputBox,
+  getUserAgent,
 } from "../utils/index.js";
 import { currentLang } from "../modules/core.js";
-import { getRequestTimeout } from "../scrapers/httpHelper.js";
+import { getRequestTimeout, scraperFetch } from "../scrapers/httpHelper.js";
 
 export async function startNativeDownload(url, type, title, btn, sourceUrl) {
   if (!url || typeof url !== "string" || !url.trim()) {
@@ -200,7 +201,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     let effectiveTitle = title || "Mori Media";
     if (isTrackType) {
-      effectiveTitle = cleanTypeLabel.replace(/^\d+\.\s+/, "").trim() || cleanTypeLabel;
+      effectiveTitle =
+        cleanTypeLabel.replace(/^\d+\.\s+/, "").trim() || cleanTypeLabel;
     }
 
     let sanitizedTitle = effectiveTitle
@@ -378,18 +380,20 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       try {
         if (url.startsWith("applemusic_resolve:")) {
           const payloadStr = url.replace("applemusic_resolve:", "");
-          const res = await CapacitorHttp.post({
+          const res = await scraperFetch({
+            method: "POST",
             url: "https://aplmate.com/action/track",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+              "User-Agent":
+                "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
               "X-Requested-With": "XMLHttpRequest",
               Referer: "https://aplmate.com/",
               Origin: "https://aplmate.com",
             },
             data: payloadStr,
           });
-          let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+          let dd = typeof res === "string" ? JSON.parse(res) : res;
           let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
           if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
           const parser = new DOMParser();
@@ -402,10 +406,13 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
               href &&
               (href.includes("/dl?token=") || a.classList.contains("abutton"))
             ) {
-              if (href.includes("ko-fi.com") || href.includes("premium.html")) return;
+              if (href.includes("ko-fi.com") || href.includes("premium.html"))
+                return;
               if (text.toLowerCase().includes("another song")) return;
               if (!foundLink) {
-                foundLink = href.startsWith("http") ? href : "https://aplmate.com" + href;
+                foundLink = href.startsWith("http")
+                  ? href
+                  : "https://aplmate.com" + href;
               }
             }
           });
@@ -415,19 +422,25 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
             throw new Error("Could not resolve Apple Music download link");
           }
         } else if (url.startsWith("spotidown_resolve:")) {
-          const payloadStr = url.replace("spotidown_resolve:", "");
+          const parts = url.replace("spotidown_resolve:", "").split("|||");
+          const payloadStr = parts[0];
+          const cookiesStr = parts[1] ? decodeURIComponent(parts[1]) : "";
+          const reqHeaders = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": getUserAgent(),
+            "X-Requested-With": "XMLHttpRequest",
+            Referer: "https://spotidown.app/",
+            Origin: "https://spotidown.app",
+          };
+          if (cookiesStr) reqHeaders["Cookie"] = cookiesStr;
+
           const res = await CapacitorHttp.post({
             url: "https://spotidown.app/action/track",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-              "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
-              "X-Requested-With": "XMLHttpRequest",
-              Referer: "https://spotidown.app/",
-              Origin: "https://spotidown.app",
-            },
+            headers: reqHeaders,
             data: payloadStr,
           });
-          let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+          let dd =
+            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
           let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
           if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
           const parser = new DOMParser();
@@ -459,80 +472,175 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           const res = await CapacitorHttp.post({
             url: BASE + "/action/tracks",
             headers: {
-              "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-              "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+              "Content-Type":
+                "application/x-www-form-urlencoded; charset=UTF-8",
+              "User-Agent":
+                "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
               "X-Requested-With": "XMLHttpRequest",
               Referer: BASE + "/",
               Origin: BASE,
             },
-            data: "data=" + encodeURIComponent(dataVal) + "&track_token=" + encodeURIComponent(tokenVal),
+            data:
+              "data=" +
+              encodeURIComponent(dataVal) +
+              "&track_token=" +
+              encodeURIComponent(tokenVal),
           });
-          let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+          let dd =
+            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
           let dlHtml = dd?.html || "";
-          const match = dlHtml.match(/href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/);
+          const match = dlHtml.match(
+            /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
+          );
           if (match && match[1]) {
             actualDownloadUrl = match[1];
           } else {
             throw new Error("Could not resolve Soundloaders download link");
           }
-        } else {
-        // Handle SnapSave tokens or general worker resolves
-        let resolved = false;
-        let pollCount = 0;
-        const maxPolls = 15;
+        } else if (url.startsWith("ytmp3gg_resolve:")) {
+          const parts = url.replace("ytmp3gg_resolve:", "").split("|||");
+          const ytId = parts[0];
+          const format = parts[1]; // mp3 or mp4
+          const quality = parts[2]; // 128 or 720
 
-        while (!resolved && pollCount < maxPolls) {
-          if (btn) {
-            btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
+          if (btn)
+            btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (Init)</div>`;
+          updateProgress(5, "Initializing Conversion...");
+
+          const headers = {
+            Origin: "https://media.ytmp3.gg",
+            Referer: "https://media.ytmp3.gg/",
+            "User-Agent": getUserAgent(),
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+          };
+
+          const convRes = await scraperFetch({
+            url: "https://hub.convert1s.com/api/download",
+            method: "POST",
+            headers,
+            data: JSON.stringify({
+              url: `https://www.youtube.com/watch?v=${ytId}`,
+              os: "macos",
+              output: {
+                type: format === "mp4" ? "video" : "audio",
+                format,
+                quality,
+              },
+              audio: { bitrate: "128k" },
+            }),
+          });
+
+          let conv = convRes;
+          if (typeof conv === "string") conv = JSON.parse(conv);
+
+          if (!conv || conv.error || !conv.statusUrl) {
+            throw new Error(
+              conv?.error ||
+                conv?.message ||
+                "Failed to initialize ytmp3.gg conversion",
+            );
           }
-          updateProgress(
-            Math.min(90, 10 + pollCount * 5),
-            `Resolving URL... (${pollCount + 1}/${maxPolls})`,
-          );
 
-          try {
-            const statusRes = await CapacitorHttp.get({
-              url: actualDownloadUrl,
+          let downloadUrl = null;
+          let pollCount = 0;
+          const maxPolls = 30;
+
+          while (!downloadUrl && pollCount < maxPolls) {
+            if (btn)
+              btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${pollCount + 1}/${maxPolls})</div>`;
+            updateProgress(
+              Math.min(90, 10 + pollCount * 3),
+              `Converting... (${pollCount + 1}/${maxPolls})`,
+            );
+
+            await new Promise((r) => setTimeout(r, 1500));
+            const pollData = await scraperFetch({
+              url: conv.statusUrl,
+              headers: {
+                Origin: "https://media.ytmp3.gg",
+                Referer: "https://media.ytmp3.gg/",
+                "User-Agent": getUserAgent(),
+                Accept: "application/json, text/plain, */*",
+              },
             });
+            pollCount++;
 
-            if (statusRes && statusRes.data) {
-              let data = statusRes.data;
-              if (typeof data === "string") {
-                try {
-                  data = JSON.parse(data);
-                } catch (e) {}
-              }
+            let poll =
+              typeof pollData === "string" ? JSON.parse(pollData) : pollData;
+            if (poll && poll.status === "completed" && poll.downloadUrl) {
+              downloadUrl = poll.downloadUrl;
+              break;
+            }
+            if (poll && (poll.status === "error" || poll.status === "failed")) {
+              throw new Error("Conversion failed on ytmp3.gg server");
+            }
+          }
+          if (downloadUrl) {
+            actualDownloadUrl = downloadUrl;
+          } else {
+            throw new Error(
+              "Conversion timed out after " + maxPolls + " attempts.",
+            );
+          }
+        } else {
+          // Handle SnapSave tokens or general worker resolves
+          let resolved = false;
+          let pollCount = 0;
+          const maxPolls = 15;
 
-              if (data.fileUrl || data.url || data.download_url) {
-                actualDownloadUrl =
-                  data.fileUrl || data.url || data.download_url;
-                resolved = true;
-              } else if (data.status === "success" && data.download_url) {
-                actualDownloadUrl = data.download_url;
-                resolved = true;
-              } else if (
-                typeof data === "string" &&
-                data.includes('"fileUrl":')
-              ) {
-                const match = data.match(/"fileUrl"\s*:\s*"([^"]+)"/);
-                if (match) {
-                  actualDownloadUrl = match[1];
+          while (!resolved && pollCount < maxPolls) {
+            if (btn) {
+              btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
+            }
+            updateProgress(
+              Math.min(90, 10 + pollCount * 5),
+              `Resolving URL... (${pollCount + 1}/${maxPolls})`,
+            );
+
+            try {
+              const statusRes = await CapacitorHttp.get({
+                url: actualDownloadUrl,
+              });
+
+              if (statusRes && statusRes.data) {
+                let data = statusRes.data;
+                if (typeof data === "string") {
+                  try {
+                    data = JSON.parse(data);
+                  } catch (e) {}
+                }
+
+                if (data.fileUrl || data.url || data.download_url) {
+                  actualDownloadUrl =
+                    data.fileUrl || data.url || data.download_url;
                   resolved = true;
+                } else if (data.status === "success" && data.download_url) {
+                  actualDownloadUrl = data.download_url;
+                  resolved = true;
+                } else if (
+                  typeof data === "string" &&
+                  data.includes('"fileUrl":')
+                ) {
+                  const match = data.match(/"fileUrl"\s*:\s*"([^"]+)"/);
+                  if (match) {
+                    actualDownloadUrl = match[1];
+                    resolved = true;
+                  }
                 }
               }
+            } catch (err) {
+              console.warn("Poll attempt failed", err);
             }
-          } catch (err) {
-            console.warn("Poll attempt failed", err);
-          }
 
-          if (!resolved) {
-            pollCount++;
-            await new Promise((r) => setTimeout(r, 1500)); // Faster polling
+            if (!resolved) {
+              pollCount++;
+              await new Promise((r) => setTimeout(r, 1500)); // Faster polling
+            }
           }
-        }
-        if (!resolved) {
-          throw new Error("Unable to resolve download URL");
-        }
+          if (!resolved) {
+            throw new Error("Unable to resolve download URL");
+          }
         }
       } catch (e) {
         console.error("Worker resolve fatal failure", e);
@@ -540,9 +648,20 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       }
     }
 
+    const isYtmp3GG =
+      (url && url.startsWith("ytmp3gg_resolve:")) ||
+      actualDownloadUrl.includes("ytmp3.gg") ||
+      actualDownloadUrl.includes("convert1s.com") ||
+      actualDownloadUrl.includes("lilillliiillliillii.shop");
+
     const isYoutube =
+      isYtmp3GG ||
       actualDownloadUrl.includes("ytmp3.mobi") ||
-      actualDownloadUrl.includes("ytdown");
+      actualDownloadUrl.includes("ytdown") ||
+      actualDownloadUrl.includes("ymcdn.org") ||
+      (url && (url.includes("youtube.com") || url.includes("youtu.be"))) ||
+      (sourceUrl &&
+        (sourceUrl.includes("youtube.com") || sourceUrl.includes("youtu.be")));
     const isTwitter =
       actualDownloadUrl.includes("tweeload") ||
       actualDownloadUrl.includes("twimg.com") ||
@@ -550,8 +669,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       (url && (url.includes("twitter") || url.includes("x.com")));
 
     const downloadHeaders = {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "User-Agent": getUserAgent(),
     };
 
     const isPixivDirect =
@@ -590,7 +708,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       (sourceUrl &&
         (sourceUrl.includes("pinterest.com") || sourceUrl.includes("pin.it")));
 
-    if (isYoutube) downloadHeaders["Referer"] = "https://ytmp3.mobi/";
+    if (isYtmp3GG) {
+      downloadHeaders["Referer"] = "https://media.ytmp3.gg/";
+      downloadHeaders["Origin"] = "https://media.ytmp3.gg";
+    } else if (isYoutube) {
+      downloadHeaders["Referer"] = "https://ytmp3.mobi/";
+    }
     if (isPixivDirect) downloadHeaders["Referer"] = "https://www.pixiv.net/";
     if (isUgoiraCom) downloadHeaders["Referer"] = "https://ugoira.com/";
     if (isBilibili) downloadHeaders["Referer"] = "https://www.bilibili.tv/";
@@ -607,6 +730,18 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       } else {
         downloadHeaders["Referer"] = "https://tweeload.com/";
       }
+    }
+    if (
+      actualDownloadUrl.includes("spotidown") ||
+      (url && url.includes("spotify"))
+    ) {
+      downloadHeaders["Referer"] = "https://spotidown.app/";
+    }
+    if (actualDownloadUrl.includes("soundloaders")) {
+      downloadHeaders["Referer"] = "https://soundloaders.app/";
+    }
+    if (actualDownloadUrl.includes("aplmate")) {
+      downloadHeaders["Referer"] = "https://aplmate.com/";
     }
 
     let savedFile;
@@ -668,24 +803,25 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
               `Download attempt ${attempts} on ${dir} failed:`,
               dlErr,
             );
-            if (attempts >= maxAttempts && CapacitorHttp) {
+            if (attempts >= maxAttempts && window.CapacitorHttp) {
               try {
                 const httpRes = await CapacitorHttp.get({
                   url: actualDownloadUrl,
                   responseType: "blob",
                   headers: downloadHeaders,
-                  connectTimeout: getRequestTimeout(),
-                  readTimeout: getRequestTimeout(),
+                  connectTimeout: 20000,
+                  readTimeout: 30000,
                 });
                 if (
                   httpRes &&
+                  httpRes.status === 200 &&
                   httpRes.data &&
                   typeof httpRes.data === "string"
                 ) {
                   await Filesystem.writeFile({
                     path: fullPath + "/" + fileName,
-                    directory: dir,
                     data: httpRes.data,
+                    directory: dir,
                   });
                   savedFile = { path: fullPath + "/" + fileName };
                   successfulDir = dir;
@@ -704,7 +840,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     if (!savedFile) {
       throw new Error(
-        translations[currentLang]["label-error"] + ": Download failed",
+        translations[currentLang]["toast-download-failed"] || "Download failed",
       );
     }
 
@@ -747,7 +883,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
 
     window.dispatchEvent(
       new CustomEvent("mori_file_saved", {
-        detail: { url: sourceUrl || url, path: savedFile.path, uri: savedUri, title: effectiveTitle },
+        detail: {
+          url: sourceUrl || url,
+          path: savedFile.path,
+          uri: savedUri,
+          title: effectiveTitle,
+        },
       }),
     );
 
@@ -766,7 +907,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         btn.disabled = false;
         const b = btn.querySelector(".dl-badge");
         if (b) {
-          b.textContent = translations[currentLang]["label-download"] || "DOWNLOAD";
+          b.textContent =
+            translations[currentLang]["label-download"] || "DOWNLOAD";
         } else {
           btn.innerHTML = originalContent;
         }
@@ -797,7 +939,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       btn.disabled = false;
       const b = btn.querySelector(".dl-badge");
       if (b) {
-        b.textContent = translations[currentLang]["label-download"] || "DOWNLOAD";
+        b.textContent =
+          translations[currentLang]["label-download"] || "DOWNLOAD";
       } else {
         btn.innerHTML = originalContent;
       }

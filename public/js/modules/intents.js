@@ -1,5 +1,6 @@
 // intents.js — clipboard paste, share intent, app url open, app state
 import { translations } from "../i18n/index.js";
+import { cleanUrl } from "../utils/urlUtils.js";
 import {
   Clipboard,
   App,

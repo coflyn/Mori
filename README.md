@@ -34,7 +34,11 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 
 ## Work In Progress
 
+- **YouTube Playlist & Single Link Resolution**: Integrated full support for YouTube playlists (`youtube.com/playlist?list=...` and `music.youtube.com/playlist?list=...`) with clean single-click MP3 track listing and dynamic deferred resolution powered by `ytmp3.gg` and fallback servers.
 - **Android Quick Save Share Overlay (`ShareActivity`)**: Added a native translucent bottom-sheet dialog overlay triggered directly when sharing media links from 14+ supported platforms (TikTok, Instagram, YouTube, Twitter/X, Spotify, Pinterest, RedNote, Bilibili, etc.) via Android's native `ACTION_SEND` share menu. Allows instant background media downloading without opening the main Mori app UI, featuring dual-server selection (`mori_prefer_server`), instant Gallery indexing (`MediaScannerConnection`), fail-safe history synchronization into Mori's main History tab, and full theme & font preset inheritance (`Plus Jakarta Sans`, `Outfit`, `Space Mono`, `Inter`, `Georgia`).
+- **i18n Expansion & Synchronization**: Fully audited and expanded the internationalization engine (`public/js/i18n/index.js`). Added complete translations for **Korean (`ko`)** and **Simplified Chinese (`zh`)** alongside English (`en`), Indonesian (`id`), and Japanese (`ja`).
+- **Desktop (Tauri) Download Crash Fix**: Resolved a critical issue on Windows/macOS where URL resolution (e.g., Apple Music, Spotify, Soundloaders) crashed with a `Cannot read properties of undefined` error because it incorrectly attempted to invoke `CapacitorHttp` (which is mobile-only). All URL resolution and download fallbacks now use the centralized cross-platform `scraperFetch` helper.
+- **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs, fully restoring compatibility with SoundLoaders and SpotiDown.
 
 ## Previous Updates (v4.2.2)
 
@@ -63,7 +67,7 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 | Platform                                                                               | Features               | Platform                                                                            | Features                 |
 | :------------------------------------------------------------------------------------- | :--------------------- | :---------------------------------------------------------------------------------- | :----------------------- |
 | <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**          | Video (No WM) / Photos | <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | Reels / Stories / Photos |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | MP4 Video / MP3 Audio  | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | Playlist / MP4 / MP3   | <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**       | HD Video / GIFs          |
 | <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | PinDown (Video / Images) |
 | <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | Playlist / Album / MP3 | <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**   | Reels / HD Video         |
 | <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**    | Photos / Videos        | <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**     | Video / Photos           |
@@ -159,7 +163,7 @@ Mori/
 - **Auto Clipboard Paste**: Automatically detects and pastes links from clipboard when returning to the app (smartly disabled in Batch mode to preserve drafts).
 - **Auto Update Check**: Checks for new versions on startup via GitHub Releases and shows a popup modal when an update is available.
 - **Hardened Passcode & Biometric Privacy Lock**: Secure your history and settings with 4-Digit PIN Passcode or native Biometric authentication (Fingerprint, FaceID, TouchID) featuring background re-locking.
-- **Multi-Language Support**: Fully localized in English, Indonesian, and Japanese (`en`, `id`, `ja`).
+- **Multi-Language Support**: Fully localized in English, Indonesian, Japanese, Korean, and Simplified Chinese (`en`, `id`, `ja`, `ko`, `zh`).
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
 - **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions and dark mode.
 

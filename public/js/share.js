@@ -21,6 +21,7 @@ import {
   scrapePixiv,
 } from "./scrapers/index.js";
 import { cleanUrl } from "./utils/urlUtils.js";
+import { getUserAgent } from "./utils/index.js";
 
 // DOM elements
 const platformBadge = document.getElementById("platformBadge");
@@ -67,15 +68,29 @@ function detectPlatform(url) {
   if (url.includes("tiktok.com")) return "tiktok";
   if (url.includes("instagram.com")) return "instagram";
   if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("twitter.com") || url.includes("x.com") || url.includes("t.co")) return "twitter";
+  if (
+    url.includes("twitter.com") ||
+    url.includes("x.com") ||
+    url.includes("t.co")
+  )
+    return "twitter";
   if (url.includes("spotify.com")) return "spotify";
-  if (url.includes("pinterest.com") || url.includes("pin.it")) return "pinterest";
+  if (url.includes("pinterest.com") || url.includes("pin.it"))
+    return "pinterest";
   if (url.includes("music.apple.com")) return "applemusic";
-  if (url.includes("facebook.com") || url.includes("fb.watch")) return "facebook";
-  if (url.includes("xiaohongshu.com") || url.includes("rednote.com")) return "rednote";
+  if (url.includes("facebook.com") || url.includes("fb.watch"))
+    return "facebook";
+  if (url.includes("xiaohongshu.com") || url.includes("rednote.com"))
+    return "rednote";
   if (url.includes("douyin.com")) return "douyin";
-  if (url.includes("bilibili.com") || url.includes("b23.tv") || url.includes("bili.im")) return "bilibili";
-  if (url.includes("threads.net") || url.includes("threads.com")) return "threads";
+  if (
+    url.includes("bilibili.com") ||
+    url.includes("b23.tv") ||
+    url.includes("bili.im")
+  )
+    return "bilibili";
+  if (url.includes("threads.net") || url.includes("threads.com"))
+    return "threads";
   if (url.includes("bandcamp.com")) return "bandcamp";
   if (url.includes("pixiv.net")) return "pixiv";
   return "unknown";
@@ -87,7 +102,13 @@ function initUI() {
   else document.body.classList.remove("light-theme");
 
   const font = localStorage.getItem("mori_font") || "default";
-  document.body.classList.remove("font-default", "font-jakarta", "font-serif", "font-mono", "font-display");
+  document.body.classList.remove(
+    "font-default",
+    "font-jakarta",
+    "font-serif",
+    "font-mono",
+    "font-display",
+  );
   document.body.classList.add(`font-${font}`);
 
   targetUrl = window.__MORI_SHARE_URL || "";
@@ -120,7 +141,9 @@ function renderServerPills(list) {
     btn.innerHTML = `<div class="pill-name">${srv.name}</div><div class="pill-sub">${srv.sub}</div>`;
     btn.onclick = () => {
       selectedServer = srv.id;
-      document.querySelectorAll(".server-pill").forEach((el) => el.classList.remove("active"));
+      document
+        .querySelectorAll(".server-pill")
+        .forEach((el) => el.classList.remove("active"));
       btn.classList.add("active");
     };
     serverPills.appendChild(btn);
@@ -191,6 +214,7 @@ window.startAnalyze = async function () {
     }
 
     statusSection.style.display = "none";
+    serverSection.style.display = "none";
     analyzeBtn.disabled = false;
 
     if (data && data.status) {
@@ -228,11 +252,11 @@ function renderDownloadList(result) {
     if (dl.quality) label += ` - ${dl.quality}`;
 
     btn.innerHTML = `
-      <div>
-        <div style="font-weight:600;">Option ${idx + 1}</div>
-        <div class="dl-type">${label}</div>
+      <div style="text-align: left; flex: 1; min-width: 0; padding-right: 12px;">
+        <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Option ${idx + 1}</div>
+        <div class="dl-type" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${label}</div>
       </div>
-      <div class="dl-badge">DOWNLOAD</div>
+      <div class="dl-badge" style="flex-shrink: 0;">DOWNLOAD</div>
     `;
 
     btn.onclick = () => triggerDownload(dl, result.title || "Mori_Media", idx);
@@ -243,7 +267,7 @@ function renderDownloadList(result) {
   analyzeBtn.style.display = "none";
 }
 
-function triggerDownload(dlItem, title, idx) {
+async function triggerDownload(dlItem, title, idx) {
   const btn = document.getElementById(`dl_btn_${idx}`);
   if (btn) {
     btn.classList.add("downloading");
@@ -254,24 +278,173 @@ function triggerDownload(dlItem, title, idx) {
   const filename = generateFilename(title, dlItem.type, idx);
   const folder = getFolderForPlatform(currentPlatform);
 
+  let finalUrl = dlItem.url;
+
+  try {
+    if (finalUrl.startsWith("applemusic_resolve:")) {
+      const payloadStr = finalUrl.replace("applemusic_resolve:", "");
+      const resRaw = window.MoriShareBridge.httpRequest(
+        JSON.stringify({
+          url: "https://aplmate.com/action/track",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent":
+              "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+            "X-Requested-With": "XMLHttpRequest",
+            Referer: "https://aplmate.com/",
+            Origin: "https://aplmate.com",
+          },
+          data: payloadStr,
+        }),
+      );
+      const res = JSON.parse(resRaw);
+      let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+      let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
+      if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(dlHtml, "text/html");
+      let foundLink = "";
+      doc.querySelectorAll("a").forEach((a) => {
+        const href = a.getAttribute("href");
+        const text = a.textContent.trim();
+        if (
+          href &&
+          (href.includes("/dl?token=") || a.classList.contains("abutton"))
+        ) {
+          if (
+            href.includes("ko-fi.com") ||
+            href.includes("premium.html") ||
+            text.toLowerCase().includes("another song")
+          )
+            return;
+          if (!foundLink)
+            foundLink = href.startsWith("http")
+              ? href
+              : "https://aplmate.com" + href;
+        }
+      });
+      if (foundLink) finalUrl = foundLink;
+      else throw new Error("Could not resolve Apple Music download link");
+    } else if (finalUrl.startsWith("spotidown_resolve:")) {
+      const parts = finalUrl.replace("spotidown_resolve:", "").split("|||");
+      const payloadStr = parts[0];
+      const resRaw = window.MoriShareBridge.httpRequest(
+        JSON.stringify({
+          url: "https://spotidown.app/action/track",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": getUserAgent(),
+            "X-Requested-With": "XMLHttpRequest",
+            Referer: "https://spotidown.app/",
+            Origin: "https://spotidown.app",
+          },
+          data: payloadStr,
+        }),
+      );
+      const res = JSON.parse(resRaw);
+      let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+      let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
+      if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(dlHtml, "text/html");
+      let foundLink = "";
+      doc.querySelectorAll("a").forEach((a) => {
+        const href = a.getAttribute("href");
+        const text = a.textContent.trim();
+        if (
+          href &&
+          href.startsWith("http") &&
+          !href.includes("premium.html") &&
+          !href.includes("ko-fi.com") &&
+          text !== "Download Another Song"
+        ) {
+          if (!foundLink) foundLink = href;
+        }
+      });
+      if (foundLink) finalUrl = foundLink;
+      else throw new Error("Could not resolve SpotiDown download link");
+    } else if (finalUrl.startsWith("soundloaders_resolve:")) {
+      const parts = finalUrl.replace("soundloaders_resolve:", "").split("|||");
+      const dataVal = parts[0];
+      const tokenVal = parts[1];
+      const BASE = "https://soundloaders.app";
+      const resRaw = window.MoriShareBridge.httpRequest(
+        JSON.stringify({
+          url: BASE + "/action/tracks",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": getUserAgent(),
+            "X-Requested-With": "XMLHttpRequest",
+            Referer: BASE + "/",
+            Origin: BASE,
+          },
+          data:
+            "data=" +
+            encodeURIComponent(dataVal) +
+            "&track_token=" +
+            encodeURIComponent(tokenVal),
+        }),
+      );
+      const res = JSON.parse(resRaw);
+      let dd = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+      let dlHtml = dd?.html || "";
+      const match = dlHtml.match(
+        /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
+      );
+      if (match && match[1]) finalUrl = match[1];
+      else throw new Error("Could not resolve Soundloaders download link");
+    }
+  } catch (err) {
+    if (window.onDownloadFailed) {
+      window.onDownloadFailed(
+        filename,
+        err.message || "Failed to resolve link",
+      );
+    }
+    return;
+  }
+
   if (window.MoriShareBridge?.downloadFile) {
+    let dlReferer = targetUrl;
+    if (finalUrl.includes("spotidown.app"))
+      dlReferer = "https://spotidown.app/";
+    else if (finalUrl.includes("soundloaders.app"))
+      dlReferer = "https://soundloaders.app/";
+    else if (finalUrl.includes("aplmate.com"))
+      dlReferer = "https://aplmate.com/";
+
     window.MoriShareBridge.downloadFile(
-      dlItem.url,
+      finalUrl,
       filename,
       folder,
-      JSON.stringify({ Referer: targetUrl }),
-      title
+      JSON.stringify({
+        Referer: dlReferer,
+        "User-Agent": getUserAgent(),
+      }),
+      title,
     );
   }
 }
 
 function getFolderForPlatform(platform) {
   const subfolders = {
-    tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube",
-    twitter: "Twitter", spotify: "Spotify", pinterest: "Pinterest",
-    applemusic: "AppleMusic", facebook: "Facebook", rednote: "RedNote",
-    douyin: "Douyin", bilibili: "Bilibili", threads: "Threads",
-    bandcamp: "Bandcamp", pixiv: "Pixiv"
+    tiktok: "TikTok",
+    instagram: "Instagram",
+    youtube: "YouTube",
+    twitter: "Twitter",
+    spotify: "Spotify",
+    pinterest: "Pinterest",
+    applemusic: "AppleMusic",
+    facebook: "Facebook",
+    rednote: "RedNote",
+    douyin: "Douyin",
+    bilibili: "Bilibili",
+    threads: "Threads",
+    bandcamp: "Bandcamp",
+    pixiv: "Pixiv",
   };
   const base = localStorage.getItem("mori_download_path") || "Mori";
   const sub = subfolders[platform] || "";
@@ -280,19 +453,69 @@ function getFolderForPlatform(platform) {
 }
 
 function generateFilename(title, type, index) {
-  let sanitized = (title || "")
-    .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
-    .trim()
-    .replace(/^\.+/, "")
-    .substring(0, 50) || "Mori_Media";
+  const cleanTypeLabel = (type || "")
+    .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP|Cover|Audio|Video)\]/gi, "")
+    .trim();
+
+  const isTrackType = /^\d+\.\s+/.test(cleanTypeLabel);
+  let effectiveTitle = title || "Mori_Media";
+  if (isTrackType) {
+    effectiveTitle = cleanTypeLabel.replace(/^\d+\.\s+/, "").trim() || cleanTypeLabel;
+  }
+
+  let sanitized =
+    (effectiveTitle || "")
+      .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
+      .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .substring(0, 60);
+
+  if (!sanitized) sanitized = "Mori_Media";
 
   let ext = "mp4";
   const t = (type || "").toLowerCase();
   if (t.includes("mp3") || t.includes("audio")) ext = "mp3";
-  else if (t.includes("jpg") || t.includes("image") || t.includes("photo")) ext = "jpg";
+  else if (
+    t.includes("jpg") ||
+    t.includes("image") ||
+    t.includes("photo") ||
+    t.includes("cover")
+  )
+    ext = "jpg";
   else if (t.includes("png")) ext = "png";
 
-  return `${sanitized}_${index + 1}.${ext}`;
+  const template = localStorage.getItem("mori_filename") || "title";
+  let finalName = `${sanitized}.${ext}`;
+
+  if (template === "title-platform") {
+    let platform = "Media";
+    if (currentPlatform) {
+      if (currentPlatform === "tiktok" || currentPlatform === "douyin") platform = "TikTok";
+      else if (currentPlatform === "instagram") platform = "Instagram";
+      else if (currentPlatform === "youtube") platform = "YouTube";
+      else if (currentPlatform === "twitter") platform = "Twitter";
+      else if (currentPlatform === "facebook") platform = "Facebook";
+      else if (currentPlatform === "pinterest") platform = "Pinterest";
+      else if (currentPlatform === "spotify") platform = "Spotify";
+      else if (currentPlatform === "rednote") platform = "RedNote";
+      else if (currentPlatform === "applemusic") platform = "AppleMusic";
+      else if (currentPlatform === "bilibili") platform = "Bilibili";
+      else if (currentPlatform === "pixiv") platform = "Pixiv";
+      else if (currentPlatform === "bandcamp") platform = "Bandcamp";
+    }
+    finalName = `${sanitized}_${platform}.${ext}`;
+  } else if (template === "title-date") {
+    const dateStr = new Date().toISOString().split("T")[0];
+    finalName = `${sanitized}_${dateStr}.${ext}`;
+  } else if (template === "title") {
+    finalName = `${sanitized}.${ext}`;
+  } else {
+    // title-timestamp
+    finalName = `${sanitized}_${Date.now()}.${ext}`;
+  }
+
+  return finalName;
 }
 
 // Minimal History Sync
@@ -300,10 +523,15 @@ function saveHistory(result, url) {
   if (localStorage.getItem("mori_incognito") === "true") return;
   try {
     let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-    let cleanTitle = (result.title || "Content").replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
+    let cleanTitle = (result.title || "Content")
+      .replace(/#[^\s#]+/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
     const targetClean = cleanUrl(url);
 
-    const existingIdx = history.findIndex((h) => cleanUrl(h.url) === targetClean);
+    const existingIdx = history.findIndex(
+      (h) => cleanUrl(h.url) === targetClean,
+    );
     const existing = existingIdx !== -1 ? history[existingIdx] : null;
 
     const newItem = {
@@ -336,18 +564,23 @@ function updateHistorySavedFile(filename, savedPath) {
   try {
     let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
     const isVideo = savedPath.toLowerCase().endsWith(".mp4");
-    const isAudio = savedPath.toLowerCase().endsWith(".mp3") || savedPath.toLowerCase().endsWith(".m4a");
+    const isAudio =
+      savedPath.toLowerCase().endsWith(".mp3") ||
+      savedPath.toLowerCase().endsWith(".m4a");
 
     if (history.length > 0) {
       const first = history[0];
       const localFiles = first.localFiles || [];
       if (!localFiles.find((f) => f.path === savedPath)) {
+        const trackTitle = filename
+          ? filename.replace(/\.[^/.]+$/, "")
+          : first.title;
         localFiles.push({
           path: savedPath,
           uri: savedPath,
           type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
-          thumbnail: isVideo ? null : savedPath,
-          title: first.title,
+          thumbnail: null,
+          title: trackTitle,
         });
       }
       history[0] = { ...first, localFiles, localUri: savedPath };
@@ -364,7 +597,17 @@ function updateHistorySavedFile(filename, savedPath) {
 window.onDownloadComplete = function (filename, savedPath) {
   if (savedPath) updateHistorySavedFile(filename, savedPath);
   window.showToast(`Saved: ${filename}`);
-  setTimeout(() => window.dismissPanel(), 1000);
+  
+  document.querySelectorAll(".dl-item-btn").forEach((btn) => {
+    btn.classList.remove("downloading");
+    const badge = btn.querySelector(".dl-badge");
+    if (badge) badge.textContent = "DOWNLOAD";
+  });
+
+  const isMulti = activeResult && activeResult.downloads && activeResult.downloads.length > 1;
+  if (!isMulti) {
+    setTimeout(() => window.dismissPanel(), 1000);
+  }
 };
 
 window.onDownloadFailed = function (filename, error) {

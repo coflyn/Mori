@@ -35,7 +35,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -53,6 +60,28 @@ public class ShareActivity extends AppCompatActivity {
     private ExecutorService executor = Executors.newCachedThreadPool();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private int notifCounter = 0;
+
+    private static final CookieJar memoryCookieJar = new CookieJar() {
+        private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
+
+        @Override
+        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+            cookieStore.put(url.host(), cookies);
+        }
+
+        @Override
+        public List<Cookie> loadForRequest(HttpUrl url) {
+            List<Cookie> cookies = cookieStore.get(url.host());
+            return cookies != null ? cookies : new ArrayList<>();
+        }
+    };
+
+    private static final OkHttpClient sharedClient = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .cookieJar(memoryCookieJar)
+            .build();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -205,11 +234,7 @@ public class ShareActivity extends AppCompatActivity {
                     url = sb.toString();
                 }
 
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(30, TimeUnit.SECONDS)
-                        .readTimeout(30, TimeUnit.SECONDS)
-                        .followRedirects(true)
-                        .build();
+                OkHttpClient client = sharedClient;
 
                 Headers.Builder hb = new Headers.Builder();
                 if (hdrsIn != null) {
@@ -274,11 +299,7 @@ public class ShareActivity extends AppCompatActivity {
         public void downloadFile(String url, String filename, String folder, String headersJson, String title) {
             executor.execute(() -> {
                 try {
-                    OkHttpClient client = new OkHttpClient.Builder()
-                            .connectTimeout(30, TimeUnit.SECONDS)
-                            .readTimeout(120, TimeUnit.SECONDS)
-                            .followRedirects(true)
-                            .build();
+                    OkHttpClient client = sharedClient;
 
                     Headers.Builder hb = new Headers.Builder();
                     hb.add("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36");
@@ -288,7 +309,7 @@ public class ShareActivity extends AppCompatActivity {
                             Iterator<String> keys = hdrs.keys();
                             while (keys.hasNext()) {
                                 String k = keys.next();
-                                hb.add(k, hdrs.getString(k));
+                                hb.set(k, hdrs.getString(k));
                             }
                         } catch (Exception ignored) {}
                     }

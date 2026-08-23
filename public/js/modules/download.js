@@ -402,7 +402,7 @@ downloadBtn.addEventListener("click", async () => {
       else setTikTokSource(null);
       data = await scrapeTikTok(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
+        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -437,7 +437,7 @@ downloadBtn.addEventListener("click", async () => {
       else setInstagramSource(null);
       data = await scrapeInstagram(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
+        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -472,7 +472,7 @@ downloadBtn.addEventListener("click", async () => {
       else setYouTubeSource(null);
       data = await scrapeYouTube(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
+        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -513,7 +513,7 @@ downloadBtn.addEventListener("click", async () => {
       else setTwitterSource(null);
       data = await scrapeTwitter(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
+        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -548,7 +548,7 @@ downloadBtn.addEventListener("click", async () => {
       else setSpotifySource(null);
       data = await scrapeSpotify(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = "Choose Server";
+        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: SpotiDown (Playlist & Single Track)\nServer 2: SoundLoaders (Playlist & Single Track)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";

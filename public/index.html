@@ -54,14 +54,14 @@
                 id="urlInput"
                 placeholder="Paste link here..."
                 autocomplete="off"
-                data-i18n-placeholder="input-placeholder"
+                data-i18n-placeholder="placeholder-paste-link"
               />
               <textarea
                 id="batchUrlInput"
                 class="batch-url-textarea hidden"
                 placeholder="Paste multiple links (one per line)..."
                 autocomplete="off"
-                data-i18n-placeholder="batch-input-placeholder"
+                data-i18n-placeholder="placeholder-batch-link"
               ></textarea>
               <button
                 id="batchToggleBtn"
@@ -693,6 +693,20 @@
                       data-i18n="lang-ja"
                     >
                       日本語
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="ko"
+                      data-i18n="lang-ko"
+                    >
+                      한국어
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="zh"
+                      data-i18n="lang-zh"
+                    >
+                      中文 (简体)
                     </div>
                   </div>
                 </div>
@@ -2412,7 +2426,6 @@
           </div>
         </div>
       </div>
-
     </div>
     <audio id="completionChimeAudio" src="./chime.wav" preload="auto"></audio>
     <script type="module" src="js/app.js"></script>

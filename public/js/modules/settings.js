@@ -334,8 +334,6 @@ if (downloadSoundToggle) {
   });
 }
 
-
-
 const autoRetryToggle = document.getElementById("autoRetryToggle");
 if (autoRetryToggle) {
   autoRetryToggle.checked = localStorage.getItem("mori_auto_retry") !== "false";
@@ -811,7 +809,7 @@ export function updateLanguageUI() {
   });
 
   if (currentLangDisplay) {
-    const langNames = { en: "English", id: "Indonesia", ja: "日本語" };
+    const langNames = { en: "English", id: "Indonesia", ja: "日本語", ko: "한국어", zh: "中文" };
     currentLangDisplay.textContent = langNames[currentLang] || "English";
   }
 
@@ -894,7 +892,9 @@ export function switchLanguage(lang) {
 
   let msg = "Language updated";
   if (currentLang === "id") msg = "Bahasa diperbarui";
-  if (currentLang === "ja") msg = "言語を更新しました";
+  else if (currentLang === "ja") msg = "言語を更新しました";
+  else if (currentLang === "ko") msg = "언어가 변경되었습니다";
+  else if (currentLang === "zh") msg = "语言已更新";
   showToast(msg);
 }
 

@@ -238,8 +238,8 @@ export function failDownloadProgressToast(errorText, autoDismissMs = 3500) {
   const pct = el.querySelector(".dpt-percent");
   const status = el.querySelector(".dpt-status");
 
-  if (pct) pct.textContent = "Error";
-  if (platform) platform.innerHTML = `Download Failed`;
+  if (pct) pct.textContent = translations[currentLang]["label-error"] || "Error";
+  if (platform) platform.innerHTML = translations[currentLang]["toast-download-failed"] || "Download Failed";
 
   let cleanErr = errorText || "Unknown error";
   if (cleanErr.includes("http://") || cleanErr.includes("https://")) {
