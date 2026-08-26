@@ -17,7 +17,7 @@ import {
   getUserAgent,
 } from "../utils/index.js";
 import { currentLang } from "../modules/core.js";
-import { getRequestTimeout, scraperFetch } from "../scrapers/httpHelper.js";
+import { scraperFetch } from "../scrapers/httpHelper.js";
 
 export async function startNativeDownload(url, type, title, btn, sourceUrl) {
   if (!url || typeof url !== "string" || !url.trim()) {
@@ -131,7 +131,6 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
     console.log("Starting download for:", url);
 
-    // Smooth adaptive progress animation up to 95% until download completes
     let simProgress = 0;
     let realProgressReceived = false;
     window._moriActiveSimInterval = setInterval(() => {
@@ -187,11 +186,12 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       /image|photo|jpg|png|webp/i.test(type) ||
       /\.(jpg|jpeg|png|webp)/i.test(url);
     let ext = isAudio ? "MP3" : isImage ? "JPG" : "MP4";
-    if (/\.png(\?|$)/i.test(url) || type.toLowerCase().includes("png"))
+    const typeStr = type || "";
+    if (/\.png(\?|$)/i.test(url) || typeStr.toLowerCase().includes("png"))
       ext = "PNG";
-    if (/\.webp(\?|$)/i.test(url) || type.toLowerCase().includes("webp"))
+    if (/\.webp(\?|$)/i.test(url) || typeStr.toLowerCase().includes("webp"))
       ext = "WEBP";
-    if (/\.mp4(\?|$)/i.test(url) || type.toLowerCase().includes("video"))
+    if (/\.mp4(\?|$)/i.test(url) || typeStr.toLowerCase().includes("video"))
       ext = "MP4";
 
     const cleanTypeLabel = (type || "")
@@ -778,7 +778,6 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           attempts++;
           try {
             if (attempts > 1) {
-              // Silent auto-retry: retry in background while keeping progress UI at 85% / Downloading...
               await new Promise((r) => setTimeout(r, 1000));
             }
             const isBypassSsl =
@@ -803,7 +802,7 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
               `Download attempt ${attempts} on ${dir} failed:`,
               dlErr,
             );
-            if (attempts >= maxAttempts && window.CapacitorHttp) {
+            if (attempts >= maxAttempts && CapacitorHttp) {
               try {
                 const httpRes = await CapacitorHttp.get({
                   url: actualDownloadUrl,

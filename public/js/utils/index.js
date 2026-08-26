@@ -41,8 +41,9 @@ export function getCookiesFromHeaders(headers) {
   if (!raw) return "";
   if (Array.isArray(raw)) return raw.map((c) => c.split(";")[0]).join("; ");
   return raw
-    .split(",")
+    .split(/,(?=\s*[^;,=]+=[^;]*)/)
     .map((c) => c.trim().split(";")[0])
+    .filter((c) => c && c.includes("="))
     .join("; ");
 }
 
@@ -165,7 +166,9 @@ export function showDownloadProgressToast(platform, type) {
 
   const el = document.createElement("div");
   el.className = "download-progress-toast";
-  const cleanType = (type || "").replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "").trim();
+  const cleanType = (type || "")
+    .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "")
+    .trim();
   el.innerHTML = `
     <div class="dpt-header">
       <span class="dpt-platform">${platform} · ${cleanType}</span>
@@ -238,8 +241,11 @@ export function failDownloadProgressToast(errorText, autoDismissMs = 3500) {
   const pct = el.querySelector(".dpt-percent");
   const status = el.querySelector(".dpt-status");
 
-  if (pct) pct.textContent = translations[currentLang]["label-error"] || "Error";
-  if (platform) platform.innerHTML = translations[currentLang]["toast-download-failed"] || "Download Failed";
+  if (pct)
+    pct.textContent = translations[currentLang]["label-error"] || "Error";
+  if (platform)
+    platform.innerHTML =
+      translations[currentLang]["toast-download-failed"] || "Download Failed";
 
   let cleanErr = errorText || "Unknown error";
   if (cleanErr.includes("http://") || cleanErr.includes("https://")) {

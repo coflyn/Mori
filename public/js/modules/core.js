@@ -217,9 +217,9 @@ export async function updateStorageInfo() {
   try {
     let totalSize = 0;
     totalSize += await getFolderSize("", "CACHE");
-    totalSize += await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
-    // Also check old location for compatibility
-    totalSize += await getFolderSize("Download/Mori", "EXTERNAL");
+    const primary = await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
+    const legacy = await getFolderSize("Download/Mori", "EXTERNAL");
+    totalSize += Math.max(primary, legacy);
 
     const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
     storageVal.textContent = `${sizeInMB} MB`;

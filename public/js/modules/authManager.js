@@ -7,6 +7,25 @@ import {
   setSettingsUnlocked,
 } from "./core.js";
 
+export async function hashPin(pin) {
+  if (window.crypto?.subtle) {
+    const buf = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode("mori:" + pin),
+    );
+    return Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  let h = 0x811c9dc5;
+  const s = "mori:" + pin;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return "fnv_" + h.toString(16);
+}
+
 export async function verifyBiometric(
   reasonLabel = "label-biometric-reason",
   currentLang = "en",
@@ -85,12 +104,16 @@ export function showPinModal(mode = "verify", currentLang = "en") {
       resolve(result);
     };
 
-    const processPin = () => {
+    const processPin = async () => {
       const savedPin = localStorage.getItem("mori_pin");
       const langDict = translations[currentLang] || translations["en"];
 
       if (step === "verify") {
-        if (currentInput === savedPin) {
+        const hashedInput = await hashPin(currentInput);
+        if (currentInput === savedPin || hashedInput === savedPin) {
+          if (savedPin === currentInput) {
+            localStorage.setItem("mori_pin", hashedInput);
+          }
           closePinModal(true);
         } else {
           showToast(langDict["toast-pin-incorrect"] || "Incorrect PIN!");
@@ -105,7 +128,7 @@ export function showPinModal(mode = "verify", currentLang = "en") {
         updateDots();
       } else if (step === "confirm") {
         if (currentInput === firstPin) {
-          localStorage.setItem("mori_pin", currentInput);
+          localStorage.setItem("mori_pin", await hashPin(currentInput));
           showToast(langDict["toast-pin-saved"] || "PIN saved successfully");
           closePinModal(true);
         } else {

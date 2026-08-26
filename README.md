@@ -32,7 +32,17 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in v4.2.3
+## Work in Progress
+
+- **PIN Security Hashing & Startup Freeze Fix**: Upgraded PIN lock storage from plaintext to SHA-256 hashing (`crypto.subtle`) with automatic legacy PIN migration. Fixed an async syntax error in `authManager.js` that caused app navigation and gestures to freeze on launch.
+- **Batch Mode Network Guards & Modal Cancellation**: Enforced Wi-Fi Only and Cellular Data Warning guards across Batch Mode. Configured sequential batch analysis to immediately abort when the batch modal is dismissed.
+- **Security & XSS Hardening**: HTML-escaped batch queue URLs and thumbnail card attributes to eliminate script-injection vectors from scraped titles and clipboard payloads.
+- **Set-Cookie Parser Hardening**: Updated header cookie parsing logic to preserve `Expires` date strings containing commas instead of truncating cookie key-value pairs.
+- **Storage Calculation Fix**: Resolved storage size double-counting by taking `Math.max()` between legacy `EXTERNAL` and current `EXTERNAL_STORAGE` paths instead of summing them.
+- **Native Download Fallback & Type Safety**: Added null-safe guards for media file types (`(type || "")`) and enabled the cross-platform `CapacitorHttp` blob fallback path.
+- **Unlimited History Limit Fix**: Resolved an issue where configuring an "Unlimited" history limit still truncated local history records to 100 items.
+
+## Previous Updates (v4.2.3)
 
 - **Android Share Overlay Language & Font Synchronization**: Fixed an issue where the native Share Intent overlay (`ShareActivity`) defaulted to English and default font due to Webview origin isolation (`https://localhost` vs `file:///android_asset/public/share.html`). Added a native `SharedPreferences` bridge (`saveSetting` & `injectConfig`) to seamlessly synchronize all user preferences (`mori_lang`, `mori_font`, `mori_theme`, `mori_prefer_server`, `mori_download_path`, `mori_auto_folder`, `mori_filename`) directly into the Share Overlay.
 - **Share Overlay Internationalization (i18n)**: Fully audited and localized all Share Overlay UI elements (panel headers, status spinners, server option pills, download badges, toast notifications, error messages) across **5 supported languages** (English, Indonesian, Japanese, Korean, and Simplified Chinese).
@@ -44,28 +54,6 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **Desktop (Tauri) Download Crash Fix**: Resolved a critical issue on Windows/macOS where URL resolution (e.g., Apple Music, Spotify, Soundloaders) crashed with a `Cannot read properties of undefined` error because it incorrectly attempted to invoke `CapacitorHttp` (which is mobile-only). All URL resolution and download fallbacks now use the centralized cross-platform `scraperFetch` helper.
 - **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs.
 - **Douyin Short Link & First-Attempt Resolution Fix**: Resolved an issue where analyzing Douyin short links (`v.douyin.com`) failed on the initial attempt due to missing `window._ROUTER_DATA` SSR markers. Upgraded scraper with a multi-stage resolution pipeline that extracts item IDs, queries the direct `iesdouyin` API endpoint, parses multiple SSR data markers (`_ROUTER_DATA`, `_SSR_DATA`, `_RENDER_DATA`, `__INIT_PROPS__`), and automatically decodes URI-encoded payloads.
-
-## Previous Updates (v4.2.2)
-
-- **History Item Deletion Fix**: Resolved an issue where deleting an item from the download history inadvertently deleted the original media file from physical device storage. History deletion now strictly clears the app history record while leaving saved files in storage completely untouched.
-- **Batch Mode Playlist & Album Skipping**: Configured Batch Mode to automatically detect and skip full playlist and album URLs (Spotify, Apple Music, YouTube playlists). Skipped items display a distinct `SKIPPED (PLAYLIST)` badge in the batch queue modal.
-- **Batch History Isolation & URL Match Fix**: Resolved an issue where downloading multiple links in Batch Mode (such as multiple TikTok, IG, or Twitter posts) caused saved files to mistakenly merge into a single history card. Removed inaccurate index fallback logic in `mori_file_saved` listener and added `sourceUrl` tracking to guarantee that each downloaded media file is mapped and isolated strictly to its own separate history item.
-- **Spotify & Apple Music Playlist / Album Support**: Full support for parsing and downloading entire playlists and albums from Spotify (via SpotiDown & SoundLoaders) and Apple Music (via Aplmate).
-- **UI Simplification & Quote/Tagline Removal**: Streamlining the application interface by removing the header description ("Minimalist Media Downloader"), Home greeting/stats ("Ready to save?" / history item counter), and footer quote tagline ("Simplicity is the ultimate sophistication"), as well as removing their redundant toggles (_Header Quote_, _Home Greeting_, _Footer Tagline_) from Settings Appearance for an ultra-clean design.
-- **Auto-Download Feature Fix**: Resolved an issue where the Auto-Download setting never triggered because the click automation searched for a legacy button class (`.btn-download`) instead of the actual rendered class (`.dl-item`). Auto-Download now correctly fires the first download button after analysis.
-- **History Limit Setting Fix**: The history list is now properly capped according to the user-configured `History Limit` setting instead of being hard-locked to 100 items regardless of user preference.
-- **History Item Deletion Fix (Match-By-Index)**: Deleting a history item now uses its array index rather than brittle URL string matching, so items with redirects or changed URLs (TikTok/IG short links) can be reliably removed. Physical thumbnail files in the cache are also cleaned up on deletion.
-- **Security Fix — History XSS**: Scraped titles and URLs rendered into the history list are now HTML-escaped, preventing malicious content in scraped page titles from injecting scripts into the app.
-- **Batch Mode YouTube Playlist Detection Fix**: Videos shared with a playlist context (`youtube.com/watch?v=xxx&list=yyy`) are no longer skipped in Batch Mode — only pure playlist URLs (`/playlist?list=`) are skipped, so individual videos inside playlists download normally.
-- **Auto-Clear History Thumbnail Cleanup**: Auto-cleanup of old history entries now also deletes orphaned local thumbnail files (`thumb_*.jpg`) from the device cache, preventing storage bloat over time.
-- **Track Number Padding Fix (Spotify)**: Playlists and albums with 100+ tracks now generate correctly sorted file prefixes (`001.`, `002.`, ...) instead of breaking sort order with `100.` before `09.`.
-- **Filename Sanitizer Improvement**: Parentheses are no longer stripped from filenames — tracks like `Blinding Lights (feat. The Weeknd)` keep their original formatting.
-- **Modal Dismissal Stale-Handler Fix**: The confirm overlay's outside-dismiss handler is now cleared on every `hideConfirm()`, eliminating stale closures and potential memory leaks when switching servers repeatedly.
-- **Download Timeout on Blob Fallback**: The HTTP blob fallback path now respects the configurable timeout limit instead of hanging indefinitely on unresponsive servers.
-- **i18n — Confirmation Messages Localized**: "Clear All" and "Delete Item" confirmation dialogs now use localized strings (English / Indonesian / Japanese) instead of hardcoded English.
-- **Auto Analyze on Auto Paste Fix**: Resolved an issue where silent automatic pasting on app launch or resume did not trigger automatic link analysis even when `Auto Analyze` was enabled. Auto Analyze now seamlessly triggers immediate link analysis upon auto-pasting link from clipboard.
-- **Desktop (Tauri) HTTP Timeout Fix**: The Rust-native HTTP commands (`tauri_http_request`, `tauri_download_file`, `tauri_fetch_bytes`) previously had no timeout — a stalled scraper request could hang the app indefinitely on macOS/Windows. Requests now timeout at 30s (scraper calls), 120s (file downloads), and 60s (thumbnail fetches), preventing frozen downloads.
-- **Security Fix — Result Download Button XSS**: Download quality labels and track titles scraped from third-party servers are now HTML-escaped before rendering into the result list, closing a script-injection vector on both desktop and mobile.
 
 ## Supported Platforms
 

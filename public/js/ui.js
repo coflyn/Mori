@@ -95,7 +95,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
 
     card.innerHTML = `
       <div class="history-thumb-container">
-          <img src="${thumbSrc}" alt="thumb" class="hist-img" referrerpolicy="no-referrer">
+          <img src="${escapeHtml(thumbSrc)}" alt="thumb" class="hist-img" referrerpolicy="no-referrer">
           ${item.localFiles && item.localFiles.length > 1 ? `<div class="multi-indicator">${item.localFiles.length}</div>` : ""}
       </div>
       <div class="history-info">

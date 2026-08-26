@@ -10,7 +10,7 @@ import {
   getNetworkStatus,
   autoClearInputBox,
 } from "../utils/index.js";
-import { startNativeDownload, renderResult } from "../ui.js";
+import { startNativeDownload, renderResult, escapeHtml } from "../ui.js";
 import { showConfirm, hideConfirm } from "./modals.js";
 import { saveToHistory } from "./history.js";
 import { extractBatchUrls, analyzeUrlSilent } from "./batchManager.js";
@@ -60,6 +60,29 @@ import {
   updateGreeting,
 } from "./core.js";
 
+async function enforceNetworkGuards() {
+  if (!(await checkWifiOnlyGuard())) return false;
+
+  const isCellularWarning =
+    localStorage.getItem("mori_cellular_warning") === "true";
+  if (isCellularWarning) {
+    const netStatus = await getNetworkStatus();
+    if (netStatus.connectionType === "cellular") {
+      const confirmed = await new Promise((resolve) => {
+        showConfirm(
+          "Cellular Data Warning",
+          translations[currentLang]["msg-cellular-warning"] ||
+            "You are connected to Cellular Data. Proceed with media download?",
+          () => resolve(true),
+          () => resolve(false),
+        );
+      });
+      if (!confirmed) return false;
+    }
+  }
+  return true;
+}
+
 downloadBtn.addEventListener("click", async () => {
   if (isBatchMode) {
     const rawBatchText = batchUrlInput ? batchUrlInput.value : "";
@@ -72,6 +95,8 @@ downloadBtn.addEventListener("click", async () => {
       );
       return;
     }
+
+    if (!(await enforceNetworkGuards())) return;
 
     const preferServer = localStorage.getItem("mori_prefer_server") || "auto";
 
@@ -94,15 +119,19 @@ downloadBtn.addEventListener("click", async () => {
         itemEl.innerHTML = `
           <div class="batch-item-info">
             <div class="batch-item-title">Link ${idx + 1}</div>
-            <div class="batch-item-url">${bUrl}</div>
+            <div class="batch-item-url">${escapeHtml(bUrl)}</div>
           </div>
           <div class="batch-item-status pending">PENDING</div>
         `;
         batchProgressList.appendChild(itemEl);
       });
 
-      // Execute sequential analysis
+      let batchCancelled = false;
       for (let i = 0; i < batchUrls.length; i++) {
+        if (batchModalOverlay.classList.contains("hidden")) {
+          batchCancelled = true;
+          break;
+        }
         const bUrl = batchUrls[i];
         const statusEl = document.querySelector(
           `#batchItem_${i} .batch-item-status`,
@@ -135,7 +164,6 @@ downloadBtn.addEventListener("click", async () => {
             statusEl.textContent = "READY";
           }
 
-          // Save to history automatically (each batch item saved as an individual separate entry)
           if (localStorage.getItem("mori_incognito") !== "true") {
             const history = JSON.parse(
               localStorage.getItem("mori_history") || "[]",
@@ -173,13 +201,14 @@ downloadBtn.addEventListener("click", async () => {
         }
       }
 
-      if (batchResults.length > 0 && batchDownloadAllBtn) {
+      if (!batchCancelled && batchResults.length > 0 && batchDownloadAllBtn) {
         const dlAllText =
           translations[currentLang]["batch-download-all"] || "DOWNLOAD ALL";
         batchDownloadAllBtn.textContent = `${dlAllText} (${batchResults.length})`;
         batchDownloadAllBtn.classList.remove("hidden");
 
         batchDownloadAllBtn.onclick = async () => {
+          if (batchModalOverlay.classList.contains("hidden")) return;
           batchDownloadAllBtn.disabled = true;
           const batchPhotoMode =
             localStorage.getItem("mori_batch_photo_mode") || "all";
@@ -350,27 +379,7 @@ downloadBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
   if (!url) return;
 
-  // Wi-Fi Only Check
-  if (!(await checkWifiOnlyGuard())) return;
-
-  // Cellular Data Warning Guard Check
-  const isCellularWarning =
-    localStorage.getItem("mori_cellular_warning") === "true";
-  if (isCellularWarning) {
-    const netStatus = await getNetworkStatus();
-    if (netStatus.connectionType === "cellular") {
-      const confirmed = await new Promise((resolve) => {
-        showConfirm(
-          "Cellular Data Warning",
-          translations[currentLang]["msg-cellular-warning"] ||
-            "You are connected to Cellular Data. Proceed with media download?",
-          () => resolve(true),
-          () => resolve(false),
-        );
-      });
-      if (!confirmed) return;
-    }
-  }
+  if (!(await enforceNetworkGuards())) return;
 
   const phrases = translations[currentLang]["loader-phrases"];
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
@@ -402,7 +411,8 @@ downloadBtn.addEventListener("click", async () => {
       else setTikTokSource(null);
       data = await scrapeTikTok(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
+        confirmTitle.textContent =
+          translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -437,7 +447,8 @@ downloadBtn.addEventListener("click", async () => {
       else setInstagramSource(null);
       data = await scrapeInstagram(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
+        confirmTitle.textContent =
+          translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -472,7 +483,8 @@ downloadBtn.addEventListener("click", async () => {
       else setYouTubeSource(null);
       data = await scrapeYouTube(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
+        confirmTitle.textContent =
+          translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -513,7 +525,8 @@ downloadBtn.addEventListener("click", async () => {
       else setTwitterSource(null);
       data = await scrapeTwitter(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
+        confirmTitle.textContent =
+          translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
@@ -548,7 +561,8 @@ downloadBtn.addEventListener("click", async () => {
       else setSpotifySource(null);
       data = await scrapeSpotify(url);
       if (data && data.requireSource) {
-        confirmTitle.textContent = translations[currentLang]["label-choose-server"] || "Choose Server";
+        confirmTitle.textContent =
+          translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
           "Server 1: SpotiDown (Playlist & Single Track)\nServer 2: SoundLoaders (Playlist & Single Track)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";

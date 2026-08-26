@@ -229,12 +229,13 @@ export function saveToHistory(result, url) {
 
   // Apply user-configured history limit
   const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
-  let maxItems = 100;
   if (limitVal !== "unlimited") {
+    let maxItems = 100;
     const parsed = parseInt(limitVal, 10);
     if (!isNaN(parsed) && parsed > 0) maxItems = parsed;
+    history = history.slice(0, maxItems);
   }
-  localStorage.setItem("mori_history", JSON.stringify(history.slice(0, maxItems)));
+  localStorage.setItem("mori_history", JSON.stringify(history));
 
   // Refresh UI if defined
   if (typeof renderHistory === "function") {
