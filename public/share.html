@@ -183,27 +183,100 @@
     }
     .dl-item-btn.downloading .dl-badge { opacity: 0.6; }
 
+    /* Skeleton Download Option Items */
+    .skeleton-options-wrapper {
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .skeleton-option-item {
+      width: 100%;
+      height: 52px;
+      background: var(--surface, #1e1e22);
+      border: 1px solid var(--border, #2e2e34);
+      border-radius: var(--radius-l, 12px);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .skeleton-line {
+      height: 10px;
+      background: linear-gradient(
+        90deg,
+        var(--surface, #1e1e22) 25%,
+        var(--border, #2e2e34) 50%,
+        var(--surface, #1e1e22) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite linear;
+      -webkit-animation: skeleton-loading 1.5s infinite linear;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    .skeleton-line.title {
+      height: 12px;
+      width: 55%;
+    }
+    .skeleton-line.short {
+      width: 35%;
+      margin-bottom: 0;
+    }
+    .skeleton-badge {
+      width: 68px;
+      height: 22px;
+      background: linear-gradient(
+        90deg,
+        var(--surface, #1e1e22) 25%,
+        var(--border, #2e2e34) 50%,
+        var(--surface, #1e1e22) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite linear;
+      -webkit-animation: skeleton-loading 1.5s infinite linear;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @-webkit-keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
     /* Status Spinner */
     #statusSection { margin-bottom: 18px; display: none; }
     .status-box {
       background: var(--surface, #1e1e22);
       border: 1px solid var(--border, #2e2e34);
       border-radius: var(--radius-l, 12px);
-      padding: 14px 16px;
+      padding: 12px 14px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
     .status-spinner {
       width: 18px; height: 18px;
-      border: 2px solid var(--border, #2e2e34);
+      border: 2.5px solid var(--border, #2e2e34);
       border-top-color: var(--primary, #f8f8fa);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
+      -webkit-animation: spin 0.7s linear infinite;
       flex-shrink: 0;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .status-text { font-size: 13px; color: var(--text-secondary, #94949e); }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @-webkit-keyframes spin {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+    .status-text { font-size: 13px; font-weight: 500; color: var(--text-secondary, #94949e); }
 
     /* Error Box */
     #errorSection { margin-bottom: 18px; display: none; }
@@ -248,6 +321,17 @@
       color: var(--on-primary, #141416);
     }
     .btn-primary:active { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
     .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Toast */
@@ -298,6 +382,22 @@
     </div>
 
     <div id="statusSection">
+      <div class="skeleton-options-wrapper">
+        <div class="skeleton-option-item">
+          <div style="flex:1;">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+          <div class="skeleton-badge"></div>
+        </div>
+        <div class="skeleton-option-item">
+          <div style="flex:1;">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+          <div class="skeleton-badge"></div>
+        </div>
+      </div>
       <div class="status-box">
         <div class="status-spinner"></div>
         <div class="status-text" id="statusText" data-i18n="loader-analyzing">Analyzing link…</div>

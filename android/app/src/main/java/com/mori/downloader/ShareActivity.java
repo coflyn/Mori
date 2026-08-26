@@ -222,6 +222,24 @@ public class ShareActivity extends AppCompatActivity {
     public class MoriShareBridge {
 
         /**
+         * Asynchronous HTTP request bridge to keep WebView UI thread completely unblocked.
+         * Runs OkHttp request on background executor and calls JS callback with result.
+         */
+        @JavascriptInterface
+        public void httpRequestAsync(String optionsJson, String reqId) {
+            executor.execute(() -> {
+                String result = httpRequest(optionsJson);
+                mainHandler.post(() -> {
+                    String js = "if (window.__moriShareCallbacks && window.__moriShareCallbacks['" + reqId + "']) { " +
+                                "  window.__moriShareCallbacks['" + reqId + "'](" + JSONObject.quote(result) + "); " +
+                                "  delete window.__moriShareCallbacks['" + reqId + "']; " +
+                                "}";
+                    webView.evaluateJavascript(js, null);
+                });
+            });
+        }
+
+        /**
          * Synchronous HTTP request bridge (mirrors CapacitorHttp API shape).
          * Called from httpHelper.js via window.MoriShareBridge.
          * NOTE: Must be called off the main thread (Android enforces this).

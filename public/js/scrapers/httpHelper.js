@@ -107,7 +107,42 @@ export async function scraperFetch(options, serverName = "Server") {
     window.__TAURI__?.invoke;
 
   // Share overlay: use native Android bridge (MoriShareBridge) when CapacitorHttp is unavailable
-  if (window.MoriShareBridge?.httpRequest) {
+  if (window.MoriShareBridge?.httpRequestAsync) {
+    let fetchUrl = options.url;
+    if (options.params) {
+      const q = new URLSearchParams(options.params).toString();
+      if (q) fetchUrl += (fetchUrl.includes("?") ? "&" : "?") + q;
+    }
+    const bridgeOpts = {
+      url: fetchUrl,
+      method,
+      headers,
+      responseType: options.responseType,
+    };
+    if (options.data !== undefined)
+      bridgeOpts.data =
+        typeof options.data === "object"
+          ? JSON.stringify(options.data)
+          : String(options.data);
+
+    const reqId =
+      "req_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+    const raw = await new Promise((resolve) => {
+      if (!window.__moriShareCallbacks) window.__moriShareCallbacks = {};
+      window.__moriShareCallbacks[reqId] = resolve;
+      window.MoriShareBridge.httpRequestAsync(
+        JSON.stringify(bridgeOpts),
+        reqId,
+      );
+    });
+    const parsed = JSON.parse(raw);
+    response = {
+      status: parsed.status,
+      headers: parsed.headers || {},
+      data: parsed.data,
+    };
+  } else if (window.MoriShareBridge?.httpRequest) {
+    await new Promise((r) => setTimeout(r, 60));
     let fetchUrl = options.url;
     if (options.params) {
       const q = new URLSearchParams(options.params).toString();

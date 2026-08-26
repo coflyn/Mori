@@ -60,6 +60,32 @@ import {
   updateGreeting,
 } from "./core.js";
 
+let loaderTimeout = null;
+
+function clearLoaderTimeout() {
+  if (loaderTimeout) {
+    clearTimeout(loaderTimeout);
+    loaderTimeout = null;
+  }
+}
+
+function showLoader() {
+  clearLoaderTimeout();
+  if (loader) loader.classList.remove("hidden");
+}
+
+function hideLoader(delay = 0) {
+  clearLoaderTimeout();
+  if (delay > 0) {
+    loaderTimeout = setTimeout(() => {
+      if (loader) loader.classList.add("hidden");
+      loaderTimeout = null;
+    }, delay);
+  } else {
+    if (loader) loader.classList.add("hidden");
+  }
+}
+
 async function enforceNetworkGuards() {
   if (!(await checkWifiOnlyGuard())) return false;
 
@@ -398,7 +424,7 @@ downloadBtn.addEventListener("click", async () => {
     v.load();
   });
 
-  loader.classList.remove("hidden");
+  showLoader();
   downloadBtn.disabled = true;
   downloadBtn.textContent = translations[currentLang]["btn-processing"];
 
@@ -656,7 +682,7 @@ downloadBtn.addEventListener("click", async () => {
         setSlideData(state.slideData || []);
         setCurrentSlideIndex(state.currentSlideIndex || 0);
       }
-      loader.classList.add("hidden");
+      hideLoader();
 
       // Auto-Clear Input Box
       autoClearInputBox();
@@ -676,7 +702,7 @@ downloadBtn.addEventListener("click", async () => {
       if (loaderText)
         loaderText.textContent =
           translations[currentLang]["label-error"] + ": " + errMsg;
-      setTimeout(() => loader.classList.add("hidden"), 3000);
+      hideLoader(3000);
       if (supportedSection) supportedSection.classList.remove("hidden");
     }
   } catch (err) {
@@ -687,7 +713,7 @@ downloadBtn.addEventListener("click", async () => {
     showToast(
       translations[currentLang]["label-fatal-error"] + ": " + err.message,
     );
-    setTimeout(() => loader.classList.add("hidden"), 5000);
+    hideLoader(5000);
     if (supportedSection) supportedSection.classList.remove("hidden");
   }
 

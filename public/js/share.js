@@ -57,6 +57,8 @@ let targetUrl = "";
 let selectedServer = null;
 let currentPlatform = null;
 let activeResult = null;
+let isAnalyzing = false;
+let statusTimer = null;
 
 const SERVERS = {
   tiktok: [
@@ -97,7 +99,12 @@ function detectPlatform(url) {
   if (url.includes("music.apple.com")) return "applemusic";
   if (url.includes("facebook.com") || url.includes("fb.watch"))
     return "facebook";
-  if (url.includes("xiaohongshu.com") || url.includes("rednote.com"))
+  if (
+    url.includes("xiaohongshu.com") ||
+    url.includes("rednote.com") ||
+    url.includes("xhslink.com") ||
+    url.includes("xhslink.cn")
+  )
     return "rednote";
   if (url.includes("douyin.com")) return "douyin";
   if (
@@ -188,11 +195,29 @@ window.showToast = function (msg) {
 };
 
 window.startAnalyze = async function () {
+  if (isAnalyzing) return;
+  isAnalyzing = true;
+
+  const analyzingLabel = lang["loader-analyzing"] || "Analyzing link...";
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = `<span class="btn-spinner"></span><span>${analyzingLabel}</span>`;
+  }
+
   errorSection.style.display = "none";
   downloadListSection.style.display = "none";
+  serverSection.style.display = "none";
   statusSection.style.display = "block";
-  statusText.textContent = lang["loader-analyzing"] || "Analyzing link...";
-  analyzeBtn.disabled = true;
+
+  const phrases = lang["loader-phrases"] || [analyzingLabel];
+  let phraseIdx = 0;
+  statusText.textContent = phrases[0];
+
+  if (statusTimer) clearInterval(statusTimer);
+  statusTimer = setInterval(() => {
+    phraseIdx = (phraseIdx + 1) % phrases.length;
+    statusText.textContent = phrases[phraseIdx];
+  }, 1800);
 
   try {
     let data = null;
@@ -234,8 +259,6 @@ window.startAnalyze = async function () {
     }
 
     statusSection.style.display = "none";
-    serverSection.style.display = "none";
-    analyzeBtn.disabled = false;
 
     if (data && data.status) {
       activeResult = data.result;
@@ -246,14 +269,26 @@ window.startAnalyze = async function () {
     }
   } catch (err) {
     statusSection.style.display = "none";
-    analyzeBtn.disabled = false;
     showError(err.message || lang["share-err-error"] || "An error occurred during analysis.");
+  } finally {
+    if (statusTimer) {
+      clearInterval(statusTimer);
+      statusTimer = null;
+    }
+    isAnalyzing = false;
+    if (analyzeBtn) {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = lang["btn-analyze"] || "Analyze";
+    }
   }
 };
 
 function showError(msg) {
   errorText.textContent = msg;
   errorSection.style.display = "block";
+  if (SERVERS[currentPlatform]) {
+    serverSection.style.display = "block";
+  }
 }
 
 function renderDownloadList(result) {

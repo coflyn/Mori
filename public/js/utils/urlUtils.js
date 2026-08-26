@@ -68,7 +68,9 @@ export function cleanUrl(url) {
       }
     } else if (
       u.hostname.includes("xiaohongshu.com") ||
-      u.hostname.includes("rednote.com")
+      u.hostname.includes("rednote.com") ||
+      u.hostname.includes("xhslink.com") ||
+      u.hostname.includes("xhslink.cn")
     ) {
       // Keep xsec_token for Xiaohongshu / RedNote security validation
     } else if (!u.hostname.includes("facebook.com")) {
