@@ -639,6 +639,97 @@ export function renderResult(result, originalUrl) {
   if (resultTitle) resultTitle.textContent = truncate(cleanTitleText, 80);
 
   if (downloadList) {
+    const isPlaylistOrAlbum =
+      /playlist|album/i.test(originalUrl || "") ||
+      /playlist|album/i.test(result.sourceUrl || "") ||
+      (result.title && /\((Playlist|Album)\)/i.test(result.title));
+
+    const hasTrackNumbers = result.downloads?.some((dl) =>
+      /^\d+\.\s+/.test((dl.type || "").trim()),
+    );
+
+    const isMultiTrackContent = isPlaylistOrAlbum || hasTrackNumbers;
+
+    if (
+      isMultiTrackContent &&
+      result.downloads &&
+      result.downloads.length >= 2
+    ) {
+      const allBtn = document.createElement("button");
+      allBtn.className = "dl-item dl-all-btn";
+
+      const titleText =
+        translations[currentLang]["btn-download-all-title"] || "Download All";
+      const rawCountText =
+        translations[currentLang]["label-items-count"] || "${count} Items";
+      const countText = rawCountText.replace("${count}", result.downloads.length);
+
+      allBtn.innerHTML = `
+        <div class="dl-all-left">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+          </svg>
+          <span class="dl-all-title">${escapeHtml(titleText)}</span>
+        </div>
+        <div class="dl-badge dl-all-badge">${escapeHtml(countText)}</div>
+      `;
+
+      let isDownloadingAll = false;
+      allBtn.addEventListener("click", async () => {
+        if (isDownloadingAll) return;
+        isDownloadingAll = true;
+        allBtn.disabled = true;
+
+        const total = result.downloads.length;
+        const progressStr =
+          translations[currentLang]["downloading-progress"] || "Downloading...";
+
+        const titleSpan = allBtn.querySelector(".dl-all-title");
+        const badgeEl = allBtn.querySelector(".dl-all-badge");
+
+        if (titleSpan) titleSpan.textContent = progressStr;
+
+        for (let i = 0; i < total; i++) {
+          const item = result.downloads[i];
+          const currNum = i + 1;
+
+          if (badgeEl) badgeEl.textContent = `${currNum}/${total}`;
+
+          // Target item button in UI if available
+          const itemBtns = downloadList.querySelectorAll(".dl-item:not(.dl-all-btn)");
+          const targetBtn = itemBtns[i] || null;
+
+          try {
+            await startNativeDownload(
+              item.url,
+              item.type,
+              result.title,
+              targetBtn,
+              result.sourceUrl || originalUrl,
+            );
+          } catch (err) {
+            console.error("Batch download track error:", err);
+          }
+
+          // Sequential delay of 300ms between tracks
+          await new Promise((r) => setTimeout(r, 300));
+        }
+
+        if (titleSpan) titleSpan.textContent = titleText;
+        if (badgeEl) badgeEl.textContent = countText;
+        allBtn.disabled = false;
+        isDownloadingAll = false;
+
+        const completeMsg = (
+          translations[currentLang]["download-all-complete"] ||
+          "All ${count} items queued for download!"
+        ).replace("${count}", total);
+        showToast(completeMsg);
+      });
+
+      downloadList.appendChild(allBtn);
+    }
+
     result.downloads.forEach((dl, index) => {
       const btn = document.createElement("button");
       btn.className = "dl-item";

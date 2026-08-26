@@ -34,6 +34,7 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 
 ## Work in Progress
 
+- **Playlist & Album "Download All" Feature**: Added a single-click **"Download All"** (_Unduh Semua_) button for **Spotify Playlists & Albums**, **Apple Music Albums**, and **YouTube Playlists**.
 - **PIN Security Hashing & Startup Freeze Fix**: Upgraded PIN lock storage from plaintext to SHA-256 hashing (`crypto.subtle`) with automatic legacy PIN migration. Fixed an async syntax error in `authManager.js` that caused app navigation and gestures to freeze on launch.
 - **RedNote / Xiaohongshu Resolution & Short Link Hardening**: Upgraded `scrapeRedNote` in `rednote.js` with dual-pass resolution for desktop PC links (`xiaohongshu.com/explore/...`), mobile H5 links (`rednote.com/discovery/item/...`), and short-link redirects (`xhslink.com` & `xhslink.cn`). Multi-path state JSON extraction (`state.noteData.data.noteData` & `state.note.noteDetailMap`) with landing page validation (`isLandingOrErrorPage`) eliminates dummy logo fallbacks and broken downloads.
 - **Centralized User-Agent Architecture & Presets**: Refactored hardcoded User-Agent strings across scrapers into central exported constants (`CHROME_DESKTOP_UA` & `CHROME_MOBILE_UA`) in `utils/index.js` for clean reusability and maintainability.
@@ -155,6 +156,7 @@ Mori/
 ## Key Features
 
 - **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (Reels/Posts/Photos), YouTube (Videos, Shorts, Playlists), Twitter (X), Spotify (Tracks, Albums, Playlists, Short Links), Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
+- **Playlist & Album One-Tap Batch Downloader**: Download entire playlists and albums from **Spotify**, **Apple Music**, and **YouTube Playlists** with a single tap. Features smart multi-track detection (`isMultiTrackContent`), real-time progress tracking (`1/15`, `2/15`...), 300ms sequential queue delays to prevent OS congestion, and automatic organization into music subfolders.
 - **Android Quick Save Share Overlay (`ShareActivity`)**: Share media links directly from any app via Android's native `ACTION_SEND` menu to trigger a translucent bottom-sheet dialog overlay. Features background one-tap media downloading without opening the main app UI, dual-server selection (`mori_prefer_server`), real-time MediaStore Gallery indexing, background history sync, and complete theme, font, and language preference inheritance.
 - **Multi-Link Batch Download & Queue**: Paste and process multiple social media links simultaneously with real-time status monitoring (`ANALYZING`, `READY`, `DOWNLOADING`, `SAVED`), one-click `DOWNLOAD ALL`, playlist skipping, and automatic server fallbacks.
 - **Batch Photo Mode Options**: Configurable carousel photo handling in Settings: `Download All Photos` (default), `Combine into Single PDF`, or `Download First Photo Only`.
