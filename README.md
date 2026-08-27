@@ -62,24 +62,24 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs.
 - **Douyin Short Link & First-Attempt Resolution Fix**: Resolved an issue where analyzing Douyin short links (`v.douyin.com`) failed on the initial attempt due to missing `window._ROUTER_DATA` SSR markers. Upgraded scraper with a multi-stage resolution pipeline that extracts item IDs, queries the direct `iesdouyin` API endpoint, parses multiple SSR data markers (`_ROUTER_DATA`, `_SSR_DATA`, `_RENDER_DATA`, `__INIT_PROPS__`), and automatically decodes URI-encoded payloads.
 
-## 🌐 Supported Platforms & Scraper Engines
+## Supported Platforms & Scraper Engines
 
-| Platform | Supported Domains / Formats | Features | Scraper Engine / Provider |
-| :--- | :--- | :--- | :--- |
-| <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram** | `instagram.com` (`/p/`, `/reel/`, `/stories/`) | Reels / Stories / Photos | **InDown** (`indown.io`) & **SnapSave** (`snapsave.app`) |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok** | `tiktok.com`, `vt.tiktok.com` | Video (No WM) / Slide Photos | **SSSTik** (`ssstik.io`) & **TikTokIO** (`tiktokio.com`) |
-| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube** | `youtube.com`, `youtu.be`, `music.youtube.com` | Playlist / Album / MP4 / MP3 | **Ytmp3.gg** (`media.ytmp3.gg`) & **Ytmp3.mobi** (`ytmp3.mobi`) |
-| <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)** | `twitter.com`, `x.com`, `vxtwitter.com`, `fixupx.com` | HD Video / GIFs | **TwitterVideoDownloader** (`twittervideodownloader.com`) & **Tweeload** (`tweeload.com`) |
-| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify** | `open.spotify.com` (`track`, `album`, `playlist`, `/s/`) | Playlist / Album / MP3 | **SpotiDown** (`spotidown.app`) & **SoundLoaders** (`soundloaders.app`) |
-| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | `music.apple.com` | Album / Playlist / MP3 Track | **AplMate** (`aplmate.com`) |
-| <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest** | `pinterest.com`, `pin.it` | Video / HD Images | Direct `pinimg.com` Parser & **PinDown** (`pindown.io`) |
-| <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook** | `facebook.com`, `fb.watch` | Reels / HD Video | **SnapSave** (`snapsave.app`) |
-| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote** | `xiaohongshu.com`, `xhslink.com`, `rednote.com` | HD Photos / Videos | Direct `__INITIAL_STATE__` SSR Extractor |
-| <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads** | `threads.net` | Video / Photo Carousel | **Threadster** (`threadster.app`) |
-| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili** | `bilibili.com`, `b23.tv`, `bili.im`, `bilibili.tv` | Video / Audio (DASH 1080p) | Direct Bilibili Web API (`api.bilibili.com`) & Wbi Resolver |
-| <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv** | `pixiv.net` (`artworks`) | Gallery / Ugoira to MP4 | Direct Pixiv AJAX API & Ugoira Zip-to-MP4 Converter |
-| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin** | `douyin.com`, `v.douyin.com` | Video (No WM) / Photos | Direct `iesdouyin.com` API & Multi-Marker SSR Resolver |
-| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp** | `*.bandcamp.com` | Track / Album / MP3 | **BandcampDownloader** (`bandcampdownloader.app`) |
+| Platform                                                                               | Supported Domains / Formats                              | Features                     | Scraper Engine / Provider                                                                 |
+| :------------------------------------------------------------------------------------- | :------------------------------------------------------- | :--------------------------- | :---------------------------------------------------------------------------------------- |
+| <img src="https://cdn.simpleicons.org/instagram/E4405F" width="16" /> **Instagram**    | `instagram.com` (`/p/`, `/reel/`, `/stories/`)           | Reels / Stories / Photos     | **InDown** (`indown.io`) & **SnapSave** (`snapsave.app`)                                  |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **TikTok**          | `tiktok.com`, `vt.tiktok.com`                            | Video (No WM) / Slide Photos | **SSSTik** (`ssstik.io`) & **TikTokIO** (`tiktokio.com`)                                  |
+| <img src="https://cdn.simpleicons.org/youtube/FF0000" width="16" /> **YouTube**        | `youtube.com`, `youtu.be`, `music.youtube.com`           | Playlist / Album / MP4 / MP3 | **Ytmp3.gg** (`media.ytmp3.gg`) & **Ytmp3.mobi** (`ytmp3.mobi`)                           |
+| <img src="https://cdn.simpleicons.org/x/000000" width="16" /> **Twitter (X)**          | `twitter.com`, `x.com`, `vxtwitter.com`, `fixupx.com`    | HD Video / GIFs              | **TwitterVideoDownloader** (`twittervideodownloader.com`) & **Tweeload** (`tweeload.com`) |
+| <img src="https://cdn.simpleicons.org/spotify/1DB954" width="16" /> **Spotify**        | `open.spotify.com` (`track`, `album`, `playlist`, `/s/`) | Playlist / Album / MP3       | **SpotiDown** (`spotidown.app`) & **SoundLoaders** (`soundloaders.app`)                   |
+| <img src="https://cdn.simpleicons.org/applemusic/FA243C" width="16" /> **Apple Music** | `music.apple.com`                                        | Album / Playlist / MP3 Track | **AplMate** (`aplmate.com`)                                                               |
+| <img src="https://cdn.simpleicons.org/pinterest/E60023" width="16" /> **Pinterest**    | `pinterest.com`, `pin.it`                                | Video / HD Images            | Direct `pinimg.com` Parser & **PinDown** (`pindown.io`)                                   |
+| <img src="https://cdn.simpleicons.org/facebook/1877F2" width="16" /> **Facebook**      | `facebook.com`, `fb.watch`                               | Reels / HD Video             | **SnapSave** (`snapsave.app`)                                                             |
+| <img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" width="16" /> **RedNote**    | `xiaohongshu.com`, `xhslink.com`, `rednote.com`          | HD Photos / Videos           | Direct `__INITIAL_STATE__` SSR Extractor                                                  |
+| <img src="https://cdn.simpleicons.org/threads/000000" width="16" /> **Threads**        | `threads.net`                                            | Video / Photo Carousel       | **Threadster** (`threadster.app`)                                                         |
+| <img src="https://cdn.simpleicons.org/bilibili/00A1D6" width="16" /> **Bilibili**      | `bilibili.com`, `b23.tv`, `bili.im`, `bilibili.tv`       | Video / Audio (DASH 1080p)   | Direct Bilibili Web API (`api.bilibili.com`) & Wbi Resolver                               |
+| <img src="https://cdn.simpleicons.org/pixiv/0096FA" width="16" /> **Pixiv**            | `pixiv.net` (`artworks`)                                 | Gallery / Ugoira to MP4      | Direct Pixiv AJAX API & Ugoira Zip-to-MP4 Converter                                       |
+| <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin**          | `douyin.com`, `v.douyin.com`                             | Video (No WM) / Photos       | Direct `iesdouyin.com` API & Multi-Marker SSR Resolver                                    |
+| <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**      | `*.bandcamp.com`                                         | Track / Album / MP3          | **BandcampDownloader** (`bandcampdownloader.app`)                                         |
 
 ## Built With
 
@@ -219,17 +219,32 @@ Mori is built using Tauri, Capacitor, and Vanilla JS for high performance.
 - **On Android & iOS**: Uses `CapacitorHttp` to bypass CORS and download directly from the device IP. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
 - **On Web**: Preview mode only — runs directly in the browser with limited functionality.
 
-### Building the APK
+### Building for Android
+
+> [!TIP]
+> **Pre-built APKs**: You can download pre-compiled `.apk` binaries directly from **[GitHub Releases](https://github.com/coflyn/Mori/releases)** or from the Actions tab!
+
+#### Single-Command Quick Build
+
+```bash
+# Build Debug APK
+npm run build:android
+
+# Build Signed Release APK
+npm run build:android:release
+```
+
+#### Manual Steps
 
 ```bash
 # 1. Sync Capacitor with Android
 npx cap sync android
 
-# 2. Build the debug APK
-cd android && ./gradlew assembleDebug
+# 2. Build the release APK
+cd android && ./gradlew assembleRelease
 
-# 3. The APK is output at:
-#    android/app/build/outputs/apk/debug/Mori v{VERSION}.apk
+# 3. Output located at:
+#    android/app/build/outputs/apk/release/Mori v{VERSION}.apk
 ```
 
 For a release APK, first generate a signing keystore (one-time):
@@ -305,7 +320,15 @@ npx cap open ios
 
 #### Building Unsigned IPA (For Sideloading/Distribution)
 
-If you do not have an iPhone connected or a paid Apple Developer Account, you can build a generic unsigned `.ipa` for distribution via the command line:
+If you do not have an iPhone connected or a paid Apple Developer Account, you can build a generic unsigned `.ipa` for distribution via single-command or step-by-step CLI:
+
+##### Single-Command Build
+
+```bash
+npm run build:ios:ipa
+```
+
+##### Manual Steps
 
 ```bash
 # 1. Sync assets

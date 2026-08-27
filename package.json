@@ -8,7 +8,10 @@
     "start": "node server.js",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "build:android": "npx cap sync android && cd android && ./gradlew assembleDebug",
+    "build:android:release": "npx cap sync android && cd android && ./gradlew assembleRelease",
+    "build:ios:ipa": "npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=\"\" && mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r \"Mori v4.2.4.ipa\" Payload && rm -rf Payload build"
   },
   "keywords": [],
   "author": "",
