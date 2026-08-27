@@ -84,9 +84,10 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 ## Built With
 
 - **JavaScript (ES6+)**: Core application logic and scraping engine.
-- **HTML5 & CSS3**: Custom design system without bloated frameworks.
-- **Tauri v2**: Ultra-lightweight desktop engine for macOS & Windows (.dmg, .app, .msi, .exe).
+- **HTML5 & CSS3**: Custom minimalist design system with dark mode and smooth transitions.
+- **Tauri v2 (Rust)**: Ultra-lightweight desktop engine for macOS & Windows (`.dmg`, `.app`, `.msi`, `.exe`).
 - **CapacitorJS**: Native Android and iOS bridge for filesystem, share sheet, clipboard, and biometrics.
+- **Cheerio & Axios**: Fast DOM HTML parsing and HTTP client request handling.
 - **pdf-lib**: Client-side PDF generation and bundling.
 
 ## Project Structure
@@ -164,7 +165,7 @@ Mori/
 
 ## Key Features
 
-- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (Reels/Posts/Photos), YouTube (Videos, Shorts, Playlists), Twitter (X), Spotify (Tracks, Albums, Playlists, Short Links), Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
+- **Multi-Platform Support**: High-quality downloads from TikTok (No Watermark, HD Video, MP3 & Photo Slideshows), Instagram (InDown & SnapSave dual engines for Reels/Posts/Stories/Photos), YouTube (Videos, Shorts, Playlists, MP3), Twitter (X), Spotify (Tracks, Albums, Playlists, Short Links), Pinterest, Apple Music, Facebook, **Threads**, **Bandcamp**, **Pixiv** (R-18/R-18G), **Bilibili** (DASH), **Douyin** (No WM), and **RedNote (Xiaohongshu)**.
 - **Playlist & Album One-Tap Batch Downloader**: Download entire playlists and albums from **Spotify**, **Apple Music**, and **YouTube Playlists** with a single tap. Features smart multi-track detection (`isMultiTrackContent`), real-time progress tracking (`1/15`, `2/15`...), 300ms sequential queue delays to prevent OS congestion, and automatic organization into music subfolders.
 - **Android Quick Save Share Overlay (`ShareActivity`)**: Share media links directly from any app via Android's native `ACTION_SEND` menu to trigger a translucent bottom-sheet dialog overlay. Features background one-tap media downloading without opening the main app UI, dual-server selection (`mori_prefer_server`), real-time MediaStore Gallery indexing, background history sync, and complete theme, font, and language preference inheritance.
 - **Multi-Link Batch Download & Queue**: Paste and process multiple social media links simultaneously with real-time status monitoring (`ANALYZING`, `READY`, `DOWNLOADING`, `SAVED`), one-click `DOWNLOAD ALL`, playlist skipping, and automatic server fallbacks.
@@ -178,7 +179,7 @@ Mori/
 - **Multi-Language Support**: Fully localized in 5 languages: English, Indonesian, Japanese, Korean, and Simplified Chinese (`en`, `id`, `ja`, `ko`, `zh`).
 - **Typography & Design Personalization**: Built-in curated font presets (**Display Bold**, **Inter**, **Plus Jakarta Sans**, **Classic Serif**, **Modern Mono**) with custom subfolder categorization per platform (`mori_auto_folder`).
 - **Intelligent Error Handling**: Real-time feedback for IP blocks, API format changes, or network issues via premium Toast notifications.
-- **Premium Minimalist UI**: A distraction-free glassmorphism interface with smooth transitions and dark mode.
+- **Premium Minimalist UI**: A distraction-free minimalist interface with clean typography, sharp borders, smooth transitions, and OLED dark mode.
 
 ## Security & Safety Notice
 
@@ -212,8 +213,9 @@ Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trac
 
 ## For Developers
 
-Mori is built using Capacitor and Vanilla JS for high performance.
+Mori is built using Tauri, Capacitor, and Vanilla JS for high performance.
 
+- **On macOS & Windows (Desktop)**: Powered by **Tauri v2** with a native Rust HTTP engine (`tauri_http_request`) to bypass CORS and save downloads directly to your system's `Downloads/Mori` folder.
 - **On Android & iOS**: Uses `CapacitorHttp` to bypass CORS and download directly from the device IP. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
 - **On Web**: Preview mode only — runs directly in the browser with limited functionality.
 
