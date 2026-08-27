@@ -334,8 +334,9 @@ export function handleScrapeError(err, status = null) {
   ) {
     msg = "Scraper outdated. Please wait for an update.";
   } else if (
-    err.message?.includes("Network") ||
-    err.message?.includes("fetch")
+    err.message === "Failed to fetch" ||
+    err.message?.includes("NetworkError") ||
+    err.message?.includes("net::ERR_")
   ) {
     msg = "Network error. Check your connection.";
   } else if (err.message) {

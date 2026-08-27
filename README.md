@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.2.3-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.2.4-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -15,7 +15,7 @@
 
 <div align="center">
 
-Mori is a fast and simple downloader for saving videos, photos, and music from 14 popular social media apps. Everything works directly on your device without any external servers or tracking — giving you total privacy and zero ads.
+Mori is a fast and simple downloader for saving videos, photos, and music from 14 popular social media apps. Everything runs directly on your device, with no external servers, tracking, or ads. Your downloads stay private and in your control.
 
 </div>
 
@@ -32,10 +32,12 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## Work in Progress
+## What's New in v4.2.4
 
+- **Instagram Server 2 SnapSave Migration**: Replaced DownReels with **SnapSave (`snapsave.app`)** engine for Instagram Server 2 Reels & Photos
+- **Instagram Server 1 InDown Direct CDN & 2-Pass Retry**: Upgraded **InDown (`indown.io`)** engine for Instagram Server 1 with implemented 2-pass automatic session retry flow.
 - **Playlist & Album "Download All" Feature**: Added a single-click **"Download All"** (_Unduh Semua_) button for **Spotify Playlists & Albums**, **Apple Music Albums**, and **YouTube Playlists**.
-- **PIN Security Hashing & Startup Freeze Fix**: Upgraded PIN lock storage from plaintext to SHA-256 hashing (`crypto.subtle`) with automatic legacy PIN migration. Fixed an async syntax error in `authManager.js` that caused app navigation and gestures to freeze on launch.
+- **PIN Security Hashing & Startup Freeze Fix**: Upgraded PIN lock storage from plaintext to SHA-256 hashing (`crypto.subtle`) with automatic legacy PIN migration.
 - **RedNote / Xiaohongshu Resolution & Short Link Hardening**: Upgraded `scrapeRedNote` in `rednote.js` with dual-pass resolution for desktop PC links (`xiaohongshu.com/explore/...`), mobile H5 links (`rednote.com/discovery/item/...`), and short-link redirects (`xhslink.com` & `xhslink.cn`). Multi-path state JSON extraction (`state.noteData.data.noteData` & `state.note.noteDetailMap`) with landing page validation (`isLandingOrErrorPage`) eliminates dummy logo fallbacks and broken downloads.
 - **Centralized User-Agent Architecture & Presets**: Refactored hardcoded User-Agent strings across scrapers into central exported constants (`CHROME_DESKTOP_UA` & `CHROME_MOBILE_UA`) in `utils/index.js` for clean reusability and maintainability.
 - **Share Overlay Rectangular Option Skeleton & Dynamic Loader**: Replaced the generic preview card skeleton in `share.html` with matching rectangular download option bar skeletons (`.skeleton-option-item`) to eliminate layout shifts upon resolution. Added an inline button spinner (`.btn-spinner`) and localized dynamic phrase cycling (`loader-phrases`).
@@ -275,8 +277,8 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-- **macOS Output**: `src-tauri/target/release/bundle/dmg/Mori_4.2.3_aarch64.dmg` & `Mori.app`
-- **Windows Output**: `src-tauri/target/release/bundle/msi/Mori_4.2.3_x64_en-US.msi` & `.exe`
+- **macOS Release Asset**: `Mori-v4.2.4-macOS-arm64.dmg` & `Mori-v4.2.4-macOS-arm64.app.tar.gz`
+- **Windows Release Asset**: `Mori-v4.2.4-Windows-x64-Setup.exe` & `Mori-v4.2.4-Windows-x64.msi`
 
 ### Running & Building for iOS
 
@@ -304,14 +306,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.3.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.2.4.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.2.3.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.2.4.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.3.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.2.4.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

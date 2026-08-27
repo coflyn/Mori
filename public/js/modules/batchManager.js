@@ -105,10 +105,10 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       url.includes("instagr.am") ||
       url.includes("ddinstagram.com")
     ) {
-      setInstagramSource(isServer2 ? "downreels" : "indown");
+      setInstagramSource(isServer2 ? "savevid" : "indown");
       data = await scrapeInstagram(url);
       if (!data || !data.status) {
-        setInstagramSource(isServer2 ? "indown" : "downreels");
+        setInstagramSource(isServer2 ? "indown" : "savevid");
         data = await scrapeInstagram(url);
       }
     } else if (

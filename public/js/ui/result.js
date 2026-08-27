@@ -394,6 +394,12 @@ export function setupImageLoading(img, src, resultThumbnail) {
         targetUrl.includes("bili.im")
       )
         referer = "https://www.bilibili.com/";
+      if (
+        targetUrl.includes("rapidcdn") ||
+        targetUrl.includes("snapcdn") ||
+        targetUrl.includes("snapsave")
+      )
+        referer = "https://snapsave.app/";
 
       if (CapacitorHttp) {
         CapacitorHttp.get({

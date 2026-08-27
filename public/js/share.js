@@ -67,7 +67,7 @@ const SERVERS = {
   ],
   instagram: [
     { id: "indown", name: "Server 1", sub: "InDown (Reels / Posts)" },
-    { id: "downreels", name: "Server 2", sub: "DownReels (Reels)" },
+    { id: "savevid", name: "Server 2", sub: "SnapSave (Reels, Posts & Photos)" },
   ],
   youtube: [
     { id: "gg", name: "Server 1", sub: "YTMP3.gg (1080p / MP3)" },

@@ -17,9 +17,7 @@ jobs:
       matrix:
         include:
           - platform: 'windows-latest'
-            args: ''
           - platform: 'macos-latest'
-            args: ''
 
     runs-on: ${{ matrix.platform }}
 
@@ -44,14 +42,30 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci || npm install
 
-      - name: Build Tauri Desktop App
-        uses: tauri-apps/tauri-action@v0
+      - name: Build Tauri App
+        run: npx tauri build
+
+      - name: Prepare & Rename Release Assets (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p dist-assets
+          find src-tauri/target/release/bundle/dmg -name "*.dmg" -exec cp {} "dist-assets/Mori-v${VERSION}-macOS-arm64.dmg" \;
+          find src-tauri/target/release/bundle/macos -name "*.app.tar.gz" -exec cp {} "dist-assets/Mori-v${VERSION}-macOS-arm64.app.tar.gz" \;
+
+      - name: Prepare & Rename Release Assets (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p dist-assets
+          find src-tauri/target/release/bundle/nsis -name "*.exe" -exec cp {} "dist-assets/Mori-v${VERSION}-Windows-x64-Setup.exe" \;
+          find src-tauri/target/release/bundle/msi -name "*.msi" -exec cp {} "dist-assets/Mori-v${VERSION}-Windows-x64.msi" \;
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__ # Will use the version from tauri.conf.json
-          releaseName: 'Mori v__VERSION__'
-          releaseBody: 'See changelog in README.md'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}

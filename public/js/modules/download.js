@@ -469,14 +469,14 @@ downloadBtn.addEventListener("click", async () => {
       }
     } else if (url.includes("instagram.com")) {
       if (preferServer === "server1") setInstagramSource("indown");
-      else if (preferServer === "server2") setInstagramSource("downreels");
+      else if (preferServer === "server2") setInstagramSource("savevid");
       else setInstagramSource(null);
       data = await scrapeInstagram(url);
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
-          "Server 1: InDown (Reels, Posts & Photos)\nServer 2: DownReels (Reels, Posts & Photos)";
+          "Server 1: InDown (Reels, Posts & Photos)\nServer 2: SnapSave (Reels, Posts & Photos)";
         if (cancelConfirmBtn) cancelConfirmBtn.textContent = "SERVER 2";
         if (okConfirmBtn) {
           okConfirmBtn.textContent = "SERVER 1";
@@ -497,7 +497,7 @@ downloadBtn.addEventListener("click", async () => {
           cancelConfirmBtn.onclick = () => {
             confirmOverlay._onDismissOutside = null;
             hideConfirm();
-            resolve("downreels");
+            resolve("savevid");
           };
         });
         setInstagramSource(chosen);

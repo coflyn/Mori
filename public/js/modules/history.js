@@ -174,8 +174,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
-              versionCode: 14,
-              versionName: "4.2.3",
+              versionCode: 15,
+              versionName: "4.2.4",
             };
           }
           return item;
