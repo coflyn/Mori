@@ -36,6 +36,7 @@
     "@tauri-apps/cli": "^2.11.4"
   },
   "overrides": {
-    "tar": "7.5.21"
+    "tar": "7.5.21",
+    "brace-expansion": "5.0.9"
   }
 }
