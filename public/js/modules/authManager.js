@@ -386,9 +386,4 @@ export function initAuthListeners(currentLang = "en") {
       },
     );
   }
-
-  // Auto-lock on Desktop/Web window hide
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) handleAutoLock();
-  });
 }
