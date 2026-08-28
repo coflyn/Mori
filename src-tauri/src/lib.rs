@@ -273,11 +273,54 @@ async fn tauri_open_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn tauri_get_folder_size(folder: Option<String>) -> Result<u64, String> {
+    let download_dir = dirs::download_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let mut target_dir = download_dir.join("Mori");
+
+    if let Some(f) = folder {
+        let trimmed = f.trim();
+        if !trimmed.is_empty() {
+            if trimmed.starts_with("Mori/") || trimmed.starts_with("Mori\\") {
+                target_dir = download_dir.join(trimmed);
+            } else if trimmed != "Mori" {
+                target_dir = target_dir.join(trimmed);
+            }
+        }
+    }
+
+    fn dir_size(path: &std::path::Path) -> u64 {
+        let mut total = 0;
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if let Ok(meta) = entry.metadata() {
+                    if meta.is_file() {
+                        total += meta.len();
+                    } else if meta.is_dir() {
+                        total += dir_size(&entry.path());
+                    }
+                }
+            }
+        }
+        total
+    }
+
+    Ok(dir_size(&target_dir))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_http::init())
-    .invoke_handler(tauri::generate_handler![tauri_http_request, tauri_download_file, tauri_read_file_bytes, tauri_fetch_bytes, tauri_save_bytes_file, tauri_open_url])
+    .invoke_handler(tauri::generate_handler![
+        tauri_http_request,
+        tauri_download_file,
+        tauri_read_file_bytes,
+        tauri_fetch_bytes,
+        tauri_save_bytes_file,
+        tauri_open_url,
+        tauri_get_folder_size
+    ])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

@@ -212,14 +212,32 @@ export async function getFolderSize(path, directory) {
 
 export async function updateStorageInfo() {
   const storageVal = document.getElementById("storageSizeVal");
-  if (!storageVal || !Filesystem) return;
+  if (!storageVal) return;
 
   try {
     let totalSize = 0;
-    totalSize += await getFolderSize("", "CACHE");
-    const primary = await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
-    const legacy = await getFolderSize("Download/Mori", "EXTERNAL");
-    totalSize += Math.max(primary, legacy);
+    const tauriInvoke =
+      window.__TAURI__?.core?.invoke ||
+      window.__TAURI_INTERNALS__?.invoke ||
+      window.__TAURI__?.invoke;
+
+    if (tauriInvoke) {
+      try {
+        const desktopSize = await tauriInvoke("tauri_get_folder_size", {
+          folder: "Mori",
+        });
+        if (typeof desktopSize === "number") {
+          totalSize = desktopSize;
+        }
+      } catch (err) {
+        console.warn("Tauri folder size error:", err);
+      }
+    } else if (Filesystem) {
+      totalSize += await getFolderSize("", "CACHE");
+      const primary = await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
+      const legacy = await getFolderSize("Download/Mori", "EXTERNAL");
+      totalSize += Math.max(primary, legacy);
+    }
 
     const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
     storageVal.textContent = `${sizeInMB} MB`;

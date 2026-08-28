@@ -911,14 +911,32 @@ export async function getFolderSize(path, directory) {
 
 export async function updateStorageInfo() {
   const storageVal = document.getElementById("storageSizeVal");
-  if (!storageVal || !Filesystem) return;
+  if (!storageVal) return;
 
   try {
     let totalSize = 0;
-    totalSize += await getFolderSize("", "CACHE");
-    totalSize += await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
-    // Also check old location for compatibility
-    totalSize += await getFolderSize("Download/Mori", "EXTERNAL");
+    const tauriInvoke =
+      window.__TAURI__?.core?.invoke ||
+      window.__TAURI_INTERNALS__?.invoke ||
+      window.__TAURI__?.invoke;
+
+    if (tauriInvoke) {
+      try {
+        const desktopSize = await tauriInvoke("tauri_get_folder_size", {
+          folder: "Mori",
+        });
+        if (typeof desktopSize === "number") {
+          totalSize = desktopSize;
+        }
+      } catch (err) {
+        console.warn("Tauri folder size error:", err);
+      }
+    } else if (Filesystem) {
+      totalSize += await getFolderSize("", "CACHE");
+      const primary = await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
+      const legacy = await getFolderSize("Download/Mori", "EXTERNAL");
+      totalSize += Math.max(primary, legacy);
+    }
 
     const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
     storageVal.textContent = `${sizeInMB} MB`;
@@ -947,13 +965,32 @@ export function switchLanguage(lang) {
 }
 
 if (platformVal) {
-  const capPlatform = window.Capacitor?.getPlatform?.();
-  if (capPlatform === "ios") {
-    platformVal.textContent = "iOS";
-  } else if (capPlatform === "android") {
-    platformVal.textContent = "Android";
+  const tauriInvoke =
+    window.__TAURI__?.core?.invoke ||
+    window.__TAURI_INTERNALS__?.invoke ||
+    window.__TAURI__?.invoke;
+  const isDesktop = !!tauriInvoke && !window.Capacitor?.isNativePlatform?.();
+
+  if (isDesktop) {
+    const ua = (navigator.userAgent || "").toLowerCase();
+    if (ua.includes("mac")) {
+      platformVal.textContent = "macOS";
+    } else if (ua.includes("win")) {
+      platformVal.textContent = "Windows";
+    } else if (ua.includes("linux")) {
+      platformVal.textContent = "Linux";
+    } else {
+      platformVal.textContent = "Desktop";
+    }
   } else {
-    platformVal.textContent = "Web Browser";
+    const capPlatform = window.Capacitor?.getPlatform?.();
+    if (capPlatform === "ios") {
+      platformVal.textContent = "iOS";
+    } else if (capPlatform === "android") {
+      platformVal.textContent = "Android";
+    } else {
+      platformVal.textContent = "Web Browser";
+    }
   }
 }
 
