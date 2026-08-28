@@ -161,14 +161,8 @@ renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 const pages = ["home", "history", "settings"];
 
 async function switchPage(pageId) {
-  const isNative = window.Capacitor?.isNativePlatform?.();
   const isPrivacyOn = localStorage.getItem("mori_privacy_lock") === "true";
   const lockType = localStorage.getItem("mori_lock_type") || "none";
-
-  if (!isNative) {
-    setHistoryUnlocked(true);
-    setSettingsUnlocked(true);
-  }
 
   if (pageId === "history" && !isHistoryUnlocked) {
     if (isPrivacyOn && lockType !== "none") {

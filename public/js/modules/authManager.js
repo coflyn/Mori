@@ -95,6 +95,7 @@ export function showPinModal(mode = "verify", currentLang = "en") {
       keypad.removeEventListener("click", handleKeyClick);
       pinBackspaceBtn?.removeEventListener("click", handleBackspace);
       pinCancelBtn?.removeEventListener("click", handleCancel);
+      window.removeEventListener("keydown", handleKeyDown);
     };
 
     const closePinModal = (result) => {
@@ -128,7 +129,10 @@ export function showPinModal(mode = "verify", currentLang = "en") {
         updateDots();
       } else if (step === "confirm") {
         if (currentInput === firstPin) {
-          localStorage.setItem("mori_pin", await hashPin(currentInput));
+          const hashed = await hashPin(currentInput);
+          localStorage.setItem("mori_pin", hashed);
+          localStorage.setItem("mori_privacy_lock", "true");
+          localStorage.setItem("mori_lock_type", "pin");
           showToast(langDict["toast-pin-saved"] || "PIN saved successfully");
           closePinModal(true);
         } else {
@@ -169,9 +173,31 @@ export function showPinModal(mode = "verify", currentLang = "en") {
       closePinModal(false);
     };
 
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        if (currentInput.length < 4) {
+          currentInput += e.key;
+          updateDots();
+          if (currentInput.length === 4) {
+            setTimeout(processPin, 150);
+          }
+        }
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        handleBackspace();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        handleCancel();
+      }
+    };
+
     keypad.addEventListener("click", handleKeyClick);
     pinBackspaceBtn?.addEventListener("click", handleBackspace);
     pinCancelBtn?.addEventListener("click", handleCancel);
+    window.addEventListener("keydown", handleKeyDown);
 
     updateTitle();
     updateDots();
@@ -205,6 +231,16 @@ export function initAuthListeners(currentLang = "en") {
 
   const isPrivacyOnInitial =
     localStorage.getItem("mori_privacy_lock") === "true";
+  const initialLockType = localStorage.getItem("mori_lock_type") || "none";
+
+  if (isPrivacyOnInitial && initialLockType !== "none") {
+    setHistoryUnlocked(false);
+    setSettingsUnlocked(false);
+  } else {
+    setHistoryUnlocked(true);
+    setSettingsUnlocked(true);
+  }
+
   if (privacyLockToggle) {
     privacyLockToggle.checked = isPrivacyOnInitial;
     privacyLockToggle.addEventListener("change", async (e) => {
@@ -245,6 +281,18 @@ export function initAuthListeners(currentLang = "en") {
       showToast(
         isChecked ? lang["toast-privacy-on"] : lang["toast-privacy-off"],
       );
+    });
+  }
+
+  const setPinBtn = document.getElementById("setPinBtn");
+  if (setPinBtn) {
+    setPinBtn.addEventListener("click", async () => {
+      const hasPin = !!localStorage.getItem("mori_pin");
+      if (hasPin) {
+        const verified = await showPinModal("verify", currentLang);
+        if (!verified) return;
+      }
+      await showPinModal("setup", currentLang);
     });
   }
 
@@ -304,10 +352,12 @@ export function initAuthListeners(currentLang = "en") {
           localStorage.setItem("mori_privacy_lock", "true");
           if (privacyLockToggle) privacyLockToggle.checked = true;
           setHistoryUnlocked(false);
+          setSettingsUnlocked(false);
         } else {
           localStorage.setItem("mori_privacy_lock", "false");
           if (privacyLockToggle) privacyLockToggle.checked = false;
           setHistoryUnlocked(true);
+          setSettingsUnlocked(true);
         }
 
         const lang = translations[currentLang];
@@ -320,16 +370,25 @@ export function initAuthListeners(currentLang = "en") {
     });
   }
 
-  // Auto-lock when app pauses
+  const handleAutoLock = () => {
+    if (localStorage.getItem("mori_privacy_lock") === "true") {
+      setHistoryUnlocked(false);
+      setSettingsUnlocked(false);
+    }
+  };
+
+  // Auto-lock on Mobile app pause
   if (window.Capacitor?.Plugins?.App) {
     window.Capacitor.Plugins.App.addListener(
       "appStateChange",
       ({ isActive }) => {
-        if (!isActive && localStorage.getItem("mori_privacy_lock") === "true") {
-          setHistoryUnlocked(false);
-          setSettingsUnlocked(false);
-        }
+        if (!isActive) handleAutoLock();
       },
     );
   }
+
+  // Auto-lock on Desktop/Web window hide
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) handleAutoLock();
+  });
 }

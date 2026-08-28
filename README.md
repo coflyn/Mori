@@ -32,36 +32,6 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## What's New in v4.2.4
-
-- **Instagram Server 2 SnapSave Migration**: Replaced DownReels with **SnapSave (`snapsave.app`)** engine for Instagram Server 2 Reels & Photos
-- **Instagram Server 1 InDown Direct CDN & 2-Pass Retry**: Upgraded **InDown (`indown.io`)** engine for Instagram Server 1 with implemented 2-pass automatic session retry flow.
-- **Playlist & Album "Download All" Feature**: Added a single-click **"Download All"** (_Unduh Semua_) button for **Spotify Playlists & Albums**, **Apple Music Albums**, and **YouTube Playlists**.
-- **PIN Security Hashing & Startup Freeze Fix**: Upgraded PIN lock storage from plaintext to SHA-256 hashing (`crypto.subtle`) with automatic legacy PIN migration.
-- **RedNote / Xiaohongshu Resolution & Short Link Hardening**: Upgraded `scrapeRedNote` in `rednote.js` with dual-pass resolution for desktop PC links (`xiaohongshu.com/explore/...`), mobile H5 links (`rednote.com/discovery/item/...`), and short-link redirects (`xhslink.com` & `xhslink.cn`). Multi-path state JSON extraction (`state.noteData.data.noteData` & `state.note.noteDetailMap`) with landing page validation (`isLandingOrErrorPage`) eliminates dummy logo fallbacks and broken downloads.
-- **Centralized User-Agent Architecture & Presets**: Refactored hardcoded User-Agent strings across scrapers into central exported constants (`CHROME_DESKTOP_UA` & `CHROME_MOBILE_UA`) in `utils/index.js` for clean reusability and maintainability.
-- **Share Overlay Rectangular Option Skeleton & Dynamic Loader**: Replaced the generic preview card skeleton in `share.html` with matching rectangular download option bar skeletons (`.skeleton-option-item`) to eliminate layout shifts upon resolution. Added an inline button spinner (`.btn-spinner`) and localized dynamic phrase cycling (`loader-phrases`).
-- **Loader Timeout Race Condition Fix**: Resolved a pending timeout race condition where stale error hide timers from previous failed attempts prematurely concealed the skeleton loader during subsequent analysis requests.
-- **Batch Mode Network Guards & Modal Cancellation**: Enforced Wi-Fi Only and Cellular Data Warning guards across Batch Mode. Configured sequential batch analysis to immediately abort when the batch modal is dismissed.
-- **Security & XSS Hardening**: HTML-escaped batch queue URLs and thumbnail card attributes to eliminate script-injection vectors from scraped titles and clipboard payloads.
-- **Set-Cookie Parser Hardening**: Updated header cookie parsing logic to preserve `Expires` date strings containing commas instead of truncating cookie key-value pairs.
-- **Storage Calculation Fix**: Resolved storage size double-counting by taking `Math.max()` between legacy `EXTERNAL` and current `EXTERNAL_STORAGE` paths instead of summing them.
-- **Native Download Fallback & Type Safety**: Added null-safe guards for media file types (`(type || "")`) and enabled the cross-platform `CapacitorHttp` blob fallback path.
-- **Unlimited History Limit Fix**: Resolved an issue where configuring an "Unlimited" history limit still truncated local history records to 100 items.
-
-## Previous Updates (v4.2.3)
-
-- **Android Share Overlay Language & Font Synchronization**: Fixed an issue where the native Share Intent overlay (`ShareActivity`) defaulted to English and default font due to Webview origin isolation (`https://localhost` vs `file:///android_asset/public/share.html`). Added a native `SharedPreferences` bridge (`saveSetting` & `injectConfig`) to seamlessly synchronize all user preferences (`mori_lang`, `mori_font`, `mori_theme`, `mori_prefer_server`, `mori_download_path`, `mori_auto_folder`, `mori_filename`) directly into the Share Overlay.
-- **Share Overlay Internationalization (i18n)**: Fully audited and localized all Share Overlay UI elements (panel headers, status spinners, server option pills, download badges, toast notifications, error messages) across **5 supported languages** (English, Indonesian, Japanese, Korean, and Simplified Chinese).
-- **Settings Dropdown i18n Fix (Lock Type & Batch Photo Mode)**: Resolved an issue where changing languages and switching back caused the `Lock Type` (`lockTypeText`) and `Batch Photo Mode` (`batchPhotoModeText`) dropdown text displays to remain stuck in the previously selected language. Added missing UI refresh hooks to `updateCustomSelectsUI()`.
-- **Default Font Preset & Label Refresh**: Set **Display Bold** (`Outfit`) as Mori's default font preset across app launch, Share Overlay, and native Android `ShareActivity`. Updated the legacy "Default" label in font options to explicitly display its real typeface name (**"Inter"**) across all 5 supported languages.
-- **Optimized Defaults (Auto-Subfolders & Haptics)**: Enabled **Subfolder per Platform** (`mori_auto_folder`) by default to automatically organize downloads into platform-specific directories (`TikTok`, `Instagram`, `YouTube`, etc.), and set **Haptic Vibration** (`mori_haptic`) to disabled by default to give users full control.
-- **Dependency Security Hardening (`node-tar`)**: Upgraded `tar` dependency to **`v7.5.21`** with explicit `package.json` `overrides` enforcement to fix CVE-2026-59873 (PAX path numeric type confusion, decompression DoS, and file smuggling).
-- **YouTube Playlist & Single Link Resolution**: Integrated full support for YouTube playlists (`youtube.com/playlist?list=...` and `music.youtube.com/playlist?list=...`) with clean single-click MP3 track listing and dynamic deferred resolution powered by `ytmp3.gg` and fallback servers.
-- **Desktop (Tauri) Download Crash Fix**: Resolved a critical issue on Windows/macOS where URL resolution (e.g., Apple Music, Spotify, Soundloaders) crashed with a `Cannot read properties of undefined` error because it incorrectly attempted to invoke `CapacitorHttp` (which is mobile-only). All URL resolution and download fallbacks now use the centralized cross-platform `scraperFetch` helper.
-- **Spotify Short Link (`/s/`) Support**: Added dynamic resolution for Spotify's newer shortened share links (`open.spotify.com/s/...`). Mori now silently fetches the short link to extract the canonical `og:url` (track, playlist, or album) before passing it to backend APIs.
-- **Douyin Short Link & First-Attempt Resolution Fix**: Resolved an issue where analyzing Douyin short links (`v.douyin.com`) failed on the initial attempt due to missing `window._ROUTER_DATA` SSR markers. Upgraded scraper with a multi-stage resolution pipeline that extracts item IDs, queries the direct `iesdouyin` API endpoint, parses multiple SSR data markers (`_ROUTER_DATA`, `_SSR_DATA`, `_RENDER_DATA`, `__INIT_PROPS__`), and automatically decodes URI-encoded payloads.
-
 ## Supported Platforms & Scraper Engines
 
 | Platform                                                                               | Supported Domains / Formats                              | Features                     | Scraper Engine / Provider                                                                 |

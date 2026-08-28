@@ -533,6 +533,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   const unmuteIcon = muteBtn.querySelector(".unmute-icon");
   const muteIcon = muteBtn.querySelector(".mute-icon");
   const fsBtn = controls.querySelector(".fullscreen-btn");
+  if (isDesktop && fsBtn) {
+    fsBtn.style.display = "none";
+  }
 
   const formatTime = (s) => {
     if (!s || isNaN(s)) return "0:00";
