@@ -5,7 +5,7 @@ on:
     types: [published]
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -16,8 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'windows-latest'
-          - platform: 'macos-latest'
+          - platform: "windows-latest"
+          - platform: "macos-latest"
 
     runs-on: ${{ matrix.platform }}
 
@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -37,7 +37,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install frontend dependencies
         run: npm ci || npm install
@@ -51,7 +51,14 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p dist-assets
-          find src-tauri/target/release/bundle/dmg -name "*.dmg" -exec cp {} "dist-assets/Mori-v${VERSION}-macOS-arm64.dmg" \;
+
+          rm -rf /tmp/dmg_build && mkdir -p /tmp/dmg_build
+          cp -r "src-tauri/target/release/bundle/macos/Mori.app" /tmp/dmg_build/
+          cp "src-tauri/README.txt" /tmp/dmg_build/
+          ln -s /Applications /tmp/dmg_build/Applications
+          hdiutil create -volname "Mori" -srcfolder /tmp/dmg_build -ov -format UDZO "dist-assets/Mori-v${VERSION}-macOS-arm64.dmg"
+          rm -rf /tmp/dmg_build
+
           find src-tauri/target/release/bundle/macos -name "*.app.tar.gz" -exec cp {} "dist-assets/Mori-v${VERSION}-macOS-arm64.app.tar.gz" \;
 
       - name: Prepare & Rename Release Assets (Windows)
