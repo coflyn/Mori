@@ -11,6 +11,9 @@
   --radius-l: 4px;
   --radius-xl: 4px;
   --transition: all 0.2s ease;
+  /* Animation Speed */
+  --anim-duration: 0.2s;
+  --anim-scale: 1;
 }
 
 [data-theme="dark"] {
@@ -43,6 +46,39 @@ body.font-mono {
 }
 body.font-display {
   font-family: "Outfit", sans-serif;
+}
+
+/* Animation Speed Presets */
+body.anim-off * {
+  transition: none !important;
+  animation: none !important;
+}
+body.anim-slow * {
+  transition-duration: 0.5s !important;
+}
+/* anim-normal = default, no override */
+body.anim-fast * {
+  transition-duration: 0.08s !important;
+}
+
+/* Text Size — applied via JS directly on html element (see applyTextSize in settings.js) */
+
+/* Compact Mode */
+body.compact-mode .settings-item {
+  padding: 8px 14px;
+  min-height: 44px;
+}
+body.compact-mode .page-header {
+  margin-bottom: 12px;
+}
+body.compact-mode .settings-list {
+  gap: 0;
+}
+body.compact-mode .history-item {
+  padding: 8px 12px;
+}
+body.compact-mode .app-container {
+  padding-top: calc(30px + env(safe-area-inset-top));
 }
 
 * {

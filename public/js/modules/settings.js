@@ -203,7 +203,15 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
   if (!select || !text || !menu) return;
 
   const defaultFallback =
-    storageKey === "mori_prefer_server" ? "ask" : storageKey === "mori_font" ? "display" : "default";
+    storageKey === "mori_prefer_server"
+      ? "ask"
+      : storageKey === "mori_font"
+        ? "display"
+        : storageKey === "mori_anim_speed"
+          ? "normal"
+          : storageKey === "mori_text_size"
+            ? "medium"
+            : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -254,6 +262,8 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
       if (storageKey === "mori_accent") applyColorAccent();
       if (storageKey === "mori_font") applyFont();
       if (storageKey === "mori_lang") switchLanguage(val);
+      if (storageKey === "mori_anim_speed") applyAnimSpeed();
+      if (storageKey === "mori_text_size") applyTextSize();
 
       const labelText =
         select.closest(".settings-item")?.querySelector(".settings-title span")
@@ -321,8 +331,64 @@ setupCustomSelect(
   "requestTimeoutText",
   "requestTimeoutMenu",
 );
+setupCustomSelect(
+  "animSpeedSelect",
+  "mori_anim_speed",
+  "animSpeedText",
+  "animSpeedMenu",
+);
+setupCustomSelect(
+  "textSizeSelect",
+  "mori_text_size",
+  "textSizeText",
+  "textSizeMenu",
+);
 
-// New Settings Toggles
+// Animation Speed Logic
+export function applyAnimSpeed() {
+  if (!document.body) return;
+  const speed = localStorage.getItem("mori_anim_speed") || "normal";
+  document.body.classList.remove(
+    "anim-off",
+    "anim-slow",
+    "anim-normal",
+    "anim-fast",
+  );
+  document.body.classList.add(`anim-${speed}`);
+}
+applyAnimSpeed();
+
+export function applyTextSize() {
+  const size = localStorage.getItem("mori_text_size") || "medium";
+  const fontSizeMap = { small: "14px", medium: "16px", large: "18px" };
+  document.documentElement.style.fontSize = fontSizeMap[size] || "16px";
+  document.body.classList.remove("text-small", "text-medium", "text-large");
+  document.body.classList.add(`text-${size}`);
+}
+applyTextSize();
+
+// Compact Mode Logic
+const compactModeToggle = document.getElementById("compactModeToggle");
+if (compactModeToggle) {
+  compactModeToggle.checked =
+    localStorage.getItem("mori_compact_mode") === "true";
+  if (compactModeToggle.checked) document.body.classList.add("compact-mode");
+  compactModeToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_compact_mode", e.target.checked);
+    if (e.target.checked) {
+      document.body.classList.add("compact-mode");
+    } else {
+      document.body.classList.remove("compact-mode");
+    }
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-compact-on"] || "Compact mode enabled"
+        : lang["toast-compact-off"] || "Compact mode disabled",
+    );
+  });
+}
+
 const autoAnalyzeToggle = document.getElementById("autoAnalyzeToggle");
 if (autoAnalyzeToggle) {
   autoAnalyzeToggle.checked =
@@ -821,8 +887,7 @@ export function updateCustomSelectsUI() {
   const currentLock = localStorage.getItem("mori_lock_type") || "none";
   const lockTypeText = document.getElementById("lockTypeText");
   if (lockTypeText)
-    lockTypeText.textContent =
-      lang[`lock-type-${currentLock}`] || currentLock;
+    lockTypeText.textContent = lang[`lock-type-${currentLock}`] || currentLock;
 
   const currentBatchPhoto =
     localStorage.getItem("mori_batch_photo_mode") || "all";
@@ -842,6 +907,18 @@ export function updateCustomSelectsUI() {
       autoBackupText.textContent =
         lang["backup-monthly"] || "Monthly (30 Days)";
   }
+
+  const currentAnimSpeed = localStorage.getItem("mori_anim_speed") || "normal";
+  const animSpeedText = document.getElementById("animSpeedText");
+  if (animSpeedText)
+    animSpeedText.textContent =
+      lang[`anim-${currentAnimSpeed}`] || currentAnimSpeed;
+
+  const currentTextSize = localStorage.getItem("mori_text_size") || "medium";
+  const textSizeText = document.getElementById("textSizeText");
+  if (textSizeText)
+    textSizeText.textContent =
+      lang[`text-${currentTextSize}`] || currentTextSize;
 }
 
 export function updateLanguageUI() {
@@ -856,7 +933,13 @@ export function updateLanguageUI() {
   });
 
   if (currentLangDisplay) {
-    const langNames = { en: "English", id: "Indonesia", ja: "日本語", ko: "한국어", zh: "中文" };
+    const langNames = {
+      en: "English",
+      id: "Indonesia",
+      ja: "日本語",
+      ko: "한국어",
+      zh: "中文",
+    };
     currentLangDisplay.textContent = langNames[currentLang] || "English";
   }
 
