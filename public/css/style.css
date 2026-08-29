@@ -946,8 +946,12 @@ input[type="text"]:focus {
   border-top: 1px solid var(--primary);
   display: flex;
   justify-content: space-around;
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom)) 0;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0;
   z-index: 100;
+}
+
+.is-desktop .bottom-nav {
+  padding: 12px 0;
 }
 
 .nav-item {

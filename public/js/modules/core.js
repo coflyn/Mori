@@ -7,6 +7,22 @@ export const GITHUB_REPO = "coflyn/Mori";
 export const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 export const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
+const tauriInvoke =
+  window.__TAURI__?.core?.invoke ||
+  window.__TAURI_INTERNALS__?.invoke ||
+  window.__TAURI__?.invoke;
+
+if (tauriInvoke && !window.Capacitor?.isNativePlatform?.()) {
+  document.documentElement.classList.add("is-desktop");
+  if (document.body) {
+    document.body.classList.add("is-desktop");
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body?.classList.add("is-desktop");
+    });
+  }
+}
+
 export const urlInput = document.getElementById("urlInput");
 export const batchUrlInput = document.getElementById("batchUrlInput");
 export const batchToggleBtn = document.getElementById("batchToggleBtn");
