@@ -5,6 +5,7 @@ import {
   showToast,
   stopAllMedia,
   pauseAllMedia,
+  cleanupOrphanedTempFiles,
   App,
 } from "./utils/index.js";
 
@@ -154,6 +155,7 @@ slideNextBtn?.addEventListener("click", () => {
 // Initialize App
 autoClearOldHistory();
 autoClearOldCache();
+cleanupOrphanedTempFiles();
 initAuthListeners(currentLang);
 setUIState({ currentLang, isEditingHistory });
 renderHistory(onHistoryItemClick, onHistoryDeleteClick);

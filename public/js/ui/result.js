@@ -5,6 +5,8 @@ import {
   truncate,
   showToast,
   stopAllMedia,
+  requestWakeLock,
+  releaseWakeLock,
   Filesystem,
   CapacitorHttp,
   CHROME_UA,
@@ -775,6 +777,15 @@ export function renderResult(result, originalUrl) {
 export async function exportGalleryToPdf(title, items) {
   try {
     showToast(translations[currentLang]["pdf-toast-starting"]);
+    
+    // Acquire Wake Lock & Start Native Foreground Service for background protection
+    if (typeof requestWakeLock === "function") requestWakeLock();
+    if (window.MoriMainBridge?.startDownloadService) {
+      try {
+        window.MoriMainBridge.startDownloadService("Exporting PDF Gallery...");
+      } catch (e) {}
+    }
+
     const { PDFDocument } = window.PDFLib;
     const pdfDoc = await PDFDocument.create();
 
@@ -953,6 +964,35 @@ export async function exportGalleryToPdf(title, items) {
 
     const fileName = `${(title || "Gallery").replace(/[^\w\s]/gi, "").trim()}_${Date.now()}.pdf`;
 
+    // Dynamic folder structure for PDF exports
+    let pdfSubfolder = localStorage.getItem("mori_download_path") || "Mori";
+    if (localStorage.getItem("mori_auto_folder") !== "false") {
+      const firstUrl = (items[0]?.url || "").toLowerCase();
+      let platformFolder = "Other";
+      if (firstUrl.includes("pixiv") || firstUrl.includes("pximg") || firstUrl.includes("pixiv.me"))
+        platformFolder = "Pixiv";
+      else if (firstUrl.includes("instagram") || firstUrl.includes("instagr.am"))
+        platformFolder = "Instagram";
+      else if (firstUrl.includes("pinterest") || firstUrl.includes("pin.it"))
+        platformFolder = "Pinterest";
+      else if (firstUrl.includes("rednote") || firstUrl.includes("xiaohongshu") || firstUrl.includes("xhslink"))
+        platformFolder = "RedNote";
+      else if (firstUrl.includes("tiktok") || firstUrl.includes("douyin") || firstUrl.includes("iesdouyin"))
+        platformFolder = "TikTok";
+      else if (firstUrl.includes("twitter") || firstUrl.includes("x.com") || firstUrl.includes("t.co"))
+        platformFolder = "Twitter";
+      else if (firstUrl.includes("facebook") || firstUrl.includes("fb.watch") || firstUrl.includes("fb.com"))
+        platformFolder = "Facebook";
+      else if (firstUrl.includes("threads.net") || firstUrl.includes("threads.com"))
+        platformFolder = "Threads";
+      else if (firstUrl.includes("bilibili") || firstUrl.includes("b23.tv") || firstUrl.includes("bili.im"))
+        platformFolder = "Bilibili";
+
+      pdfSubfolder = `${pdfSubfolder}/${platformFolder}`;
+    }
+
+    const targetPdfPath = `Download/${pdfSubfolder}/${fileName}`;
+
     if (window.Capacitor?.isNativePlatform?.()) {
       showToast(translations[currentLang]["pdf-toast-saving"]);
 
@@ -962,12 +1002,21 @@ export async function exportGalleryToPdf(title, items) {
         const base64 = reader.result.split(",")[1];
         try {
           await Filesystem.writeFile({
-            path: `Download/Mori/${fileName}`,
+            path: targetPdfPath,
             data: base64,
             directory: "EXTERNAL_STORAGE",
             recursive: true,
           });
           showToast(translations[currentLang]["pdf-toast-saved"]);
+
+          if (window.MoriMainBridge?.showCompleteNotification) {
+            try {
+              window.MoriMainBridge.showCompleteNotification(
+                "PDF Gallery Complete ✓",
+                targetPdfPath,
+              );
+            } catch (e) {}
+          }
         } catch (fsErr) {
           console.error("FS Error:", fsErr);
           showToast(translations[currentLang]["toast-storage-error"]);
@@ -1021,5 +1070,17 @@ export async function exportGalleryToPdf(title, items) {
         ": " +
         (err.message.includes("memory") ? "Out of memory" : err.message),
     );
+    if (window.MoriMainBridge?.showFailedNotification) {
+      try {
+        window.MoriMainBridge.showFailedNotification("PDF Export", err.message);
+      } catch (e) {}
+    }
+  } finally {
+    if (typeof releaseWakeLock === "function") releaseWakeLock();
+    if (window.MoriMainBridge?.stopDownloadService) {
+      try {
+        window.MoriMainBridge.stopDownloadService();
+      } catch (e) {}
+    }
   }
 }

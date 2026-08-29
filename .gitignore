@@ -27,6 +27,7 @@ ios/App/Podfile.lock
 
 # Logs
 *.log
+log.txt
 npm-debug.log*
 *.hprof
 

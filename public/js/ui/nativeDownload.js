@@ -117,8 +117,15 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     if (progressContainer) progressContainer.classList.remove("hidden");
     updateProgress(0, "Downloading...");
 
-    // Acquire Wake Lock if enabled
+    // Acquire Wake Lock & Start Native Foreground Service
     requestWakeLock();
+    if (window.MoriMainBridge?.startDownloadService) {
+      try {
+        window.MoriMainBridge.startDownloadService(`Downloading ${platformLabel} ${type || ""}`);
+      } catch (e) {
+        console.warn("Foreground service start error", e);
+      }
+    }
 
     const initialBadge = btn ? btn.querySelector(".dl-badge") : null;
     if (btn) {
@@ -785,9 +792,10 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
             const isForceIpv4 =
               localStorage.getItem("mori_force_ipv4") === "true";
 
+            const tempFileName = `${fileName}.tmp`;
             const dlOpts = {
               url: actualDownloadUrl,
-              path: fullPath + "/" + fileName,
+              path: fullPath + "/" + tempFileName,
               directory: dir,
               progress: true,
               headers: downloadHeaders,
@@ -795,13 +803,43 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
             if (isBypassSsl) dlOpts.disableSSLValidation = true;
             if (isForceIpv4) dlOpts.ipv4Only = true;
 
-            savedFile = await Filesystem.downloadFile(dlOpts);
-            successfulDir = dir;
+            const tempSaved = await Filesystem.downloadFile(dlOpts);
+            if (tempSaved) {
+              // Rename .tmp to actual file name atomically on completion
+              try {
+                await Filesystem.rename({
+                  from: fullPath + "/" + tempFileName,
+                  to: fullPath + "/" + fileName,
+                  directory: dir,
+                });
+                savedFile = { path: fullPath + "/" + fileName };
+              } catch (renameErr) {
+                // Fallback copy if rename unsupported
+                await Filesystem.copy({
+                  from: fullPath + "/" + tempFileName,
+                  to: fullPath + "/" + fileName,
+                  directory: dir,
+                });
+                await Filesystem.deleteFile({
+                  path: fullPath + "/" + tempFileName,
+                  directory: dir,
+                }).catch(() => {});
+                savedFile = { path: fullPath + "/" + fileName };
+              }
+              successfulDir = dir;
+            }
           } catch (dlErr) {
             console.warn(
               `Download attempt ${attempts} on ${dir} failed:`,
               dlErr,
             );
+            // Clean up left over .tmp file on error
+            if (Filesystem) {
+              await Filesystem.deleteFile({
+                path: fullPath + "/" + `${fileName}.tmp`,
+                directory: dir,
+              }).catch(() => {});
+            }
             if (attempts >= maxAttempts && CapacitorHttp) {
               try {
                 const httpRes = await CapacitorHttp.get({
@@ -838,6 +876,15 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
 
     if (!savedFile) {
+      // Clean up any remaining .tmp files across directories
+      if (Filesystem) {
+        for (const dir of directoriesToTry) {
+          await Filesystem.deleteFile({
+            path: fullPath + "/" + `${fileName}.tmp`,
+            directory: dir,
+          }).catch(() => {});
+        }
+      }
       throw new Error(
         translations[currentLang]["toast-download-failed"] || "Download failed",
       );
@@ -901,6 +948,16 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       3000,
     );
 
+    // Trigger System Tray Notification when download finishes
+    if (window.MoriMainBridge?.showCompleteNotification) {
+      try {
+        window.MoriMainBridge.showCompleteNotification(
+          effectiveTitle,
+          `/Download/${targetFolder}/${fileName}`,
+        );
+      } catch (e) {}
+    }
+
     setTimeout(() => {
       if (btn) {
         btn.disabled = false;
@@ -934,6 +991,16 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     // Morph progress toast into Error toast seamlessly!
     failDownloadProgressToast(errorMsg, 3500);
 
+    // Trigger System Tray Notification when download fails
+    if (window.MoriMainBridge?.showFailedNotification) {
+      try {
+        window.MoriMainBridge.showFailedNotification(
+          effectiveTitle || "Media",
+          errorMsg,
+        );
+      } catch (e) {}
+    }
+
     if (btn) {
       btn.disabled = false;
       const b = btn.querySelector(".dl-badge");
@@ -947,6 +1014,11 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     if (progressContainer) progressContainer.classList.add("hidden");
   } finally {
     releaseWakeLock();
+    if (window.MoriMainBridge?.stopDownloadService) {
+      try {
+        window.MoriMainBridge.stopDownloadService();
+      } catch (e) {}
+    }
     if (window._moriActiveSimInterval) {
       clearInterval(window._moriActiveSimInterval);
       window._moriActiveSimInterval = null;

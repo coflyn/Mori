@@ -119,7 +119,7 @@ public class ShareActivity extends AppCompatActivity {
         if (webView != null) {
             webView.destroy();
         }
-        executor.shutdownNow();
+        // Do NOT call executor.shutdownNow() here so background download tasks keep running!
         super.onDestroy();
     }
 
@@ -334,6 +334,20 @@ public class ShareActivity extends AppCompatActivity {
         @JavascriptInterface
         public void downloadFile(String url, String filename, String folder, String headersJson, String title) {
             executor.execute(() -> {
+                // Start Foreground Service for background protection
+                try {
+                    Intent sIntent = new Intent(ShareActivity.this, DownloadForegroundService.class);
+                    sIntent.putExtra("title", title != null ? title : "Downloading Media...");
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(sIntent);
+                    } else {
+                        startService(sIntent);
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to start DownloadForegroundService in ShareActivity: " + e.getMessage());
+                }
+
+                File tempFile = null;
                 try {
                     OkHttpClient client = sharedClient;
 
@@ -369,11 +383,12 @@ public class ShareActivity extends AppCompatActivity {
                     File targetDir = new File(publicBaseDir, (folder != null && !folder.isEmpty()) ? folder : "Mori");
                     if (!targetDir.exists()) targetDir.mkdirs();
 
-                    File targetFile = new File(targetDir, sanitize(filename));
+                    String sanitizedName = sanitize(filename);
+                    File targetFile = new File(targetDir, sanitizedName);
                     if (targetFile.exists()) {
-                        int dot = filename.lastIndexOf('.');
-                        String stem = dot > 0 ? filename.substring(0, dot) : filename;
-                        String ext  = dot > 0 ? filename.substring(dot) : "";
+                        int dot = sanitizedName.lastIndexOf('.');
+                        String stem = dot > 0 ? sanitizedName.substring(0, dot) : sanitizedName;
+                        String ext  = dot > 0 ? sanitizedName.substring(dot) : "";
                         int c = 1;
                         while (targetFile.exists()) {
                             targetFile = new File(targetDir, stem + "_" + c + ext);
@@ -381,12 +396,26 @@ public class ShareActivity extends AppCompatActivity {
                         }
                     }
 
-                    // Write file to disk
+                    // Write to .tmp file first
+                    tempFile = new File(targetDir, targetFile.getName() + ".tmp");
+
                     try (InputStream is = res.body().byteStream();
-                         FileOutputStream fos = new FileOutputStream(targetFile)) {
+                         FileOutputStream fos = new FileOutputStream(tempFile)) {
                         byte[] buf = new byte[8192];
                         int n;
                         while ((n = is.read(buf)) != -1) fos.write(buf, 0, n);
+                    }
+
+                    // Atomic rename from .tmp to final target file
+                    if (!tempFile.renameTo(targetFile)) {
+                        // Fallback copy if renameTo fails
+                        try (InputStream in = new java.io.FileInputStream(tempFile);
+                             FileOutputStream out = new FileOutputStream(targetFile)) {
+                            byte[] buf = new byte[8192];
+                            int n;
+                            while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                        }
+                        tempFile.delete();
                     }
 
                     // Explicitly set modified timestamp to NOW (today's date)
@@ -445,14 +474,85 @@ public class ShareActivity extends AppCompatActivity {
                         sendBroadcast(mediaScanIntent);
                     } catch (Exception ignored) {}
 
+                    // Native SharedPreferences update for background history persistence
+                    try {
+                        SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                        String existingListStr = prefs.getString("mori_pending_share_history_list", "[]");
+                        org.json.JSONArray list;
+                        try {
+                            list = new org.json.JSONArray(existingListStr);
+                        } catch (Exception e) {
+                            list = new org.json.JSONArray();
+                        }
+                        
+                        boolean updated = false;
+                        String isVideo = saved.getAbsolutePath().toLowerCase().endsWith(".mp4") ? "VIDEO" : "IMAGE";
+                        for (int i = 0; i < list.length(); i++) {
+                            Object rawObj = list.opt(i);
+                            JSONObject item = null;
+                            if (rawObj instanceof JSONObject) {
+                                item = (JSONObject) rawObj;
+                            } else if (rawObj instanceof String) {
+                                try { item = new JSONObject((String) rawObj); } catch (Exception ignored) {}
+                            }
+
+                            if (item != null) {
+                                org.json.JSONArray localFiles = item.optJSONArray("localFiles");
+                                if (localFiles == null) localFiles = new org.json.JSONArray();
+                                
+                                JSONObject fObj = new JSONObject();
+                                fObj.put("path", saved.getAbsolutePath());
+                                fObj.put("uri", saved.getAbsolutePath());
+                                fObj.put("type", isVideo);
+                                fObj.put("title", title != null ? title : filename);
+                                localFiles.put(fObj);
+
+                                item.put("localFiles", localFiles);
+                                item.put("localUri", saved.getAbsolutePath());
+                                list.put(i, item);
+                                updated = true;
+                                break;
+                            }
+                        }
+
+                        if (!updated) {
+                            JSONObject newItem = new JSONObject();
+                            newItem.put("title", title != null ? title : "Media");
+                            newItem.put("url", sharedUrl);
+                            newItem.put("sourceUrl", sharedUrl);
+                            newItem.put("timestamp", System.currentTimeMillis());
+                            newItem.put("localUri", saved.getAbsolutePath());
+
+                            org.json.JSONArray localFiles = new org.json.JSONArray();
+                            JSONObject fObj = new JSONObject();
+                            fObj.put("path", saved.getAbsolutePath());
+                            fObj.put("uri", saved.getAbsolutePath());
+                            fObj.put("type", isVideo);
+                            fObj.put("title", title != null ? title : filename);
+                            localFiles.put(fObj);
+                            newItem.put("localFiles", localFiles);
+
+                            list.put(newItem);
+                        }
+
+                        prefs.edit().putString("mori_pending_share_history_list", list.toString()).commit();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Native update pending history error: " + e.getMessage());
+                    }
+
                     mainHandler.post(() -> {
                         showDownloadCompleteNotification(title);
-                        webView.evaluateJavascript(
-                            "window.onDownloadComplete && window.onDownloadComplete('" +
-                            esc(filename) + "', '" + esc(saved.getAbsolutePath()) + "')", null);
+                        if (webView != null) {
+                            webView.evaluateJavascript(
+                                "window.onDownloadComplete && window.onDownloadComplete('" +
+                                esc(filename) + "', '" + esc(saved.getAbsolutePath()) + "')", null);
+                        }
                     });
 
                 } catch (Exception e) {
+                    if (tempFile != null && tempFile.exists()) {
+                        tempFile.delete();
+                    }
                     Log.e(TAG, "downloadFile error: " + e.getMessage());
                     mainHandler.post(() -> {
                         showDownloadFailedNotification(title, e.getMessage());
@@ -460,6 +560,11 @@ public class ShareActivity extends AppCompatActivity {
                             "window.onDownloadFailed && window.onDownloadFailed('" +
                             esc(filename) + "', '" + esc(e.getMessage()) + "')", null);
                     });
+                } finally {
+                    try {
+                        Intent sIntent = new Intent(ShareActivity.this, DownloadForegroundService.class);
+                        stopService(sIntent);
+                    } catch (Exception ignored) {}
                 }
             });
         }
@@ -477,7 +582,12 @@ public class ShareActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     list = new org.json.JSONArray();
                 }
-                list.put(itemJson);
+                try {
+                    JSONObject obj = new JSONObject(itemJson);
+                    list.put(obj);
+                } catch (Exception e) {
+                    list.put(itemJson);
+                }
                 prefs.edit().putString("mori_pending_share_history_list", list.toString()).commit();
             } catch (Exception e) {
                 Log.e(TAG, "savePendingHistory error: " + e.getMessage());

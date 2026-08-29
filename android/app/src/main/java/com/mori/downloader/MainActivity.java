@@ -41,6 +41,75 @@ public class MainActivity extends BridgeActivity {
                 prefs.edit().putString(key, value).commit();
             } catch (Exception ignored) {}
         }
+
+        @JavascriptInterface
+        public void startDownloadService(String title) {
+            try {
+                Intent intent = new Intent(MainActivity.this, DownloadForegroundService.class);
+                intent.putExtra("title", title != null ? title : "Downloading Media...");
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent);
+                } else {
+                    startService(intent);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void stopDownloadService() {
+            try {
+                Intent intent = new Intent(MainActivity.this, DownloadForegroundService.class);
+                stopService(intent);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void showCompleteNotification(String title, String path) {
+            try {
+                android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm == null) return;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    android.app.NotificationChannel ch = new android.app.NotificationChannel(
+                            "mori_download_complete", "Mori Downloads", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                    nm.createNotificationChannel(ch);
+                }
+                androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(MainActivity.this, "mori_download_complete")
+                        .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                        .setContentTitle("Download Complete ✓")
+                        .setContentText((title != null ? title : "Media") + (path != null ? " · " + path : ""))
+                        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                        .setAutoCancel(true);
+                nm.notify((int) System.currentTimeMillis(), b.build());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void showFailedNotification(String title, String error) {
+            try {
+                android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm == null) return;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    android.app.NotificationChannel ch = new android.app.NotificationChannel(
+                            "mori_download_complete", "Mori Downloads", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                    nm.createNotificationChannel(ch);
+                }
+                androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(MainActivity.this, "mori_download_complete")
+                        .setSmallIcon(android.R.drawable.stat_notify_error)
+                        .setContentTitle("Download Failed")
+                        .setContentText((title != null ? title : "Media") + ": " + (error != null ? error : "Failed"))
+                        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                        .setAutoCancel(true);
+                nm.notify((int) System.currentTimeMillis(), b.build());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -90,6 +159,15 @@ public class MainActivity extends BridgeActivity {
         }
 
         handleIntent(getIntent());
+        requestNotificationPermission();
+    }
+
+    private void requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
     }
 
     @Override

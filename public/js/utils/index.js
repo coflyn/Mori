@@ -564,11 +564,64 @@ export async function requestWakeLock() {
   }
 }
 
-export function releaseWakeLock() {
+export async function releaseWakeLock() {
   if (wakeLockSentinel) {
     wakeLockSentinel.release().catch(() => {});
     wakeLockSentinel = null;
     console.log("[WAKE LOCK] Screen active lock released.");
+  }
+}
+
+/**
+ * Startup Cleanup: Cleans up any leftover .tmp download files from crash/unexpected shutdown
+ */
+export async function cleanupOrphanedTempFiles() {
+  if (!Filesystem) return;
+  const directoriesToTry = ["EXTERNAL_STORAGE", "DOCUMENTS", "EXTERNAL"];
+  const videoPath = `Download/${localStorage.getItem("mori_download_path") || "Mori"}`;
+  const musicPath = `Download/${localStorage.getItem("mori_music_path") || "Mori/Music"}`;
+  const platforms = [
+    "",
+    "/TikTok",
+    "/Douyin",
+    "/Instagram",
+    "/YouTube",
+    "/Twitter",
+    "/Facebook",
+    "/Pinterest",
+    "/Spotify",
+    "/AppleMusic",
+    "/Threads",
+    "/RedNote",
+    "/Bilibili",
+    "/Pixiv",
+    "/Bandcamp",
+    "/Other",
+  ];
+
+  for (const basePath of [videoPath, musicPath]) {
+    for (const sub of platforms) {
+      const fullFolder = `${basePath}${sub}`;
+      for (const dir of directoriesToTry) {
+        try {
+          const res = await Filesystem.readdir({
+            path: fullFolder,
+            directory: dir,
+          }).catch(() => null);
+          if (res && res.files) {
+            for (const file of res.files) {
+              if (file.name && file.name.endsWith(".tmp")) {
+                await Filesystem.deleteFile({
+                  path: `${fullFolder}/${file.name}`,
+                  directory: dir,
+                }).catch(() => {});
+                console.log(`[STARTUP CLEANUP] Purged leftover temp file: ${file.name}`);
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    }
   }
 }
 
