@@ -97,10 +97,14 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     window._moriActiveSimInterval = null;
   }
 
-  showDownloadProgressToast(platformLabel, type);
+  const hideProgress = localStorage.getItem("mori_hide_progress") === "true";
+  if (!hideProgress) {
+    showDownloadProgressToast(platformLabel, type);
+  }
   let progressListener = null;
   let currentProgressVal = 0;
   const updateProgress = (pct, statusText) => {
+    if (hideProgress) return;
     if (typeof pct === "number" && !isNaN(pct)) {
       const targetPct = Math.min(
         99,
@@ -765,7 +769,11 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     let savedFile;
     let attempts = 0;
     const isAutoRetry = localStorage.getItem("mori_auto_retry") !== "false";
-    const maxAttempts = isAutoRetry ? 3 : 1;
+    const customMaxRetry = parseInt(
+      localStorage.getItem("mori_max_retry") || "3",
+      10,
+    );
+    const maxAttempts = isAutoRetry ? customMaxRetry : 1;
 
     if (tauriInvoke) {
       try {

@@ -215,7 +215,11 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
               ? "1"
               : storageKey === "mori_overwrite"
                 ? "rename"
-                : "default";
+                : storageKey === "mori_max_retry"
+                  ? "3"
+                  : storageKey === "mori_doh"
+                    ? "off"
+                    : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -359,6 +363,34 @@ setupCustomSelect(
   "overwriteText",
   "overwriteMenu",
 );
+setupCustomSelect(
+  "maxRetrySelect",
+  "mori_max_retry",
+  "maxRetryText",
+  "maxRetryMenu",
+);
+setupCustomSelect(
+  "dohSelect",
+  "mori_doh",
+  "dohText",
+  "dohMenu",
+);
+
+// Hide Progress Bar toggle
+const hideProgressToggle = document.getElementById("hideProgressToggle");
+if (hideProgressToggle) {
+  hideProgressToggle.checked =
+    localStorage.getItem("mori_hide_progress") === "true";
+  hideProgressToggle.addEventListener("change", (e) => {
+    localStorage.setItem("mori_hide_progress", e.target.checked);
+    const lang = translations[currentLang] || translations.en;
+    showToast(
+      e.target.checked
+        ? lang["toast-hide-progress-on"] || "Download progress bar hidden"
+        : lang["toast-hide-progress-off"] || "Download progress bar shown",
+    );
+  });
+}
 
 // Animation Speed Logic
 export function applyAnimSpeed() {
@@ -947,6 +979,17 @@ export function updateCustomSelectsUI() {
   if (overwriteText)
     overwriteText.textContent =
       lang[`overwrite-${currentOverwrite}`] || currentOverwrite;
+
+  const currentMaxRetry = localStorage.getItem("mori_max_retry") || "3";
+  const maxRetryText = document.getElementById("maxRetryText");
+  if (maxRetryText)
+    maxRetryText.textContent =
+      lang[`retry-${currentMaxRetry}`] || `${currentMaxRetry} Attempts`;
+
+  const currentDoh = localStorage.getItem("mori_doh") || "off";
+  const dohText = document.getElementById("dohText");
+  if (dohText)
+    dohText.textContent = lang[`doh-${currentDoh}`] || currentDoh;
 }
 
 export function updateLanguageUI() {

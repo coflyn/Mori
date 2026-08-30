@@ -245,7 +245,20 @@ export const translations = {
     "overwrite-rename": "Auto-Rename (e.g. _1, _2)",
     "overwrite-overwrite": "Overwrite Existing",
     "overwrite-skip": "Skip if Exists",
-    "toast-overwrite": "Duplicate files: "
+    "toast-overwrite": "Duplicate files: ",
+    "label-max-retry": "Max Retry Count",
+    "retry-1": "1 (No Retry)",
+    "retry-2": "2 Attempts",
+    "retry-3": "3 Attempts",
+    "retry-5": "5 Attempts",
+    "label-doh": "DNS over HTTPS",
+    "doh-off": "Off (System DNS)",
+    "doh-cloudflare": "Cloudflare (1.1.1.1)",
+    "doh-google": "Google (8.8.8.8)",
+    "toast-doh": "DNS over HTTPS: ",
+    "label-hide-progress": "Hide Progress Bar",
+    "toast-hide-progress-on": "Download progress bar hidden",
+    "toast-hide-progress-off": "Download progress bar shown"
     },
   "id": {
     "btn-analyze": "Analisis",
@@ -493,7 +506,20 @@ export const translations = {
     "overwrite-rename": "Ganti Nama Otomatis",
     "overwrite-overwrite": "Timpa File Lama",
     "overwrite-skip": "Lewati jika Ada",
-    "toast-overwrite": "File duplikat: "
+    "toast-overwrite": "File duplikat: ",
+    "label-max-retry": "Maks Percobaan Ulang",
+    "retry-1": "1 (Tanpa Ulang)",
+    "retry-2": "2 Percobaan",
+    "retry-3": "3 Percobaan",
+    "retry-5": "5 Percobaan",
+    "label-doh": "DNS over HTTPS",
+    "doh-off": "Mati (DNS Sistem)",
+    "doh-cloudflare": "Cloudflare (1.1.1.1)",
+    "doh-google": "Google (8.8.8.8)",
+    "toast-doh": "DNS over HTTPS: ",
+    "label-hide-progress": "Sembunyikan Progress Bar",
+    "toast-hide-progress-on": "Progress bar unduhan disembunyikan",
+    "toast-hide-progress-off": "Progress bar unduhan ditampilkan"
     },
   "ja": {
     "btn-analyze": "解析する",
@@ -741,7 +767,20 @@ export const translations = {
     "overwrite-rename": "自動リネーム",
     "overwrite-overwrite": "上書き",
     "overwrite-skip": "スキップ",
-    "toast-overwrite": "重複ファイル: "
+    "toast-overwrite": "重複ファイル: ",
+    "label-max-retry": "最大リトライ数",
+    "retry-1": "1（リトライなし）",
+    "retry-2": "2回試行",
+    "retry-3": "3回試行",
+    "retry-5": "5回試行",
+    "label-doh": "DNS over HTTPS",
+    "doh-off": "オフ（システムDNS）",
+    "doh-cloudflare": "Cloudflare (1.1.1.1)",
+    "doh-google": "Google (8.8.8.8)",
+    "toast-doh": "DNS over HTTPS: ",
+    "label-hide-progress": "進行状況バーを非表示",
+    "toast-hide-progress-on": "ダウンロードバーを非表示にしました",
+    "toast-hide-progress-off": "ダウンロードバーを表示しました"
  },
   "ko": {
     "btn-analyze": "분석하기",
@@ -993,7 +1032,20 @@ export const translations = {
     "overwrite-rename": "자동 이름 변경",
     "overwrite-overwrite": "기존 파일 덮어쓰기",
     "overwrite-skip": "존재하면 건너뜨기",
-    "toast-overwrite": "중복 파일: "
+    "toast-overwrite": "중복 파일: ",
+    "label-max-retry": "최대 재시도 횟수",
+    "retry-1": "1 (재시도 없음)",
+    "retry-2": "2회 시도",
+    "retry-3": "3회 시도",
+    "retry-5": "5회 시도",
+    "label-doh": "DNS over HTTPS",
+    "doh-off": "끄기 (시스템 DNS)",
+    "doh-cloudflare": "Cloudflare (1.1.1.1)",
+    "doh-google": "Google (8.8.8.8)",
+    "toast-doh": "DNS over HTTPS: ",
+    "label-hide-progress": "진행 바 숨기기",
+    "toast-hide-progress-on": "다운로드 진행 바 숨김",
+    "toast-hide-progress-off": "다운로드 진행 바 표시"
  },
   "zh": {
     "btn-analyze": "解析",
@@ -1245,6 +1297,19 @@ export const translations = {
     "overwrite-rename": "自动重命名",
     "overwrite-overwrite": "覆盖现有文件",
     "overwrite-skip": "如存在则跳过",
-    "toast-overwrite": "重复文件: "
+    "toast-overwrite": "重复文件: ",
+    "label-max-retry": "最大重试次数",
+    "retry-1": "1 (不重试)",
+    "retry-2": "2次尝试",
+    "retry-3": "3次尝试",
+    "retry-5": "5次尝试",
+    "label-doh": "DNS over HTTPS",
+    "doh-off": "关闭 (系统DNS)",
+    "doh-cloudflare": "Cloudflare (1.1.1.1)",
+    "doh-google": "Google (8.8.8.8)",
+    "toast-doh": "DNS over HTTPS: ",
+    "label-hide-progress": "隐藏下载进度条",
+    "toast-hide-progress-on": "下载进度条已隐藏",
+    "toast-hide-progress-off": "下载进度条已显示"
   }
 };

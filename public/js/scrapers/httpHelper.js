@@ -81,6 +81,28 @@ export async function scraperFetch(options, serverName = "Server") {
     }
   }
 
+  const dohMode = localStorage.getItem("mori_doh") || "off";
+
+  if (dohMode !== "off") {
+    try {
+      const parsedUrl = new URL(options.url);
+      const hostname = parsedUrl.hostname;
+      if (
+        !/^\d+\.\d+\.\d+\.\d+$/.test(hostname) &&
+        parsedUrl.protocol === "https:"
+      ) {
+        const dohEndpoint =
+          dohMode === "google"
+            ? `https://dns.google/resolve?name=${hostname}&type=A`
+            : `https://cloudflare-dns.com/dns-query?name=${hostname}&type=A`;
+        fetch(dohEndpoint, {
+          headers: { Accept: "application/dns-json" },
+          signal: AbortSignal.timeout(2000),
+        }).catch(() => {});
+      }
+    } catch (_) {}
+  }
+
   const httpConfig = {
     url: options.url,
     headers: headers,
@@ -154,10 +176,18 @@ export async function scraperFetch(options, serverName = "Server") {
       headers,
       responseType: options.responseType,
     };
-    if (options.data !== undefined) bridgeOpts.data = typeof options.data === "object" ? JSON.stringify(options.data) : String(options.data);
+    if (options.data !== undefined)
+      bridgeOpts.data =
+        typeof options.data === "object"
+          ? JSON.stringify(options.data)
+          : String(options.data);
     const raw = window.MoriShareBridge.httpRequest(JSON.stringify(bridgeOpts));
     const parsed = JSON.parse(raw);
-    response = { status: parsed.status, headers: parsed.headers || {}, data: parsed.data };
+    response = {
+      status: parsed.status,
+      headers: parsed.headers || {},
+      data: parsed.data,
+    };
   } else if (CapacitorHttp) {
     if (method === "POST") {
       response = await CapacitorHttp.post(httpConfig);
@@ -184,9 +214,7 @@ export async function scraperFetch(options, serverName = "Server") {
         !(options.data instanceof URLSearchParams)
       ) {
         if (
-          headers["Content-Type"]?.includes(
-            "application/x-www-form-urlencoded",
-          )
+          headers["Content-Type"]?.includes("application/x-www-form-urlencoded")
         ) {
           bodyString = new URLSearchParams(options.data).toString();
         } else {
@@ -221,9 +249,7 @@ export async function scraperFetch(options, serverName = "Server") {
         !(options.data instanceof URLSearchParams)
       ) {
         if (
-          headers["Content-Type"]?.includes(
-            "application/x-www-form-urlencoded",
-          )
+          headers["Content-Type"]?.includes("application/x-www-form-urlencoded")
         ) {
           body = new URLSearchParams(options.data).toString();
         } else {
@@ -237,10 +263,7 @@ export async function scraperFetch(options, serverName = "Server") {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      getRequestTimeout(),
-    );
+    const timeoutId = setTimeout(() => controller.abort(), getRequestTimeout());
     const res = await fetch(fetchUrl, {
       method,
       headers,
