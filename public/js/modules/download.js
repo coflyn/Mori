@@ -238,10 +238,13 @@ downloadBtn.addEventListener("click", async () => {
           batchDownloadAllBtn.disabled = true;
           const batchPhotoMode =
             localStorage.getItem("mori_batch_photo_mode") || "all";
+          const concurrentLimit = parseInt(
+            localStorage.getItem("mori_concurrent") || "1",
+            10,
+          );
 
-          for (let i = 0; i < batchResults.length; i++) {
-            const item = batchResults[i];
-            const idx = batchUrls.indexOf(item.url);
+          // Helper to download a single batch item
+          async function downloadBatchItem(item, idx) {
             const statusEl = document.querySelector(
               `#batchItem_${idx} .batch-item-status`,
             );
@@ -264,7 +267,6 @@ downloadBtn.addEventListener("click", async () => {
               );
 
               if (isVideoPost) {
-                // Video posts (TikTok, Reels, Shorts, etc.) -> download primary video only
                 const primaryVideo = downloadsList[0];
                 await startNativeDownload(
                   primaryVideo.url,
@@ -274,7 +276,6 @@ downloadBtn.addEventListener("click", async () => {
                   item.url,
                 );
               } else {
-                // Photo Carousel / Slideshow posts -> apply Batch Photo Mode
                 if (batchPhotoMode === "first") {
                   const dlObj = downloadsList[0];
                   await startNativeDownload(
@@ -290,19 +291,16 @@ downloadBtn.addEventListener("click", async () => {
                       /image|photo|jpg|png|webp/i.test(d.type) ||
                       /\.(jpg|jpeg|png|webp)/i.test(d.url),
                   );
-
                   if (imageItems.length > 1) {
                     try {
                       const imageUrls = imageItems.map((img) => img.url);
                       const pdfBuffer = await convertImagesToPdf(imageUrls);
                       const sanitizedTitle =
                         itemTitle
-                          .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
+                          .replace(/[\\/:*?"<>|#%&{}\[\]@$^+=~`';,]/g, "")
                           .trim()
                           .substring(0, 60) || "Mori_Batch_Album";
-
                       const pdfFileName = `${sanitizedTitle}.pdf`;
-
                       if (
                         window.Capacitor?.isNativePlatform?.() &&
                         Filesystem
@@ -318,14 +316,14 @@ downloadBtn.addEventListener("click", async () => {
                           directory: "EXTERNAL_STORAGE",
                           data: base64Pdf,
                           recursive: true,
-                        }).catch(() => {
-                          return Filesystem.writeFile({
+                        }).catch(() =>
+                          Filesystem.writeFile({
                             path: `Download/Mori/${pdfFileName}`,
                             directory: "DOCUMENTS",
                             data: base64Pdf,
                             recursive: true,
-                          });
-                        });
+                          }),
+                        );
                       } else {
                         const blob = new Blob([pdfBuffer], {
                           type: "application/pdf",
@@ -337,10 +335,7 @@ downloadBtn.addEventListener("click", async () => {
                         URL.revokeObjectURL(a.href);
                       }
                     } catch (pdfErr) {
-                      console.warn(
-                        "PDF generation failed, falling back to all photos download:",
-                        pdfErr,
-                      );
+                      console.warn("PDF generation failed, fallback:", pdfErr);
                       for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
                         const dlObj = downloadsList[dIdx];
                         const titleWithIdx =
@@ -367,7 +362,7 @@ downloadBtn.addEventListener("click", async () => {
                     );
                   }
                 } else {
-                  // "all" (Default): Download all slide photos in carousel
+                  // "all": download all carousel photos
                   for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
                     const dlObj = downloadsList[dIdx];
                     const titleWithIdx =
@@ -391,6 +386,18 @@ downloadBtn.addEventListener("click", async () => {
               statusEl.textContent = "SAVED";
             }
           }
+
+          // Concurrent pool — run N downloads at a time
+          for (let i = 0; i < batchResults.length; i += concurrentLimit) {
+            const chunk = batchResults.slice(i, i + concurrentLimit);
+            await Promise.all(
+              chunk.map((item) => {
+                const idx = batchUrls.indexOf(item.url);
+                return downloadBatchItem(item, idx);
+              }),
+            );
+          }
+
           batchDownloadAllBtn.disabled = false;
           showToast(
             translations[currentLang]["label-download-complete"] ||
@@ -403,6 +410,7 @@ downloadBtn.addEventListener("click", async () => {
   }
 
   const url = urlInput.value.trim();
+
   if (!url) return;
 
   if (!(await enforceNetworkGuards())) return;

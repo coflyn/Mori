@@ -121,7 +121,9 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     requestWakeLock();
     if (window.MoriMainBridge?.startDownloadService) {
       try {
-        window.MoriMainBridge.startDownloadService(`Downloading ${platformLabel} ${type || ""}`);
+        window.MoriMainBridge.startDownloadService(
+          `Downloading ${platformLabel} ${type || ""}`,
+        );
       } catch (e) {
         console.warn("Foreground service start error", e);
       }
@@ -330,7 +332,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         });
       }
 
-      // Ensure unique filename if file already exists on disk
+      // Handle duplicate files based on mori_overwrite setting
+      const overwriteMode = localStorage.getItem("mori_overwrite") || "rename";
       try {
         let checkExist = null;
         for (const dir of directoriesToTry) {
@@ -341,26 +344,34 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           if (checkExist) break;
         }
         if (checkExist) {
-          const dotIdx = fileName.lastIndexOf(".");
-          const baseName =
-            dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
-          let counter = 1;
-          let newFileName = `${baseName}_${counter}.${ext}`;
-          while (true) {
-            let exist = null;
-            for (const dir of directoriesToTry) {
-              exist = await Filesystem.stat({
-                path: fullPath + "/" + newFileName,
-                directory: dir,
-              }).catch(() => null);
-              if (exist) break;
+          if (overwriteMode === "skip") {
+            // File already exists — skip download silently
+            return;
+          } else if (overwriteMode === "overwrite") {
+            // Overwrite: keep same filename, existing file will be replaced
+          } else {
+            // rename (default): append _1, _2, etc.
+            const dotIdx = fileName.lastIndexOf(".");
+            const baseName =
+              dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
+            let counter = 1;
+            let newFileName = `${baseName}_${counter}.${ext}`;
+            while (true) {
+              let exist = null;
+              for (const dir of directoriesToTry) {
+                exist = await Filesystem.stat({
+                  path: fullPath + "/" + newFileName,
+                  directory: dir,
+                }).catch(() => null);
+                if (exist) break;
+              }
+              if (!exist) {
+                fileName = newFileName;
+                break;
+              }
+              counter++;
+              newFileName = `${baseName}_${counter}.${ext}`;
             }
-            if (!exist) {
-              fileName = newFileName;
-              break;
-            }
-            counter++;
-            newFileName = `${baseName}_${counter}.${ext}`;
           }
         }
       } catch (e) {}

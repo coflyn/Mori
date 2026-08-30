@@ -211,7 +211,11 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
           ? "normal"
           : storageKey === "mori_text_size"
             ? "medium"
-            : "default";
+            : storageKey === "mori_concurrent"
+              ? "1"
+              : storageKey === "mori_overwrite"
+                ? "rename"
+                : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -342,6 +346,18 @@ setupCustomSelect(
   "mori_text_size",
   "textSizeText",
   "textSizeMenu",
+);
+setupCustomSelect(
+  "concurrentSelect",
+  "mori_concurrent",
+  "concurrentText",
+  "concurrentMenu",
+);
+setupCustomSelect(
+  "overwriteSelect",
+  "mori_overwrite",
+  "overwriteText",
+  "overwriteMenu",
 );
 
 // Animation Speed Logic
@@ -919,6 +935,18 @@ export function updateCustomSelectsUI() {
   if (textSizeText)
     textSizeText.textContent =
       lang[`text-${currentTextSize}`] || currentTextSize;
+
+  const currentConcurrent = localStorage.getItem("mori_concurrent") || "1";
+  const concurrentText = document.getElementById("concurrentText");
+  if (concurrentText)
+    concurrentText.textContent =
+      lang[`concurrent-${currentConcurrent}`] || currentConcurrent;
+
+  const currentOverwrite = localStorage.getItem("mori_overwrite") || "rename";
+  const overwriteText = document.getElementById("overwriteText");
+  if (overwriteText)
+    overwriteText.textContent =
+      lang[`overwrite-${currentOverwrite}`] || currentOverwrite;
 }
 
 export function updateLanguageUI() {

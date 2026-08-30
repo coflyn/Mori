@@ -235,7 +235,17 @@ export const translations = {
     "toast-text-size": "Text size: ",
     "label-compact-mode": "Compact Mode",
     "toast-compact-on": "Compact mode enabled",
-    "toast-compact-off": "Compact mode disabled"
+    "toast-compact-off": "Compact mode disabled",
+    "label-concurrent-downloads": "Concurrent Downloads",
+    "concurrent-1": "1 (Sequential)",
+    "concurrent-2": "2 at once",
+    "concurrent-3": "3 at once",
+    "concurrent-5": "5 at once",
+    "label-overwrite-files": "Duplicate Files",
+    "overwrite-rename": "Auto-Rename (e.g. _1, _2)",
+    "overwrite-overwrite": "Overwrite Existing",
+    "overwrite-skip": "Skip if Exists",
+    "toast-overwrite": "Duplicate files: "
     },
   "id": {
     "btn-analyze": "Analisis",
@@ -473,7 +483,17 @@ export const translations = {
     "toast-text-size": "Ukuran teks: ",
     "label-compact-mode": "Mode Ringkas",
     "toast-compact-on": "Mode ringkas aktif",
-    "toast-compact-off": "Mode ringkas nonaktif"
+    "toast-compact-off": "Mode ringkas nonaktif",
+    "label-concurrent-downloads": "Download Bersamaan",
+    "concurrent-1": "1 (Urutan)",
+    "concurrent-2": "2 sekaligus",
+    "concurrent-3": "3 sekaligus",
+    "concurrent-5": "5 sekaligus",
+    "label-overwrite-files": "File Duplikat",
+    "overwrite-rename": "Ganti Nama Otomatis",
+    "overwrite-overwrite": "Timpa File Lama",
+    "overwrite-skip": "Lewati jika Ada",
+    "toast-overwrite": "File duplikat: "
     },
   "ja": {
     "btn-analyze": "解析する",
@@ -711,7 +731,17 @@ export const translations = {
     "toast-text-size": "文字サイズ: ",
     "label-compact-mode": "コンパクトモード",
     "toast-compact-on": "コンパクトモード有効",
-    "toast-compact-off": "コンパクトモード無効"
+    "toast-compact-off": "コンパクトモード無効",
+    "label-concurrent-downloads": "同時ダウンロード",
+    "concurrent-1": "1（順次）",
+    "concurrent-2": "2同時",
+    "concurrent-3": "3同時",
+    "concurrent-5": "5同時",
+    "label-overwrite-files": "重複ファイル",
+    "overwrite-rename": "自動リネーム",
+    "overwrite-overwrite": "上書き",
+    "overwrite-skip": "スキップ",
+    "toast-overwrite": "重複ファイル: "
  },
   "ko": {
     "btn-analyze": "분석하기",
@@ -953,7 +983,17 @@ export const translations = {
     "toast-text-size": "텍스트 크기: ",
     "label-compact-mode": "컴팩트 모드",
     "toast-compact-on": "컴팩트 모드 활성화",
-    "toast-compact-off": "컴팩트 모드 비활성화"
+    "toast-compact-off": "컴팩트 모드 비활성화",
+    "label-concurrent-downloads": "동시 다운로드",
+    "concurrent-1": "1개 (순차)",
+    "concurrent-2": "2개 동시",
+    "concurrent-3": "3개 동시",
+    "concurrent-5": "5개 동시",
+    "label-overwrite-files": "중복 파일",
+    "overwrite-rename": "자동 이름 변경",
+    "overwrite-overwrite": "기존 파일 덮어쓰기",
+    "overwrite-skip": "존재하면 건너뜨기",
+    "toast-overwrite": "중복 파일: "
  },
   "zh": {
     "btn-analyze": "解析",
@@ -1195,6 +1235,16 @@ export const translations = {
     "toast-text-size": "字体大小: ",
     "label-compact-mode": "紧凑模式",
     "toast-compact-on": "紧凑模式已启用",
-    "toast-compact-off": "紧凑模式已禁用"
+    "toast-compact-off": "紧凑模式已禁用",
+    "label-concurrent-downloads": "并发下载",
+    "concurrent-1": "1个（顺序）",
+    "concurrent-2": "2个同时",
+    "concurrent-3": "3个同时",
+    "concurrent-5": "5个同时",
+    "label-overwrite-files": "重复文件",
+    "overwrite-rename": "自动重命名",
+    "overwrite-overwrite": "覆盖现有文件",
+    "overwrite-skip": "如存在则跳过",
+    "toast-overwrite": "重复文件: "
   }
 };
