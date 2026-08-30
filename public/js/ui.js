@@ -40,6 +40,13 @@ export function renderHistory(onItemClick, onDeleteClick) {
   const historyActions = document.getElementById("historyActions");
   if (!historyPage) return;
 
+  const dlStatsEl = document.getElementById("historyDlStatsVal");
+  if (dlStatsEl) {
+    const storedCount = parseInt(localStorage.getItem("mori_dl_count") || "0", 10);
+    const count = Math.max(storedCount, history.length);
+    dlStatsEl.textContent = count.toLocaleString();
+  }
+
   const emptyState = historyPage.querySelector(".empty-state");
   let list = historyPage.querySelector(".history-list");
   if (list) list.remove();

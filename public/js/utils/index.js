@@ -155,10 +155,12 @@ export async function showToast(message) {
     toastEl.classList.add("show");
   });
 
+  const durSec = parseInt(localStorage.getItem("mori_toast_dur") || "3", 10);
+  const durMs = durSec * 1000;
   setTimeout(() => {
     toastEl.classList.remove("show");
     setTimeout(() => toastEl.remove(), 300);
-  }, 2800);
+  }, durMs);
 }
 
 // Floating Download Progress Toast

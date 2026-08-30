@@ -219,7 +219,9 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
                   ? "3"
                   : storageKey === "mori_doh"
                     ? "off"
-                    : "default";
+                    : storageKey === "mori_toast_dur"
+                      ? "3"
+                      : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -369,12 +371,7 @@ setupCustomSelect(
   "maxRetryText",
   "maxRetryMenu",
 );
-setupCustomSelect(
-  "dohSelect",
-  "mori_doh",
-  "dohText",
-  "dohMenu",
-);
+setupCustomSelect("dohSelect", "mori_doh", "dohText", "dohMenu");
 
 // Hide Progress Bar toggle
 const hideProgressToggle = document.getElementById("hideProgressToggle");
@@ -388,6 +385,70 @@ if (hideProgressToggle) {
       e.target.checked
         ? lang["toast-hide-progress-on"] || "Download progress bar hidden"
         : lang["toast-hide-progress-off"] || "Download progress bar shown",
+    );
+  });
+}
+
+setupCustomSelect(
+  "toastDurSelect",
+  "mori_toast_dur",
+  "toastDurText",
+  "toastDurMenu",
+);
+
+// Download Statistics — read + live update on every file saved
+export function updateDlStatsDisplay() {
+  const el = document.getElementById("historyDlStatsVal");
+  if (!el) return;
+  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const storedCount = parseInt(
+    localStorage.getItem("mori_dl_count") || "0",
+    10,
+  );
+  const count = Math.max(storedCount, history.length);
+  el.textContent = count.toLocaleString();
+}
+updateDlStatsDisplay();
+window.addEventListener("mori_file_saved", () => {
+  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const storedCount = parseInt(
+    localStorage.getItem("mori_dl_count") || "0",
+    10,
+  );
+  const newCount = Math.max(storedCount, history.length) + 1;
+  localStorage.setItem("mori_dl_count", newCount);
+  updateDlStatsDisplay();
+});
+
+// Reset Settings to Default
+const resetSettingsBtn = document.getElementById("resetSettingsBtn");
+if (resetSettingsBtn) {
+  resetSettingsBtn.addEventListener("click", () => {
+    const lang = translations[currentLang] || translations.en;
+    showConfirm(
+      lang["label-reset-settings"] || "Reset Settings",
+      lang["confirm-reset-settings"] ||
+        "Reset all settings to their defaults? This will not delete your history or downloaded files.",
+      () => {
+        // Keys to preserve (history, downloaded file records, stats, incognito)
+        const preserve = ["mori_history", "mori_dl_count", "mori_incognito"];
+        const preserved = {};
+        preserve.forEach((k) => {
+          const v = localStorage.getItem(k);
+          if (v !== null) preserved[k] = v;
+        });
+        // Clear all mori_ keys
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("mori_"))
+          .forEach((k) => localStorage.removeItem(k));
+        // Restore preserved keys
+        Object.entries(preserved).forEach(([k, v]) =>
+          localStorage.setItem(k, v),
+        );
+        showToast(lang["toast-reset-settings"] || "Settings reset to default");
+        // Re-apply UI
+        setTimeout(() => location.reload(), 800);
+      },
     );
   });
 }
@@ -988,8 +1049,15 @@ export function updateCustomSelectsUI() {
 
   const currentDoh = localStorage.getItem("mori_doh") || "off";
   const dohText = document.getElementById("dohText");
-  if (dohText)
-    dohText.textContent = lang[`doh-${currentDoh}`] || currentDoh;
+  if (dohText) dohText.textContent = lang[`doh-${currentDoh}`] || currentDoh;
+
+  const currentToastDur = localStorage.getItem("mori_toast_dur") || "3";
+  const toastDurText = document.getElementById("toastDurText");
+  if (toastDurText)
+    toastDurText.textContent =
+      lang[`toast-dur-${currentToastDur}`] || `${currentToastDur}s`;
+
+  updateDlStatsDisplay();
 }
 
 export function updateLanguageUI() {

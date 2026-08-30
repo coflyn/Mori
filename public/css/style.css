@@ -216,7 +216,9 @@ input[type="text"]:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, opacity 0.15s ease;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .input-action-btn:hover {
@@ -791,7 +793,9 @@ input[type="text"]:focus {
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .dl-item.dl-track-item:hover .dl-badge {
@@ -1044,7 +1048,52 @@ input[type="text"]:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
+}
+
+.history-stats-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background-color: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-xl);
   margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.history-stats-card .stats-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.history-stats-card .stats-label svg {
+  color: var(--primary);
+}
+
+.history-stats-card .stats-val-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.history-stats-card .stats-subtext {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-stats-card .stats-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
 .history-actions-wrapper {
@@ -1165,9 +1214,9 @@ input[type="text"]:focus {
 .delete-item-btn:hover,
 .delete-item-btn:active {
   background: var(--text-muted);
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
 
 .history-thumb-container {
   width: 60px;
@@ -1409,6 +1458,65 @@ input[type="text"]:focus {
   min-height: 58px;
   box-sizing: border-box;
   gap: 12px;
+}
+
+/* 2-Row Stacked Card Layout for items with custom selects or path actions */
+.settings-item.stacked-item,
+.settings-item:has(.custom-select) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 18px;
+  min-height: auto;
+}
+
+.settings-item.stacked-item .item-label,
+.settings-item:has(.custom-select) .item-label {
+  white-space: normal;
+  overflow: visible;
+  width: 100%;
+}
+
+.settings-item.stacked-item .item-label span,
+.settings-item:has(.custom-select) .item-label span {
+  white-space: normal;
+  overflow: visible;
+}
+
+.settings-item.stacked-item .custom-select,
+.settings-item:has(.custom-select) .custom-select {
+  width: 100%;
+  max-width: 100%;
+  height: 42px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+}
+
+.settings-item.stacked-item .selected-text,
+.settings-item:has(.custom-select) .selected-text {
+  text-align: left;
+  margin-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.settings-item.stacked-item .dropdown-menu,
+.settings-item:has(.custom-select) .dropdown-menu {
+  left: 0;
+  right: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-item.stacked-item .info-val {
+  word-break: break-all;
+  font-size: 0.82rem;
+  background: rgba(var(--primary-rgb, 120, 120, 120), 0.08);
+  padding: 8px 12px;
+  border-radius: var(--radius-lg, 10px);
+  border: 1px dashed var(--primary);
 }
 
 .custom-select {
@@ -1947,7 +2055,6 @@ input[type="text"]:focus {
   color: var(--on-primary);
 }
 
-
 .action-item {
   cursor: pointer;
 }
@@ -1957,6 +2064,11 @@ input[type="text"]:focus {
   font-weight: 700;
   color: #ff4444;
   letter-spacing: 1px;
+}
+
+.action-label.danger {
+  color: #ff2222;
+  text-shadow: 0 0 8px rgba(255, 34, 34, 0.4);
 }
 
 .info-only {
@@ -2027,16 +2139,13 @@ input[type="text"]:focus {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  white-space: nowrap;
-  flex-shrink: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .item-label span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .item-label svg {
@@ -2448,7 +2557,9 @@ input[type="text"]:focus {
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
 }
 
 .pin-key:active {
