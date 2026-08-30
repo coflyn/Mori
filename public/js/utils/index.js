@@ -182,8 +182,19 @@ export function showDownloadProgressToast(platform, type) {
       <div class="dpt-bar-fill" id="dptBarFill"></div>
     </div>
     <div class="dpt-status">Preparing download...</div>
+    <button class="dpt-cancel-btn" id="dptCancelBtn">✕ CANCEL</button>
   `;
   document.body.appendChild(el);
+
+  // Wire cancel button to the global cancel function
+  const cancelBtn = el.querySelector("#dptCancelBtn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (typeof window._moriCancelDownload === "function") {
+        window._moriCancelDownload();
+      }
+    });
+  }
 
   requestAnimationFrame(() => el.classList.add("show"));
 }
@@ -222,6 +233,8 @@ export function completeDownloadProgressToast(
   const pct = el.querySelector(".dpt-percent");
   const fill = el.querySelector(".dpt-bar-fill");
   const status = el.querySelector(".dpt-status");
+  const cancelBtn = el.querySelector(".dpt-cancel-btn");
+  if (cancelBtn) cancelBtn.style.display = "none";
 
   if (fill) fill.style.width = "100%";
   if (pct) pct.textContent = "100%";
@@ -244,6 +257,9 @@ export function failDownloadProgressToast(errorText, autoDismissMs = 3500) {
   const platform = el.querySelector(".dpt-platform");
   const pct = el.querySelector(".dpt-percent");
   const status = el.querySelector(".dpt-status");
+  // Hide cancel button on failure
+  const cancelBtn = el.querySelector(".dpt-cancel-btn");
+  if (cancelBtn) cancelBtn.style.display = "none";
 
   if (pct)
     pct.textContent = translations[currentLang]["label-error"] || "Error";
@@ -266,6 +282,27 @@ export function failDownloadProgressToast(errorText, autoDismissMs = 3500) {
   if (status) status.textContent = cleanErr;
 
   triggerHaptic("heavy");
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 350);
+  }, autoDismissMs);
+}
+
+export function cancelDownloadProgressToast(autoDismissMs = 2000) {
+  const el = document.querySelector(".download-progress-toast");
+  if (!el) return;
+
+  el.classList.add("cancelled");
+  const platform = el.querySelector(".dpt-platform");
+  const pct = el.querySelector(".dpt-percent");
+  const status = el.querySelector(".dpt-status");
+  const cancelBtn = el.querySelector(".dpt-cancel-btn");
+  if (cancelBtn) cancelBtn.style.display = "none";
+
+  if (platform) platform.textContent = "Download Cancelled";
+  if (pct) pct.textContent = "—";
+  if (status) status.textContent = "";
 
   setTimeout(() => {
     el.classList.remove("show");
@@ -617,7 +654,9 @@ export async function cleanupOrphanedTempFiles() {
                   path: `${fullFolder}/${file.name}`,
                   directory: dir,
                 }).catch(() => {});
-                console.log(`[STARTUP CLEANUP] Purged leftover temp file: ${file.name}`);
+                console.log(
+                  `[STARTUP CLEANUP] Purged leftover temp file: ${file.name}`,
+                );
               }
             }
           }

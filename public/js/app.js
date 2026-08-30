@@ -160,6 +160,16 @@ initAuthListeners(currentLang);
 setUIState({ currentLang, isEditingHistory });
 renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
+function refreshHistoryIfVisible() {
+  const historyPage = document.getElementById("historyPage");
+  if (historyPage && !historyPage.classList.contains("hidden")) {
+    renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  }
+}
+window.addEventListener("mori_download_started", refreshHistoryIfVisible);
+window.addEventListener("mori_download_ended", refreshHistoryIfVisible);
+window.addEventListener("mori_download_cancelled", refreshHistoryIfVisible);
+
 const pages = ["home", "history", "settings"];
 
 async function switchPage(pageId) {

@@ -39,6 +39,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
   const editHistoryBtn = document.getElementById("editHistoryBtn");
   const historyActions = document.getElementById("historyActions");
   if (!historyPage) return;
+  const activeUrl = window._moriActiveDownloadUrl || null;
 
   const dlStatsEl = document.getElementById("historyDlStatsVal");
   if (dlStatsEl) {
@@ -75,6 +76,13 @@ export function renderHistory(onItemClick, onDeleteClick) {
     const card = document.createElement("div");
     card.className = "history-item";
 
+    // Check if this item is currently being downloaded
+    const isDownloading = activeUrl &&
+      (item.url === activeUrl ||
+        (item.sourceUrl && item.sourceUrl === activeUrl) ||
+        (activeUrl.includes(item.url)) ||
+        (item.url && activeUrl && item.url.includes(activeUrl)));
+
     const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
     let thumbSrc = isDataSaver
       ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E"
@@ -104,6 +112,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
       <div class="history-thumb-container">
           <img src="${escapeHtml(thumbSrc)}" alt="thumb" class="hist-img" referrerpolicy="no-referrer">
           ${item.localFiles && item.localFiles.length > 1 ? `<div class="multi-indicator">${item.localFiles.length}</div>` : ""}
+          ${isDownloading ? `<div class="hist-downloading-overlay"><div class="hist-dl-spinner"></div></div>` : ""}
       </div>
       <div class="history-info">
           <h3>${truncate(escapeHtml(item.title), 60)}</h3>
@@ -155,4 +164,4 @@ export {
   renderMediaSlides,
 } from "./ui/result.js";
 export { showModal } from "./ui/resultModal.js";
-export { startNativeDownload } from "./ui/nativeDownload.js";
+export { startNativeDownload, cancelCurrentDownload } from "./ui/nativeDownload.js";

@@ -474,13 +474,22 @@
           <!-- Download Statistics Card -->
           <div class="history-stats-card">
             <div class="stats-label">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <path
+                  d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"
+                />
               </svg>
               <span data-i18n="label-dl-stats">Download Statistics</span>
             </div>
             <div class="stats-val-wrapper">
-              <span class="stats-subtext" data-i18n="dl-stats-total">Total Downloads</span>
+              <span class="stats-subtext" data-i18n="dl-stats-total"
+                >Total Downloads</span
+              >
               <span class="stats-val" id="historyDlStatsVal">0</span>
             </div>
           </div>
@@ -921,7 +930,6 @@
                   <label for="autoClearInputToggle"></label>
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -1012,68 +1020,168 @@
               <!-- Text Size -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z" />
                   </svg>
                   <span data-i18n="label-text-size">Text Size</span>
                 </div>
                 <div class="custom-select" id="textSizeSelect">
                   <div class="selected-text" id="textSizeText">Medium</div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="textSizeMenu">
-                    <div class="dropdown-item" data-value="small" data-i18n="text-small">Small</div>
-                    <div class="dropdown-item" data-value="medium" data-i18n="text-medium">Medium</div>
-                    <div class="dropdown-item" data-value="large" data-i18n="text-large">Large</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="small"
+                      data-i18n="text-small"
+                    >
+                      Small
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="medium"
+                      data-i18n="text-medium"
+                    >
+                      Medium
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="large"
+                      data-i18n="text-large"
+                    >
+                      Large
+                    </div>
                   </div>
                 </div>
               </div>
               <!-- Animation Speed -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93s-3.05 7.44-7 7.93v2.02c5.05-.5 9-4.76 9-9.95s-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.81 2 12s3.95 9.45 9 9.95v-2.02C7.05 19.44 4 16.08 4 12s3.05-7.44 7-7.93V2.05zM12 6l-5 9h4v3l5-9h-4z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93s-3.05 7.44-7 7.93v2.02c5.05-.5 9-4.76 9-9.95s-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.81 2 12s3.95 9.45 9 9.95v-2.02C7.05 19.44 4 16.08 4 12s3.05-7.44 7-7.93V2.05zM12 6l-5 9h4v3l5-9h-4z"
+                    />
                   </svg>
                   <span data-i18n="label-anim-speed">Animation Speed</span>
                 </div>
                 <div class="custom-select" id="animSpeedSelect">
                   <div class="selected-text" id="animSpeedText">Normal</div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="animSpeedMenu">
-                    <div class="dropdown-item" data-value="off" data-i18n="anim-off">Off</div>
-                    <div class="dropdown-item" data-value="slow" data-i18n="anim-slow">Slow</div>
-                    <div class="dropdown-item" data-value="normal" data-i18n="anim-normal">Normal</div>
-                    <div class="dropdown-item" data-value="fast" data-i18n="anim-fast">Fast</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="off"
+                      data-i18n="anim-off"
+                    >
+                      Off
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="slow"
+                      data-i18n="anim-slow"
+                    >
+                      Slow
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="normal"
+                      data-i18n="anim-normal"
+                    >
+                      Normal
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="fast"
+                      data-i18n="anim-fast"
+                    >
+                      Fast
+                    </div>
                   </div>
                 </div>
               </div>
               <!-- Toast Duration -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+                    />
                   </svg>
                   <span data-i18n="label-toast-duration">Toast Duration</span>
                 </div>
                 <div class="custom-select" id="toastDurSelect">
                   <div class="selected-text" id="toastDurText">3 seconds</div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="toastDurMenu">
-                    <div class="dropdown-item" data-value="1" data-i18n="toast-dur-1">1 second</div>
-                    <div class="dropdown-item" data-value="2" data-i18n="toast-dur-2">2 seconds</div>
-                    <div class="dropdown-item" data-value="3" data-i18n="toast-dur-3">3 seconds</div>
-                    <div class="dropdown-item" data-value="5" data-i18n="toast-dur-5">5 seconds</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="1"
+                      data-i18n="toast-dur-1"
+                    >
+                      1 second
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="2"
+                      data-i18n="toast-dur-2"
+                    >
+                      2 seconds
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="3"
+                      data-i18n="toast-dur-3"
+                    >
+                      3 seconds
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="5"
+                      data-i18n="toast-dur-5"
+                    >
+                      5 seconds
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1100,8 +1208,15 @@
               <!-- Compact Mode -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M4 5h16v2H4zm0 4h16v2H4zm0 4h16v2H4zm0 4h16v2H4z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M4 5h16v2H4zm0 4h16v2H4zm0 4h16v2H4zm0 4h16v2H4z"
+                    />
                   </svg>
                   <span data-i18n="label-compact-mode">Compact Mode</span>
                 </div>
@@ -1153,8 +1268,15 @@
               <!-- Hide Download Progress Bar -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"
+                    />
                   </svg>
                   <span data-i18n="label-hide-progress">Hide Progress Bar</span>
                 </div>
@@ -1185,7 +1307,10 @@
             </div>
             <div class="settings-list">
               <!-- Video Path -->
-              <div class="settings-item action-item stacked-item" id="changePathBtn">
+              <div
+                class="settings-item action-item stacked-item"
+                id="changePathBtn"
+              >
                 <div class="item-label">
                   <svg
                     viewBox="0 0 24 24"
@@ -1202,7 +1327,10 @@
                 <span class="info-val" id="pathVal">/Download/Mori</span>
               </div>
               <!-- Music Path -->
-              <div class="settings-item action-item stacked-item" id="changeMusicPathBtn">
+              <div
+                class="settings-item action-item stacked-item"
+                id="changeMusicPathBtn"
+              >
                 <div class="item-label">
                   <svg
                     viewBox="0 0 24 24"
@@ -1281,45 +1409,117 @@
               <!-- Duplicate Files -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                    />
                   </svg>
                   <span data-i18n="label-overwrite-files">Duplicate Files</span>
                 </div>
                 <div class="custom-select" id="overwriteSelect">
-                  <div class="selected-text" id="overwriteText">Auto-Rename</div>
+                  <div class="selected-text" id="overwriteText">
+                    Auto-Rename
+                  </div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="overwriteMenu">
-                    <div class="dropdown-item" data-value="rename" data-i18n="overwrite-rename">Auto-Rename (e.g. _1, _2)</div>
-                    <div class="dropdown-item" data-value="overwrite" data-i18n="overwrite-overwrite">Overwrite Existing</div>
-                    <div class="dropdown-item" data-value="skip" data-i18n="overwrite-skip">Skip if Exists</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="rename"
+                      data-i18n="overwrite-rename"
+                    >
+                      Auto-Rename (e.g. _1, _2)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="overwrite"
+                      data-i18n="overwrite-overwrite"
+                    >
+                      Overwrite Existing
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="skip"
+                      data-i18n="overwrite-skip"
+                    >
+                      Skip if Exists
+                    </div>
                   </div>
                 </div>
               </div>
               <!-- Concurrent Downloads -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                    />
                   </svg>
-                  <span data-i18n="label-concurrent-downloads">Concurrent Downloads</span>
+                  <span data-i18n="label-concurrent-downloads"
+                    >Concurrent Downloads</span
+                  >
                 </div>
                 <div class="custom-select" id="concurrentSelect">
-                  <div class="selected-text" id="concurrentText">1 (Sequential)</div>
+                  <div class="selected-text" id="concurrentText">
+                    1 (Sequential)
+                  </div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="concurrentMenu">
-                    <div class="dropdown-item" data-value="1" data-i18n="concurrent-1">1 (Sequential)</div>
-                    <div class="dropdown-item" data-value="2" data-i18n="concurrent-2">2 at once</div>
-                    <div class="dropdown-item" data-value="3" data-i18n="concurrent-3">3 at once</div>
-                    <div class="dropdown-item" data-value="5" data-i18n="concurrent-5">5 at once</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="1"
+                      data-i18n="concurrent-1"
+                    >
+                      1 (Sequential)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="2"
+                      data-i18n="concurrent-2"
+                    >
+                      2 at once
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="3"
+                      data-i18n="concurrent-3"
+                    >
+                      3 at once
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="5"
+                      data-i18n="concurrent-5"
+                    >
+                      5 at once
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1692,45 +1892,111 @@
               <!-- Max Retry Count -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                    />
                   </svg>
                   <span data-i18n="label-max-retry">Max Retry Count</span>
                 </div>
                 <div class="custom-select" id="maxRetrySelect">
                   <div class="selected-text" id="maxRetryText">3 Attempts</div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="maxRetryMenu">
-                    <div class="dropdown-item" data-value="1" data-i18n="retry-1">1 (No Retry)</div>
-                    <div class="dropdown-item" data-value="2" data-i18n="retry-2">2 Attempts</div>
-                    <div class="dropdown-item" data-value="3" data-i18n="retry-3">3 Attempts</div>
-                    <div class="dropdown-item" data-value="5" data-i18n="retry-5">5 Attempts</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="1"
+                      data-i18n="retry-1"
+                    >
+                      1 (No Retry)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="2"
+                      data-i18n="retry-2"
+                    >
+                      2 Attempts
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="3"
+                      data-i18n="retry-3"
+                    >
+                      3 Attempts
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="5"
+                      data-i18n="retry-5"
+                    >
+                      5 Attempts
+                    </div>
                   </div>
                 </div>
               </div>
               <!-- DNS over HTTPS -->
               <div class="settings-item">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                    />
                   </svg>
                   <span data-i18n="label-doh">DNS over HTTPS</span>
                 </div>
                 <div class="custom-select" id="dohSelect">
                   <div class="selected-text" id="dohText">Off</div>
                   <div class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
                   <div class="dropdown-menu hidden" id="dohMenu">
-                    <div class="dropdown-item" data-value="off" data-i18n="doh-off">Off (System DNS)</div>
-                    <div class="dropdown-item" data-value="cloudflare" data-i18n="doh-cloudflare">Cloudflare (1.1.1.1)</div>
-                    <div class="dropdown-item" data-value="google" data-i18n="doh-google">Google (8.8.8.8)</div>
+                    <div
+                      class="dropdown-item"
+                      data-value="off"
+                      data-i18n="doh-off"
+                    >
+                      Off (System DNS)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="cloudflare"
+                      data-i18n="doh-cloudflare"
+                    >
+                      Cloudflare (1.1.1.1)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="google"
+                      data-i18n="doh-google"
+                    >
+                      Google (8.8.8.8)
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1884,7 +2150,6 @@
                   <label for="bypassSslToggle"></label>
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -2129,16 +2394,24 @@
                 </div>
               </div>
 
-
               <!-- Reset Settings to Default -->
               <div class="settings-item action-item" id="resetSettingsBtn">
                 <div class="item-label">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                    />
                   </svg>
                   <span data-i18n="label-reset-settings">Reset Settings</span>
                 </div>
-                <span class="action-label danger" data-i18n="btn-reset-settings">RESET</span>
+                <span class="action-label danger" data-i18n="btn-reset-settings"
+                  >RESET</span
+                >
               </div>
             </div>
           </div>

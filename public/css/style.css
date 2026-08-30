@@ -2788,3 +2788,122 @@ input[type="text"]:focus {
 #batchCloseBtn:hover {
   background-color: rgba(255, 255, 255, 0.08);
 }
+
+/* Cancel button inside floating progress toast */
+.dpt-cancel-btn {
+  align-self: flex-end;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: -2px;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+  line-height: 1.4;
+}
+
+.dpt-cancel-btn:hover {
+  background: rgba(231, 76, 60, 0.18);
+  border-color: rgba(231, 76, 60, 0.55);
+  color: #e74c3c;
+}
+
+.dpt-cancel-btn:active {
+  transform: scale(0.95);
+}
+
+/* Cancelled state for floating toast */
+.download-progress-toast.cancelled {
+  border-color: var(--border-color, rgba(255, 255, 255, 0.15));
+  box-shadow: none;
+}
+
+.download-progress-toast.cancelled .dpt-percent {
+  color: var(--text-secondary);
+}
+
+.download-progress-toast.cancelled .dpt-bar-fill {
+  background: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.download-progress-toast.cancelled .dpt-platform {
+  color: var(--text-secondary);
+}
+
+/* Batch cancelled status badge */
+.batch-item-status.cancelled {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+/* Batch cancel-download button (danger style, replaces close) */
+#batchCancelDownloadBtn {
+  background-color: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 20px;
+  border-radius: var(--radius-lg, 12px);
+  cursor: pointer;
+  transition: var(--transition);
+  animation: pulse 1.4s infinite;
+}
+
+#batchCancelDownloadBtn:hover {
+  background-color: rgba(231, 76, 60, 0.3);
+  border-color: rgba(231, 76, 60, 0.7);
+}
+
+/* History item download spinner overlay */
+.history-item .hist-downloading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hist-dl-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+/* Make sure history-thumb-container is positioned for overlay */
+.history-thumb-container {
+  position: relative;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Download btn cancel state (single mode analyze phase) */
+#downloadBtn.is-cancelling {
+  background: rgba(231, 76, 60, 0.15) !important;
+  color: #e74c3c !important;
+  border-color: rgba(231, 76, 60, 0.4) !important;
+}

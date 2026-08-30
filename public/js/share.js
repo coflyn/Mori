@@ -58,6 +58,7 @@ let selectedServer = null;
 let currentPlatform = null;
 let activeResult = null;
 let isAnalyzing = false;
+let analyzeCancelled = false;
 let statusTimer = null;
 
 const SERVERS = {
@@ -181,6 +182,15 @@ window.dismissPanel = function () {
   if (window.MoriShareBridge?.dismiss) window.MoriShareBridge.dismiss();
 };
 
+window.cancelOrDismiss = function () {
+  if (isAnalyzing) {
+    // Cancel the ongoing analyze
+    analyzeCancelled = true;
+  } else {
+    window.dismissPanel();
+  }
+};
+
 window.showToast = function (msg) {
   if (window.MoriShareBridge?.showToast) {
     window.MoriShareBridge.showToast(msg);
@@ -197,11 +207,18 @@ window.showToast = function (msg) {
 window.startAnalyze = async function () {
   if (isAnalyzing) return;
   isAnalyzing = true;
+  analyzeCancelled = false;
 
+  const cancelBtn = document.getElementById("cancelBtn");
   const analyzingLabel = lang["loader-analyzing"] || "Analyzing link...";
   if (analyzeBtn) {
     analyzeBtn.disabled = true;
     analyzeBtn.innerHTML = `<span class="btn-spinner"></span><span>${analyzingLabel}</span>`;
+  }
+  // Repurpose cancel btn as stop-analyze
+  if (cancelBtn) {
+    cancelBtn.textContent = lang["btn-stop"] || "Stop";
+    cancelBtn.removeAttribute("data-i18n");
   }
 
   errorSection.style.display = "none";
@@ -260,6 +277,9 @@ window.startAnalyze = async function () {
 
     statusSection.style.display = "none";
 
+    // Silently discard result if user cancelled during scrape
+    if (analyzeCancelled) return;
+
     if (data && data.status) {
       activeResult = data.result;
       saveHistory(activeResult, targetUrl);
@@ -268,8 +288,10 @@ window.startAnalyze = async function () {
       showError(data?.message || lang["share-err-failed"] || "Failed to parse link.");
     }
   } catch (err) {
-    statusSection.style.display = "none";
-    showError(err.message || lang["share-err-error"] || "An error occurred during analysis.");
+    if (!analyzeCancelled) {
+      statusSection.style.display = "none";
+      showError(err.message || lang["share-err-error"] || "An error occurred during analysis.");
+    }
   } finally {
     if (statusTimer) {
       clearInterval(statusTimer);
@@ -279,6 +301,16 @@ window.startAnalyze = async function () {
     if (analyzeBtn) {
       analyzeBtn.disabled = false;
       analyzeBtn.textContent = lang["btn-analyze"] || "Analyze";
+    }
+    // Restore cancel btn to dismiss
+    if (cancelBtn) {
+      cancelBtn.textContent = lang["btn-cancel"] || "Cancel";
+      cancelBtn.setAttribute("data-i18n", "btn-cancel");
+    }
+    if (analyzeCancelled) {
+      statusSection.style.display = "none";
+      // Show server section again so user can retry
+      if (SERVERS[currentPlatform]) serverSection.style.display = "block";
     }
   }
 };

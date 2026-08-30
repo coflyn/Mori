@@ -9,6 +9,7 @@ import {
   updateDownloadProgressToast,
   completeDownloadProgressToast,
   failDownloadProgressToast,
+  cancelDownloadProgressToast,
   playCompletionSound,
   requestWakeLock,
   releaseWakeLock,
@@ -19,7 +20,23 @@ import {
 import { currentLang } from "../modules/core.js";
 import { scraperFetch } from "../scrapers/httpHelper.js";
 
-export async function startNativeDownload(url, type, title, btn, sourceUrl) {
+export function cancelCurrentDownload() {
+  window._moriDownloadCancelled = true;
+  // Dispatch event so history spinner can be cleared
+  window.dispatchEvent(new CustomEvent("mori_download_cancelled"));
+}
+
+// Expose globally so the progress toast cancel button can call it
+window._moriCancelDownload = cancelCurrentDownload;
+
+export async function startNativeDownload(
+  url,
+  type,
+  title,
+  btn,
+  sourceUrl,
+  resetCancelFlag = true,
+) {
   if (!url || typeof url !== "string" || !url.trim()) {
     showToast(
       translations[currentLang]["label-error"] + ": Invalid download link",
@@ -56,11 +73,23 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     return;
   }
 
+  if (resetCancelFlag) {
+    window._moriDownloadCancelled = false;
+  }
+  // If batch already cancelled, bail immediately
+  if (window._moriDownloadCancelled) return;
+
+  window._moriActiveDownloadUrl = sourceUrl || url;
+  window.dispatchEvent(
+    new CustomEvent("mori_download_started", {
+      detail: { url: sourceUrl || url },
+    }),
+  );
+
   const progressBar = document.getElementById("progressBar");
   const progressContainer = document.getElementById("progressContainer");
   const originalContent = btn ? btn.innerHTML : "";
 
-  // Request permissions for Android FIRST before showing progress toast (non-blocking for Android 13+)
   if (window.Capacitor?.getPlatform?.() === "android") {
     try {
       const status = await Filesystem.checkPermissions();
@@ -386,6 +415,17 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         translations[currentLang]["btn-processing"] || "Processing...";
     }
 
+    // Check cancel BEFORE starting resolve phase
+    if (window._moriDownloadCancelled) {
+      cancelDownloadProgressToast();
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+      if (progressContainer) progressContainer.classList.add("hidden");
+      return;
+    }
+
     let actualDownloadUrl = url;
     const needsResolving =
       (url.includes("ytdown") ||
@@ -569,6 +609,16 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           const maxPolls = 30;
 
           while (!downloadUrl && pollCount < maxPolls) {
+            // Check cancel between polls
+            if (window._moriDownloadCancelled) {
+              cancelDownloadProgressToast();
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+              }
+              if (progressContainer) progressContainer.classList.add("hidden");
+              return;
+            }
             if (btn)
               btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${pollCount + 1}/${maxPolls})</div>`;
             updateProgress(
@@ -612,6 +662,16 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
           const maxPolls = 15;
 
           while (!resolved && pollCount < maxPolls) {
+            // Check cancel between polls
+            if (window._moriDownloadCancelled) {
+              cancelDownloadProgressToast();
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+              }
+              if (progressContainer) progressContainer.classList.add("hidden");
+              return;
+            }
             if (btn) {
               btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
             }
@@ -801,6 +861,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
         if (savedFile) break;
         attempts = 0;
         while (attempts < maxAttempts && !savedFile) {
+          // Check cancel before each attempt
+          if (window._moriDownloadCancelled) break;
           attempts++;
           try {
             if (attempts > 1) {
@@ -895,6 +957,23 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
 
     if (!savedFile) {
+      if (window._moriDownloadCancelled) {
+        if (Filesystem) {
+          for (const dir of directoriesToTry) {
+            await Filesystem.deleteFile({
+              path: fullPath + "/" + `${fileName}.tmp`,
+              directory: dir,
+            }).catch(() => {});
+          }
+        }
+        cancelDownloadProgressToast();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+        }
+        if (progressContainer) progressContainer.classList.add("hidden");
+        return;
+      }
       // Clean up any remaining .tmp files across directories
       if (Filesystem) {
         for (const dir of directoriesToTry) {
@@ -913,6 +992,26 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
       clearInterval(window._moriActiveSimInterval);
       window._moriActiveSimInterval = null;
     }
+
+    if (window._moriDownloadCancelled) {
+      // File may have been partially/fully written — delete it
+      if (Filesystem && savedFile) {
+        for (const dir of directoriesToTry) {
+          await Filesystem.deleteFile({
+            path: savedFile.path,
+            directory: dir,
+          }).catch(() => {});
+        }
+      }
+      cancelDownloadProgressToast();
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+      if (progressContainer) progressContainer.classList.add("hidden");
+      return;
+    }
+
     updateProgress(100, "Downloading...");
     if (btn) {
       const b = btn.querySelector(".dl-badge");
@@ -1032,6 +1131,8 @@ export async function startNativeDownload(url, type, title, btn, sourceUrl) {
     }
     if (progressContainer) progressContainer.classList.add("hidden");
   } finally {
+    window._moriActiveDownloadUrl = null;
+    window.dispatchEvent(new CustomEvent("mori_download_ended"));
     releaseWakeLock();
     if (window.MoriMainBridge?.stopDownloadService) {
       try {

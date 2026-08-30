@@ -683,25 +683,41 @@ export function renderResult(result, originalUrl) {
       `;
 
       let isDownloadingAll = false;
+      let playlistCancelled = false;
+
       allBtn.addEventListener("click", async () => {
-        if (isDownloadingAll) return;
+        // If downloading, act as CANCEL
+        if (isDownloadingAll) {
+          playlistCancelled = true;
+          window._moriDownloadCancelled = true;
+          return;
+        }
+
         isDownloadingAll = true;
-        allBtn.disabled = true;
+        playlistCancelled = false;
+        window._moriDownloadCancelled = false;
+        allBtn.disabled = false; // keep enabled to act as Cancel
 
         const total = result.downloads.length;
         const progressStr =
           translations[currentLang]["downloading-progress"] || "Downloading...";
+        const cancelLabel =
+          translations[currentLang]["btn-cancel"] || "Cancel";
 
         const titleSpan = allBtn.querySelector(".dl-all-title");
         const badgeEl = allBtn.querySelector(".dl-all-badge");
 
         if (titleSpan) titleSpan.textContent = progressStr;
+        // Show cancel affordance in badge
+        if (badgeEl) badgeEl.textContent = cancelLabel;
 
         for (let i = 0; i < total; i++) {
+          if (playlistCancelled) break;
+
           const item = result.downloads[i];
           const currNum = i + 1;
 
-          if (badgeEl) badgeEl.textContent = `${currNum}/${total}`;
+          if (titleSpan) titleSpan.textContent = `${progressStr} ${currNum}/${total}`;
 
           // Target item button in UI if available
           const itemBtns = downloadList.querySelectorAll(".dl-item:not(.dl-all-btn)");
@@ -714,10 +730,13 @@ export function renderResult(result, originalUrl) {
               result.title,
               targetBtn,
               result.sourceUrl || originalUrl,
+              false, // don't reset cancel flag between tracks
             );
           } catch (err) {
             console.error("Batch download track error:", err);
           }
+
+          if (playlistCancelled) break;
 
           // Sequential delay of 300ms between tracks
           await new Promise((r) => setTimeout(r, 300));
@@ -728,11 +747,19 @@ export function renderResult(result, originalUrl) {
         allBtn.disabled = false;
         isDownloadingAll = false;
 
-        const completeMsg = (
-          translations[currentLang]["download-all-complete"] ||
-          "All ${count} items queued for download!"
-        ).replace("${count}", total);
-        showToast(completeMsg);
+        if (playlistCancelled) {
+          showToast(
+            translations[currentLang]["toast-download-cancelled"] || "Download cancelled",
+          );
+        } else {
+          const completeMsg = (
+            translations[currentLang]["download-all-complete"] ||
+            "All ${count} items queued for download!"
+          ).replace("${count}", total);
+          showToast(completeMsg);
+        }
+        playlistCancelled = false;
+        window._moriDownloadCancelled = false;
       });
 
       downloadList.appendChild(allBtn);

@@ -11,6 +11,7 @@ import {
   autoClearInputBox,
 } from "../utils/index.js";
 import { startNativeDownload, renderResult, escapeHtml } from "../ui.js";
+import { cancelCurrentDownload } from "../ui/nativeDownload.js";
 import { showConfirm, hideConfirm } from "./modals.js";
 import { saveToHistory } from "./history.js";
 import { extractBatchUrls, analyzeUrlSilent } from "./batchManager.js";
@@ -110,6 +111,8 @@ async function enforceNetworkGuards() {
 }
 
 downloadBtn.addEventListener("click", async () => {
+  if (downloadBtn.classList.contains("is-cancelling")) return;
+
   if (isBatchMode) {
     const rawBatchText = batchUrlInput ? batchUrlInput.value : "";
     const batchUrls = extractBatchUrls(rawBatchText);
@@ -243,8 +246,41 @@ downloadBtn.addEventListener("click", async () => {
             10,
           );
 
+          // ── Setup batch cancel ──────────────────────────────────
+          let batchDownloadCancelled = false;
+          const batchCloseBtn = document.getElementById("batchCloseBtn");
+          // Swap Close → Cancel Download button
+          let cancelDlBtn = document.getElementById("batchCancelDownloadBtn");
+          if (!cancelDlBtn) {
+            cancelDlBtn = document.createElement("button");
+            cancelDlBtn.id = "batchCancelDownloadBtn";
+            cancelDlBtn.textContent =
+              translations[currentLang]["btn-cancel-download"] ||
+              "CANCEL DOWNLOAD";
+          }
+          if (batchCloseBtn) {
+            batchCloseBtn.style.display = "none";
+            batchCloseBtn.parentNode.insertBefore(cancelDlBtn, batchCloseBtn);
+          }
+          cancelDlBtn.onclick = () => {
+            batchDownloadCancelled = true;
+            cancelCurrentDownload();
+          };
+
           // Helper to download a single batch item
           async function downloadBatchItem(item, idx) {
+            // Skip if cancelled before we start this item
+            if (batchDownloadCancelled) {
+              const statusEl = document.querySelector(
+                `#batchItem_${idx} .batch-item-status`,
+              );
+              if (statusEl) {
+                statusEl.className = "batch-item-status cancelled";
+                statusEl.textContent = "CANCELLED";
+              }
+              return;
+            }
+
             const statusEl = document.querySelector(
               `#batchItem_${idx} .batch-item-status`,
             );
@@ -268,15 +304,30 @@ downloadBtn.addEventListener("click", async () => {
 
               if (isVideoPost) {
                 const primaryVideo = downloadsList[0];
+                if (batchDownloadCancelled) {
+                  if (statusEl) {
+                    statusEl.className = "batch-item-status cancelled";
+                    statusEl.textContent = "CANCELLED";
+                  }
+                  return;
+                }
                 await startNativeDownload(
                   primaryVideo.url,
                   primaryVideo.type,
                   itemTitle,
                   null,
                   item.url,
+                  false, // don't reset cancel flag
                 );
               } else {
                 if (batchPhotoMode === "first") {
+                  if (batchDownloadCancelled) {
+                    if (statusEl) {
+                      statusEl.className = "batch-item-status cancelled";
+                      statusEl.textContent = "CANCELLED";
+                    }
+                    return;
+                  }
                   const dlObj = downloadsList[0];
                   await startNativeDownload(
                     dlObj.url,
@@ -284,6 +335,7 @@ downloadBtn.addEventListener("click", async () => {
                     itemTitle,
                     null,
                     item.url,
+                    false,
                   );
                 } else if (batchPhotoMode === "pdf") {
                   const imageItems = downloadsList.filter(
@@ -295,6 +347,16 @@ downloadBtn.addEventListener("click", async () => {
                     try {
                       const imageUrls = imageItems.map((img) => img.url);
                       const pdfBuffer = await convertImagesToPdf(imageUrls);
+
+                      // Check cancel AFTER async PDF generation
+                      if (batchDownloadCancelled) {
+                        if (statusEl) {
+                          statusEl.className = "batch-item-status cancelled";
+                          statusEl.textContent = "CANCELLED";
+                        }
+                        return;
+                      }
+
                       const sanitizedTitle =
                         itemTitle
                           .replace(/[\\/:*?"<>|#%&{}\[\]@$^+=~`';,]/g, "")
@@ -337,6 +399,13 @@ downloadBtn.addEventListener("click", async () => {
                     } catch (pdfErr) {
                       console.warn("PDF generation failed, fallback:", pdfErr);
                       for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
+                        if (batchDownloadCancelled) {
+                          if (statusEl) {
+                            statusEl.className = "batch-item-status cancelled";
+                            statusEl.textContent = "CANCELLED";
+                          }
+                          return;
+                        }
                         const dlObj = downloadsList[dIdx];
                         const titleWithIdx =
                           downloadsList.length > 1
@@ -348,10 +417,18 @@ downloadBtn.addEventListener("click", async () => {
                           titleWithIdx,
                           null,
                           item.url,
+                          false,
                         );
                       }
                     }
                   } else {
+                    if (batchDownloadCancelled) {
+                      if (statusEl) {
+                        statusEl.className = "batch-item-status cancelled";
+                        statusEl.textContent = "CANCELLED";
+                      }
+                      return;
+                    }
                     const dlObj = downloadsList[0];
                     await startNativeDownload(
                       dlObj.url,
@@ -359,11 +436,19 @@ downloadBtn.addEventListener("click", async () => {
                       itemTitle,
                       null,
                       item.url,
+                      false,
                     );
                   }
                 } else {
-                  // "all": download all carousel photos
+                  // "all": download all carousel photos — check cancel between each photo
                   for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
+                    if (batchDownloadCancelled) {
+                      if (statusEl) {
+                        statusEl.className = "batch-item-status cancelled";
+                        statusEl.textContent = "CANCELLED";
+                      }
+                      return;
+                    }
                     const dlObj = downloadsList[dIdx];
                     const titleWithIdx =
                       downloadsList.length > 1
@@ -375,13 +460,19 @@ downloadBtn.addEventListener("click", async () => {
                       titleWithIdx,
                       null,
                       item.url,
+                      false,
                     );
                   }
                 }
               }
             }
 
-            if (statusEl) {
+            if (batchDownloadCancelled) {
+              if (statusEl) {
+                statusEl.className = "batch-item-status cancelled";
+                statusEl.textContent = "CANCELLED";
+              }
+            } else if (statusEl) {
               statusEl.className = "batch-item-status completed";
               statusEl.textContent = "SAVED";
             }
@@ -389,6 +480,20 @@ downloadBtn.addEventListener("click", async () => {
 
           // Concurrent pool — run N downloads at a time
           for (let i = 0; i < batchResults.length; i += concurrentLimit) {
+            if (batchDownloadCancelled) {
+              // Mark all remaining as cancelled
+              for (let j = i; j < batchResults.length; j++) {
+                const idx = batchUrls.indexOf(batchResults[j].url);
+                const statusEl = document.querySelector(
+                  `#batchItem_${idx} .batch-item-status`,
+                );
+                if (statusEl && !statusEl.classList.contains("completed")) {
+                  statusEl.className = "batch-item-status cancelled";
+                  statusEl.textContent = "CANCELLED";
+                }
+              }
+              break;
+            }
             const chunk = batchResults.slice(i, i + concurrentLimit);
             await Promise.all(
               chunk.map((item) => {
@@ -398,11 +503,21 @@ downloadBtn.addEventListener("click", async () => {
             );
           }
 
+          if (cancelDlBtn && cancelDlBtn.parentNode) cancelDlBtn.remove();
+          if (batchCloseBtn) batchCloseBtn.style.display = "";
           batchDownloadAllBtn.disabled = false;
-          showToast(
-            translations[currentLang]["label-download-complete"] ||
-              "Batch download complete!",
-          );
+
+          if (batchDownloadCancelled) {
+            showToast(
+              translations[currentLang]["toast-download-cancelled"] ||
+                "Download cancelled",
+            );
+          } else {
+            showToast(
+              translations[currentLang]["label-download-complete"] ||
+                "Batch download complete!",
+            );
+          }
         };
       }
     }
@@ -433,12 +548,30 @@ downloadBtn.addEventListener("click", async () => {
   });
 
   showLoader();
-  downloadBtn.disabled = true;
-  downloadBtn.textContent = translations[currentLang]["btn-processing"];
+  downloadBtn.disabled = false; // Keep enabled so it acts as Cancel
+  downloadBtn.classList.add("is-cancelling");
+  downloadBtn.textContent = translations[currentLang]["btn-cancel"] || "CANCEL";
+
+  // Flag to detect if user cancelled analyze
+  let analyzeCancelled = false;
+  const originalOnClick = downloadBtn._analyzeClickHandler;
+  const cancelAnalyzeHandler = () => {
+    analyzeCancelled = true;
+    cancelCurrentDownload();
+    downloadBtn.classList.remove("is-cancelling");
+    downloadBtn.disabled = false;
+    downloadBtn.textContent =
+      translations[currentLang]["btn-analyze"] || "Analyze";
+    hideLoader();
+    if (supportedSection) supportedSection.classList.remove("hidden");
+  };
+  downloadBtn.addEventListener("click", cancelAnalyzeHandler, { once: true });
 
   try {
     let data;
     const preferServer = localStorage.getItem("mori_prefer_server") || "ask";
+    if (analyzeCancelled)
+      throw Object.assign(new Error("cancelled"), { _isCancelled: true });
     if (url.includes("tiktok.com")) {
       if (preferServer === "server1") setTikTokSource("tiktokio");
       else if (preferServer === "server2") setTikTokSource("snaptik");
@@ -657,7 +790,13 @@ downloadBtn.addEventListener("click", async () => {
       data = { status: false, message: "URL not supported yet." };
     }
 
+    if (analyzeCancelled) {
+      downloadBtn.removeEventListener("click", cancelAnalyzeHandler);
+      return;
+    }
+
     if (data && data.status) {
+      downloadBtn.removeEventListener("click", cancelAnalyzeHandler);
       const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
       const existing = history.find(
         (item) => cleanUrl(item.url) === cleanUrl(url),
@@ -705,6 +844,7 @@ downloadBtn.addEventListener("click", async () => {
         }, 500);
       }
     } else {
+      downloadBtn.removeEventListener("click", cancelAnalyzeHandler);
       const errMsg = data?.message || "Unknown error occurred.";
       handleScrapeError(data, data?.statusCode);
       if (loaderText)
@@ -714,17 +854,23 @@ downloadBtn.addEventListener("click", async () => {
       if (supportedSection) supportedSection.classList.remove("hidden");
     }
   } catch (err) {
-    console.error("[CRITICAL] Download Flow Error:", err);
-    if (loaderText)
-      loaderText.textContent =
-        translations[currentLang]["label-fatal"] + ": " + err.message;
-    showToast(
-      translations[currentLang]["label-fatal-error"] + ": " + err.message,
-    );
-    hideLoader(5000);
-    if (supportedSection) supportedSection.classList.remove("hidden");
+    downloadBtn.removeEventListener("click", cancelAnalyzeHandler);
+    if (err._isCancelled) {
+      // Silent cancel — already handled by cancelAnalyzeHandler
+    } else {
+      console.error("[CRITICAL] Download Flow Error:", err);
+      if (loaderText)
+        loaderText.textContent =
+          translations[currentLang]["label-fatal"] + ": " + err.message;
+      showToast(
+        translations[currentLang]["label-fatal-error"] + ": " + err.message,
+      );
+      hideLoader(5000);
+      if (supportedSection) supportedSection.classList.remove("hidden");
+    }
   }
 
+  downloadBtn.classList.remove("is-cancelling");
   downloadBtn.disabled = false;
   downloadBtn.textContent = translations[currentLang]["btn-analyze"];
 });
