@@ -1077,12 +1077,17 @@ export function updateLanguageUI() {
       id: "Indonesia",
       ja: "日本語",
       ko: "한국어",
-      zh: "中文",
+      zh: "中文 (简体)",
+      ar: "العربية",
+      ru: "Русский",
+      tl: "Tagalog",
+      hi: "हिन्दी",
     };
     currentLangDisplay.textContent = langNames[currentLang] || "English";
   }
 
   document.documentElement.lang = currentLang;
+  document.documentElement.setAttribute("dir", currentLang === "ar" ? "rtl" : "ltr");
 
   updateCustomSelectsUI();
   updateGreeting();
@@ -1183,6 +1188,10 @@ export function switchLanguage(lang) {
   else if (currentLang === "ja") msg = "言語を更新しました";
   else if (currentLang === "ko") msg = "언어가 변경되었습니다";
   else if (currentLang === "zh") msg = "语言已更新";
+  else if (currentLang === "ar") msg = "تم تحديث اللغة";
+  else if (currentLang === "ru") msg = "Язык обновлен";
+  else if (currentLang === "tl") msg = "Na-update ang wika";
+  else if (currentLang === "hi") msg = "भाषा अपडेट हो गई";
   showToast(msg);
 }
 

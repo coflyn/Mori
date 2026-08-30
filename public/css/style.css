@@ -2907,3 +2907,71 @@ input[type="text"]:focus {
   color: #e74c3c !important;
   border-color: rgba(231, 76, 60, 0.4) !important;
 }
+
+/* Arabic Language Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic",
+    "Cairo", "Geeza Pro", sans-serif;
+}
+
+[dir="rtl"] .menu-icon {
+  margin-right: 0;
+  margin-left: 16px;
+}
+
+[dir="rtl"] .back-btn-settings svg,
+[dir="rtl"] .settings-menu-item .menu-arrow svg,
+[dir="rtl"] .guide-nav-btn.prev-btn svg,
+[dir="rtl"] .guide-nav-btn.next-btn svg,
+[dir="rtl"] .slider-arrow.prev-arrow svg,
+[dir="rtl"] .slider-arrow.next-arrow svg {
+  transform: rotate(180deg);
+}
+
+[dir="rtl"] .selected-text {
+  text-align: right;
+  margin-right: 0;
+  margin-left: 6px;
+}
+
+[dir="rtl"] .settings-item.stacked-item .selected-text,
+[dir="rtl"] .settings-item:has(.custom-select) .selected-text {
+  text-align: right;
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+[dir="rtl"] .dropdown-menu {
+  right: auto;
+  left: 0;
+  text-align: right;
+}
+
+[dir="rtl"] .dropdown-item {
+  text-align: right;
+}
+
+[dir="rtl"] .search-input:placeholder-shown,
+[dir="rtl"] .batch-url-input:placeholder-shown {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .search-input:focus,
+[dir="rtl"] .batch-url-input:focus {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="rtl"] .history-info {
+  text-align: right;
+}
+
+[dir="rtl"] .settings-item {
+  text-align: right;
+}

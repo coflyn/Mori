@@ -31,6 +31,7 @@ function applyShareLanguage() {
   currentLang = localStorage.getItem("mori_lang") || "en";
   lang = translations[currentLang] || translations.en;
   document.documentElement.lang = currentLang;
+  document.documentElement.setAttribute("dir", currentLang === "ar" ? "rtl" : "ltr");
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
