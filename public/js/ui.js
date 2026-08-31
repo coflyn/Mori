@@ -1,5 +1,5 @@
 // ui.js — history rendering + shared UI state + re-exports
-import { truncate } from "./utils/index.js";
+import { truncate, triggerHaptic } from "./utils/index.js";
 import {
   currentLang,
   isEditingHistory,
@@ -131,7 +131,61 @@ export function renderHistory(onItemClick, onDeleteClick) {
     };
 
     if (!isEditingHistory) {
-      card.addEventListener("click", () => onItemClick(item));
+      let pressTimer = null;
+      let isLongPress = false;
+      let startX = 0;
+      let startY = 0;
+
+      const startPress = (e) => {
+        isLongPress = false;
+        if (e.touches && e.touches[0]) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+        pressTimer = setTimeout(() => {
+          isLongPress = true;
+          triggerHaptic();
+          onDeleteClick(item.url);
+        }, 500);
+      };
+
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+
+      const movePress = (e) => {
+        if (e.touches && e.touches[0]) {
+          const dx = Math.abs(e.touches[0].clientX - startX);
+          const dy = Math.abs(e.touches[0].clientY - startY);
+          if (dx > 10 || dy > 10) {
+            cancelPress();
+          }
+        }
+      };
+
+      card.addEventListener("touchstart", startPress, { passive: true });
+      card.addEventListener("touchend", cancelPress);
+      card.addEventListener("touchmove", movePress, { passive: true });
+      card.addEventListener("touchcancel", cancelPress);
+
+      card.addEventListener("mousedown", (e) => {
+        if (e.button === 0) startPress(e);
+      });
+      card.addEventListener("mouseup", cancelPress);
+      card.addEventListener("mouseleave", cancelPress);
+
+      card.addEventListener("click", (e) => {
+        if (isLongPress) {
+          e.preventDefault();
+          e.stopPropagation();
+          isLongPress = false;
+          return;
+        }
+        onItemClick(item);
+      });
     } else {
       card.style.cursor = "pointer";
       card.addEventListener("click", (e) => {

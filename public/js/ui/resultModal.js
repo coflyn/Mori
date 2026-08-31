@@ -5,9 +5,89 @@ import {
   stopAllMedia,
   truncate,
   copyToClipboard,
+  Filesystem,
 } from "../utils/index.js";
 import { currentLang } from "../modules/core.js";
 import { renderMediaSlides } from "./result.js";
+
+export function getCleanDirectoryPath(item, rawFile) {
+  let p = rawFile || "";
+  if (!p) {
+    if (item?.localFiles && item.localFiles.length > 0) {
+      p = item.localFiles[0].path || item.localFiles[0].uri || "";
+    } else if (item?.localUri) {
+      p = item.localUri;
+    } else if (item?.filePath) {
+      p = item.filePath;
+    }
+  }
+
+  if (p) {
+    let cleaned = String(p);
+    if (cleaned.includes("_capacitor_file_")) {
+      cleaned = cleaned.substring(cleaned.indexOf("_capacitor_file_") + 16);
+    }
+    cleaned = cleaned.replace(/^file:\/\//i, "");
+    cleaned = cleaned.replace(/^\/storage\/emulated\/0\//i, "");
+    cleaned = cleaned.replace(/^\/sdcard\//i, "");
+    cleaned = cleaned.replace(/^\//, "");
+
+    const lastSlash = cleaned.lastIndexOf("/");
+    if (lastSlash !== -1) {
+      return cleaned.substring(0, lastSlash);
+    }
+    if (!cleaned.includes(".")) {
+      return cleaned;
+    }
+  }
+
+  // Fallback by format / category
+  const title = (item?.title || item?.url || "").toLowerCase();
+  const isPdf =
+    title.endsWith(".pdf") ||
+    item?.type === "PDF" ||
+    (item?.localFiles &&
+      item.localFiles.some((f) =>
+        (f?.path || f?.uri || "").toLowerCase().endsWith(".pdf"),
+      )) ||
+    (item?.downloads &&
+      item.downloads.some((d) =>
+        (d?.type || "").toUpperCase().includes("PDF"),
+      ));
+
+  if (isPdf) {
+    return localStorage.getItem("mori_pdf_path") || "Download/Mori";
+  }
+
+  const isAudio =
+    item?.type === "AUDIO" ||
+    item?.type === "MP3" ||
+    title.endsWith(".mp3") ||
+    title.endsWith(".m4a") ||
+    (item?.url &&
+      (item.url.includes("spotify") ||
+        item.url.includes("soundcloud") ||
+        item.url.includes("bandcamp") ||
+        item.url.includes("music.apple")));
+
+  if (isAudio) {
+    return localStorage.getItem("mori_music_path") || "Music/Mori";
+  }
+
+  const isPhoto =
+    item?.type === "IMAGE" ||
+    item?.type === "PHOTO" ||
+    title.endsWith(".jpg") ||
+    title.endsWith(".png") ||
+    title.endsWith(".webp") ||
+    (item?.url && item.url.includes("pinterest"));
+
+  if (isPhoto) {
+    return localStorage.getItem("mori_photo_path") || "Pictures/Mori";
+  }
+
+  return localStorage.getItem("mori_video_path") || "Movies/Mori";
+}
 
 let modalCurrentSlide = 0;
 
@@ -224,6 +304,64 @@ export async function showModal(item, onRedownload) {
     if (modalUrl) {
       modalUrl.textContent = item.url || "";
       modalUrl.onclick = () => copyToClipboard(item.url);
+    }
+
+    const modalPath = document.getElementById("modalPath");
+    if (modalPath) {
+      let rawPath = "";
+      if (item.localFiles && item.localFiles.length > 0) {
+        rawPath = item.localFiles[0].path || item.localFiles[0].uri || "";
+      } else if (item.localUri) {
+        rawPath = item.localUri;
+      } else if (item.filePath) {
+        rawPath = item.filePath;
+      }
+
+      const dirPath = getCleanDirectoryPath(item, rawPath);
+      const pathVal = modalPath.querySelector(".path-val");
+      const pathStatus = modalPath.querySelector(".path-status");
+
+      if (pathVal) {
+        pathVal.textContent = dirPath;
+      } else {
+        modalPath.textContent = dirPath;
+      }
+
+      const showMissingStatus = () => {
+        modalPath.classList.add("file-deleted");
+        if (pathStatus) {
+          const missingText =
+            translations[currentLang]?.["label-file-missing"] ||
+            translations["en"]?.["label-file-missing"] ||
+            "File missing";
+          pathStatus.textContent = `(${missingText})`;
+          pathStatus.classList.remove("hidden");
+        }
+      };
+
+      const clearMissingStatus = () => {
+        modalPath.classList.remove("file-deleted");
+        if (pathStatus) pathStatus.classList.add("hidden");
+      };
+
+      if (!hasDownloadedFiles) {
+        showMissingStatus();
+      } else {
+        clearMissingStatus();
+
+        slidesWrapper.addEventListener("error", showMissingStatus, true);
+        slidesWrapper.addEventListener(
+          "mori_media_load_error",
+          showMissingStatus,
+        );
+
+        slidesWrapper.addEventListener("loadeddata", clearMissingStatus, true);
+        slidesWrapper.addEventListener("load", clearMissingStatus, true);
+      }
+
+      modalPath.onclick = () => {
+        copyToClipboard(dirPath);
+      };
     }
 
     if (redownloadBtn) {

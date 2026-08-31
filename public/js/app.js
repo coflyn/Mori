@@ -57,6 +57,9 @@ import "./modules/modals.js";
 import "./modules/update.js";
 import "./modules/intents.js";
 import "./modules/download.js";
+import { initBgAnimation } from "./modules/bgAnimation.js";
+
+initBgAnimation();
 
 // Batch Mode Toggle
 if (batchToggleBtn) {
@@ -331,6 +334,13 @@ if (
       ".settings-sub-page:not(.hidden)",
     );
     if (activeSubPage) {
+      if (activeSubPage.id === "settingsLiveBg") {
+        activeSubPage.classList.add("hidden");
+        document
+          .getElementById("settingsAppearance")
+          ?.classList.remove("hidden");
+        return;
+      }
       activeSubPage.classList.add("hidden");
       document.getElementById("settingsMainMenu")?.classList.remove("hidden");
       return;

@@ -442,6 +442,10 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     const ctrlEl = playerContainer.querySelector(".mori-player-controls");
     if (ctrlEl) ctrlEl.remove();
 
+    playerContainer.dispatchEvent(
+      new CustomEvent("mori_media_load_error", { bubbles: true }),
+    );
+
     if (
       !playerContainer.querySelector(".mori-player-error") &&
       !playerContainer.querySelector(".fallback-img")

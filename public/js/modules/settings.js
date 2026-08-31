@@ -1324,7 +1324,7 @@ reportBugBtn?.addEventListener("click", () => {
 
 // Settings Sub-page Navigation Handler
 document.addEventListener("click", (e) => {
-  const menuItem = e.target.closest(".settings-menu-item");
+  const menuItem = e.target.closest(".settings-menu-item, [data-target]");
   if (menuItem) {
     const targetId = menuItem.getAttribute("data-target");
     if (targetId) {
@@ -1341,11 +1341,17 @@ document.addEventListener("click", (e) => {
 
   const backBtn = e.target.closest(".back-btn-settings");
   if (backBtn) {
+    const backTarget = backBtn.getAttribute("data-back-target");
     document
       .querySelectorAll(".settings-sub-page")
       .forEach((p) => p.classList.add("hidden"));
-    const mainMenu = document.getElementById("settingsMainMenu");
-    if (mainMenu) mainMenu.classList.remove("hidden");
+    if (backTarget) {
+      const targetPage = document.getElementById(backTarget);
+      if (targetPage) targetPage.classList.remove("hidden");
+    } else {
+      const mainMenu = document.getElementById("settingsMainMenu");
+      if (mainMenu) mainMenu.classList.remove("hidden");
+    }
   }
 });
 

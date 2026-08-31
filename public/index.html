@@ -27,6 +27,7 @@
     <script src="js/vendor/pdf-lib.min.js"></script>
   </head>
   <body>
+    <canvas id="bgAnimationCanvas" class="bg-animation-canvas"></canvas>
     <div class="app-container">
       <header>
         <h1>Mori</h1>
@@ -814,6 +815,26 @@
                   </div>
                 </div>
               </div>
+              <!-- Privacy Lock -->
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
+                    />
+                  </svg>
+                  <span data-i18n="label-privacy-lock">Privacy Lock</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="privacyLockToggle" />
+                  <label for="privacyLockToggle"></label>
+                </div>
+              </div>
               <!-- Auto-Paste Link -->
               <div class="settings-item">
                 <div class="item-label">
@@ -854,26 +875,6 @@
                 <div class="toggle-switch">
                   <input type="checkbox" id="autoAnalyzeToggle" />
                   <label for="autoAnalyzeToggle"></label>
-                </div>
-              </div>
-              <!-- Privacy Lock -->
-              <div class="settings-item">
-                <div class="item-label">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
-                    />
-                  </svg>
-                  <span data-i18n="label-privacy-lock">Privacy Lock</span>
-                </div>
-                <div class="toggle-switch">
-                  <input type="checkbox" id="privacyLockToggle" />
-                  <label for="privacyLockToggle"></label>
                 </div>
               </div>
               <!-- Incognito Mode -->
@@ -978,7 +979,41 @@
               </button>
               <h3 data-i18n="menu-appearance-title">Look & feel</h3>
             </div>
+
             <div class="settings-list">
+              <!-- Live Background Nav Item -->
+              <div
+                class="settings-item action-item"
+                data-target="settingsLiveBg"
+              >
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"
+                    />
+                  </svg>
+                  <span data-i18n="label-animated-bg">Live Background</span>
+                </div>
+                <div class="item-action">
+                  <span class="action-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
               <!-- App Font -->
               <div class="settings-item">
                 <div class="item-label">
@@ -1311,6 +1346,200 @@
                 <div class="toggle-switch">
                   <input type="checkbox" id="hideProgressToggle" />
                   <label for="hideProgressToggle"></label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-page: Live Background (Nested under Look & Feel) -->
+          <div id="settingsLiveBg" class="settings-sub-page hidden">
+            <div class="sub-page-header">
+              <button
+                class="back-btn-settings"
+                data-back-target="settingsAppearance"
+                aria-label="Back"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+                  />
+                </svg>
+              </button>
+              <h3 data-i18n="label-animated-bg">Live Background</h3>
+            </div>
+
+            <div class="bg-anim-container">
+              <div class="bg-anim-card">
+                <div class="bg-anim-row bg-anim-header-row">
+                  <div class="bg-anim-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                      class="sparkles-icon"
+                    >
+                      <path
+                        d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"
+                      />
+                    </svg>
+                    <span data-i18n="label-animated-bg">Live Background</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="animatedBgToggle" />
+                    <label for="animatedBgToggle"></label>
+                  </div>
+                </div>
+
+                <div class="bg-anim-divider"></div>
+
+                <div class="bg-anim-row bg-anim-category-row">
+                  <div class="bg-anim-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                      class="layers-icon"
+                    >
+                      <path
+                        d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9.07l-9-7-9 7 1.63 1.27L12 16z"
+                      />
+                    </svg>
+                    <span data-i18n="label-bg-shapes">Background Shapes</span>
+                  </div>
+                </div>
+
+                <div class="bg-shape-grid">
+                  <div class="bg-shape-card active" data-shape="stars">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                      >
+                        <circle cx="18" cy="11" r="1.8" />
+                        <circle cx="10" cy="19" r="1.3" />
+                        <circle cx="26" cy="18" r="1.5" />
+                        <circle cx="15" cy="26" r="2.2" />
+                        <circle cx="23" cy="28" r="1.1" />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-stars"
+                      >Stars</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="waves">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        stroke="currentColor"
+                        stroke-width="2.6"
+                        stroke-linecap="round"
+                      >
+                        <line x1="8" y1="28" x2="28" y2="8" />
+                        <line x1="12" y1="30" x2="30" y2="12" />
+                        <line x1="6" y1="24" x2="24" y2="6" />
+                        <line x1="16" y1="32" x2="32" y2="16" />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-waves"
+                      >Waves</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="bubbles">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                      >
+                        <circle cx="18" cy="18" r="11" />
+                        <circle
+                          cx="14"
+                          cy="14"
+                          r="2.5"
+                          fill="currentColor"
+                          stroke="none"
+                          opacity="0.6"
+                        />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-bubbles"
+                      >Bubbles</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="particles">
+                    <div class="shape-preview-circle">
+                      <svg viewBox="0 0 36 36" width="32" height="32">
+                        <circle
+                          cx="21"
+                          cy="16"
+                          r="9"
+                          fill="currentColor"
+                          opacity="0.3"
+                        />
+                        <circle
+                          cx="15"
+                          cy="20"
+                          r="8"
+                          fill="currentColor"
+                          opacity="0.75"
+                        />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-particles"
+                      >Particles</span
+                    >
+                  </div>
+                </div>
+
+                <div class="bg-anim-divider"></div>
+
+                <div class="bg-anim-row bg-anim-category-row">
+                  <div class="bg-anim-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                      class="sun-icon"
+                    >
+                      <path
+                        d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"
+                      />
+                    </svg>
+                    <span data-i18n="label-brightness">Brightness</span>
+                  </div>
+                </div>
+
+                <div class="bg-slider-row">
+                  <span class="bg-slider-value" id="bgBrightnessValue"
+                    >150%</span
+                  >
+                  <input
+                    type="range"
+                    min="30"
+                    max="200"
+                    step="5"
+                    value="150"
+                    id="bgBrightnessSlider"
+                    class="bg-range-slider"
+                  />
                 </div>
               </div>
             </div>
@@ -2697,6 +2926,13 @@
             </div>
             <div class="modal-info">
               <p id="modalUrl" class="url-text"></p>
+              <div id="modalPath" class="path-text">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                </svg>
+                <span class="path-val"></span>
+                <span class="path-status hidden"></span>
+              </div>
               <button id="redownloadBtn">RE-DOWNLOAD</button>
             </div>
           </div>
