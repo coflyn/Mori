@@ -59,7 +59,7 @@ jobs:
           hdiutil create -volname "Mori" -srcfolder /tmp/dmg_build -ov -format UDZO "dist-assets/Mori-v${VERSION}-macOS-arm64.dmg"
           rm -rf /tmp/dmg_build
 
-          find src-tauri/target/release/bundle/macos -name "*.app.tar.gz" -exec cp {} "dist-assets/Mori-v${VERSION}-macOS-arm64.app.tar.gz" \;
+          tar -czf "dist-assets/Mori-v${VERSION}-macOS-arm64.app.tar.gz" -C src-tauri/target/release/bundle/macos Mori.app
 
       - name: Prepare & Rename Release Assets (Windows)
         if: matrix.platform == 'windows-latest'

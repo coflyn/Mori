@@ -8,6 +8,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -52,7 +55,7 @@ jobs:
           path: dist-assets/*.apk
 
       - name: Upload Release Asset (Android)
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist-assets/*.apk
@@ -93,7 +96,7 @@ jobs:
           path: dist-assets/*.ipa
 
       - name: Upload Release Asset (iOS)
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist-assets/*.ipa
