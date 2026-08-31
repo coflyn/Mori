@@ -36,6 +36,15 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Generate Release Keystore
+        run: |
+          if [ ! -f android/app/release.keystore ]; then
+            keytool -genkey -v -keystore android/app/release.keystore -alias mori \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android123 -keypass android123 \
+              -dname "CN=Mori, OU=Development, O=MoriApp, L=Unknown, ST=Unknown, C=ID"
+          fi
+
       - name: Build Android APK
         run: |
           cd android
