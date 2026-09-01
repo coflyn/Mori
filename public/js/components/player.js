@@ -174,9 +174,10 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       } else {
         const platform = window.Capacitor?.getPlatform?.();
         if (platform === "android") {
-          rawFileUrl = "file:///storage/emulated/0/" + cleanPath.replace(/^\//, "");
+          rawFileUrl =
+            "file:///storage/emulated/0/" + cleanPath.replace(/^\//, "");
         } else {
-          rawFileUrl = dl.rawUri || ("file:///" + cleanPath.replace(/^\//, ""));
+          rawFileUrl = dl.rawUri || "file:///" + cleanPath.replace(/^\//, "");
         }
       }
       const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);

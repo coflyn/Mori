@@ -88,7 +88,7 @@ export function extractFinalUrl(input) {
   if (!input) return null;
   let raw = input.trim().replace(/^["'\\]+|["'\\]+$/g, ""),
     isRender = false;
-  if (raw.includes("get_progressApi")) {
+  if (raw.includes("get_progressApi") || raw.includes("get_progress")) {
     isRender = true;
     const tokenMatch = raw.match(/token=([^&'"]+)/);
     if (tokenMatch) raw = tokenMatch[1];

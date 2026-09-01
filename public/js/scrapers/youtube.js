@@ -11,7 +11,7 @@ export async function scrapeYouTube(url) {
   let currentStatus = null;
   try {
     const videoMatch = url.match(
-      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
     );
     const playlistMatch = url.match(/[?&]list=([^"&?\/\s]+)/i);
 

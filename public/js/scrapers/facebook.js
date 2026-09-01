@@ -49,6 +49,8 @@ export async function scrapeFacebook(url) {
     const downloads = [];
 
     doc.querySelectorAll("table tbody tr").forEach((tr) => {
+      if (tr.classList.contains("render")) return;
+
       const qTd = tr.querySelector("td.video-quality");
       const quality = qTd
         ? qTd.textContent.trim()
@@ -60,11 +62,15 @@ export async function scrapeFacebook(url) {
       let linkAttr = btn?.getAttribute("href") || btn?.getAttribute("onclick");
 
       const extracted = extractFinalUrl(linkAttr);
-      if (extracted && extracted.url.startsWith("http")) {
+      if (
+        extracted &&
+        extracted.url.startsWith("http") &&
+        !extracted.isRender
+      ) {
         downloads.push({
           type: quality || "VIDEO",
           url: extracted.url,
-          isRender: extracted.isRender,
+          isRender: false,
         });
       }
     });

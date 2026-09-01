@@ -670,7 +670,10 @@ export function renderResult(result, originalUrl) {
         translations[currentLang]["btn-download-all-title"] || "Download All";
       const rawCountText =
         translations[currentLang]["label-items-count"] || "${count} Items";
-      const countText = rawCountText.replace("${count}", result.downloads.length);
+      const countText = rawCountText.replace(
+        "${count}",
+        result.downloads.length,
+      );
 
       allBtn.innerHTML = `
         <div class="dl-all-left">
@@ -701,8 +704,7 @@ export function renderResult(result, originalUrl) {
         const total = result.downloads.length;
         const progressStr =
           translations[currentLang]["downloading-progress"] || "Downloading...";
-        const cancelLabel =
-          translations[currentLang]["btn-cancel"] || "Cancel";
+        const cancelLabel = translations[currentLang]["btn-cancel"] || "Cancel";
 
         const titleSpan = allBtn.querySelector(".dl-all-title");
         const badgeEl = allBtn.querySelector(".dl-all-badge");
@@ -717,10 +719,13 @@ export function renderResult(result, originalUrl) {
           const item = result.downloads[i];
           const currNum = i + 1;
 
-          if (titleSpan) titleSpan.textContent = `${progressStr} ${currNum}/${total}`;
+          if (titleSpan)
+            titleSpan.textContent = `${progressStr} ${currNum}/${total}`;
 
           // Target item button in UI if available
-          const itemBtns = downloadList.querySelectorAll(".dl-item:not(.dl-all-btn)");
+          const itemBtns = downloadList.querySelectorAll(
+            ".dl-item:not(.dl-all-btn)",
+          );
           const targetBtn = itemBtns[i] || null;
 
           try {
@@ -749,7 +754,8 @@ export function renderResult(result, originalUrl) {
 
         if (playlistCancelled) {
           showToast(
-            translations[currentLang]["toast-download-cancelled"] || "Download cancelled",
+            translations[currentLang]["toast-download-cancelled"] ||
+              "Download cancelled",
           );
         } else {
           const completeMsg = (
@@ -804,7 +810,7 @@ export function renderResult(result, originalUrl) {
 export async function exportGalleryToPdf(title, items) {
   try {
     showToast(translations[currentLang]["pdf-toast-starting"]);
-    
+
     // Acquire Wake Lock & Start Native Foreground Service for background protection
     if (typeof requestWakeLock === "function") requestWakeLock();
     if (window.MoriMainBridge?.startDownloadService) {
@@ -996,23 +1002,53 @@ export async function exportGalleryToPdf(title, items) {
     if (localStorage.getItem("mori_auto_folder") !== "false") {
       const firstUrl = (items[0]?.url || "").toLowerCase();
       let platformFolder = "Other";
-      if (firstUrl.includes("pixiv") || firstUrl.includes("pximg") || firstUrl.includes("pixiv.me"))
+      if (
+        firstUrl.includes("pixiv") ||
+        firstUrl.includes("pximg") ||
+        firstUrl.includes("pixiv.me")
+      )
         platformFolder = "Pixiv";
-      else if (firstUrl.includes("instagram") || firstUrl.includes("instagr.am"))
+      else if (
+        firstUrl.includes("instagram") ||
+        firstUrl.includes("instagr.am")
+      )
         platformFolder = "Instagram";
       else if (firstUrl.includes("pinterest") || firstUrl.includes("pin.it"))
         platformFolder = "Pinterest";
-      else if (firstUrl.includes("rednote") || firstUrl.includes("xiaohongshu") || firstUrl.includes("xhslink"))
+      else if (
+        firstUrl.includes("rednote") ||
+        firstUrl.includes("xiaohongshu") ||
+        firstUrl.includes("xhslink")
+      )
         platformFolder = "RedNote";
-      else if (firstUrl.includes("tiktok") || firstUrl.includes("douyin") || firstUrl.includes("iesdouyin"))
+      else if (
+        firstUrl.includes("tiktok") ||
+        firstUrl.includes("douyin") ||
+        firstUrl.includes("iesdouyin")
+      )
         platformFolder = "TikTok";
-      else if (firstUrl.includes("twitter") || firstUrl.includes("x.com") || firstUrl.includes("t.co"))
+      else if (
+        firstUrl.includes("twitter") ||
+        firstUrl.includes("x.com") ||
+        firstUrl.includes("t.co")
+      )
         platformFolder = "Twitter";
-      else if (firstUrl.includes("facebook") || firstUrl.includes("fb.watch") || firstUrl.includes("fb.com"))
+      else if (
+        firstUrl.includes("facebook") ||
+        firstUrl.includes("fb.watch") ||
+        firstUrl.includes("fb.com")
+      )
         platformFolder = "Facebook";
-      else if (firstUrl.includes("threads.net") || firstUrl.includes("threads.com"))
+      else if (
+        firstUrl.includes("threads.net") ||
+        firstUrl.includes("threads.com")
+      )
         platformFolder = "Threads";
-      else if (firstUrl.includes("bilibili") || firstUrl.includes("b23.tv") || firstUrl.includes("bili.im"))
+      else if (
+        firstUrl.includes("bilibili") ||
+        firstUrl.includes("b23.tv") ||
+        firstUrl.includes("bili.im")
+      )
         platformFolder = "Bilibili";
 
       pdfSubfolder = `${pdfSubfolder}/${platformFolder}`;
