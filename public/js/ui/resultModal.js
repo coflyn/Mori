@@ -131,18 +131,18 @@ export async function showModal(item, onRedownload) {
       ) {
         return pathOrUri;
       }
-      let full = pathOrUri;
+      let full = String(pathOrUri);
       if (full.includes("_capacitor_file_")) {
         full = full.substring(full.indexOf("_capacitor_file_") + 16);
       }
       if (full.startsWith("file://")) {
         return full;
       }
-      if (
-        !full.startsWith("/") &&
-        window.Capacitor?.getPlatform?.() === "android"
-      ) {
-        full = "/storage/emulated/0/" + full.replace(/^\//, "");
+      const platform = window.Capacitor?.getPlatform?.();
+      if (!full.startsWith("/")) {
+        if (platform === "android") {
+          full = "/storage/emulated/0/" + full.replace(/^\//, "");
+        }
       }
       return full.startsWith("file://")
         ? full
@@ -163,8 +163,8 @@ export async function showModal(item, onRedownload) {
     if (hasDownloadedFiles) {
       if (localFiles.length > 0) {
         localFiles.forEach((file) => {
-          if (file && (file.path || file.uri)) {
-            const fileSrc = file.path || file.uri;
+          if (file && (file.uri || file.path)) {
+            const fileSrc = file.uri || file.path;
             const mediaType =
               file.type ||
               (fileSrc.toLowerCase().endsWith(".mp4")
