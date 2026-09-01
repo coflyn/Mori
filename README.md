@@ -17,6 +17,10 @@
 
 Mori is a fast and simple downloader for saving videos, photos, and music from 14 popular social media apps. Everything runs directly on your device, with no external servers, tracking, or ads. Your downloads stay private and in your control.
 
+<a href="https://sociabuzz.com/coflyn/tribe" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" />
+</a>
+
 </div>
 
 ## 📸 Screenshots

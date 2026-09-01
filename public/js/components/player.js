@@ -113,7 +113,7 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
 
   if (isLocal && (isNative || tauriConvertFileSrc || tauriInvoke)) {
     playerContainer.classList.add("mori-loading");
-    let cleanPath = videoUrl || dl.rawPath || dl.rawUri;
+    let cleanPath = dl.rawUri || videoUrl || dl.rawPath || "";
 
     if (cleanPath.startsWith("content://")) {
       const capSrc = window.Capacitor?.convertFileSrc
@@ -168,10 +168,17 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       video.src = tauriConvertFileSrc(cleanPath);
       removeLoading();
     } else if (isNative) {
-      if (!cleanPath.startsWith("/")) {
-        cleanPath = "/storage/emulated/0/" + cleanPath;
+      let rawFileUrl;
+      if (cleanPath.startsWith("/")) {
+        rawFileUrl = "file://" + cleanPath;
+      } else {
+        const platform = window.Capacitor?.getPlatform?.();
+        if (platform === "android") {
+          rawFileUrl = "file:///storage/emulated/0/" + cleanPath.replace(/^\//, "");
+        } else {
+          rawFileUrl = dl.rawUri || ("file:///" + cleanPath.replace(/^\//, ""));
+        }
       }
-      const rawFileUrl = "file://" + cleanPath;
       const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
 
       video.src = capSrc;
