@@ -89,8 +89,22 @@ export async function scrapeFacebook(url) {
     if (thumbnail && thumbnail.startsWith("/"))
       thumbnail = "https://snapsave.app" + thumbnail;
 
+    let fbTitle = "Facebook Media";
+    const titleEl = doc.querySelector(
+      ".clearfix > h3, .clearfix > p, .clearfix, h3, h4, p.card-text",
+    );
+    if (titleEl && titleEl.textContent.trim()) {
+      const txt = titleEl.textContent.trim().replace(/\s+/g, " ");
+      if (txt.length > 3 && !txt.toLowerCase().includes("download") && !txt.toLowerCase().includes("snapsave")) {
+        fbTitle = txt;
+      }
+    }
+    if (fbTitle.length > 90) {
+      fbTitle = fbTitle.substring(0, 87) + "...";
+    }
+
     return createScraperResult(true, {
-      title: "Facebook Media",
+      title: fbTitle,
       thumbnail,
       downloads,
       sourceUrl: url,

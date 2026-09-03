@@ -11,6 +11,100 @@ export function setTwitterSource(src) {
   _twSource = src;
 }
 
+async function fetchTweetMetadata(cleanUrl) {
+  try {
+    const idMatch = cleanUrl.match(/status(?:es)?\/(\d+)/i);
+    if (!idMatch) return null;
+    const res = await scraperFetch(
+      {
+        url: `https://api.fxtwitter.com/status/${idMatch[1]}`,
+        rawResponse: true,
+      },
+      "FxTwitter Meta",
+    );
+    let data = res?.data ?? res;
+    if (typeof data === "string") {
+      try {
+        data = JSON.parse(data);
+      } catch (_) {}
+    }
+    if (data?.tweet) {
+      return {
+        text: data.tweet.text || "",
+        author: data.tweet.author?.name || "",
+        handle: data.tweet.author?.screen_name
+          ? `@${data.tweet.author.screen_name}`
+          : "",
+      };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function resolveTwitterTitle(meta, doc2, cleanUrl, name, handle) {
+  let title = "";
+
+  // 1. Text from FxTwitter API
+  if (meta?.text) {
+    const cleanText = meta.text
+      .replace(/https:\/\/t\.co\/\S+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleanText) {
+      const author = meta.author || name;
+      title = author ? `${author} - ${cleanText}` : cleanText;
+    }
+  }
+
+  // 2. Text from scraper DOM (Tweeload / TVD)
+  if (!title && doc2) {
+    const textEl = doc2.querySelector(
+      ".download__item__info__text, .download__item__text, .tweet-text, .card-text, .desc",
+    );
+    if (textEl) {
+      const txt = textEl.textContent?.trim().replace(/\s+/g, " ");
+      if (
+        txt &&
+        txt.length > 3 &&
+        !txt.toLowerCase().includes("download") &&
+        !txt.toLowerCase().includes("video quality")
+      ) {
+        title = name ? `${name} - ${txt}` : txt;
+      }
+    }
+  }
+
+  // 3. Fallback to author name & handle
+  if (!title) {
+    const author = meta?.author || name;
+    const h = meta?.handle || handle;
+    if (author && h) {
+      title = `${author} (${h})`;
+    } else if (author) {
+      title = author;
+    }
+  }
+
+  // 4. Fallback to URL username / tweet id
+  if (!title) {
+    const userMatch = cleanUrl.match(
+      /(?:twitter|x)\.com\/([A-Za-z0-9_]+)\/status\/(\d+)/i,
+    );
+    if (userMatch) {
+      const user = userMatch[1] !== "i" ? `@${userMatch[1]}` : "";
+      const tweetId = userMatch[2];
+      title = user ? `${user} - Tweet (${tweetId})` : `Tweet (${tweetId})`;
+    } else {
+      title = "Twitter Post";
+    }
+  }
+
+  if (title.length > 90) {
+    title = title.substring(0, 87) + "...";
+  }
+  return title;
+}
+
 export async function scrapeTwitter(url) {
   let currentStatus = null;
   try {
@@ -154,9 +248,12 @@ export async function scrapeTwitter(url) {
       // Strictly return only 1 valid free download link specifically for TVD
       const downloads = rawDownloads.slice(0, 1);
 
+      const tweetMeta = await fetchTweetMetadata(cleanUrl);
+      const title = resolveTwitterTitle(tweetMeta, doc2, cleanUrl, null, null);
+
       _twSource = null;
       return createScraperResult(true, {
-        title: "Twitter/X Video",
+        title,
         thumbnail,
         downloads,
         sourceUrl: url,
@@ -267,9 +364,18 @@ export async function scrapeTwitter(url) {
           .querySelector(".download__item__preview img, .download__item img")
           ?.getAttribute("src") || null;
 
+      const tweetMeta = await fetchTweetMetadata(cleanUrl);
+      const title = resolveTwitterTitle(
+        tweetMeta,
+        doc2,
+        cleanUrl,
+        name,
+        handle,
+      );
+
       _twSource = null;
       return createScraperResult(true, {
-        title: name ? `${name} (${handle})` : "Twitter Content",
+        title,
         thumbnail,
         downloads,
         sourceUrl: url,

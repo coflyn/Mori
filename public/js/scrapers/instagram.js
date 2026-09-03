@@ -12,6 +12,87 @@ export function setInstagramSource(src) {
   _igSource = src;
 }
 
+function extractInstagramTitle(doc, cleanUrl) {
+  let title = "";
+
+  if (doc) {
+    // 1. Text/caption element in scraper response
+    const titleEl = doc.querySelector(
+      ".download-items__title, .card-title, .caption, .desc, .post-title, h3, h4, h5, p.card-text, .text-center > p",
+    );
+    if (titleEl) {
+      const txt = titleEl.textContent?.trim().replace(/\s+/g, " ");
+      if (
+        txt &&
+        txt.length > 3 &&
+        !txt.toLowerCase().includes("download") &&
+        !txt.toLowerCase().includes("snapsave") &&
+        !txt.toLowerCase().includes("indown") &&
+        !txt.toLowerCase().includes("private")
+      ) {
+        title = txt;
+      }
+    }
+
+    // 2. Alt text on thumbnail (scrapers often store post caption in alt)
+    if (!title) {
+      const imgs = doc.querySelectorAll(
+        ".download-items__thumb img, .card img, img",
+      );
+      for (const img of imgs) {
+        const alt = img.getAttribute("alt")?.trim().replace(/\s+/g, " ");
+        if (
+          alt &&
+          alt.length > 3 &&
+          alt.toLowerCase() !== "thumbnail" &&
+          alt.toLowerCase() !== "instagram" &&
+          alt.toLowerCase() !== "image" &&
+          alt.toLowerCase() !== "video" &&
+          !alt.toLowerCase().includes("download")
+        ) {
+          title = alt;
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Meaningful title derived from Instagram URL (shortcode and username)
+  if (!title) {
+    const userMatch = cleanUrl.match(
+      /instagram\.com\/([A-Za-z0-9_.-]+)\/(?:p|reel|reels|tv)\//i,
+    );
+    const shortcodeMatch = cleanUrl.match(
+      /(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i,
+    );
+    const isReel = cleanUrl.includes("/reel");
+    const isTv = cleanUrl.includes("/tv/");
+    const mediaType = isReel ? "Reel" : isTv ? "Video" : "Post";
+    const shortcode = shortcodeMatch ? shortcodeMatch[1] : "";
+    const rawUser = userMatch ? userMatch[1].toLowerCase() : "";
+    const username =
+      userMatch &&
+      !["p", "reel", "reels", "tv", "stories", "share"].includes(rawUser)
+        ? `@${userMatch[1]}`
+        : "";
+
+    if (username && shortcode) {
+      title = `${username} - Instagram ${mediaType} (${shortcode})`;
+    } else if (username) {
+      title = `${username} - Instagram ${mediaType}`;
+    } else if (shortcode) {
+      title = `Instagram ${mediaType} (${shortcode})`;
+    } else {
+      title = `Instagram ${mediaType}`;
+    }
+  }
+
+  if (title.length > 90) {
+    title = title.substring(0, 87) + "...";
+  }
+  return title;
+}
+
 async function scrapeInstagramEmbedDirect(cleanUrl) {
   try {
     const shortcodeMatch = cleanUrl.match(
@@ -313,8 +394,9 @@ async function scrapeSnapSave(cleanUrl) {
 
       if (downloads.length > 0) {
         const thumbnail = downloads[0].thumbnail || downloads[0].url;
+        const title = extractInstagramTitle(doc, cleanUrl);
         return createScraperResult(true, {
-          title: "Instagram Content",
+          title,
           thumbnail,
           downloads,
           sourceUrl: cleanUrl,
@@ -543,10 +625,11 @@ export async function scrapeInstagram(url) {
 
             if (downloads.length > 0) {
               const firstThumb = downloads[0].thumbnail || downloads[0].url;
+              const title = extractInstagramTitle(doc2, cleanUrl);
 
               _igSource = null;
               return createScraperResult(true, {
-                title: "Instagram Content",
+                title,
                 thumbnail: firstThumb,
                 downloads,
                 sourceUrl: cleanUrl,

@@ -24,6 +24,9 @@ export function getCleanDirectoryPath(item, rawFile) {
 
   if (p) {
     let cleaned = String(p);
+    try {
+      cleaned = decodeURIComponent(cleaned);
+    } catch (_) {}
     if (cleaned.includes("_capacitor_file_")) {
       cleaned = cleaned.substring(cleaned.indexOf("_capacitor_file_") + 16);
     }
@@ -132,6 +135,9 @@ export async function showModal(item, onRedownload) {
         return pathOrUri;
       }
       let full = String(pathOrUri);
+      try {
+        full = decodeURIComponent(full);
+      } catch (_) {}
       if (full.includes("_capacitor_file_")) {
         full = full.substring(full.indexOf("_capacitor_file_") + 16);
       }
@@ -163,8 +169,8 @@ export async function showModal(item, onRedownload) {
     if (hasDownloadedFiles) {
       if (localFiles.length > 0) {
         localFiles.forEach((file) => {
-          if (file && (file.uri || file.path)) {
-            const fileSrc = file.uri || file.path;
+          if (file && (file.path || file.uri)) {
+            const fileSrc = file.path || file.uri;
             const mediaType =
               file.type ||
               (fileSrc.toLowerCase().endsWith(".mp4")

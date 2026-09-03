@@ -132,6 +132,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     if (cleanPath.startsWith("file://")) {
       cleanPath = cleanPath.replace(/^file:\/\//, "");
     }
+    try {
+      cleanPath = decodeURIComponent(cleanPath);
+    } catch (_) {}
 
     if (tauriInvoke) {
       // Desktop: read file bytes via Rust → Blob URL (no asset protocol permission needed)
@@ -366,6 +369,10 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         if (cleanPath.startsWith("file://")) {
           cleanPath = cleanPath.replace(/^file:\/\//, "");
         }
+        try {
+          cleanPath = decodeURIComponent(cleanPath);
+        } catch (_) {}
+
         const mimeType = isAudioOnly
           ? fileNameLower.endsWith(".m4a")
             ? "audio/mp4"
@@ -394,19 +401,43 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         }
 
         if (Filesystem) {
-          const relPath = cleanPath
+          const rawTarget = dl.rawPath || cleanPath;
+          let relPath = rawTarget
             .replace(/^.*\/storage\/emulated\/0\//, "")
             .replace(/^\//, "");
-
-          let res;
           try {
-            res = await Filesystem.readFile({
-              path: relPath,
-              directory: "EXTERNAL_STORAGE",
-            });
+            relPath = decodeURIComponent(relPath);
           } catch (_) {}
 
-          if (!res) {
+          let res;
+          const dirsToTry = ["EXTERNAL_STORAGE", "DOCUMENTS", "EXTERNAL"];
+          for (const d of dirsToTry) {
+            try {
+              res = await Filesystem.readFile({
+                path: relPath,
+                directory: d,
+              });
+              if (res?.data) break;
+            } catch (_) {}
+          }
+
+          if (!res?.data && dl.rawPath) {
+            let directRaw = dl.rawPath;
+            try {
+              directRaw = decodeURIComponent(directRaw);
+            } catch (_) {}
+            for (const d of dirsToTry) {
+              try {
+                res = await Filesystem.readFile({
+                  path: directRaw,
+                  directory: d,
+                });
+                if (res?.data) break;
+              } catch (_) {}
+            }
+          }
+
+          if (!res?.data) {
             try {
               res = await Filesystem.readFile({ path: cleanPath });
             } catch (_) {}

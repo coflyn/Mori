@@ -60,8 +60,26 @@ export async function scrapeThreads(url) {
     });
 
     if (downloads.length === 0) throw new Error("No download links found.");
+
+    let threadsTitle = "Threads Media";
+    const titleEl = doc.querySelector(".card-text, .post-text, p, h3, h4");
+    if (titleEl && titleEl.textContent.trim()) {
+      const txt = titleEl.textContent.trim().replace(/\s+/g, " ");
+      if (txt.length > 3 && !txt.toLowerCase().includes("download")) {
+        threadsTitle = txt;
+      }
+    } else {
+      const userMatch = url.match(/threads\.net\/@([A-Za-z0-9_.-]+)/i);
+      if (userMatch) {
+        threadsTitle = `@${userMatch[1]} - Threads Post`;
+      }
+    }
+    if (threadsTitle.length > 90) {
+      threadsTitle = threadsTitle.substring(0, 87) + "...";
+    }
+
     return createScraperResult(true, {
-      title: "Threads Media",
+      title: threadsTitle,
       downloads,
       sourceUrl: url,
     });
