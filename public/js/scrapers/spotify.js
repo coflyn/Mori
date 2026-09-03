@@ -7,6 +7,9 @@ import {
 import { scraperFetch, createScraperResult } from "./httpHelper.js";
 
 export let _spSource = null;
+let _slSessionCache = null;
+let _spSessionCache = null;
+
 export function setSpotifySource(source) {
   _spSource = source;
 }
@@ -34,15 +37,22 @@ export async function scrapeSpotify(url) {
             typeof resolveRes.data === "string"
               ? resolveRes.data
               : JSON.stringify(resolveRes.data);
-          const ogMatch = htmlData.match(/<meta property="og:url" content="([^"]+)"/i);
+          const ogMatch = htmlData.match(
+            /<meta property="og:url" content="([^"]+)"/i,
+          );
           if (ogMatch && ogMatch[1]) {
             url = cleanUrl(ogMatch[1]);
           } else {
-            const schemeMatch = htmlData.match(/<script id="urlSchemeConfig" type="text\/plain">([^<]+)<\/script>/);
+            const schemeMatch = htmlData.match(
+              /<script id="urlSchemeConfig" type="text\/plain">([^<]+)<\/script>/,
+            );
             if (schemeMatch && schemeMatch[1]) {
               try {
                 let b64 = schemeMatch[1];
-                b64 = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, "=");
+                b64 = b64.padEnd(
+                  b64.length + ((4 - (b64.length % 4)) % 4),
+                  "=",
+                );
                 const decoded = JSON.parse(atob(b64));
                 if (decoded && decoded.redirectUrl) {
                   url = cleanUrl(decoded.redirectUrl);
@@ -62,20 +72,27 @@ export async function scrapeSpotify(url) {
     if (_spSource === "soundloaders") {
       const BASE = "https://soundloaders.app";
 
-      const r1 = await scraperFetch(
-        {
-          url: BASE + "/",
-          headers: {
-            "User-Agent": CHROME_UA,
-            Accept: "*/*",
-            "X-Requested-With": "XMLHttpRequest",
+      let cookies = "";
+      const now = Date.now();
+      if (_slSessionCache && now - _slSessionCache.time < 5 * 60 * 1000) {
+        cookies = _slSessionCache.cookies;
+      } else {
+        const r1 = await scraperFetch(
+          {
+            url: BASE + "/",
+            headers: {
+              "User-Agent": CHROME_UA,
+              Accept: "*/*",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            rawResponse: true,
           },
-          rawResponse: true,
-        },
-        "SoundLoaders Home",
-      );
-      currentStatus = r1.status;
-      const cookies = getCookiesFromHeaders(r1.headers);
+          "SoundLoaders Home",
+        );
+        currentStatus = r1.status;
+        cookies = getCookiesFromHeaders(r1.headers);
+        _slSessionCache = { cookies, time: now };
+      }
 
       const formHeaders = {
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -208,27 +225,37 @@ export async function scrapeSpotify(url) {
     }
 
     // Default: SpotiDown
-    const r1 = await scraperFetch(
-      {
-        url: "https://spotidown.app/",
-        headers: { "User-Agent": CHROME_UA },
-        rawResponse: true,
-      },
-      "SpotiDown Main",
-    );
-    currentStatus = r1.status;
-    const cookies = getCookiesFromHeaders(r1.headers);
-
+    let cookies = "";
+    let baseData = {};
+    const now = Date.now();
     const parser = new DOMParser();
-    const doc1 = parser.parseFromString(r1.data, "text/html");
 
-    const form = doc1.querySelector('form[name="spotifyurl"]');
-    const data = { url: url };
-    form?.querySelectorAll("input").forEach((input) => {
-      const name = input.getAttribute("name");
-      const value = input.getAttribute("value") || "";
-      if (name && name !== "url") data[name] = value;
-    });
+    if (_spSessionCache && now - _spSessionCache.time < 5 * 60 * 1000) {
+      cookies = _spSessionCache.cookies;
+      baseData = { ..._spSessionCache.baseData };
+    } else {
+      const r1 = await scraperFetch(
+        {
+          url: "https://spotidown.app/",
+          headers: { "User-Agent": CHROME_UA },
+          rawResponse: true,
+        },
+        "SpotiDown Main",
+      );
+      currentStatus = r1.status;
+      cookies = getCookiesFromHeaders(r1.headers);
+
+      const doc1 = parser.parseFromString(r1.data, "text/html");
+      const form = doc1.querySelector('form[name="spotifyurl"]');
+      form?.querySelectorAll("input").forEach((input) => {
+        const name = input.getAttribute("name");
+        const value = input.getAttribute("value") || "";
+        if (name && name !== "url") baseData[name] = value;
+      });
+      _spSessionCache = { cookies, baseData, time: now };
+    }
+
+    const data = { ...baseData, url: url };
     data["g-recaptcha-response"] = "dummy_token";
 
     const r2Headers = {
@@ -258,7 +285,10 @@ export async function scrapeSpotify(url) {
       } catch (e) {}
     }
 
-    if (r2Data.error) throw new Error(r2Data.message || "Spotify error");
+    if (r2Data.error) {
+      _spSessionCache = null;
+      throw new Error(r2Data.message || "Spotify error");
+    }
 
     let finalHtml = r2Data.data || r2Data;
     const doc2 = parser.parseFromString(finalHtml, "text/html");
@@ -351,10 +381,11 @@ export async function scrapeSpotify(url) {
                 artist && trackTitle
                   ? `${artist} - ${trackTitle}`
                   : trackTitle || text || "MP3";
-                  
-              const isCover = text.toLowerCase().includes("cover") || link.includes("cover");
+
+              const isCover =
+                text.toLowerCase().includes("cover") || link.includes("cover");
               const typeLabel = isCover ? "[Cover]" : "[MP3]";
-              
+
               downloads.push({
                 type: `${prefix}${fullLabel} ${typeLabel}`,
                 url: link,
@@ -376,6 +407,15 @@ export async function scrapeSpotify(url) {
     if (downloads.length === 0) {
       throw new Error("No download links found from SpotiDown.");
     }
+
+    // Prioritize MP3 audio files over album cover images
+    downloads.sort((a, b) => {
+      const aIsCover = (a.type || "").includes("[Cover]");
+      const bIsCover = (b.type || "").includes("[Cover]");
+      if (aIsCover && !bIsCover) return 1;
+      if (!aIsCover && bIsCover) return -1;
+      return 0;
+    });
 
     const title =
       doc2.querySelector("h3")?.textContent?.trim() || "Spotify Track";
@@ -498,12 +538,13 @@ function parseSoundloadersDownloads(html) {
       !link.includes("tunecable.com") &&
       !link.includes("premium")
     ) {
-      const isCover = text.toLowerCase().includes("cover") || 
-                      link.includes("cover") || 
-                      link.includes("scdn.co") || 
-                      link.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i);
+      const isCover =
+        text.toLowerCase().includes("cover") ||
+        link.includes("cover") ||
+        link.includes("scdn.co") ||
+        link.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i);
       const typeLabel = isCover ? "[Cover]" : "[MP3]";
-      
+
       downloads.push({
         type: `${text || "Download"} ${typeLabel}`,
         url: link,

@@ -185,7 +185,8 @@ export async function showModal(item, onRedownload) {
               rawPath: file.path,
               rawUri: file.uri,
               type: mediaType,
-              thumbnail: file.thumbnail || item.thumbnail,
+              thumbnail:
+                file.thumbnail || item.localThumbnail || item.thumbnail,
               isLocal: true,
             });
           }
@@ -220,7 +221,7 @@ export async function showModal(item, onRedownload) {
               url: localUrl,
               remoteUrl: dl.url || dl.src,
               type: mediaType,
-              thumbnail: dl.thumbnail || item.thumbnail,
+              thumbnail: dl.thumbnail || item.localThumbnail || item.thumbnail,
               isLocal: true,
             });
           }

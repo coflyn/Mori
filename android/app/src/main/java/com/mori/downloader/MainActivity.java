@@ -11,6 +11,16 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
+import java.io.File;
+import java.io.ByteArrayOutputStream;
+import java.net.URLDecoder;
+import android.os.Environment;
+import android.media.MediaScannerConnection;
+import android.media.MediaMetadataRetriever;
+import android.graphics.Bitmap;
+import android.util.Base64;
+import android.util.Log;
+import android.webkit.MimeTypeMap;
  
 public class MainActivity extends BridgeActivity {
 
@@ -109,6 +119,90 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        @JavascriptInterface
+        public void scanMediaFile(String rawPath) {
+            try {
+                if (rawPath == null || rawPath.isEmpty()) return;
+                String cleanPath = rawPath;
+                if (cleanPath.startsWith("file://")) {
+                    cleanPath = cleanPath.substring(7);
+                }
+                cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
+                File f = new File(cleanPath);
+                if (!f.isAbsolute()) {
+                    f = new File(Environment.getExternalStorageDirectory(), cleanPath.replaceFirst("^/+", ""));
+                }
+                if (!f.exists()) {
+                    File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
+                    if (d1.exists()) f = d1;
+                }
+                if (f.exists()) {
+                    f.setLastModified(System.currentTimeMillis());
+                    String name = f.getName().toLowerCase();
+                    String mimeType = null;
+                    int dot = name.lastIndexOf('.');
+                    if (dot > 0 && dot < name.length() - 1) {
+                        mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substring(dot + 1));
+                    }
+                    if (mimeType == null) {
+                        if (name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".webm") || name.endsWith(".mkv")) mimeType = "video/mp4";
+                        else if (name.endsWith(".mp3") || name.endsWith(".m4a")) mimeType = "audio/mpeg";
+                        else if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp")) mimeType = "image/jpeg";
+                    }
+                    final String finalMime = mimeType;
+                    MediaScannerConnection.scanFile(
+                        getApplicationContext(),
+                        new String[]{ f.getAbsolutePath() },
+                        finalMime != null ? new String[]{ finalMime } : null,
+                        (scannedPath, uri) -> {
+                            Log.d("MoriMainBridge", "MediaScanner indexed: " + scannedPath + " -> " + uri);
+                        }
+                    );
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public String getVideoThumbnail(String rawPath) {
+            try {
+                if (rawPath == null || rawPath.isEmpty()) return null;
+                String cleanPath = rawPath;
+                if (cleanPath.startsWith("file://")) {
+                    cleanPath = cleanPath.substring(7);
+                }
+                cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
+                File f = new File(cleanPath);
+                if (!f.isAbsolute()) {
+                    f = new File(Environment.getExternalStorageDirectory(), cleanPath.replaceFirst("^/+", ""));
+                }
+                if (!f.exists()) {
+                    File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
+                    if (d1.exists()) f = d1;
+                }
+                if (f.exists()) {
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    retriever.setDataSource(f.getAbsolutePath());
+                    Bitmap bitmap = retriever.getFrameAtTime(1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                    if (bitmap == null) {
+                        bitmap = retriever.getFrameAtTime();
+                    }
+                    retriever.release();
+                    if (bitmap != null) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+                        byte[] bytes = baos.toByteArray();
+                        bitmap.recycle();
+                        return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 

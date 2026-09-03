@@ -29,12 +29,19 @@ async function fetchTweetMetadata(cleanUrl) {
       } catch (_) {}
     }
     if (data?.tweet) {
+      const mediaThumb =
+        data.tweet.media?.videos?.[0]?.thumbnail_url ||
+        data.tweet.media?.photos?.[0]?.url ||
+        data.tweet.media?.mosaic?.formats?.jpeg ||
+        data.tweet.thumbnail_url ||
+        null;
       return {
         text: data.tweet.text || "",
         author: data.tweet.author?.name || "",
         handle: data.tweet.author?.screen_name
           ? `@${data.tweet.author.screen_name}`
           : "",
+        thumbnail: mediaThumb,
       };
     }
   } catch (_) {}
@@ -195,61 +202,80 @@ export async function scrapeTwitter(url) {
       currentStatus = r2.status;
 
       const doc2 = parser.parseFromString(r2.data, "text/html");
-      const rawDownloads = [];
+      const videoDownloads = [];
+      const imageDownloads = [];
 
-      doc2.querySelectorAll(".card-body").forEach((card) => {
-        const qualityText =
-          card.querySelector(".card-text")?.textContent?.trim() || "";
-        card.querySelectorAll("a.btn-download, a.btn").forEach((btn) => {
+      const parseResolutionArea = (str) => {
+        const m = (str || "").match(/(\d+)\s*[xX]\s*(\d+)/);
+        if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
+        const p = (str || "").match(/(\d+)\s*p/i);
+        if (p) return parseInt(p[1], 10) * parseInt(p[1], 10) * 1.77;
+        return 0;
+      };
+
+      doc2
+        .querySelectorAll(
+          ".card-body a, a.btn-download, a.btn, a.tw-btn, a[href*='video.twimg.com'], a[href*='twimg.com']",
+        )
+        .forEach((btn) => {
           const href = btn.getAttribute("href");
+          if (!href || href === "/" || href.startsWith("#")) return;
           const btnText = btn.textContent.trim();
+          const card = btn.closest(".card-body");
+          const qualityText =
+            card?.querySelector(".card-text")?.textContent?.trim() || "";
           const fullText = `${btnText} ${qualityText}`;
-          if (!isPaywallOrInvalid(href, fullText)) {
-            const label = formatResolutionLabel(btnText, qualityText, href);
-            if (!rawDownloads.some((d) => d.url === href)) {
-              const isImg =
-                /\.(jpe?g|png|webp)(\?|$)/i.test(href) ||
-                label === "IMAGE" ||
-                label === "PHOTO";
-              rawDownloads.push({ type: label, url: href, isMirror: false });
+          if (isPaywallOrInvalid(href, fullText)) return;
+
+          const isVideoUrl =
+            href.includes("video.twimg.com") ||
+            /\.(mp4|m3u8)(\?|$)/i.test(href) ||
+            /mp4|video|720|1080|480|360|270/i.test(btnText);
+          const isImageUrl =
+            href.includes("pbs.twimg.com") ||
+            /\.(jpe?g|png|webp)(\?|$)/i.test(href);
+
+          if (isVideoUrl && !isImageUrl) {
+            if (!videoDownloads.some((d) => d.url === href)) {
+              const label = formatResolutionLabel(btnText, qualityText, href);
+              videoDownloads.push({ type: label, url: href });
+            }
+          } else if (isImageUrl) {
+            if (!imageDownloads.some((d) => d.url === href)) {
+              imageDownloads.push({ type: "IMAGE", url: href });
             }
           }
         });
-      });
 
-      if (rawDownloads.length === 0) {
-        doc2
-          .querySelectorAll('a[href*="video.twimg.com"], a[href*="twimg.com"]')
-          .forEach((a) => {
-            const href = a.getAttribute("href");
-            const text = a.textContent.trim();
-            if (
-              !isPaywallOrInvalid(href, text) &&
-              !rawDownloads.some((d) => d.url === href)
-            ) {
-              const label = formatResolutionLabel(text, "", href);
-              rawDownloads.push({ type: label, url: href, isMirror: false });
-            }
-          });
-      }
+      // Sort videos by resolution (highest quality first)
+      videoDownloads.sort(
+        (a, b) => parseResolutionArea(b.type) - parseResolutionArea(a.type),
+      );
 
-      if (rawDownloads.length === 0)
+      // If video exists, NEVER return images! If only images exist, return images.
+      const rawList =
+        videoDownloads.length > 0 ? videoDownloads : imageDownloads;
+      if (rawList.length === 0)
         throw new Error("No free video links found on TVD.");
 
+      const tweetMeta = await fetchTweetMetadata(cleanUrl);
+      const title = resolveTwitterTitle(tweetMeta, doc2, cleanUrl, null, null);
+
       const thumbnail =
+        tweetMeta?.thumbnail ||
         doc2
           .querySelector(
-            "img[src*='twimg.com'], img[src*='pbs.twimg.com'], .card img",
+            "img[src*='twimg.com'], img[src*='pbs.twimg.com'], .col-4 img, img.img-fluid, .card img",
           )
           ?.getAttribute("src") ||
         doc2.querySelector("video")?.getAttribute("poster") ||
         null;
 
-      // Strictly return only 1 valid free download link specifically for TVD
-      const downloads = rawDownloads.slice(0, 1);
-
-      const tweetMeta = await fetchTweetMetadata(cleanUrl);
-      const title = resolveTwitterTitle(tweetMeta, doc2, cleanUrl, null, null);
+      const downloads = rawList.map((d, index) => ({
+        ...d,
+        thumbnail,
+        isMirror: index > 0,
+      }));
 
       _twSource = null;
       return createScraperResult(true, {
@@ -293,78 +319,116 @@ export async function scrapeTwitter(url) {
       currentStatus = r2.status;
 
       const doc2 = parser.parseFromString(r2.data, "text/html");
-      const downloads = [];
+      const videoDownloads = [];
+      const imageDownloads = [];
+
+      const parseResolutionArea = (str) => {
+        const m = (str || "").match(/(\d+)\s*[xX]\s*(\d+)/);
+        if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
+        const p = (str || "").match(/(\d+)\s*p/i);
+        if (p) return parseInt(p[1], 10) * parseInt(p[1], 10) * 1.77;
+        return 0;
+      };
 
       doc2
-        .querySelectorAll(".download__item__info__actions tbody tr")
+        .querySelectorAll(
+          ".download__item__info__actions tr, .download_item_info tr, table tr",
+        )
         .forEach((tr) => {
           const tds = tr.querySelectorAll("td");
-          const quality = tds[0]?.textContent?.trim();
+          const quality = tds[0]?.textContent?.trim() || "";
           let dlUrl = tr
-            .querySelector("a.download__item__info__actions__button")
+            .querySelector(
+              "a.download__item__info__actions__button, a.btn, a[href*='acxcdn.com'], a[href*='twimg.com']",
+            )
             ?.getAttribute("href");
           if (dlUrl) {
             if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
             if (!isPaywallOrInvalid(dlUrl, quality)) {
               const label = formatResolutionLabel(quality, "", dlUrl);
-              const isImg =
-                /\.(jpe?g|png|webp)(\?|$)/i.test(dlUrl) ||
-                label === "IMAGE" ||
-                label === "PHOTO";
-              const isMirror = isImg
-                ? false
-                : downloads.some(
-                    (d) => d.type !== "IMAGE" && d.type !== "PHOTO",
-                  );
-              downloads.push({ type: label, url: dlUrl, isMirror });
+              const isVideoUrl =
+                dlUrl.includes("acxcdn.com") ||
+                dlUrl.includes("video.twimg.com") ||
+                /\.(mp4|m3u8)(\?|$)/i.test(dlUrl) ||
+                /^\d+[xXpP]/i.test(label) ||
+                label === "MP4";
+              const isImageUrl =
+                dlUrl.includes("pbs.twimg.com") ||
+                /\.(jpe?g|png|webp)(\?|$)/i.test(dlUrl);
+
+              if (isVideoUrl && !isImageUrl) {
+                if (!videoDownloads.some((d) => d.url === dlUrl)) {
+                  videoDownloads.push({ type: label, url: dlUrl });
+                }
+              } else if (isImageUrl) {
+                if (!imageDownloads.some((d) => d.url === dlUrl)) {
+                  imageDownloads.push({ type: "IMAGE", url: dlUrl });
+                }
+              }
             }
           }
         });
 
-      if (downloads.length === 0) {
-        doc2.querySelectorAll("a.btn").forEach((a) => {
-          let href = a.getAttribute("href");
-          if (
-            href &&
-            (href.includes("downloads.acxcdn.com") ||
-              href.includes("twimg.com") ||
-              href.includes("tweeload"))
-          ) {
-            const text = a.textContent.trim();
+      if (videoDownloads.length === 0 && imageDownloads.length === 0) {
+        doc2
+          .querySelectorAll(
+            "a.btn, a[href*='downloads.acxcdn.com'], a[href*='twimg.com']",
+          )
+          .forEach((a) => {
+            let href = a.getAttribute("href");
             if (
-              text.toLowerCase() !== "download via the mobile app" &&
-              !isPaywallOrInvalid(href, text)
+              href &&
+              (href.includes("downloads.acxcdn.com") ||
+                href.includes("twimg.com") ||
+                href.includes("tweeload"))
             ) {
-              const label = formatResolutionLabel(text, "", href);
-              const isImg =
-                /\.(jpe?g|png|webp)(\?|$)/i.test(href) ||
-                label === "IMAGE" ||
-                label === "PHOTO";
-              const isMirror = isImg
-                ? false
-                : downloads.some(
-                    (d) => d.type !== "IMAGE" && d.type !== "PHOTO",
-                  );
-              downloads.push({ type: label, url: href, isMirror });
+              const text = a.textContent.trim();
+              if (
+                text.toLowerCase() !== "download via the mobile app" &&
+                !isPaywallOrInvalid(href, text)
+              ) {
+                const label = formatResolutionLabel(text, "", href);
+                const isVideoUrl =
+                  href.includes("acxcdn.com") ||
+                  href.includes("video.twimg.com") ||
+                  /\.(mp4|m3u8)(\?|$)/i.test(href) ||
+                  /^\d+[xXpP]/i.test(label) ||
+                  label === "MP4";
+                const isImageUrl =
+                  href.includes("pbs.twimg.com") ||
+                  /\.(jpe?g|png|webp)(\?|$)/i.test(href);
+
+                if (isVideoUrl && !isImageUrl) {
+                  if (!videoDownloads.some((d) => d.url === href)) {
+                    videoDownloads.push({ type: label, url: href });
+                  }
+                } else if (isImageUrl) {
+                  if (!imageDownloads.some((d) => d.url === href)) {
+                    imageDownloads.push({ type: "IMAGE", url: href });
+                  }
+                }
+              }
             }
-          }
-        });
+          });
       }
 
-      if (downloads.length === 0) throw new Error("Twitter links not found.");
+      videoDownloads.sort(
+        (a, b) => parseResolutionArea(b.type) - parseResolutionArea(a.type),
+      );
 
-      const name = doc2
-        .querySelector(".download__item__info__user__name")
-        ?.textContent?.trim();
-      const handle = doc2
-        .querySelector(".download__item__info__user__handle")
-        ?.textContent?.trim();
-      const thumbnail =
-        doc2
-          .querySelector(".download__item__preview img, .download__item img")
-          ?.getAttribute("src") || null;
+      const rawTweeload =
+        videoDownloads.length > 0 ? videoDownloads : imageDownloads;
+      if (rawTweeload.length === 0) throw new Error("Twitter links not found.");
 
       const tweetMeta = await fetchTweetMetadata(cleanUrl);
+      const name =
+        doc2
+          .querySelector(".download__item__info__user__name")
+          ?.textContent?.trim() || null;
+      const handle =
+        doc2
+          .querySelector(".download__item__info__user__handle")
+          ?.textContent?.trim() || null;
       const title = resolveTwitterTitle(
         tweetMeta,
         doc2,
@@ -372,6 +436,21 @@ export async function scrapeTwitter(url) {
         name,
         handle,
       );
+
+      const thumbnail =
+        tweetMeta?.thumbnail ||
+        doc2
+          .querySelector(
+            ".download__item__preview img, .download__item img, img[src*='twimg.com']",
+          )
+          ?.getAttribute("src") ||
+        null;
+
+      const downloads = rawTweeload.map((d, index) => ({
+        ...d,
+        thumbnail,
+        isMirror: index > 0,
+      }));
 
       _twSource = null;
       return createScraperResult(true, {
