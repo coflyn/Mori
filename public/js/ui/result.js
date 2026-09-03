@@ -203,20 +203,45 @@ export function renderMediaSlides(container, items, resultThumbnail) {
           audioRetried = true;
           console.warn("Attempting local blob fallback for audio...");
           try {
-            const relPath = cleanPath
+            const rawTarget = dl.rawPath || cleanPath;
+            let relPath = rawTarget
               .replace(/^.*\/storage\/emulated\/0\//, "")
               .replace(/^\//, "");
-            let res;
             try {
-              res = await Filesystem.readFile({
-                path: relPath,
-                directory: "EXTERNAL_STORAGE",
-              });
+              relPath = decodeURIComponent(relPath);
             } catch (_) {}
 
-            if (!res) {
+            let res;
+            const dirsToTry = ["EXTERNAL_STORAGE", "DOCUMENTS", "EXTERNAL"];
+            for (const d of dirsToTry) {
               try {
-                res = await Filesystem.readFile({ path: cleanPath });
+                res = await Filesystem.readFile({
+                  path: relPath,
+                  directory: d,
+                });
+                if (res && res.data) break;
+              } catch (_) {}
+            }
+
+            if (!res && dl.rawPath) {
+              let directRaw = dl.rawPath;
+              try { directRaw = decodeURIComponent(directRaw); } catch (_) {}
+              for (const d of dirsToTry) {
+                try {
+                  res = await Filesystem.readFile({
+                    path: directRaw,
+                    directory: d,
+                  });
+                  if (res && res.data) break;
+                } catch (_) {}
+              }
+            }
+
+            if (!res) {
+              let absP = cleanPath;
+              try { absP = decodeURIComponent(absP); } catch (_) {}
+              try {
+                res = await Filesystem.readFile({ path: absP });
               } catch (_) {}
             }
 

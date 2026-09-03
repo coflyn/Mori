@@ -496,14 +496,24 @@ export async function startNativeDownload(
           };
           if (cookiesStr) reqHeaders["Cookie"] = cookiesStr;
 
-          const res = await CapacitorHttp.post({
-            url: "https://spotidown.app/action/track",
-            headers: reqHeaders,
-            data: payloadStr,
-          });
-          let dd =
-            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-          let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
+          const res = await scraperFetch(
+            {
+              url: "https://spotidown.app/action/track",
+              method: "POST",
+              headers: reqHeaders,
+              data: payloadStr,
+              rawResponse: true,
+            },
+            "SpotiDown",
+          );
+          let dd = res?.data ?? res;
+          if (typeof dd === "string") {
+            try {
+              dd = JSON.parse(dd);
+            } catch (e) {}
+          }
+          let dlHtml =
+            (typeof dd === "object" ? dd?.data || dd?.html : dd) || "";
           if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
           const parser = new DOMParser();
           const doc = parser.parseFromString(dlHtml, "text/html");
@@ -531,26 +541,36 @@ export async function startNativeDownload(
           const dataVal = parts[0];
           const tokenVal = parts[1];
           const BASE = "https://soundloaders.app";
-          const res = await CapacitorHttp.post({
-            url: BASE + "/action/tracks",
-            headers: {
-              "Content-Type":
-                "application/x-www-form-urlencoded; charset=UTF-8",
-              "User-Agent":
-                "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
-              "X-Requested-With": "XMLHttpRequest",
-              Referer: BASE + "/",
-              Origin: BASE,
+          const res = await scraperFetch(
+            {
+              url: BASE + "/action/tracks",
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent":
+                  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+                "X-Requested-With": "XMLHttpRequest",
+                Referer: BASE + "/",
+                Origin: BASE,
+              },
+              data:
+                "data=" +
+                encodeURIComponent(dataVal) +
+                "&track_token=" +
+                encodeURIComponent(tokenVal),
+              rawResponse: true,
             },
-            data:
-              "data=" +
-              encodeURIComponent(dataVal) +
-              "&track_token=" +
-              encodeURIComponent(tokenVal),
-          });
-          let dd =
-            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-          let dlHtml = dd?.html || "";
+            "Soundloaders",
+          );
+          let dd = res?.data ?? res;
+          if (typeof dd === "string") {
+            try {
+              dd = JSON.parse(dd);
+            } catch (e) {}
+          }
+          let dlHtml =
+            (typeof dd === "object" ? dd?.html || dd?.data : dd) || "";
           const match = dlHtml.match(
             /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
           );
@@ -681,9 +701,13 @@ export async function startNativeDownload(
             );
 
             try {
-              const statusRes = await CapacitorHttp.get({
-                url: actualDownloadUrl,
-              });
+              const statusRes = await scraperFetch(
+                {
+                  url: actualDownloadUrl,
+                  rawResponse: true,
+                },
+                "Resolver",
+              );
 
               if (statusRes && statusRes.data) {
                 let data = statusRes.data;
@@ -1044,6 +1068,12 @@ export async function startNativeDownload(
         if (uriObj?.uri) savedUri = uriObj.uri;
       } catch (_) {}
     }
+
+    try {
+      if (savedUri.startsWith("file://")) {
+        savedUri = decodeURI(savedUri);
+      }
+    } catch (_) {}
 
     window.dispatchEvent(
       new CustomEvent("mori_file_saved", {
