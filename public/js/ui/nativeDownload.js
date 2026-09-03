@@ -484,6 +484,11 @@ export async function startNativeDownload(
             throw new Error("Could not resolve Apple Music download link");
           }
         } else if (url.startsWith("spotidown_resolve:")) {
+          if (btn)
+            btn.innerHTML =
+              translations[currentLang]["btn-processing"] || "Processing...";
+          updateProgress(20, "Resolving Spotify track...");
+
           const parts = url.replace("spotidown_resolve:", "").split("|||");
           const payloadStr = parts[0];
           const cookiesStr = parts[1] ? decodeURIComponent(parts[1]) : "";
@@ -532,11 +537,17 @@ export async function startNativeDownload(
             }
           });
           if (foundLink) {
+            updateProgress(50, "Starting MP3 download...");
             actualDownloadUrl = foundLink;
           } else {
             throw new Error("Could not resolve SpotiDown download link");
           }
         } else if (url.startsWith("soundloaders_resolve:")) {
+          if (btn)
+            btn.innerHTML =
+              translations[currentLang]["btn-processing"] || "Processing...";
+          updateProgress(20, "Resolving Spotify track...");
+
           const parts = url.replace("soundloaders_resolve:", "").split("|||");
           const dataVal = parts[0];
           const tokenVal = parts[1];
@@ -548,8 +559,7 @@ export async function startNativeDownload(
               headers: {
                 "Content-Type":
                   "application/x-www-form-urlencoded; charset=UTF-8",
-                "User-Agent":
-                  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+                "User-Agent": getUserAgent(),
                 "X-Requested-With": "XMLHttpRequest",
                 Referer: BASE + "/",
                 Origin: BASE,
@@ -575,6 +585,7 @@ export async function startNativeDownload(
             /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
           );
           if (match && match[1]) {
+            updateProgress(50, "Starting MP3 download...");
             actualDownloadUrl = match[1];
           } else {
             throw new Error("Could not resolve Soundloaders download link");
@@ -842,9 +853,13 @@ export async function startNativeDownload(
       (url && url.includes("spotify"))
     ) {
       downloadHeaders["Referer"] = "https://spotidown.app/";
+      downloadHeaders["Origin"] = "https://spotidown.app";
+      downloadHeaders["Accept"] = "*/*";
     }
     if (actualDownloadUrl.includes("soundloaders")) {
       downloadHeaders["Referer"] = "https://soundloaders.app/";
+      downloadHeaders["Origin"] = "https://soundloaders.app";
+      downloadHeaders["Accept"] = "*/*";
     }
     if (actualDownloadUrl.includes("aplmate")) {
       downloadHeaders["Referer"] = "https://aplmate.com/";
@@ -1085,6 +1100,13 @@ export async function startNativeDownload(
         },
       }),
     );
+
+    // Trigger Android MediaScanner so file appears immediately in Android Gallery
+    if (window.MoriMainBridge?.scanMediaFile) {
+      try {
+        window.MoriMainBridge.scanMediaFile(savedFile.path || savedUri);
+      } catch (_) {}
+    }
 
     // Morph the progress toast into the Saved confirmation toast seamlessly!
     const completeTitle =

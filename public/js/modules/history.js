@@ -136,7 +136,7 @@ window.addEventListener("mori_file_saved", async (e) => {
           path,
           uri: fileUri,
           type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
-          thumbnail: null,
+          thumbnail: item.thumbnail || item.localThumbnail || null,
           title: trackTitle || item.title,
         });
       }
@@ -157,10 +157,28 @@ window.addEventListener("mori_file_saved", async (e) => {
   localStorage.setItem("mori_history", JSON.stringify(history));
   renderHistory(onHistoryItemClick, onHistoryDeleteClick);
 
-  if (isVideo && window.Capacitor) {
+  if (isVideo) {
     try {
-      const videoSrc = window.Capacitor.convertFileSrc(fileUri);
-      const localThumbnail = await getVideoThumbnail(videoSrc);
+      let localThumbnail = null;
+      if (window.MoriMainBridge?.getVideoThumbnail) {
+        try {
+          localThumbnail = window.MoriMainBridge.getVideoThumbnail(
+            path || fileUri,
+          );
+        } catch (_) {}
+      }
+      if (!localThumbnail && window.Capacitor) {
+        const videoSrc = window.Capacitor.convertFileSrc(fileUri);
+        localThumbnail = await getVideoThumbnail(
+          videoSrc,
+          path || fileUri,
+        ).catch(() => null);
+      }
+      if (!localThumbnail) {
+        history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+        const found = history.find((h) => cleanUrl(h.url) === target);
+        if (found?.thumbnail) localThumbnail = found.thumbnail;
+      }
 
       if (localThumbnail) {
         history = JSON.parse(localStorage.getItem("mori_history") || "[]");
