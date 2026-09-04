@@ -31,7 +31,10 @@ function applyShareLanguage() {
   currentLang = localStorage.getItem("mori_lang") || "en";
   lang = translations[currentLang] || translations.en;
   document.documentElement.lang = currentLang;
-  document.documentElement.setAttribute("dir", currentLang === "ar" ? "rtl" : "ltr");
+  document.documentElement.setAttribute(
+    "dir",
+    currentLang === "ar" ? "rtl" : "ltr",
+  );
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
@@ -69,7 +72,11 @@ const SERVERS = {
   ],
   instagram: [
     { id: "indown", name: "Server 1", sub: "InDown (Reels / Posts)" },
-    { id: "savevid", name: "Server 2", sub: "SnapSave (Reels, Posts & Photos)" },
+    {
+      id: "savevid",
+      name: "Server 2",
+      sub: "SnapSave (Reels, Posts & Photos)",
+    },
   ],
   youtube: [
     { id: "gg", name: "Server 1", sub: "YTMP3.gg (1080p / MP3)" },
@@ -166,7 +173,10 @@ function renderServerPills(list) {
   list.forEach((srv) => {
     const btn = document.createElement("button");
     btn.className = `server-pill ${srv.id === selectedServer ? "active" : ""}`;
-    const serverName = srv.name.replace("Server", lang["label-server"] || "Server");
+    const serverName = srv.name.replace(
+      "Server",
+      lang["label-server"] || "Server",
+    );
     btn.innerHTML = `<div class="pill-name">${serverName}</div><div class="pill-sub">${srv.sub}</div>`;
     btn.onclick = () => {
       selectedServer = srv.id;
@@ -273,7 +283,10 @@ window.startAnalyze = async function () {
     } else if (currentPlatform === "pixiv") {
       data = await scrapePixiv(targetUrl);
     } else {
-      data = { status: false, message: lang["share-err-unsupported"] || "Unsupported platform link." };
+      data = {
+        status: false,
+        message: lang["share-err-unsupported"] || "Unsupported platform link.",
+      };
     }
 
     statusSection.style.display = "none";
@@ -286,12 +299,18 @@ window.startAnalyze = async function () {
       saveHistory(activeResult, targetUrl);
       renderDownloadList(activeResult);
     } else {
-      showError(data?.message || lang["share-err-failed"] || "Failed to parse link.");
+      showError(
+        data?.message || lang["share-err-failed"] || "Failed to parse link.",
+      );
     }
   } catch (err) {
     if (!analyzeCancelled) {
       statusSection.style.display = "none";
-      showError(err.message || lang["share-err-error"] || "An error occurred during analysis.");
+      showError(
+        err.message ||
+          lang["share-err-error"] ||
+          "An error occurred during analysis.",
+      );
     }
   } finally {
     if (statusTimer) {
@@ -333,13 +352,15 @@ function renderDownloadList(result) {
   }
 
   const optionLabel = lang["label-option"] || "Option";
-  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
+  const downloadBadgeText = (
+    lang["label-download"] || "DOWNLOAD"
+  ).toUpperCase();
 
   downloads.forEach((dl, idx) => {
     const btn = document.createElement("button");
     btn.className = "dl-item-btn";
     btn.id = `dl_btn_${idx}`;
-    let label = dl.type || (lang["label-download"] || "Download");
+    let label = dl.type || lang["label-download"] || "Download";
     if (dl.quality) label += ` - ${dl.quality}`;
 
     btn.innerHTML = `
@@ -551,30 +572,35 @@ function generateFilename(title, type, index) {
   const isTrackType = /^\d+\.\s+/.test(cleanTypeLabel);
   let effectiveTitle = title || "Mori_Media";
   if (isTrackType) {
-    effectiveTitle = cleanTypeLabel.replace(/^\d+\.\s+/, "").trim() || cleanTypeLabel;
+    effectiveTitle =
+      cleanTypeLabel.replace(/^\d+\.\s+/, "").trim() || cleanTypeLabel;
   }
 
-  let sanitized =
-    (effectiveTitle || "")
-      .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
-      .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
-      .trim()
-      .replace(/\s+/g, " ")
-      .substring(0, 60);
+  let sanitized = (effectiveTitle || "")
+    .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
+    .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .substring(0, 60);
 
   if (!sanitized) sanitized = "Mori_Media";
 
   let ext = "mp4";
   const t = (type || "").toLowerCase();
   if (t.includes("mp3") || t.includes("audio")) ext = "mp3";
+  else if (t.includes("m4a")) ext = "m4a";
   else if (
     t.includes("jpg") ||
+    t.includes("jpeg") ||
     t.includes("image") ||
     t.includes("photo") ||
     t.includes("cover")
   )
     ext = "jpg";
   else if (t.includes("png")) ext = "png";
+  else if (t.includes("webp")) ext = "webp";
+
+  ext = ext.toLowerCase();
 
   const template = localStorage.getItem("mori_filename") || "title";
   let finalName = `${sanitized}.${ext}`;
@@ -582,7 +608,8 @@ function generateFilename(title, type, index) {
   if (template === "title-platform") {
     let platform = "Media";
     if (currentPlatform) {
-      if (currentPlatform === "tiktok" || currentPlatform === "douyin") platform = "TikTok";
+      if (currentPlatform === "tiktok" || currentPlatform === "douyin")
+        platform = "TikTok";
       else if (currentPlatform === "instagram") platform = "Instagram";
       else if (currentPlatform === "youtube") platform = "YouTube";
       else if (currentPlatform === "twitter") platform = "Twitter";
@@ -604,6 +631,15 @@ function generateFilename(title, type, index) {
   } else {
     // title-timestamp
     finalName = `${sanitized}_${Date.now()}.${ext}`;
+  }
+
+  // Strictly enforce lowercase extension
+  const dotP = finalName.lastIndexOf(".");
+  if (dotP > 0 && dotP < finalName.length - 1) {
+    finalName =
+      finalName.substring(0, dotP) +
+      "." +
+      finalName.substring(dotP + 1).toLowerCase();
   }
 
   return finalName;
@@ -688,15 +724,18 @@ function updateHistorySavedFile(filename, savedPath) {
 window.onDownloadComplete = function (filename, savedPath) {
   if (savedPath) updateHistorySavedFile(filename, savedPath);
   window.showToast(`${lang["toast-saved"] || "Saved:"} ${filename}`);
-  
-  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
+
+  const downloadBadgeText = (
+    lang["label-download"] || "DOWNLOAD"
+  ).toUpperCase();
   document.querySelectorAll(".dl-item-btn").forEach((btn) => {
     btn.classList.remove("downloading");
     const badge = btn.querySelector(".dl-badge");
     if (badge) badge.textContent = downloadBadgeText;
   });
 
-  const isMulti = activeResult && activeResult.downloads && activeResult.downloads.length > 1;
+  const isMulti =
+    activeResult && activeResult.downloads && activeResult.downloads.length > 1;
   if (!isMulti) {
     setTimeout(() => window.dismissPanel(), 1000);
   }
@@ -704,7 +743,9 @@ window.onDownloadComplete = function (filename, savedPath) {
 
 window.onDownloadFailed = function (filename, error) {
   window.showToast(`${lang["toast-failed"] || "Failed:"} ${error}`);
-  const downloadBadgeText = (lang["label-download"] || "DOWNLOAD").toUpperCase();
+  const downloadBadgeText = (
+    lang["label-download"] || "DOWNLOAD"
+  ).toUpperCase();
   document.querySelectorAll(".dl-item-btn").forEach((btn) => {
     btn.classList.remove("downloading");
     const badge = btn.querySelector(".dl-badge");

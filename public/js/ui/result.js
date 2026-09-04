@@ -7,6 +7,7 @@ import {
   stopAllMedia,
   requestWakeLock,
   releaseWakeLock,
+  playCompletionSound,
   Filesystem,
   CapacitorHttp,
   CHROME_UA,
@@ -225,7 +226,9 @@ export function renderMediaSlides(container, items, resultThumbnail) {
 
             if (!res && dl.rawPath) {
               let directRaw = dl.rawPath;
-              try { directRaw = decodeURIComponent(directRaw); } catch (_) {}
+              try {
+                directRaw = decodeURIComponent(directRaw);
+              } catch (_) {}
               for (const d of dirsToTry) {
                 try {
                   res = await Filesystem.readFile({
@@ -239,7 +242,9 @@ export function renderMediaSlides(container, items, resultThumbnail) {
 
             if (!res) {
               let absP = cleanPath;
-              try { absP = decodeURIComponent(absP); } catch (_) {}
+              try {
+                absP = decodeURIComponent(absP);
+              } catch (_) {}
               try {
                 res = await Filesystem.readFile({ path: absP });
               } catch (_) {}
@@ -683,19 +688,24 @@ export function renderResult(result, originalUrl) {
 
     const isMultiTrackContent = isPlaylistOrAlbum || hasTrackNumbers;
 
+    let failedIndices = [];
+    let allBtn = null;
+    let titleText = "";
+    let countText = "";
+
     if (
       isMultiTrackContent &&
       result.downloads &&
       result.downloads.length >= 2
     ) {
-      const allBtn = document.createElement("button");
+      allBtn = document.createElement("button");
       allBtn.className = "dl-item dl-all-btn";
 
-      const titleText =
+      titleText =
         translations[currentLang]["btn-download-all-title"] || "Download All";
       const rawCountText =
         translations[currentLang]["label-items-count"] || "${count} Items";
-      const countText = rawCountText.replace(
+      countText = rawCountText.replace(
         "${count}",
         result.downloads.length,
       );
@@ -724,7 +734,15 @@ export function renderResult(result, originalUrl) {
         isDownloadingAll = true;
         playlistCancelled = false;
         window._moriDownloadCancelled = false;
+        window._moriPlaylistDownloading = true;
         allBtn.disabled = false; // keep enabled to act as Cancel
+
+        // Clean up any lingering download progress toast before playlist begins
+        const existingToasts = document.querySelectorAll(".download-progress-toast");
+        existingToasts.forEach((el) => el.remove());
+
+        // Keep screen awake throughout playlist download
+        await requestWakeLock(true);
 
         const total = result.downloads.length;
         const progressStr =
@@ -734,60 +752,190 @@ export function renderResult(result, originalUrl) {
         const titleSpan = allBtn.querySelector(".dl-all-title");
         const badgeEl = allBtn.querySelector(".dl-all-badge");
 
-        if (titleSpan) titleSpan.textContent = progressStr;
+        // Determine items to process: if failed items exist, retry only those!
+        const isRetryMode = failedIndices.length > 0;
+        const indicesToProcess = isRetryMode
+          ? [...failedIndices]
+          : Array.from({ length: total }, (_, i) => i);
+
         // Show cancel affordance in badge
-        if (badgeEl) badgeEl.textContent = cancelLabel;
-
-        for (let i = 0; i < total; i++) {
-          if (playlistCancelled) break;
-
-          const item = result.downloads[i];
-          const currNum = i + 1;
-
-          if (titleSpan)
-            titleSpan.textContent = `${progressStr} ${currNum}/${total}`;
-
-          // Target item button in UI if available
-          const itemBtns = downloadList.querySelectorAll(
-            ".dl-item:not(.dl-all-btn)",
-          );
-          const targetBtn = itemBtns[i] || null;
-
-          try {
-            await startNativeDownload(
-              item.url,
-              item.type,
-              result.title,
-              targetBtn,
-              result.sourceUrl || originalUrl,
-              false, // don't reset cancel flag between tracks
-            );
-          } catch (err) {
-            console.error("Batch download track error:", err);
-          }
-
-          if (playlistCancelled) break;
-
-          // Sequential delay of 300ms between tracks
-          await new Promise((r) => setTimeout(r, 300));
+        if (badgeEl) {
+          badgeEl.textContent = cancelLabel;
+          badgeEl.style.backgroundColor = "";
+          badgeEl.style.color = "";
         }
 
-        if (titleSpan) titleSpan.textContent = titleText;
-        if (badgeEl) badgeEl.textContent = countText;
-        allBtn.disabled = false;
+        let currentFailedIndices = [];
+
+        // Start Foreground Service notification
+        if (window.MoriMainBridge?.startDownloadService) {
+          try {
+            window.MoriMainBridge.startDownloadService(
+              `Downloading Playlist (1/${indicesToProcess.length})...`,
+            );
+          } catch (_) {}
+        }
+
+        try {
+          for (let step = 0; step < indicesToProcess.length; step++) {
+            if (playlistCancelled) break;
+
+            const i = indicesToProcess[step];
+            const item = result.downloads[i];
+            const currNum = step + 1;
+
+            if (titleSpan) {
+              titleSpan.textContent = `${progressStr} ${currNum}/${indicesToProcess.length}`;
+            }
+
+            // Target item button in UI if available
+            const itemBtns = downloadList.querySelectorAll(
+              ".dl-item:not(.dl-all-btn)",
+            );
+            const targetBtn = itemBtns[i] || null;
+
+            const cleanLabel = (item.type || "")
+              .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "")
+              .trim();
+
+            if (window.MoriMainBridge?.startDownloadService) {
+              try {
+                window.MoriMainBridge.startDownloadService(
+                  `Downloading (${currNum}/${indicesToProcess.length}): ${cleanLabel || result.title}`,
+                );
+              } catch (_) {}
+            }
+
+            let dlResult = null;
+            try {
+              dlResult = await startNativeDownload(
+                item.url,
+                item.type,
+                result.title,
+                targetBtn,
+                result.sourceUrl || originalUrl,
+                false, // don't reset cancel flag between tracks
+              );
+            } catch (err) {
+              console.error("Batch download track error:", err);
+              dlResult = { success: false, error: err?.message };
+            }
+
+            if (playlistCancelled) break;
+
+            if (dlResult && dlResult.success) {
+              if (targetBtn) {
+                const b = targetBtn.querySelector(".dl-badge");
+                if (b) {
+                  b.textContent = "SAVED";
+                  b.style.backgroundColor = "";
+                  b.style.color = "";
+                }
+              }
+            } else {
+              currentFailedIndices.push(i);
+              if (targetBtn) {
+                const b = targetBtn.querySelector(".dl-badge");
+                if (b) {
+                  b.textContent = "FAILED";
+                  b.style.backgroundColor = "var(--color-danger, #ef4444)";
+                  b.style.color = "#ffffff";
+                }
+              }
+            }
+
+            if (playlistCancelled) break;
+
+            // Smart delay between tracks: 1200ms normal, 2500ms on error to prevent rate limiting
+            const delayMs = dlResult && dlResult.success ? 1200 : 2500;
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+        } finally {
+          window._moriPlaylistDownloading = false;
+          releaseWakeLock();
+          // Clean up any uncompleted progress toast so nothing is left stuck on screen
+          const lingeringToasts = document.querySelectorAll(
+            ".download-progress-toast:not(.completed)",
+          );
+          lingeringToasts.forEach((el) => el.remove());
+
+          if (window.MoriMainBridge?.stopDownloadService) {
+            try {
+              window.MoriMainBridge.stopDownloadService();
+            } catch (_) {}
+          }
+        }
+
+        // Update failed indices list
+        failedIndices = currentFailedIndices;
         isDownloadingAll = false;
+        allBtn.disabled = false;
 
         if (playlistCancelled) {
           showToast(
             translations[currentLang]["toast-download-cancelled"] ||
               "Download cancelled",
           );
+          if (titleSpan) titleSpan.textContent = titleText;
+          if (badgeEl) {
+            badgeEl.textContent = countText;
+            badgeEl.style.backgroundColor = "";
+            badgeEl.style.color = "";
+          }
         } else {
-          const completeMsg = (
-            translations[currentLang]["download-all-complete"] ||
-            "All ${count} items queued for download!"
-          ).replace("${count}", total);
-          showToast(completeMsg);
+          const failedCount = failedIndices.length;
+          const successfulTotal = total - failedCount;
+
+          if (failedCount === 0) {
+            // 100% SUCCESS
+            playCompletionSound();
+            const completeMsg = (
+              translations[currentLang]["download-all-complete"] ||
+              "All ${count} items downloaded!"
+            ).replace("${count}", total);
+            showToast(completeMsg);
+
+            if (window.MoriMainBridge?.showCompleteNotification) {
+              try {
+                window.MoriMainBridge.showCompleteNotification(
+                  result.title || "Playlist",
+                  `All ${total} items successfully downloaded.`,
+                );
+              } catch (_) {}
+            }
+
+            if (titleSpan) titleSpan.textContent = titleText;
+            if (badgeEl) {
+              badgeEl.textContent = countText;
+              badgeEl.style.backgroundColor = "";
+              badgeEl.style.color = "";
+            }
+          } else {
+            // PARTIAL SUCCESS — Offer Retry Failed
+            const partialTemplate =
+              translations[currentLang]["download-partial-complete"] ||
+              "Downloaded ${success}/${total} items (${failed} failed)";
+            const summaryMsg = partialTemplate
+              .replace("${success}", successfulTotal)
+              .replace("${total}", total)
+              .replace("${failed}", failedCount);
+            showToast(summaryMsg);
+
+            const retryTitleTemplate =
+              translations[currentLang]["download-retry-failed"] ||
+              "Retry Failed (${count})";
+            const retryTitle = retryTitleTemplate.replace(
+              "${count}",
+              failedCount,
+            );
+
+            if (titleSpan) titleSpan.textContent = retryTitle;
+            if (badgeEl) {
+              badgeEl.textContent = "RETRY";
+              badgeEl.style.backgroundColor = "var(--color-danger, #ef4444)";
+              badgeEl.style.color = "#ffffff";
+            }
+          }
         }
         playlistCancelled = false;
         window._moriDownloadCancelled = false;
@@ -814,15 +962,40 @@ export function renderResult(result, originalUrl) {
         btn.innerHTML = `<div>${translations[currentLang]["label-download"]} ${index + 1}</div><span>${escapeHtml(label)}</span>`;
       }
 
-      btn.addEventListener("click", (e) =>
-        startNativeDownload(
+      btn.addEventListener("click", async (e) => {
+        const res = await startNativeDownload(
           dl.url,
           dl.type,
           result.title,
           e.currentTarget,
           result.sourceUrl || originalUrl,
-        ),
-      );
+        );
+        if (res && res.success && failedIndices.includes(index)) {
+          failedIndices = failedIndices.filter((idx) => idx !== index);
+          if (allBtn) {
+            const titleSpan = allBtn.querySelector(".dl-all-title");
+            const badgeEl = allBtn.querySelector(".dl-all-badge");
+            if (failedIndices.length === 0) {
+              if (titleSpan) titleSpan.textContent = titleText;
+              if (badgeEl) {
+                badgeEl.textContent = countText;
+                badgeEl.style.backgroundColor = "";
+                badgeEl.style.color = "";
+              }
+            } else {
+              if (titleSpan) {
+                const retryTitleTemplate =
+                  translations[currentLang]["download-retry-failed"] ||
+                  "Retry Failed (${count})";
+                titleSpan.textContent = retryTitleTemplate.replace(
+                  "${count}",
+                  failedIndices.length,
+                );
+              }
+            }
+          }
+        }
+      });
       downloadList.appendChild(btn);
     });
   }

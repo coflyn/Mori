@@ -16,6 +16,7 @@ import {
   checkWifiOnlyGuard,
   autoClearInputBox,
   getUserAgent,
+  getCookiesFromHeaders,
 } from "../utils/index.js";
 import { currentLang } from "../modules/core.js";
 import { scraperFetch } from "../scrapers/httpHelper.js";
@@ -41,10 +42,12 @@ export async function startNativeDownload(
     showToast(
       translations[currentLang]["label-error"] + ": Invalid download link",
     );
-    return;
+    return { success: false, error: "Invalid download link" };
   }
 
-  if (!(await checkWifiOnlyGuard())) return;
+  if (!(await checkWifiOnlyGuard())) {
+    return { success: false, error: "Wifi only guard" };
+  }
 
   if (
     url.startsWith("file://") ||
@@ -52,7 +55,7 @@ export async function startNativeDownload(
     url.startsWith("content://")
   ) {
     showToast("File is already stored locally");
-    return;
+    return { success: true, skipped: true };
   }
 
   const tauriInvoke =
@@ -70,14 +73,16 @@ export async function startNativeDownload(
     } catch (_) {
       window.open(url, "_blank");
     }
-    return;
+    return { success: true };
   }
 
   if (resetCancelFlag) {
     window._moriDownloadCancelled = false;
   }
   // If batch already cancelled, bail immediately
-  if (window._moriDownloadCancelled) return;
+  if (window._moriDownloadCancelled) {
+    return { success: false, error: "Cancelled" };
+  }
 
   window._moriActiveDownloadUrl = sourceUrl || url;
   window.dispatchEvent(
@@ -135,8 +140,9 @@ export async function startNativeDownload(
   const updateProgress = (pct, statusText) => {
     if (hideProgress) return;
     if (typeof pct === "number" && !isNaN(pct)) {
+      const maxCap = pct >= 100 ? 100 : 99;
       const targetPct = Math.min(
-        99,
+        maxCap,
         Math.max(currentProgressVal, Math.round(pct)),
       );
       currentProgressVal = targetPct;
@@ -223,18 +229,27 @@ export async function startNativeDownload(
       }
     }
 
-    const isAudio = /mp3|audio|128k|48k|m4a/i.test(type);
+    const isAudio = /mp3|audio|128k|48k|m4a|wav|flac/i.test(type);
     const isImage =
-      /image|photo|jpg|png|webp/i.test(type) ||
+      /image|photo|jpg|jpeg|png|webp/i.test(type) ||
       /\.(jpg|jpeg|png|webp)/i.test(url);
-    let ext = isAudio ? "MP3" : isImage ? "JPG" : "MP4";
-    const typeStr = type || "";
-    if (/\.png(\?|$)/i.test(url) || typeStr.toLowerCase().includes("png"))
-      ext = "PNG";
-    if (/\.webp(\?|$)/i.test(url) || typeStr.toLowerCase().includes("webp"))
-      ext = "WEBP";
-    if (/\.mp4(\?|$)/i.test(url) || typeStr.toLowerCase().includes("video"))
-      ext = "MP4";
+    let ext = isAudio ? "mp3" : isImage ? "jpg" : "mp4";
+    const typeStr = (type || "").toLowerCase();
+    const urlLower = (url || "").toLowerCase();
+    if (/\.png(\?|$)/i.test(urlLower) || typeStr.includes("png"))
+      ext = "png";
+    else if (/\.webp(\?|$)/i.test(urlLower) || typeStr.includes("webp"))
+      ext = "webp";
+    else if (/\.m4a(\?|$)/i.test(urlLower) || typeStr.includes("m4a"))
+      ext = "m4a";
+    else if (/\.mp3(\?|$)/i.test(urlLower) || typeStr.includes("mp3"))
+      ext = "mp3";
+    else if (/\.jpe?g(\?|$)/i.test(urlLower) || typeStr.includes("jpg") || typeStr.includes("jpeg"))
+      ext = "jpg";
+    else if (/\.mp4(\?|$)/i.test(urlLower) || typeStr.includes("video") || typeStr.includes("mp4"))
+      ext = "mp4";
+
+    ext = ext.toLowerCase();
 
     const cleanTypeLabel = (type || "")
       .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP)\]/gi, "")
@@ -283,6 +298,15 @@ export async function startNativeDownload(
     } else {
       // default: Title_Timestamp
       fileName = `${sanitizedTitle}_${Date.now()}.${ext}`;
+    }
+
+    // Ensure file extension is strictly lowercase for broad device compatibility
+    const dotPos = fileName.lastIndexOf(".");
+    if (dotPos > 0 && dotPos < fileName.length - 1) {
+      fileName =
+        fileName.substring(0, dotPos) +
+        "." +
+        fileName.substring(dotPos + 1).toLowerCase();
     }
 
     const videoSubfolder = localStorage.getItem("mori_download_path") || "Mori";
@@ -378,8 +402,16 @@ export async function startNativeDownload(
         }
         if (checkExist) {
           if (overwriteMode === "skip") {
-            // File already exists — skip download silently
-            return;
+            // File already exists — skip download silently but mark as saved
+            if (btn) {
+              const b = btn.querySelector(".dl-badge");
+              if (b) b.textContent = "SAVED";
+            }
+            return {
+              success: true,
+              skipped: true,
+              path: fullPath + "/" + fileName,
+            };
           } else if (overwriteMode === "overwrite") {
             // Overwrite: keep same filename, existing file will be replaced
           } else {
@@ -388,7 +420,7 @@ export async function startNativeDownload(
             const baseName =
               dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
             let counter = 1;
-            let newFileName = `${baseName}_${counter}.${ext}`;
+            let newFileName = `${baseName}_${counter}.${ext.toLowerCase()}`;
             while (true) {
               let exist = null;
               for (const dir of directoriesToTry) {
@@ -403,7 +435,7 @@ export async function startNativeDownload(
                 break;
               }
               counter++;
-              newFileName = `${baseName}_${counter}.${ext}`;
+              newFileName = `${baseName}_${counter}.${ext.toLowerCase()}`;
             }
           }
         }
@@ -417,13 +449,18 @@ export async function startNativeDownload(
 
     // Check cancel BEFORE starting resolve phase
     if (window._moriDownloadCancelled) {
-      cancelDownloadProgressToast();
+      if (!window._moriPlaylistDownloading) {
+        cancelDownloadProgressToast();
+      } else {
+        const lingering = document.querySelectorAll(".download-progress-toast");
+        lingering.forEach((el) => el.remove());
+      }
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalContent;
       }
       if (progressContainer) progressContainer.classList.add("hidden");
-      return;
+      return { success: false, error: "Cancelled" };
     }
 
     let actualDownloadUrl = url;
@@ -442,46 +479,67 @@ export async function startNativeDownload(
       try {
         if (url.startsWith("applemusic_resolve:")) {
           const payloadStr = url.replace("applemusic_resolve:", "");
-          const res = await scraperFetch({
-            method: "POST",
-            url: "https://aplmate.com/action/track",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              "User-Agent":
-                "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
-              "X-Requested-With": "XMLHttpRequest",
-              Referer: "https://aplmate.com/",
-              Origin: "https://aplmate.com",
-            },
-            data: payloadStr,
-          });
-          let dd = typeof res === "string" ? JSON.parse(res) : res;
-          let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
-          if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(dlHtml, "text/html");
           let foundLink = "";
-          doc.querySelectorAll("a").forEach((a) => {
-            const href = a.getAttribute("href");
-            const text = a.textContent.trim();
-            if (
-              href &&
-              (href.includes("/dl?token=") || a.classList.contains("abutton"))
-            ) {
-              if (href.includes("ko-fi.com") || href.includes("premium.html"))
-                return;
-              if (text.toLowerCase().includes("another song")) return;
-              if (!foundLink) {
-                foundLink = href.startsWith("http")
-                  ? href
-                  : "https://aplmate.com" + href;
+          let lastErr = null;
+          const maxResolveAttempts = 3;
+
+          for (let attempt = 1; attempt <= maxResolveAttempts; attempt++) {
+            if (window._moriDownloadCancelled) break;
+            try {
+              if (attempt > 1) {
+                updateProgress(
+                  20,
+                  `Resolving Apple Music track (Retry ${attempt}/${maxResolveAttempts})...`,
+                );
+                await new Promise((r) => setTimeout(r, 1500 * attempt));
               }
+              const res = await scraperFetch({
+                method: "POST",
+                url: "https://aplmate.com/action/track",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  "User-Agent":
+                    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+                  "X-Requested-With": "XMLHttpRequest",
+                  Referer: "https://aplmate.com/",
+                  Origin: "https://aplmate.com",
+                },
+                data: payloadStr,
+              });
+              let dd = typeof res === "string" ? JSON.parse(res) : res;
+              let dlHtml = (typeof dd === "object" ? dd?.data : dd) || "";
+              if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(dlHtml, "text/html");
+              doc.querySelectorAll("a").forEach((a) => {
+                const href = a.getAttribute("href");
+                const text = a.textContent.trim();
+                if (
+                  href &&
+                  (href.includes("/dl?token=") || a.classList.contains("abutton"))
+                ) {
+                  if (href.includes("ko-fi.com") || href.includes("premium.html"))
+                    return;
+                  if (text.toLowerCase().includes("another song")) return;
+                  if (!foundLink) {
+                    foundLink = href.startsWith("http")
+                      ? href
+                      : "https://aplmate.com" + href;
+                  }
+                }
+              });
+              if (foundLink) break;
+            } catch (err) {
+              lastErr = err;
             }
-          });
+          }
+
           if (foundLink) {
             actualDownloadUrl = foundLink;
           } else {
-            throw new Error("Could not resolve Apple Music download link");
+            throw (
+              lastErr || new Error("Could not resolve Apple Music download link")
+            );
           }
         } else if (url.startsWith("spotidown_resolve:")) {
           if (btn)
@@ -491,56 +549,90 @@ export async function startNativeDownload(
 
           const parts = url.replace("spotidown_resolve:", "").split("|||");
           const payloadStr = parts[0];
-          const cookiesStr = parts[1] ? decodeURIComponent(parts[1]) : "";
-          const reqHeaders = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": getUserAgent(),
-            "X-Requested-With": "XMLHttpRequest",
-            Referer: "https://spotidown.app/",
-            Origin: "https://spotidown.app",
-          };
-          if (cookiesStr) reqHeaders["Cookie"] = cookiesStr;
+          let cookiesStr = parts[1] ? decodeURIComponent(parts[1]) : "";
 
-          const res = await scraperFetch(
-            {
-              url: "https://spotidown.app/action/track",
-              method: "POST",
-              headers: reqHeaders,
-              data: payloadStr,
-              rawResponse: true,
-            },
-            "SpotiDown",
-          );
-          let dd = res?.data ?? res;
-          if (typeof dd === "string") {
-            try {
-              dd = JSON.parse(dd);
-            } catch (e) {}
-          }
-          let dlHtml =
-            (typeof dd === "object" ? dd?.data || dd?.html : dd) || "";
-          if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(dlHtml, "text/html");
           let foundLink = "";
-          doc.querySelectorAll("a").forEach((a) => {
-            const href = a.getAttribute("href");
-            const text = a.textContent.trim();
-            if (
-              href &&
-              href.startsWith("http") &&
-              !href.includes("premium.html") &&
-              !href.includes("ko-fi.com") &&
-              text !== "Download Another Song"
-            ) {
-              if (!foundLink) foundLink = href;
+          let lastErr = null;
+          const maxResolveAttempts = 3;
+
+          for (let attempt = 1; attempt <= maxResolveAttempts; attempt++) {
+            if (window._moriDownloadCancelled) break;
+            try {
+              if (attempt > 1) {
+                updateProgress(
+                  20,
+                  `Resolving Spotify track (Retry ${attempt}/${maxResolveAttempts})...`,
+                );
+                await new Promise((r) => setTimeout(r, 1500 * attempt));
+                // Refresh session cookies from spotidown.app if failed previously
+                try {
+                  const r1 = await scraperFetch({
+                    url: "https://spotidown.app/",
+                    headers: { "User-Agent": getUserAgent() },
+                    rawResponse: true,
+                  });
+                  const freshCookies = getCookiesFromHeaders(r1.headers);
+                  if (freshCookies) cookiesStr = freshCookies;
+                } catch (_) {}
+              }
+
+              const reqHeaders = {
+                "Content-Type":
+                  "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": getUserAgent(),
+                "X-Requested-With": "XMLHttpRequest",
+                Referer: "https://spotidown.app/",
+                Origin: "https://spotidown.app",
+              };
+              if (cookiesStr) reqHeaders["Cookie"] = cookiesStr;
+
+              const res = await scraperFetch(
+                {
+                  url: "https://spotidown.app/action/track",
+                  method: "POST",
+                  headers: reqHeaders,
+                  data: payloadStr,
+                  rawResponse: true,
+                },
+                "SpotiDown",
+              );
+              let dd = res?.data ?? res;
+              if (typeof dd === "string") {
+                try {
+                  dd = JSON.parse(dd);
+                } catch (e) {}
+              }
+              let dlHtml =
+                (typeof dd === "object" ? dd?.data || dd?.html : dd) || "";
+              if (typeof dlHtml !== "string") dlHtml = JSON.stringify(dlHtml);
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(dlHtml, "text/html");
+              doc.querySelectorAll("a").forEach((a) => {
+                const href = a.getAttribute("href");
+                const text = a.textContent.trim();
+                if (
+                  href &&
+                  href.startsWith("http") &&
+                  !href.includes("premium.html") &&
+                  !href.includes("ko-fi.com") &&
+                  text !== "Download Another Song"
+                ) {
+                  if (!foundLink) foundLink = href;
+                }
+              });
+              if (foundLink) break;
+            } catch (err) {
+              lastErr = err;
             }
-          });
+          }
+
           if (foundLink) {
             updateProgress(50, "Starting MP3 download...");
             actualDownloadUrl = foundLink;
           } else {
-            throw new Error("Could not resolve SpotiDown download link");
+            throw (
+              lastErr || new Error("Could not resolve SpotiDown download link")
+            );
           }
         } else if (url.startsWith("soundloaders_resolve:")) {
           if (btn)
@@ -552,43 +644,71 @@ export async function startNativeDownload(
           const dataVal = parts[0];
           const tokenVal = parts[1];
           const BASE = "https://soundloaders.app";
-          const res = await scraperFetch(
-            {
-              url: BASE + "/action/tracks",
-              method: "POST",
-              headers: {
-                "Content-Type":
-                  "application/x-www-form-urlencoded; charset=UTF-8",
-                "User-Agent": getUserAgent(),
-                "X-Requested-With": "XMLHttpRequest",
-                Referer: BASE + "/",
-                Origin: BASE,
-              },
-              data:
-                "data=" +
-                encodeURIComponent(dataVal) +
-                "&track_token=" +
-                encodeURIComponent(tokenVal),
-              rawResponse: true,
-            },
-            "Soundloaders",
-          );
-          let dd = res?.data ?? res;
-          if (typeof dd === "string") {
+
+          let matchLink = "";
+          let lastErr = null;
+          const maxResolveAttempts = 3;
+
+          for (let attempt = 1; attempt <= maxResolveAttempts; attempt++) {
+            if (window._moriDownloadCancelled) break;
             try {
-              dd = JSON.parse(dd);
-            } catch (e) {}
+              if (attempt > 1) {
+                updateProgress(
+                  20,
+                  `Resolving Spotify track (Retry ${attempt}/${maxResolveAttempts})...`,
+                );
+                await new Promise((r) => setTimeout(r, 1500 * attempt));
+              }
+
+              const res = await scraperFetch(
+                {
+                  url: BASE + "/action/tracks",
+                  method: "POST",
+                  headers: {
+                    "Content-Type":
+                      "application/x-www-form-urlencoded; charset=UTF-8",
+                    "User-Agent": getUserAgent(),
+                    "X-Requested-With": "XMLHttpRequest",
+                    Referer: BASE + "/",
+                    Origin: BASE,
+                  },
+                  data:
+                    "data=" +
+                    encodeURIComponent(dataVal) +
+                    "&track_token=" +
+                    encodeURIComponent(tokenVal),
+                  rawResponse: true,
+                },
+                "Soundloaders",
+              );
+              let dd = res?.data ?? res;
+              if (typeof dd === "string") {
+                try {
+                  dd = JSON.parse(dd);
+                } catch (e) {}
+              }
+              let dlHtml =
+                (typeof dd === "object" ? dd?.html || dd?.data : dd) || "";
+              const match = dlHtml.match(
+                /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
+              );
+              if (match && match[1]) {
+                matchLink = match[1];
+                break;
+              }
+            } catch (err) {
+              lastErr = err;
+            }
           }
-          let dlHtml =
-            (typeof dd === "object" ? dd?.html || dd?.data : dd) || "";
-          const match = dlHtml.match(
-            /href=["'](https:\/\/dl\.soundloaders\.app\/cdnv1\?token=[^"']+)["']/,
-          );
-          if (match && match[1]) {
+
+          if (matchLink) {
             updateProgress(50, "Starting MP3 download...");
-            actualDownloadUrl = match[1];
+            actualDownloadUrl = matchLink;
           } else {
-            throw new Error("Could not resolve Soundloaders download link");
+            throw (
+              lastErr ||
+              new Error("Could not resolve Soundloaders download link")
+            );
           }
         } else if (url.startsWith("ytmp3gg_resolve:")) {
           const parts = url.replace("ytmp3gg_resolve:", "").split("|||");
@@ -608,76 +728,101 @@ export async function startNativeDownload(
             "Content-Type": "application/json",
           };
 
-          const convRes = await scraperFetch({
-            url: "https://hub.convert1s.com/api/download",
-            method: "POST",
-            headers,
-            data: JSON.stringify({
-              url: `https://www.youtube.com/watch?v=${ytId}`,
-              os: "macos",
-              output: {
-                type: format === "mp4" ? "video" : "audio",
-                format,
-                quality,
-              },
-              audio: { bitrate: "128k" },
-            }),
-          });
+          let conv = null;
+          let initErr = null;
+          for (let initAttempt = 1; initAttempt <= 3; initAttempt++) {
+            if (window._moriDownloadCancelled) break;
+            try {
+              if (initAttempt > 1) {
+                await new Promise((r) => setTimeout(r, 1500 * initAttempt));
+              }
+              const convRes = await scraperFetch({
+                url: "https://hub.convert1s.com/api/download",
+                method: "POST",
+                headers,
+                data: JSON.stringify({
+                  url: `https://www.youtube.com/watch?v=${ytId}`,
+                  os: "macos",
+                  output: {
+                    type: format === "mp4" ? "video" : "audio",
+                    format,
+                    quality,
+                  },
+                  audio: { bitrate: "128k" },
+                }),
+              });
+              let parsedConv = convRes;
+              if (typeof parsedConv === "string")
+                parsedConv = JSON.parse(parsedConv);
+              if (parsedConv && !parsedConv.error && parsedConv.statusUrl) {
+                conv = parsedConv;
+                break;
+              }
+            } catch (e) {
+              initErr = e;
+            }
+          }
 
-          let conv = convRes;
-          if (typeof conv === "string") conv = JSON.parse(conv);
-
-          if (!conv || conv.error || !conv.statusUrl) {
-            throw new Error(
-              conv?.error ||
-                conv?.message ||
-                "Failed to initialize ytmp3.gg conversion",
+          if (!conv || !conv.statusUrl) {
+            throw (
+              initErr ||
+              new Error("Failed to initialize ytmp3.gg conversion")
             );
           }
 
           let downloadUrl = null;
           let pollCount = 0;
-          const maxPolls = 30;
+          const maxPolls = 40;
 
           while (!downloadUrl && pollCount < maxPolls) {
             // Check cancel between polls
             if (window._moriDownloadCancelled) {
-              cancelDownloadProgressToast();
+              if (!window._moriPlaylistDownloading) {
+                cancelDownloadProgressToast();
+              } else {
+                const lingering = document.querySelectorAll(".download-progress-toast");
+                lingering.forEach((el) => el.remove());
+              }
               if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
               }
               if (progressContainer) progressContainer.classList.add("hidden");
-              return;
+              return { success: false, error: "Cancelled" };
             }
             if (btn)
               btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${pollCount + 1}/${maxPolls})</div>`;
             updateProgress(
-              Math.min(90, 10 + pollCount * 3),
+              Math.min(90, 10 + pollCount * 2),
               `Converting... (${pollCount + 1}/${maxPolls})`,
             );
 
             await new Promise((r) => setTimeout(r, 1500));
-            const pollData = await scraperFetch({
-              url: conv.statusUrl,
-              headers: {
-                Origin: "https://media.ytmp3.gg",
-                Referer: "https://media.ytmp3.gg/",
-                "User-Agent": getUserAgent(),
-                Accept: "application/json, text/plain, */*",
-              },
-            });
+            try {
+              const pollData = await scraperFetch({
+                url: conv.statusUrl,
+                headers: {
+                  Origin: "https://media.ytmp3.gg",
+                  Referer: "https://media.ytmp3.gg/",
+                  "User-Agent": getUserAgent(),
+                  Accept: "application/json, text/plain, */*",
+                },
+              });
+              let poll =
+                typeof pollData === "string" ? JSON.parse(pollData) : pollData;
+              if (poll && poll.status === "completed" && poll.downloadUrl) {
+                downloadUrl = poll.downloadUrl;
+                break;
+              }
+              if (poll && (poll.status === "error" || poll.status === "failed")) {
+                throw new Error("Conversion failed on ytmp3.gg server");
+              }
+            } catch (pollErr) {
+              console.warn("Poll attempt error:", pollErr);
+              if (pollErr?.message?.includes("Conversion failed"))
+                throw pollErr;
+            }
             pollCount++;
-
-            let poll =
-              typeof pollData === "string" ? JSON.parse(pollData) : pollData;
-            if (poll && poll.status === "completed" && poll.downloadUrl) {
-              downloadUrl = poll.downloadUrl;
-              break;
-            }
-            if (poll && (poll.status === "error" || poll.status === "failed")) {
-              throw new Error("Conversion failed on ytmp3.gg server");
-            }
           }
           if (downloadUrl) {
             actualDownloadUrl = downloadUrl;
@@ -690,24 +835,29 @@ export async function startNativeDownload(
           // Handle SnapSave tokens or general worker resolves
           let resolved = false;
           let pollCount = 0;
-          const maxPolls = 15;
+          const maxPolls = 20;
 
           while (!resolved && pollCount < maxPolls) {
             // Check cancel between polls
             if (window._moriDownloadCancelled) {
-              cancelDownloadProgressToast();
+              if (!window._moriPlaylistDownloading) {
+                cancelDownloadProgressToast();
+              } else {
+                const lingering = document.querySelectorAll(".download-progress-toast");
+                lingering.forEach((el) => el.remove());
+              }
               if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
               }
               if (progressContainer) progressContainer.classList.add("hidden");
-              return;
+              return { success: false, error: "Cancelled" };
             }
             if (btn) {
               btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} ${pollCount > 0 ? `(${pollCount})` : ""}</div>`;
             }
             updateProgress(
-              Math.min(90, 10 + pollCount * 5),
+              Math.min(90, 10 + pollCount * 4),
               `Resolving URL... (${pollCount + 1}/${maxPolls})`,
             );
 
@@ -1005,7 +1155,12 @@ export async function startNativeDownload(
             }).catch(() => {});
           }
         }
-        cancelDownloadProgressToast();
+        if (!window._moriPlaylistDownloading) {
+          cancelDownloadProgressToast();
+        } else {
+          const lingering = document.querySelectorAll(".download-progress-toast");
+          lingering.forEach((el) => el.remove());
+        }
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = originalContent;
@@ -1042,7 +1197,12 @@ export async function startNativeDownload(
           }).catch(() => {});
         }
       }
-      cancelDownloadProgressToast();
+      if (!window._moriPlaylistDownloading) {
+        cancelDownloadProgressToast();
+      } else {
+        const lingering = document.querySelectorAll(".download-progress-toast");
+        lingering.forEach((el) => el.remove());
+      }
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalContent;
@@ -1056,6 +1216,8 @@ export async function startNativeDownload(
       const b = btn.querySelector(".dl-badge");
       if (b) {
         b.textContent = "SAVED";
+        b.style.backgroundColor = "";
+        b.style.color = "";
       } else {
         btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;
       }
@@ -1063,10 +1225,10 @@ export async function startNativeDownload(
 
     // Trigger Haptic & Sound Feedback
     triggerHaptic("success");
-    playCompletionSound();
-
-    // Auto-Clear Input Box after Download
-    autoClearInputBox();
+    if (!window._moriPlaylistDownloading) {
+      playCompletionSound();
+      autoClearInputBox();
+    }
 
     // Resolve absolute URI for gallery and preview
     let savedUri = savedFile.uri || savedFile.path;
@@ -1108,18 +1270,19 @@ export async function startNativeDownload(
       } catch (_) {}
     }
 
-    // Morph the progress toast into the Saved confirmation toast seamlessly!
+    // Morph progress toast into Saved confirmation
     const completeTitle =
       translations[currentLang]["toast-download-complete"] ||
       "Download Complete";
+    const dismissMs = window._moriPlaylistDownloading ? 1200 : 3000;
     completeDownloadProgressToast(
       completeTitle,
       `/Download/${targetFolder}`,
-      3000,
+      dismissMs,
     );
 
     // Trigger System Tray Notification when download finishes
-    if (window.MoriMainBridge?.showCompleteNotification) {
+    if (!window._moriPlaylistDownloading && window.MoriMainBridge?.showCompleteNotification) {
       try {
         window.MoriMainBridge.showCompleteNotification(
           effectiveTitle,
@@ -1129,7 +1292,7 @@ export async function startNativeDownload(
     }
 
     setTimeout(() => {
-      if (btn) {
+      if (btn && !window._moriPlaylistDownloading) {
         btn.disabled = false;
         const b = btn.querySelector(".dl-badge");
         if (b) {
@@ -1139,8 +1302,17 @@ export async function startNativeDownload(
           btn.innerHTML = originalContent;
         }
       }
-      progressContainer?.classList.add("hidden");
+      if (!window._moriPlaylistDownloading) {
+        progressContainer?.classList.add("hidden");
+      }
     }, 2500);
+
+    return {
+      success: true,
+      path: savedFile.path,
+      uri: savedUri,
+      title: effectiveTitle,
+    };
   } catch (err) {
     console.error("Download failed", err);
     if (window._moriActiveSimInterval) {
@@ -1158,11 +1330,11 @@ export async function startNativeDownload(
         "Network connection error";
     }
 
-    // Morph progress toast into Error toast seamlessly!
-    failDownloadProgressToast(errorMsg, 3500);
+    const failDismissMs = window._moriPlaylistDownloading ? 2000 : 3500;
+    failDownloadProgressToast(errorMsg, failDismissMs);
 
     // Trigger System Tray Notification when download fails
-    if (window.MoriMainBridge?.showFailedNotification) {
+    if (!window._moriPlaylistDownloading && window.MoriMainBridge?.showFailedNotification) {
       try {
         window.MoriMainBridge.showFailedNotification(
           effectiveTitle || "Media",
@@ -1175,21 +1347,36 @@ export async function startNativeDownload(
       btn.disabled = false;
       const b = btn.querySelector(".dl-badge");
       if (b) {
-        b.textContent =
-          translations[currentLang]["label-download"] || "DOWNLOAD";
+        if (window._moriPlaylistDownloading) {
+          b.textContent = "FAILED";
+          b.style.backgroundColor = "var(--color-danger, #ef4444)";
+          b.style.color = "#ffffff";
+        } else {
+          b.textContent =
+            translations[currentLang]["label-download"] || "DOWNLOAD";
+        }
       } else {
         btn.innerHTML = originalContent;
       }
     }
-    if (progressContainer) progressContainer.classList.add("hidden");
+    if (!window._moriPlaylistDownloading && progressContainer) {
+      progressContainer.classList.add("hidden");
+    }
+
+    return {
+      success: false,
+      error: errorMsg,
+    };
   } finally {
     window._moriActiveDownloadUrl = null;
     window.dispatchEvent(new CustomEvent("mori_download_ended"));
-    releaseWakeLock();
-    if (window.MoriMainBridge?.stopDownloadService) {
-      try {
-        window.MoriMainBridge.stopDownloadService();
-      } catch (e) {}
+    if (!window._moriPlaylistDownloading) {
+      releaseWakeLock();
+      if (window.MoriMainBridge?.stopDownloadService) {
+        try {
+          window.MoriMainBridge.stopDownloadService();
+        } catch (e) {}
+      }
     }
     if (window._moriActiveSimInterval) {
       clearInterval(window._moriActiveSimInterval);

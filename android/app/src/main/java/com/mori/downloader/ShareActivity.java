@@ -384,11 +384,15 @@ public class ShareActivity extends AppCompatActivity {
                     if (!targetDir.exists()) targetDir.mkdirs();
 
                     String sanitizedName = sanitize(filename);
+                    int dotPos = sanitizedName.lastIndexOf('.');
+                    if (dotPos > 0 && dotPos < sanitizedName.length() - 1) {
+                        sanitizedName = sanitizedName.substring(0, dotPos) + "." + sanitizedName.substring(dotPos + 1).toLowerCase();
+                    }
                     File targetFile = new File(targetDir, sanitizedName);
                     if (targetFile.exists()) {
                         int dot = sanitizedName.lastIndexOf('.');
                         String stem = dot > 0 ? sanitizedName.substring(0, dot) : sanitizedName;
-                        String ext  = dot > 0 ? sanitizedName.substring(dot) : "";
+                        String ext  = dot > 0 ? sanitizedName.substring(dot).toLowerCase() : "";
                         int c = 1;
                         while (targetFile.exists()) {
                             targetFile = new File(targetDir, stem + "_" + c + ext);
