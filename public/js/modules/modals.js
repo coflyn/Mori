@@ -21,10 +21,15 @@ export const hideConfirm = () => {
     // Reset to prevent stale closures from previous server prompts
     confirmOverlay._onDismissOutside = null;
   }
-  if (cancelConfirmBtn) cancelConfirmBtn.textContent = "CANCEL";
+  if (cancelConfirmBtn) {
+    cancelConfirmBtn.textContent = "CANCEL";
+    cancelConfirmBtn.style.color = "";
+    cancelConfirmBtn.classList.remove("neutral-btn");
+  }
   if (okConfirmBtn) {
     okConfirmBtn.textContent = "CONFIRM";
     okConfirmBtn.style.color = "";
+    okConfirmBtn.classList.remove("neutral-btn");
   }
 };
 
@@ -46,8 +51,12 @@ export function showConfirm(title, message, onConfirm, onCancel = null) {
 
   // Reset button states when showing
   cancelConfirmBtn.classList.remove("hidden");
+  cancelConfirmBtn.textContent = "CANCEL";
+  cancelConfirmBtn.style.color = "";
+  cancelConfirmBtn.classList.remove("neutral-btn");
   okConfirmBtn.textContent = "CONFIRM";
   okConfirmBtn.style.color = "";
+  okConfirmBtn.classList.remove("neutral-btn");
 }
 
 export function showInfoModal(title, message, options = {}) {

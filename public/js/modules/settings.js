@@ -8,6 +8,7 @@ import {
   setUtilsState,
   showToast,
   triggerHaptic,
+  previewSound,
 } from "../utils/index.js";
 import { setUIState, renderHistory } from "../ui.js";
 import { showConfirm } from "./modals.js";
@@ -211,17 +212,23 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
           ? "normal"
           : storageKey === "mori_text_size"
             ? "medium"
-            : storageKey === "mori_concurrent"
-              ? "1"
-              : storageKey === "mori_overwrite"
-                ? "rename"
-                : storageKey === "mori_max_retry"
-                  ? "3"
-                  : storageKey === "mori_doh"
-                    ? "off"
-                    : storageKey === "mori_toast_dur"
-                      ? "3"
-                      : "default";
+            : storageKey === "mori_glassmorphism"
+              ? "subtle"
+              : storageKey === "mori_ui_corner"
+                ? "modern"
+                : storageKey === "mori_sound_pack"
+                  ? "chime"
+                  : storageKey === "mori_concurrent"
+                    ? "1"
+                    : storageKey === "mori_overwrite"
+                      ? "rename"
+                      : storageKey === "mori_max_retry"
+                        ? "3"
+                        : storageKey === "mori_doh"
+                          ? "off"
+                          : storageKey === "mori_toast_dur"
+                            ? "3"
+                            : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -240,10 +247,14 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
     document.querySelectorAll(".dropdown-menu").forEach((m) => {
       if (m !== menu) m.classList.add("hidden");
     });
+    document.querySelectorAll(".settings-item").forEach((s) => {
+      s.classList.remove("active-dropdown");
+    });
 
     menu.classList.toggle("hidden");
 
     if (!menu.classList.contains("hidden")) {
+      select.closest(".settings-item")?.classList.add("active-dropdown");
       // Reset to natural downward position for calculation
       menu.classList.remove("open-up");
 
@@ -256,24 +267,30 @@ function setupCustomSelect(selectId, storageKey, textId, menuId) {
       }
     } else {
       // Clean up when closing
+      select.closest(".settings-item")?.classList.remove("active-dropdown");
       menu.classList.remove("open-up");
     }
   });
 
   menu.querySelectorAll(".dropdown-item").forEach((item) => {
-    item.addEventListener("click", () => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
       const val = item.getAttribute("data-value");
       localStorage.setItem(storageKey, val);
       syncSettingToNative(storageKey, val);
       text.textContent = item.textContent;
       menu.classList.add("hidden");
       menu.classList.remove("open-up"); // Clean up on selection
+      select.closest(".settings-item")?.classList.remove("active-dropdown");
 
       if (storageKey === "mori_accent") applyColorAccent();
       if (storageKey === "mori_font") applyFont();
       if (storageKey === "mori_lang") switchLanguage(val);
       if (storageKey === "mori_anim_speed") applyAnimSpeed();
       if (storageKey === "mori_text_size") applyTextSize();
+      if (storageKey === "mori_glassmorphism") applyGlassmorphism();
+      if (storageKey === "mori_ui_corner") applyUiCorner();
+      if (storageKey === "mori_sound_pack") previewSound(val);
 
       const labelText =
         select.closest(".settings-item")?.querySelector(".settings-title span")
@@ -352,6 +369,19 @@ setupCustomSelect(
   "mori_text_size",
   "textSizeText",
   "textSizeMenu",
+);
+setupCustomSelect(
+  "glassSelect",
+  "mori_glassmorphism",
+  "glassText",
+  "glassMenu",
+);
+setupCustomSelect("cornerSelect", "mori_ui_corner", "cornerText", "cornerMenu");
+setupCustomSelect(
+  "soundPackSelect",
+  "mori_sound_pack",
+  "soundPackText",
+  "soundPackMenu",
 );
 setupCustomSelect(
   "concurrentSelect",
@@ -476,6 +506,26 @@ export function applyTextSize() {
 }
 applyTextSize();
 
+export function applyGlassmorphism() {
+  if (!document.body) return;
+  const mode = localStorage.getItem("mori_glassmorphism") || "subtle";
+  document.body.classList.remove("glass-off", "glass-subtle", "glass-deep");
+  document.body.classList.add(`glass-${mode}`);
+}
+applyGlassmorphism();
+
+export function applyUiCorner() {
+  if (!document.body) return;
+  const corner = localStorage.getItem("mori_ui_corner") || "modern";
+  document.body.classList.remove(
+    "corner-sharp",
+    "corner-modern",
+    "corner-round",
+  );
+  document.body.classList.add(`corner-${corner}`);
+}
+applyUiCorner();
+
 // Compact Mode Logic
 const compactModeToggle = document.getElementById("compactModeToggle");
 if (compactModeToggle) {
@@ -529,11 +579,22 @@ if (autoClearInputToggle) {
 }
 
 const downloadSoundToggle = document.getElementById("downloadSoundToggle");
+const soundPackItem = document.getElementById("soundPackItem");
+
+function updateSoundPackVisibility() {
+  if (!soundPackItem) return;
+  const isSoundEnabled =
+    localStorage.getItem("mori_download_sound") !== "false";
+  soundPackItem.style.display = isSoundEnabled ? "flex" : "none";
+}
+updateSoundPackVisibility();
+
 if (downloadSoundToggle) {
   downloadSoundToggle.checked =
     localStorage.getItem("mori_download_sound") !== "false";
   downloadSoundToggle.addEventListener("change", (e) => {
     localStorage.setItem("mori_download_sound", e.target.checked);
+    updateSoundPackVisibility();
     const lang = translations[currentLang] || translations.en;
     showToast(
       e.target.checked
@@ -746,6 +807,9 @@ document.addEventListener("click", (e) => {
   document
     .querySelectorAll(".dropdown-menu")
     .forEach((m) => m.classList.add("hidden"));
+  document
+    .querySelectorAll(".settings-item.active-dropdown")
+    .forEach((s) => s.classList.remove("active-dropdown"));
 
   const interactive = e.target.closest(
     "button, .nav-item, .settings-item, .toggle-switch, .dropdown-item, .paste-btn, .clear-btn, .chip",
@@ -767,8 +831,8 @@ changePathBtn?.addEventListener("click", () => {
        <div class="path-input-wrapper">
          <span class="path-label-sm">${lang["label-subfolder-downloads"]}</span>
          <div class="mori-input-with-icon">
-           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-           <input type="text" id="customPathInput" class="mori-input-noborder" value="${customPath}" placeholder="e.g. Mori">
+           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+           <input type="text" id="customPathInput" class="mori-input-noborder" value="${customPath}" placeholder="e.g. Mori" spellcheck="false" autocomplete="off">
          </div>
        </div>
        <span class="path-label-sm">${lang["label-path-presets"]}</span>
@@ -776,7 +840,10 @@ changePathBtn?.addEventListener("click", () => {
          <button class="path-preset-chip" data-path="Mori">Mori</button>
          <button class="path-preset-chip" data-path="Mori/Videos">Mori/Videos</button>
        </div>
-       <button id="resetPathBtn" class="reset-path-btn">${lang["btn-reset-default"]}</button>
+       <button id="resetPathBtn" class="reset-path-btn">
+         <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+         <span>${lang["btn-reset-default"]}</span>
+       </button>
      </div>`,
     () => {
       const input = document.getElementById("customPathInput");
@@ -791,16 +858,43 @@ changePathBtn?.addEventListener("click", () => {
   );
   setTimeout(() => {
     const input = document.getElementById("customPathInput");
-    document.querySelectorAll(".path-preset-chip").forEach((chip) => {
+    const chips = document.querySelectorAll(
+      ".path-presets-container .path-preset-chip",
+    );
+    const updateActiveChips = () => {
+      const current = input ? input.value.trim() : "";
+      chips.forEach((c) => {
+        if (c.getAttribute("data-path") === current) {
+          c.classList.add("active");
+        } else {
+          c.classList.remove("active");
+        }
+      });
+    };
+    updateActiveChips();
+    input?.addEventListener("input", updateActiveChips);
+
+    chips.forEach((chip) => {
       chip.addEventListener("click", () => {
-        if (input) input.value = chip.getAttribute("data-path");
+        if (input) {
+          input.value = chip.getAttribute("data-path");
+          updateActiveChips();
+          input.focus();
+        }
       });
     });
     document.getElementById("resetPathBtn")?.addEventListener("click", () => {
-      if (input) input.value = "Mori";
+      if (input) {
+        input.value = "Mori";
+        updateActiveChips();
+        input.focus();
+      }
     });
   }, 100);
-  okConfirmBtn.textContent = "SAVE";
+  if (okConfirmBtn) {
+    okConfirmBtn.textContent = "SAVE";
+    okConfirmBtn.classList.add("neutral-btn");
+  }
 });
 
 // Download Path Logic (Music)
@@ -816,8 +910,8 @@ changeMusicPathBtn?.addEventListener("click", () => {
        <div class="path-input-wrapper">
          <span class="path-label-sm">${lang["label-subfolder-downloads"]}</span>
          <div class="mori-input-with-icon">
-           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-           <input type="text" id="customMusicPathInput" class="mori-input-noborder" value="${customMusicPath}" placeholder="e.g. Mori/Music">
+           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+           <input type="text" id="customMusicPathInput" class="mori-input-noborder" value="${customMusicPath}" placeholder="e.g. Mori/Music" spellcheck="false" autocomplete="off">
          </div>
        </div>
        <span class="path-label-sm">${lang["label-path-presets"]}</span>
@@ -825,7 +919,10 @@ changeMusicPathBtn?.addEventListener("click", () => {
          <button class="path-preset-chip" data-path="Mori/Music">Mori/Music</button>
          <button class="path-preset-chip" data-path="Music">Music</button>
        </div>
-       <button id="resetMusicPathBtn" class="reset-path-btn">${lang["btn-reset-default"]}</button>
+       <button id="resetMusicPathBtn" class="reset-path-btn">
+         <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+         <span>${lang["btn-reset-default"]}</span>
+       </button>
      </div>`,
     () => {
       const input = document.getElementById("customMusicPathInput");
@@ -840,18 +937,45 @@ changeMusicPathBtn?.addEventListener("click", () => {
   );
   setTimeout(() => {
     const input = document.getElementById("customMusicPathInput");
-    document.querySelectorAll(".path-preset-chip").forEach((chip) => {
+    const chips = document.querySelectorAll(
+      ".path-presets-container .path-preset-chip",
+    );
+    const updateActiveChips = () => {
+      const current = input ? input.value.trim() : "";
+      chips.forEach((c) => {
+        if (c.getAttribute("data-path") === current) {
+          c.classList.add("active");
+        } else {
+          c.classList.remove("active");
+        }
+      });
+    };
+    updateActiveChips();
+    input?.addEventListener("input", updateActiveChips);
+
+    chips.forEach((chip) => {
       chip.addEventListener("click", () => {
-        if (input) input.value = chip.getAttribute("data-path");
+        if (input) {
+          input.value = chip.getAttribute("data-path");
+          updateActiveChips();
+          input.focus();
+        }
       });
     });
     document
       .getElementById("resetMusicPathBtn")
       ?.addEventListener("click", () => {
-        if (input) input.value = "Mori/Music";
+        if (input) {
+          input.value = "Mori/Music";
+          updateActiveChips();
+          input.focus();
+        }
       });
   }, 100);
-  okConfirmBtn.textContent = "SAVE";
+  if (okConfirmBtn) {
+    okConfirmBtn.textContent = "SAVE";
+    okConfirmBtn.classList.add("neutral-btn");
+  }
 });
 
 // Auto Clear Cache Logic
@@ -1057,6 +1181,22 @@ export function updateCustomSelectsUI() {
     toastDurText.textContent =
       lang[`toast-dur-${currentToastDur}`] || `${currentToastDur}s`;
 
+  const currentGlass = localStorage.getItem("mori_glassmorphism") || "subtle";
+  const glassText = document.getElementById("glassText");
+  if (glassText)
+    glassText.textContent = lang[`glass-${currentGlass}`] || currentGlass;
+
+  const currentCorner = localStorage.getItem("mori_ui_corner") || "modern";
+  const cornerText = document.getElementById("cornerText");
+  if (cornerText)
+    cornerText.textContent = lang[`corner-${currentCorner}`] || currentCorner;
+
+  const currentSoundPack = localStorage.getItem("mori_sound_pack") || "chime";
+  const soundPackText = document.getElementById("soundPackText");
+  if (soundPackText)
+    soundPackText.textContent =
+      lang[`sound-${currentSoundPack}`] || currentSoundPack;
+
   updateDlStatsDisplay();
 }
 
@@ -1087,7 +1227,10 @@ export function updateLanguageUI() {
   }
 
   document.documentElement.lang = currentLang;
-  document.documentElement.setAttribute("dir", currentLang === "ar" ? "rtl" : "ltr");
+  document.documentElement.setAttribute(
+    "dir",
+    currentLang === "ar" ? "rtl" : "ltr",
+  );
 
   updateCustomSelectsUI();
   updateGreeting();

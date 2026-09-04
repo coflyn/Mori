@@ -61,7 +61,196 @@ body.anim-fast * {
   transition-duration: 0.08s !important;
 }
 
-/* Text Size — applied via JS directly on html element (see applyTextSize in settings.js) */
+/* Glassmorphism Presets */
+body.glass-off {
+  --glass-blur: 0px;
+  --glass-bg-opacity: 1;
+}
+
+body.glass-off .settings-list,
+body.glass-off .settings-menu-item,
+body.glass-off .bottom-nav,
+body.glass-off .custom-toast,
+body.glass-off .media-card,
+body.glass-off .result-card,
+body.glass-off .history-item,
+body.glass-off .bg-anim-card,
+body.glass-off .back-btn-settings,
+body.glass-off .path-setting-item {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: var(--surface) !important;
+}
+
+body.glass-off .bottom-nav,
+body.glass-off .settings-list {
+  background-color: var(--bg-color) !important;
+}
+
+.modal-content,
+.confirm-modal,
+.quick-action-sheet,
+.action-sheet {
+  background-color: var(--bg-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.glass-subtle {
+  --glass-blur: 8px;
+  --glass-bg-opacity: 0.92;
+}
+
+body.glass-subtle .settings-list,
+body.glass-subtle .settings-menu-item,
+body.glass-subtle .custom-toast,
+body.glass-subtle .media-card,
+body.glass-subtle .result-card,
+body.glass-subtle .history-item,
+body.glass-subtle .bg-anim-card,
+body.glass-subtle .back-btn-settings,
+body.glass-subtle .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.92) !important;
+  backdrop-filter: blur(8px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+  border-color: rgba(var(--primary-rgb), 0.18) !important;
+}
+
+body.glass-subtle .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.9) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
+  border-top-color: rgba(var(--primary-rgb), 0.18) !important;
+}
+
+body.glass-subtle .settings-item {
+  border-bottom-color: rgba(var(--primary-rgb), 0.12) !important;
+}
+
+body.glass-deep {
+  --glass-blur: 14px;
+  --glass-bg-opacity: 0.84;
+}
+
+body.glass-deep .settings-list,
+body.glass-deep .settings-menu-item,
+body.glass-deep .custom-toast,
+body.glass-deep .media-card,
+body.glass-deep .result-card,
+body.glass-deep .history-item,
+body.glass-deep .bg-anim-card,
+body.glass-deep .back-btn-settings,
+body.glass-deep .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.84) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.22) !important;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.glass-deep .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.82) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  border-top: 1px solid rgba(var(--primary-rgb), 0.22) !important;
+  box-shadow:
+    0 -8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.glass-deep .settings-item {
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.12) !important;
+}
+
+[data-theme="dark"] body.glass-deep .settings-list,
+[data-theme="dark"] body.glass-deep .settings-menu-item,
+[data-theme="dark"] body.glass-deep .custom-toast,
+[data-theme="dark"] body.glass-deep .media-card,
+[data-theme="dark"] body.glass-deep .result-card,
+[data-theme="dark"] body.glass-deep .history-item,
+[data-theme="dark"] body.glass-deep .bg-anim-card,
+[data-theme="dark"] body.glass-deep .back-btn-settings,
+[data-theme="dark"] body.glass-deep .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.84) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] body.glass-deep .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.82) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 -10px 36px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] body.glass-deep .settings-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* UI Corner Radius Presets */
+body.corner-sharp {
+  --radius-l: 3px;
+  --radius-xl: 4px;
+}
+body.corner-sharp input[type="text"],
+body.corner-sharp .custom-select,
+body.corner-sharp .action-btn,
+body.corner-sharp .modal-content,
+body.corner-sharp .confirm-modal,
+body.corner-sharp .path-display-pill,
+body.corner-sharp .mori-input-with-icon,
+body.corner-sharp .bg-shape-card,
+body.corner-sharp .result-card,
+body.corner-sharp .history-item {
+  border-radius: 4px !important;
+}
+body.corner-sharp .path-preset-chip,
+body.corner-sharp .platform-chip,
+body.corner-sharp .badge {
+  border-radius: 4px !important;
+}
+
+/* corner-modern = default (6px - 12px) */
+body.corner-modern {
+  --radius-l: 6px;
+  --radius-xl: 10px;
+}
+
+/* corner-round = Pill / Soft Round (18px - 26px) */
+body.corner-round {
+  --radius-l: 16px;
+  --radius-xl: 24px;
+}
+body.corner-round input[type="text"] {
+  border-radius: 28px !important;
+}
+body.corner-round .custom-select {
+  border-radius: 22px !important;
+}
+body.corner-round .dropdown-menu {
+  border-radius: 18px !important;
+}
+body.corner-round .modal-content,
+body.corner-round .confirm-modal {
+  border-radius: 24px !important;
+}
+body.corner-round .path-display-pill,
+body.corner-round .mori-input-with-icon,
+body.corner-round .bg-shape-card,
+body.corner-round .result-card,
+body.corner-round .history-item {
+  border-radius: 18px !important;
+}
+body.corner-round .path-preset-chip,
+body.corner-round .platform-chip,
+body.corner-round .filter-chip {
+  border-radius: 24px !important;
+}
 
 /* Compact Mode */
 body.compact-mode .settings-item {
@@ -1564,17 +1753,18 @@ input[type="text"]:focus {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: rgba(var(--surface-rgb), 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid var(--primary);
   border-radius: 12px;
   width: auto;
   min-width: 160px;
-  z-index: 9999;
+  z-index: 99999 !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto !important;
 }
 
 .dropdown-menu.open-up {
@@ -1612,6 +1802,9 @@ input[type="text"]:focus {
   text-align: left;
   font-weight: 500;
   cursor: pointer;
+  pointer-events: auto !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .dropdown-item:hover {
@@ -1623,7 +1816,11 @@ input[type="text"]:focus {
 }
 
 .settings-item.active-dropdown {
-  z-index: 1000;
+  z-index: 1000 !important;
+}
+
+.custom-select:has(.dropdown-menu:not(.hidden)) {
+  z-index: 1001 !important;
 }
 
 .settings-item:last-child {
@@ -2069,12 +2266,12 @@ input[type="text"]:focus {
 
 .confirm-actions {
   display: flex;
-  border-top: 1px solid var(--primary);
+  border-top: 1px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .confirm-actions button {
   flex: 1;
-  padding: 16px;
+  padding: 16px 12px;
   background: none;
   border: none;
   font-size: 0.75rem;
@@ -2082,20 +2279,35 @@ input[type="text"]:focus {
   letter-spacing: 1px;
   cursor: pointer;
   color: var(--text-main);
-  transition: var(--transition);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .confirm-actions .cancel-btn {
-  border-right: 1px solid var(--primary);
+  border-right: 1px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .confirm-actions .ok-btn {
   color: #ff4444;
 }
 
-.confirm-actions button:hover {
-  background-color: var(--primary);
-  color: var(--on-primary);
+.confirm-actions .ok-btn.neutral-btn {
+  color: var(--text-main);
+}
+
+.confirm-actions button:hover,
+.confirm-actions button:active,
+.confirm-actions button:focus,
+.confirm-actions button:focus-visible {
+  background-color: var(--primary) !important;
+  color: var(--on-primary) !important;
+}
+
+.confirm-actions button:active {
+  transform: scale(0.98);
 }
 
 .action-item {
@@ -2308,104 +2520,208 @@ body.dark-theme .action-item:active,
   pointer-events: auto;
 }
 
-/* Path Upgrade Pro Styles */
+/* Modern Path Setting Item in Settings */
+.settings-item.path-setting-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 18px 16px;
+  min-height: auto;
+  cursor: pointer;
+  border-bottom: 1px solid var(--primary);
+  transition: background-color 0.2s ease;
+}
+
+.settings-item.path-setting-item:hover {
+  background-color: rgba(var(--primary-rgb), 0.03);
+}
+
+.settings-item.path-setting-item:active {
+  background-color: rgba(var(--primary-rgb), 0.06);
+}
+
+.path-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.path-item-header .action-arrow {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.settings-item.path-setting-item:hover .action-arrow {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+.path-display-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  border-radius: 8px;
+  padding: 9px 12px;
+  box-sizing: border-box;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.settings-item.path-setting-item:hover .path-display-pill {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.25);
+}
+
+.path-pill-icon {
+  flex-shrink: 0;
+  opacity: 0.65;
+  color: var(--primary);
+}
+
+.path-val-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  word-break: break-all;
+  letter-spacing: 0.2px;
+}
+
+/* Modern Path Picker Modal Styles */
 .path-picker-ui {
   text-align: left;
-  padding: 5px 0;
+  padding: 4px 0 6px;
 }
 
 .path-input-wrapper {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .path-label-sm {
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  opacity: 0.6;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   display: block;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
-.path-presets-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 12px 0 20px 0;
-  justify-content: flex-start;
-}
-
-.path-preset-chip {
-  background: var(--surface);
-  border: 2px solid var(--primary);
-  padding: 8px 14px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-main);
-  box-shadow: 2px 2px 0px var(--primary);
-}
-
-.path-preset-chip:active {
-  box-shadow: 0px 0px 0px var(--primary);
-  transform: translate(2px, 2px);
-  background-color: var(--primary);
-  color: var(--on-primary);
-}
-
-.reset-path-btn {
-  background: none;
-  border: none;
-  color: #ff4444;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 8px 0;
-  display: block;
-  width: 100%;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.8;
-}
-
-.reset-path-btn:hover {
-  opacity: 1;
-}
-
-/* Input with Icon Styling */
 .mori-input-with-icon {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--surface);
-  border: 2px solid var(--primary);
-  padding: 8px 16px;
-  box-shadow: 4px 4px 0px var(--primary);
-  border-radius: 4px;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mori-input-with-icon:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 
 .mori-input-with-icon svg {
   flex-shrink: 0;
   opacity: 0.7;
+  color: var(--primary);
 }
 
 .mori-input-noborder {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: 8px 0 !important;
+  padding: 2px 0 !important;
   width: 100%;
   font-family: inherit;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 600;
   color: var(--text-main);
   outline: none;
+}
+
+.path-presets-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 16px 0;
+  justify-content: flex-start;
+}
+
+.path-preset-chip {
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.14);
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-main);
+  box-shadow: none;
+}
+
+.path-preset-chip:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
+}
+
+.path-preset-chip:active,
+.path-preset-chip.active {
+  box-shadow: none;
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.reset-path-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--primary-rgb), 0.16);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.4px;
+  opacity: 0.9;
+  transition: all 0.2s ease;
+}
+
+.reset-path-btn svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.reset-path-btn:hover {
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--text-main);
+  border-color: var(--primary);
+  opacity: 1;
+}
+
+.reset-path-btn:active {
+  transform: scale(0.98);
 }
 
 /* Refined Settings Info Val */
@@ -3132,7 +3448,7 @@ body.dark-theme .action-item:active,
 
 .bg-shape-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 10px;
   padding: 14px 14px 18px;
 }

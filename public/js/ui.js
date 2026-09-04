@@ -43,7 +43,10 @@ export function renderHistory(onItemClick, onDeleteClick) {
 
   const dlStatsEl = document.getElementById("historyDlStatsVal");
   if (dlStatsEl) {
-    const storedCount = parseInt(localStorage.getItem("mori_dl_count") || "0", 10);
+    const storedCount = parseInt(
+      localStorage.getItem("mori_dl_count") || "0",
+      10,
+    );
     const count = Math.max(storedCount, history.length);
     dlStatsEl.textContent = count.toLocaleString();
   }
@@ -77,10 +80,11 @@ export function renderHistory(onItemClick, onDeleteClick) {
     card.className = "history-item";
 
     // Check if this item is currently being downloaded
-    const isDownloading = activeUrl &&
+    const isDownloading =
+      activeUrl &&
       (item.url === activeUrl ||
         (item.sourceUrl && item.sourceUrl === activeUrl) ||
-        (activeUrl.includes(item.url)) ||
+        activeUrl.includes(item.url) ||
         (item.url && activeUrl && item.url.includes(activeUrl)));
 
     const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
@@ -218,4 +222,7 @@ export {
   renderMediaSlides,
 } from "./ui/result.js";
 export { showModal } from "./ui/resultModal.js";
-export { startNativeDownload, cancelCurrentDownload } from "./ui/nativeDownload.js";
+export {
+  startNativeDownload,
+  cancelCurrentDownload,
+} from "./ui/nativeDownload.js";

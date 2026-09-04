@@ -1189,6 +1189,74 @@
                   </div>
                 </div>
               </div>
+              <!-- Glassmorphism -->
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zm-10-7h8v2h-8zm0-4h8v2h-8zm0 8h8v2h-8zM5 8h4v8H5z"
+                    />
+                  </svg>
+                  <span data-i18n="label-glassmorphism">Glassmorphism</span>
+                </div>
+                <div class="custom-select" id="glassSelect">
+                  <div class="selected-text" id="glassText" data-i18n="glass-subtle">Subtle</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="glassMenu">
+                    <div class="dropdown-item" data-value="off" data-i18n="glass-off">Off (Solid)</div>
+                    <div class="dropdown-item" data-value="subtle" data-i18n="glass-subtle">Subtle</div>
+                    <div class="dropdown-item" data-value="deep" data-i18n="glass-deep">Deep Frosted</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Corner Style -->
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19 19H5V5h14v14zM5 3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5z"
+                    />
+                  </svg>
+                  <span data-i18n="label-ui-corner">Corner Style</span>
+                </div>
+                <div class="custom-select" id="cornerSelect">
+                  <div class="selected-text" id="cornerText" data-i18n="corner-modern">Modern (10px)</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="cornerMenu">
+                    <div class="dropdown-item" data-value="sharp" data-i18n="corner-sharp">Sharp (4px)</div>
+                    <div class="dropdown-item" data-value="modern" data-i18n="corner-modern">Modern (10px)</div>
+                    <div class="dropdown-item" data-value="round" data-i18n="corner-round">Round (20px)</div>
+                  </div>
+                </div>
+              </div>
               <!-- Toast Duration -->
               <div class="settings-item">
                 <div class="item-label">
@@ -1326,6 +1394,41 @@
                 <div class="toggle-switch">
                   <input type="checkbox" id="downloadSoundToggle" />
                   <label for="downloadSoundToggle"></label>
+                </div>
+              </div>
+              <!-- Sound Pack Theme -->
+              <div class="settings-item" id="soundPackItem">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-sound-pack">Sound Theme</span>
+                </div>
+                <div class="custom-select" id="soundPackSelect">
+                  <div class="selected-text" id="soundPackText" data-i18n="sound-chime">Modern Chime</div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="soundPackMenu">
+                    <div class="dropdown-item" data-value="chime" data-i18n="sound-chime">Modern Chime</div>
+                    <div class="dropdown-item" data-value="zen" data-i18n="sound-zen">Zen Bell</div>
+                    <div class="dropdown-item" data-value="droplet" data-i18n="sound-droplet">Water Droplet</div>
+                    <div class="dropdown-item" data-value="pop" data-i18n="sound-pop">Soft Pop</div>
+                  </div>
                 </div>
               </div>
               <!-- Hide Download Progress Bar -->
@@ -1506,6 +1609,206 @@
                       >Particles</span
                     >
                   </div>
+
+                  <div class="bg-shape-card" data-shape="sakura">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                      >
+                        <g transform="translate(18,18)">
+                          <g transform="rotate(0)">
+                            <path
+                              d="M-2.8,-4 C-5.8,-9 -5.2,-13.2 -1.2,-14.2 L0,-13 L1.2,-14.2 C5.2,-13.2 5.8,-9 2.8,-4 Z"
+                              opacity="0.95"
+                            />
+                          </g>
+                          <g transform="rotate(72)">
+                            <path
+                              d="M-2.8,-4 C-5.8,-9 -5.2,-13.2 -1.2,-14.2 L0,-13 L1.2,-14.2 C5.2,-13.2 5.8,-9 2.8,-4 Z"
+                              opacity="0.95"
+                            />
+                          </g>
+                          <g transform="rotate(144)">
+                            <path
+                              d="M-2.8,-4 C-5.8,-9 -5.2,-13.2 -1.2,-14.2 L0,-13 L1.2,-14.2 C5.2,-13.2 5.8,-9 2.8,-4 Z"
+                              opacity="0.95"
+                            />
+                          </g>
+                          <g transform="rotate(216)">
+                            <path
+                              d="M-2.8,-4 C-5.8,-9 -5.2,-13.2 -1.2,-14.2 L0,-13 L1.2,-14.2 C5.2,-13.2 5.8,-9 2.8,-4 Z"
+                              opacity="0.95"
+                            />
+                          </g>
+                          <g transform="rotate(288)">
+                            <path
+                              d="M-2.8,-4 C-5.8,-9 -5.2,-13.2 -1.2,-14.2 L0,-13 L1.2,-14.2 C5.2,-13.2 5.8,-9 2.8,-4 Z"
+                              opacity="0.95"
+                            />
+                          </g>
+                          <circle cx="0" cy="0" r="2.8" fill="var(--surface)" />
+                          <circle cx="0" cy="0" r="1.5" fill="currentColor" />
+                        </g>
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-sakura"
+                      >Sakura</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="rain">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        fill="none"
+                      >
+                        <path
+                          d="M10 19 A4.5 4.5 0 0 1 14.5 14.5 A6.5 6.5 0 0 1 24.5 14.5 A4.5 4.5 0 0 1 28 19 A3.5 3.5 0 0 1 26.5 23 H9.5 A3.5 3.5 0 0 1 10 19 Z"
+                          fill="currentColor"
+                          opacity="0.3"
+                        />
+                        <path
+                          d="M10 19 A4.5 4.5 0 0 1 14.5 14.5 A6.5 6.5 0 0 1 24.5 14.5 A4.5 4.5 0 0 1 28 19 A3.5 3.5 0 0 1 26.5 23 H9.5 A3.5 3.5 0 0 1 10 19 Z"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linejoin="round"
+                        />
+                        <line
+                          x1="12"
+                          y1="26"
+                          x2="10"
+                          y2="30"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <line
+                          x1="18"
+                          y1="26"
+                          x2="16"
+                          y2="31"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <line
+                          x1="24"
+                          y1="26"
+                          x2="22"
+                          y2="30"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-rain"
+                      >Rain</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="snow">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        fill="none"
+                      >
+                        <g transform="translate(18,18)">
+                          <g transform="rotate(0)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <g transform="rotate(60)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <g transform="rotate(120)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <g transform="rotate(180)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <g transform="rotate(240)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <g transform="rotate(300)">
+                            <line x1="0" y1="0" x2="0" y2="-12.5" />
+                            <path d="M-3,-7 L0,-10 L3,-7" />
+                          </g>
+                          <circle cx="0" cy="0" r="1.8" fill="currentColor" />
+                        </g>
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-snow"
+                      >Snow</span
+                    >
+                  </div>
+
+                  <div class="bg-shape-card" data-shape="fireflies">
+                    <div class="shape-preview-circle">
+                      <svg
+                        viewBox="0 0 36 36"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                      >
+                        <circle
+                          cx="18"
+                          cy="21"
+                          r="7.5"
+                          fill="currentColor"
+                          opacity="0.25"
+                        />
+                        <circle
+                          cx="18"
+                          cy="21"
+                          r="4.8"
+                          fill="currentColor"
+                          opacity="0.95"
+                        />
+                        <circle cx="18" cy="21" r="2.2" fill="var(--surface)" />
+                        <ellipse
+                          cx="18"
+                          cy="14"
+                          rx="2.5"
+                          ry="3.2"
+                          fill="currentColor"
+                        />
+                        <circle cx="18" cy="9.5" r="1.8" fill="currentColor" />
+                        <path
+                          d="M17 13 C12 8 8 10 9 15 C9.5 17.5 14 16 17 14.5 Z"
+                          opacity="0.6"
+                        />
+                        <path
+                          d="M19 13 C24 8 28 10 27 15 C26.5 17.5 22 16 19 14.5 Z"
+                          opacity="0.6"
+                        />
+                        <path
+                          d="M17 8.5 C15.5 7 14 7.5 13 8 M19 8.5 C20.5 7 22 7.5 23 8"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                          stroke-linecap="round"
+                          fill="none"
+                        />
+                      </svg>
+                    </div>
+                    <span class="shape-title" data-i18n="shape-fireflies"
+                      >Fireflies</span
+                    >
+                  </div>
                 </div>
 
                 <div class="bg-anim-divider"></div>
@@ -1541,6 +1844,38 @@
                     class="bg-range-slider"
                   />
                 </div>
+
+                <div class="bg-anim-divider"></div>
+
+                <div class="bg-anim-row bg-anim-category-row">
+                  <div class="bg-anim-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                      class="speed-icon"
+                    >
+                      <path
+                        d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.28-10.43zM10.59 15.41a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"
+                      />
+                    </svg>
+                    <span data-i18n="label-speed">Speed</span>
+                  </div>
+                </div>
+
+                <div class="bg-slider-row">
+                  <span class="bg-slider-value" id="bgSpeedValue">100%</span>
+                  <input
+                    type="range"
+                    min="30"
+                    max="200"
+                    step="5"
+                    value="100"
+                    id="bgSpeedSlider"
+                    class="bg-range-slider"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1565,45 +1900,99 @@
             <div class="settings-list">
               <!-- Video Path -->
               <div
-                class="settings-item action-item stacked-item"
+                class="settings-item action-item path-setting-item"
                 id="changePathBtn"
               >
-                <div class="item-label">
+                <div class="path-item-header">
+                  <div class="item-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
+                      />
+                    </svg>
+                    <span data-i18n="label-path-video">Video Path</span>
+                  </div>
+                  <span class="action-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"
+                      />
+                    </svg>
+                  </span>
+                </div>
+                <div class="path-display-pill">
                   <svg
                     viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
+                    width="14"
+                    height="14"
                     fill="currentColor"
+                    class="path-pill-icon"
                   >
                     <path
-                      d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
+                      d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
                     />
                   </svg>
-                  <span data-i18n="label-path-video">Video Path</span>
+                  <span class="path-val-text" id="pathVal">/Download/Mori</span>
                 </div>
-                <span class="info-val" id="pathVal">/Download/Mori</span>
               </div>
               <!-- Music Path -->
               <div
-                class="settings-item action-item stacked-item"
+                class="settings-item action-item path-setting-item"
                 id="changeMusicPathBtn"
               >
-                <div class="item-label">
+                <div class="path-item-header">
+                  <div class="item-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                      />
+                    </svg>
+                    <span data-i18n="label-path-music">Music Path</span>
+                  </div>
+                  <span class="action-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"
+                      />
+                    </svg>
+                  </span>
+                </div>
+                <div class="path-display-pill">
                   <svg
                     viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
+                    width="14"
+                    height="14"
                     fill="currentColor"
+                    class="path-pill-icon"
                   >
                     <path
-                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                      d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
                     />
                   </svg>
-                  <span data-i18n="label-path-music">Music Path</span>
+                  <span class="path-val-text" id="musicPathVal"
+                    >/Download/Mori/Music</span
+                  >
                 </div>
-                <span class="info-val" id="musicPathVal"
-                  >/Download/Mori/Music</span
-                >
               </div>
               <!-- Filename Template -->
               <div class="settings-item">
@@ -3175,7 +3564,6 @@
         </div>
       </div>
     </div>
-    <audio id="completionChimeAudio" src="./chime.wav" preload="auto"></audio>
     <script type="module" src="js/app.js"></script>
   </body>
 </html>
