@@ -155,7 +155,9 @@ function buildResultFromItem(item, sourceUrl) {
       null;
 
     if (!watermarkUrl) throw new Error("No video URL found.");
-    watermarkUrl = watermarkUrl.replace(/^http:/, "https:").replace("playwm", "play");
+    watermarkUrl = watermarkUrl
+      .replace(/^http:/, "https:")
+      .replace("playwm", "play");
 
     let videoId = null;
     try {
@@ -257,7 +259,8 @@ export async function scrapeDouyin(url) {
         },
         "Douyin Fallback",
       );
-      const fallbackHtmlStr = typeof fallbackHtml === "string" ? fallbackHtml : "";
+      const fallbackHtmlStr =
+        typeof fallbackHtml === "string" ? fallbackHtml : "";
       if (!itemId) itemId = extractDouyinItemId(fallbackHtmlStr);
       if (itemId) {
         const apiItem = await fetchDouyinApi(itemId);

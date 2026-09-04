@@ -587,9 +587,9 @@ export async function checkWifiOnlyGuard() {
 }
 
 let wakeLockSentinel = null;
-export async function requestWakeLock() {
+export async function requestWakeLock(force = false) {
   if (
-    localStorage.getItem("mori_keep_awake") === "true" &&
+    (force || localStorage.getItem("mori_keep_awake") === "true") &&
     "wakeLock" in navigator
   ) {
     try {

@@ -95,7 +95,11 @@ export async function scrapeFacebook(url) {
     );
     if (titleEl && titleEl.textContent.trim()) {
       const txt = titleEl.textContent.trim().replace(/\s+/g, " ");
-      if (txt.length > 3 && !txt.toLowerCase().includes("download") && !txt.toLowerCase().includes("snapsave")) {
+      if (
+        txt.length > 3 &&
+        !txt.toLowerCase().includes("download") &&
+        !txt.toLowerCase().includes("snapsave")
+      ) {
         fbTitle = txt;
       }
     }

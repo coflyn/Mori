@@ -95,13 +95,16 @@ async fn tauri_download_file(
     }
 
     std::fs::create_dir_all(&target_dir).map_err(|e| format!("Directory error: {}", e))?;
-    let mut target_file = target_dir.join(&filename);
+    let (stem, ext) = {
+        let p = std::path::Path::new(&filename);
+        let s = p.file_stem().and_then(|s| s.to_str()).unwrap_or("Mori_Media");
+        let e = p.extension().and_then(|s| s.to_str()).unwrap_or("mp4").to_lowercase();
+        (s.to_string(), e)
+    };
+    let normalized_filename = format!("{}.{}", stem, ext);
+    let mut target_file = target_dir.join(&normalized_filename);
 
     if target_file.exists() {
-        let p = std::path::Path::new(&filename);
-        let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("Mori_Media");
-        let ext = p.extension().and_then(|s| s.to_str()).unwrap_or("mp4");
-
         let mut counter = 1;
         loop {
             let candidate = target_dir.join(format!("{}_{}.{}", stem, counter, ext));
@@ -225,13 +228,16 @@ async fn tauri_save_bytes_file(
     }
 
     std::fs::create_dir_all(&target_dir).map_err(|e| format!("Directory error: {}", e))?;
-    let mut target_file = target_dir.join(&filename);
+    let (stem, ext) = {
+        let p = std::path::Path::new(&filename);
+        let s = p.file_stem().and_then(|s| s.to_str()).unwrap_or("Mori_Document");
+        let e = p.extension().and_then(|s| s.to_str()).unwrap_or("pdf").to_lowercase();
+        (s.to_string(), e)
+    };
+    let normalized_filename = format!("{}.{}", stem, ext);
+    let mut target_file = target_dir.join(&normalized_filename);
 
     if target_file.exists() {
-        let p = std::path::Path::new(&filename);
-        let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("Mori_Document");
-        let ext = p.extension().and_then(|s| s.to_str()).unwrap_or("pdf");
-
         let mut counter = 1;
         loop {
             let candidate = target_dir.join(format!("{}_{}.{}", stem, counter, ext));
