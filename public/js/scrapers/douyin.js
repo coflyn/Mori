@@ -172,9 +172,21 @@ function buildResultFromItem(item, sourceUrl) {
       : watermarkUrl;
 
     downloads.push(
-      { type: "VIDEO", url: noWatermarkUrl, isMirror: false },
-      { type: "VIDEO_WM", url: watermarkUrl, isMirror: true },
+      { type: "MP4", url: noWatermarkUrl, isMirror: false },
+      { type: "MP4 (Watermark)", url: watermarkUrl, isMirror: true },
     );
+
+    const audioUrl =
+      item.music?.play_url?.url_list?.[0] ||
+      item.music?.play_url?.uri ||
+      null;
+    if (audioUrl && typeof audioUrl === "string" && audioUrl.startsWith("http")) {
+      downloads.push({
+        type: "MP3",
+        url: audioUrl.replace(/^http:/, "https:"),
+        isMirror: false,
+      });
+    }
   }
 
   if (downloads.length === 0) {

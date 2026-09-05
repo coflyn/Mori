@@ -18,7 +18,9 @@ export async function scrapePinterest(url) {
           "Pinterest Expand Short URL",
         );
         if (expandRes.data && typeof expandRes.data === "string") {
-          const canonicalMatch = expandRes.data.match(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/i);
+          const canonicalMatch = expandRes.data.match(
+            /<link[^>]+rel="canonical"[^>]+href="([^"]+)"/i,
+          );
           if (canonicalMatch && canonicalMatch[1]) {
             targetUrl = canonicalMatch[1];
           }
@@ -45,19 +47,45 @@ export async function scrapePinterest(url) {
 
       if (pageRes.data && typeof pageRes.data === "string") {
         const html = pageRes.data;
-        let title = "Pinterest Pin";
-        const ogTitleMatch =
-          html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i) ||
-          html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
-        if (ogTitleMatch && ogTitleMatch[1]) {
-          title = ogTitleMatch[1].replace(/ \| Pinterest$/i, "").trim();
+        let title = "";
+
+        const pinTitleMatch =
+          html.match(/data-test-id=["']pin-title["'][^>]*>([\s\S]*?)<\/h1>/i) ||
+          html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+        if (pinTitleMatch && pinTitleMatch[1]) {
+          const cleanH1 = pinTitleMatch[1].replace(/<[^>]+>/g, "").trim();
+          if (cleanH1 && !/^pinterest$/i.test(cleanH1)) {
+            title = cleanH1;
+          }
         }
+
+        if (!title) {
+          const ogTitleMatch =
+            html.match(
+              /<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i,
+            ) ||
+            html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
+          if (ogTitleMatch && ogTitleMatch[1]) {
+            title = ogTitleMatch[1].replace(/\s*\|\s*Pinterest$/i, "").trim();
+          }
+        }
+
+        if (!title) {
+          const titleTag = html.match(/<title>([^<]+)<\/title>/i);
+          if (titleTag && titleTag[1]) {
+            title = titleTag[1].replace(/\s*\|\s*Pinterest$/i, "").trim();
+          }
+        }
+
+        if (!title) title = "Pinterest Pin";
 
         const downloads = [];
         const videoMatches =
           html.match(
             /https:\/\/(?:v1\.pinimg\.com|7\.pinimg\.com|v\.pinimg\.com)\/[^"'\s]+\.mp4/gi,
-          ) || html.match(/https:\/\/[^"'\s]+\.mp4[^\s"']*/gi) || [];
+          ) ||
+          html.match(/https:\/\/[^"'\s]+\.mp4[^\s"']*/gi) ||
+          [];
 
         let rawImageMatches =
           html.match(
@@ -84,10 +112,10 @@ export async function scrapePinterest(url) {
 
         // Video ALWAYS first
         uniqueVideos.forEach((vUrl) => {
-          downloads.push({ type: "VIDEO", url: vUrl });
+          downloads.push({ type: "MP4", url: vUrl });
         });
         uniqueImages.forEach((iUrl) => {
-          downloads.push({ type: "IMAGE", url: iUrl });
+          downloads.push({ type: "PHOTO", url: iUrl });
         });
 
         if (downloads.length > 0) {
@@ -100,7 +128,10 @@ export async function scrapePinterest(url) {
         }
       }
     } catch (directErr) {
-      console.warn("Direct Pinterest HTML parsing failed, trying PinDown:", directErr);
+      console.warn(
+        "Direct Pinterest HTML parsing failed, trying PinDown:",
+        directErr,
+      );
     }
 
     // 2. Fallback to PinDown scraper
@@ -149,23 +180,29 @@ export async function scrapePinterest(url) {
       if (dlUrl) {
         if (dlUrl.includes("file=") && dlUrl.includes("http")) {
           try {
-            const match = dlUrl.match(/file=(https?%3A%2F%2F[^&]+|https?:\/\/[^&]+)/i);
+            const match = dlUrl.match(
+              /file=(https?%3A%2F%2F[^&]+|https?:\/\/[^&]+)/i,
+            );
             if (match && match[1]) {
               dlUrl = decodeURIComponent(match[1]);
             }
           } catch (e) {}
         }
         const lowerUrl = dlUrl.toLowerCase();
-        let dlType = "IMAGE";
-        if (lowerUrl.includes(".mp4") || lowerUrl.includes("/videos/") || title.toLowerCase().includes("video")) {
-          dlType = "VIDEO";
+        let dlType = "PHOTO";
+        if (
+          lowerUrl.includes(".mp4") ||
+          lowerUrl.includes("/videos/") ||
+          title.toLowerCase().includes("video")
+        ) {
+          dlType = "MP4";
         } else if (
           lowerUrl.match(/\.(jpg|jpeg|png|webp)/) ||
           lowerUrl.includes("i.pinimg.com") ||
           title.toLowerCase().includes("image") ||
           title.toLowerCase().includes("photo")
         ) {
-          dlType = "IMAGE";
+          dlType = "PHOTO";
         }
         downloads.push({ type: dlType, url: dlUrl });
       }

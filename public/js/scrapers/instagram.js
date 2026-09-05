@@ -151,8 +151,7 @@ async function scrapeInstagramEmbedDirect(cleanUrl) {
         if (mediaUrl) {
           downloads.push({
             url: mediaUrl,
-            type: n.is_video ? "VIDEO" : "IMAGE",
-            quality: n.is_video ? `HD Video ${i + 1}` : `HD Photo ${i + 1}`,
+            type: n.is_video ? "MP4" : "PHOTO",
             thumbnail: n.display_url || mediaUrl,
           });
         }
@@ -162,8 +161,7 @@ async function scrapeInstagramEmbedDirect(cleanUrl) {
       if (mediaUrl) {
         downloads.push({
           url: mediaUrl,
-          type: media.is_video ? "VIDEO" : "IMAGE",
-          quality: media.is_video ? "HD Video" : "HD Photo",
+          type: media.is_video ? "MP4" : "PHOTO",
           thumbnail: media.display_url || mediaUrl,
         });
       }
@@ -336,8 +334,7 @@ async function scrapeSnapSave(cleanUrl) {
 
         downloadsMap.set(key, {
           url: href,
-          type: isImage ? "IMAGE" : "VIDEO",
-          quality: isImage ? "HD Photo" : "HD Video",
+          type: isImage ? "PHOTO" : "MP4",
           thumbnail: itemThumb,
         });
       };
@@ -374,8 +371,11 @@ async function scrapeSnapSave(cleanUrl) {
           const isImage = getIsImageFromUrlOrText(val, qualityLabel);
           downloadsMap.set(key, {
             url: val,
-            type: isImage ? "IMAGE" : "VIDEO",
-            quality: qualityLabel,
+            type: isImage ? "PHOTO" : "MP4",
+            quality:
+              qualityLabel && !qualityLabel.toLowerCase().includes("hd")
+                ? qualityLabel
+                : undefined,
             thumbnail: thumb,
           });
         });
@@ -562,25 +562,16 @@ export async function scrapeInstagram(url) {
               const text = chosenA.textContent || "";
               const title = chosenA.getAttribute("title") || "";
               const isVideo = checkIsVideo(href, text, title);
-              const type = isVideo ? "VIDEO" : "IMAGE";
-              const quality = isVideo
-                ? `HD Video ${idx + 1}`
-                : `HD Photo ${idx + 1}`;
+              const type = isVideo ? "MP4" : "PHOTO";
               const thumbnail =
                 thumbSrc && thumbSrc.startsWith("http")
                   ? thumbSrc
-                  : type === "IMAGE"
+                  : type === "PHOTO"
                     ? href
                     : null;
 
               downloads.push({
                 type,
-                quality:
-                  downloads.length > 0
-                    ? quality
-                    : isVideo
-                      ? "HD Video"
-                      : "HD Photo",
                 url: href,
                 thumbnail: thumbnail || href,
               });
@@ -610,13 +601,9 @@ export async function scrapeInstagram(url) {
                 const text = a.textContent || "";
                 const title = a.getAttribute("title") || "";
                 const isVideo = checkIsVideo(href, text, title);
-                const type = isVideo ? "VIDEO" : "IMAGE";
+                const type = isVideo ? "MP4" : "PHOTO";
                 downloads.push({
                   type,
-                  quality:
-                    type === "IMAGE"
-                      ? `HD Photo ${idx + 1}`
-                      : `HD Video ${idx + 1}`,
                   url: href,
                   thumbnail: href,
                 });

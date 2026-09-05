@@ -2,13 +2,6 @@ import { CHROME_UA } from "../utils/index.js";
 import { getCleanUrl } from "../utils/urlUtils.js";
 import { scraperFetch, createScraperResult } from "./httpHelper.js";
 
-async function sha256(message) {
-  const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 export async function scrapeBilibili(url) {
   try {
     let cleanUrl = getCleanUrl(url);
@@ -19,14 +12,31 @@ export async function scrapeBilibili(url) {
         const redirectRes = await scraperFetch(
           {
             url: cleanUrl,
+            headers: {
+              "User-Agent": "Bilibili/1.0",
+            },
             rawResponse: true,
           },
           "Bilibili Redirect",
         );
-        if (redirectRes.url && redirectRes.url !== cleanUrl) {
+        if (
+          redirectRes?.url &&
+          redirectRes.url !== cleanUrl &&
+          !redirectRes.url.includes("b23.tv")
+        ) {
           cleanUrl = redirectRes.url;
-        } else if (redirectRes.data && typeof redirectRes.data === "string") {
-          const hrefMatch = redirectRes.data.match(/href="([^"]+)"/i);
+        } else if (
+          redirectRes?.headers?.location ||
+          redirectRes?.headers?.Location
+        ) {
+          cleanUrl =
+            redirectRes.headers.location || redirectRes.headers.Location;
+        } else if (redirectRes?.data && typeof redirectRes.data === "string") {
+          const hrefMatch =
+            redirectRes.data.match(/href="([^"]+)"/i) ||
+            redirectRes.data.match(
+              /https?:\/\/[a-zA-Z0-9.-]*bilibili\.com\/video\/[^\s"'<>]+/i,
+            );
           if (hrefMatch) {
             cleanUrl = hrefMatch[1].replace(/&amp;/g, "&");
           }
@@ -161,11 +171,10 @@ export async function scrapeBilibili(url) {
                     s.stream_info?.display_desc ||
                     s.stream_info?.description ||
                     s.desc_words ||
-                    (s.quality ? `${s.quality}p` : "HD");
+                    (s.quality ? `${s.quality}p` : "720p");
                   downloads.push({
                     url: secureUrl,
-                    type: "VIDEO",
-                    quality,
+                    type: quality,
                     headers: {
                       Referer: "https://www.bilibili.tv/",
                     },
@@ -184,8 +193,7 @@ export async function scrapeBilibili(url) {
                       }
                       downloads.push({
                         url: vUrl,
-                        type: "VIDEO",
-                        quality: `${v.id || 360}p`,
+                        type: `${v.id || 360}p`,
                         headers: {
                           Referer: "https://www.bilibili.tv/",
                         },
@@ -202,8 +210,7 @@ export async function scrapeBilibili(url) {
                       }
                       downloads.push({
                         url: aUrl,
-                        type: "AUDIO",
-                        quality: "MP3",
+                        type: "MP3",
                         headers: {
                           Referer: "https://www.bilibili.tv/",
                         },
@@ -237,8 +244,7 @@ export async function scrapeBilibili(url) {
                   }
                   downloads.push({
                     url: vUrl,
-                    type: "VIDEO",
-                    quality: v.quality ? `${v.quality}p` : "HD",
+                    type: v.quality ? `${v.quality}p` : "720p",
                     headers: {
                       Referer: "https://www.bilibili.tv/",
                     },
@@ -264,52 +270,141 @@ export async function scrapeBilibili(url) {
       }
     }
 
-    const timestamp = Date.now().toString();
-    const secret = "3HT8hjE79L";
-    const signStr = "en" + timestamp + secret + "url=" + cleanUrl;
-    const sign = await sha256(signStr);
+    // Mainland Bilibili (bilibili.com / b23.tv / BV / AV IDs)
+    const bvMatch = cleanUrl.match(/(BV[a-zA-Z0-9]+)/i);
+    const bvid = bvMatch ? bvMatch[1] : null;
+    const avMatch = cleanUrl.match(/(?:video\/av|[?&]aid=)(\d+)/i);
+    const aid = avMatch ? avMatch[1] : null;
 
-    const responseData = await scraperFetch(
-      {
-        url: "https://api.seekin.ai/ikool/media/download",
-        method: "POST",
-        data: { url: cleanUrl },
-        headers: {
-          "Content-Type": "application/json",
-          lang: "en",
-          timestamp: timestamp,
-          sign: sign,
-        },
-      },
-      "Bilibili Seekin",
-    );
-
-    if (!responseData || responseData.code !== "0000" || !responseData.data) {
-      throw new Error(responseData?.msg || "Failed to process Bilibili URL.");
+    if (!bvid && !aid) {
+      throw new Error("Could not extract Bilibili video ID (BV/AV).");
     }
 
-    const info = responseData.data;
-    const title = info.title || "Bilibili Video";
-    const thumbnail = info.imageUrl || null;
-    const downloads = [];
+    const viewUrl = bvid
+      ? `https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`
+      : `https://api.bilibili.com/x/web-interface/view?aid=${aid}`;
 
-    if (info.medias && info.medias.length > 0) {
-      for (let i = 0; i < info.medias.length; i++) {
-        const item = info.medias[i];
-        downloads.push({
-          url: item.url,
-          type: "VIDEO",
-          quality: item.format || `Part ${i + 1}`,
-        });
+    const bilibiliHeaders = {
+      Referer: "https://www.bilibili.com/",
+      "User-Agent": "Bilibili/1.0",
+    };
+
+    const viewRes = await scraperFetch(
+      {
+        url: viewUrl,
+        headers: {
+          "User-Agent": "Bilibili/1.0",
+        },
+      },
+      "Bilibili View Info",
+    );
+
+    if (!viewRes || viewRes.code !== 0 || !viewRes.data) {
+      throw new Error(viewRes?.message || "Failed to fetch Bilibili video info.");
+    }
+
+    const vData = viewRes.data;
+    let title = vData.title || "Bilibili Video";
+    let thumbnail = vData.pic || null;
+    if (thumbnail && thumbnail.startsWith("http://")) {
+      thumbnail = thumbnail.replace("http://", "https://");
+    }
+    const author = vData.owner?.name || "Bilibili Creator";
+    const actualBvid = vData.bvid || bvid;
+
+    // Detect target part/page if multiple pages exist
+    let targetPage = 1;
+    try {
+      const u = new URL(cleanUrl);
+      const pParam = u.searchParams.get("p");
+      if (pParam && /^\d+$/.test(pParam)) {
+        targetPage = parseInt(pParam, 10);
+      }
+    } catch (_) {}
+
+    let cid = vData.cid;
+    if (vData.pages && vData.pages.length > 0) {
+      const pageObj =
+        vData.pages.find((p) => p.page === targetPage) || vData.pages[0];
+      if (pageObj) {
+        cid = pageObj.cid || cid;
+        if (vData.pages.length > 1 && pageObj.part) {
+          title = `${title} - P${pageObj.page} ${pageObj.part}`;
+        }
       }
     }
 
-    if (downloads.length === 0) throw new Error("No video URLs found.");
+    if (!cid) {
+      throw new Error("Could not determine Bilibili video stream CID.");
+    }
+
+    const downloads = [];
+
+    // Query 720p HD (qn=64, fnval=1)
+    const playRes720 = await scraperFetch(
+      {
+        url: `https://api.bilibili.com/x/player/playurl?bvid=${actualBvid}&cid=${cid}&qn=64&fnval=1`,
+        headers: {
+          "User-Agent": "Bilibili/1.0",
+        },
+      },
+      "Bilibili PlayURL 720p",
+    );
+
+    let acceptQualities = [];
+    if (playRes720?.code === 0 && playRes720?.data?.durl?.[0]?.url) {
+      const qCode = playRes720.data.quality;
+      const descList = playRes720.data.accept_description || [];
+      const qList = playRes720.data.accept_quality || [];
+      acceptQualities = qList;
+      const idx = qList.indexOf(qCode);
+      const qLabel =
+        idx !== -1 && descList[idx]
+          ? descList[idx]
+          : qCode === 64
+            ? "720P HD"
+            : "Video";
+
+      downloads.push({
+        url: playRes720.data.durl[0].url,
+        type: `${qLabel} [MP4]`,
+        headers: bilibiliHeaders,
+      });
+    }
+
+    // Query 360p SD (qn=16, fnval=1) as a lighter alternative if available
+    if (
+      acceptQualities.includes(16) &&
+      !downloads.some((d) => (d.type || "").includes("360P"))
+    ) {
+      try {
+        const playRes360 = await scraperFetch(
+          {
+            url: `https://api.bilibili.com/x/player/playurl?bvid=${actualBvid}&cid=${cid}&qn=16&fnval=1`,
+            headers: {
+              "User-Agent": "Bilibili/1.0",
+            },
+          },
+          "Bilibili PlayURL 360p",
+        );
+        if (playRes360?.code === 0 && playRes360?.data?.durl?.[0]?.url) {
+          downloads.push({
+            url: playRes360.data.durl[0].url,
+            type: "360P SD [MP4]",
+            headers: bilibiliHeaders,
+          });
+        }
+      } catch (_) {}
+    }
+
+    if (downloads.length === 0) {
+      throw new Error("No playable Bilibili video streams found.");
+    }
 
     return createScraperResult(true, {
       title,
       thumbnail,
-      author: "Bilibili Creator",
+      author,
       downloads,
       sourceUrl: url,
     });

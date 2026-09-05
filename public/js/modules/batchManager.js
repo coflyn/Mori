@@ -128,10 +128,10 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       url.includes("fxtwitter.com") ||
       url.includes("vxtwitter.com")
     ) {
-      setTwitterSource(isServer2 ? "tvd" : "tweeload");
+      setTwitterSource(isServer2 ? "tweeload" : "tvd");
       data = await scrapeTwitter(url);
       if (!data || !data.status) {
-        setTwitterSource(isServer2 ? "tweeload" : "tvd");
+        setTwitterSource(isServer2 ? "tvd" : "tweeload");
         data = await scrapeTwitter(url);
       }
     } else if (url.includes("spotify.com")) {

@@ -765,6 +765,7 @@ export function pauseAllMedia(rootEl = document) {
       : [];
     mediaElements.forEach((el) => {
       try {
+        el.autoplay = false;
         el.pause();
       } catch (e) {}
     });
@@ -786,7 +787,10 @@ export function stopAllMedia(rootEl = document) {
 
     mediaElements.forEach((el) => {
       try {
+        el._isStopped = true;
+        el.autoplay = false;
         el.pause();
+        el.currentTime = 0;
         if (el.src && el.src.startsWith("blob:")) {
           URL.revokeObjectURL(el.src);
         }

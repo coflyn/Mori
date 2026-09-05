@@ -188,7 +188,9 @@ export async function scrapeSpotify(url) {
             trackDls.forEach((td) => {
               downloads.push({
                 ...td,
-                type: `${prefix}${trackLabel} [MP3]`,
+                type: isPlaylistOrAlbum
+                  ? `${prefix}${trackLabel} [MP3]`
+                  : "MP3",
               });
             });
           } catch (e) {}
@@ -197,7 +199,9 @@ export async function scrapeSpotify(url) {
         // Lazy resolve fallback for playlist items
         if (downloads.length === 0 || isPlaylistOrAlbum) {
           downloads.push({
-            type: `${prefix}${trackLabel} [MP3]`,
+            type: isPlaylistOrAlbum
+              ? `${prefix}${trackLabel} [MP3]`
+              : "MP3",
             url: `soundloaders_resolve:${track.data}|||${track.trackToken}`,
           });
         }
@@ -387,7 +391,11 @@ export async function scrapeSpotify(url) {
               const typeLabel = isCover ? "[Cover]" : "[MP3]";
 
               downloads.push({
-                type: `${prefix}${fullLabel} ${typeLabel}`,
+                type: isMultiTrack
+                  ? `${prefix}${fullLabel} ${typeLabel}`
+                  : isCover
+                    ? "Cover"
+                    : "MP3",
                 url: link,
               });
             }
@@ -398,7 +406,9 @@ export async function scrapeSpotify(url) {
       // Add lazy resolver link for playlist items or fallback
       if (downloads.length === 0 || isMultiTrack) {
         downloads.push({
-          type: `${prefix}${itemTitle || "Track " + (i + 1)} [MP3]`,
+          type: isMultiTrack
+            ? `${prefix}${itemTitle || "Track " + (i + 1)} [MP3]`
+            : "MP3",
           url: `spotidown_resolve:${payloadStr}|||${encodeURIComponent(cookies || "")}`,
         });
       }
@@ -410,8 +420,12 @@ export async function scrapeSpotify(url) {
 
     // Prioritize MP3 audio files over album cover images
     downloads.sort((a, b) => {
-      const aIsCover = (a.type || "").includes("[Cover]");
-      const bIsCover = (b.type || "").includes("[Cover]");
+      const aIsCover =
+        (a.type || "").includes("[Cover]") ||
+        (a.type || "").toLowerCase() === "cover";
+      const bIsCover =
+        (b.type || "").includes("[Cover]") ||
+        (b.type || "").toLowerCase() === "cover";
       if (aIsCover && !bIsCover) return 1;
       if (!aIsCover && bIsCover) return -1;
       return 0;

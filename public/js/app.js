@@ -220,6 +220,17 @@ async function switchPage(pageId) {
     .forEach((page) => page.classList.add("hidden"));
   pauseAllMedia(document);
 
+  const modalOverlay = document.getElementById("modalOverlay");
+  if (modalOverlay && !modalOverlay.classList.contains("hidden")) {
+    const modalSlidesWrapper = document.getElementById("modalSlidesWrapper");
+    if (modalSlidesWrapper) {
+      stopAllMedia(modalSlidesWrapper);
+      modalSlidesWrapper.innerHTML = "";
+    }
+    modalOverlay.classList.add("hidden");
+    modalOverlay.style.display = "none";
+  }
+
   const targetPage = document.getElementById(targetPageId);
   if (targetPage) targetPage.classList.remove("hidden");
 

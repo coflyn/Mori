@@ -113,23 +113,69 @@ export async function scrapeAppleMusic(url) {
             const text = a.textContent.trim();
             if (
               href &&
-              (href.includes("/dl?token=") || a.classList.contains("abutton"))
+              (href.includes("/dl?token=") ||
+                href.includes("/mp3?token=") ||
+                a.classList.contains("abutton"))
             ) {
-              if (href.includes("ko-fi.com") || href.includes("premium.html")) return;
+              if (href.includes("ko-fi.com") || href.includes("premium.html"))
+                return;
               if (text.toLowerCase().includes("another song")) return;
+
+              const fullUrl = href.startsWith("http")
+                ? href
+                : "https://aplmate.com" + href;
+              if (downloads.some((d) => d.url === fullUrl)) return;
+
+              const isCover =
+                text.toLowerCase().includes("cover") ||
+                href.includes("cover=") ||
+                (() => {
+                  try {
+                    const token = new URL(fullUrl).searchParams.get("token");
+                    if (token) {
+                      const payloadPart = token.split(".")[1];
+                      if (payloadPart) {
+                        const b64 = payloadPart
+                          .replace(/-/g, "+")
+                          .replace(/_/g, "/");
+                        const parsed = JSON.parse(atob(b64));
+                        return !!parsed.cover;
+                      }
+                    }
+                  } catch (_) {}
+                  return false;
+                })();
+
               downloads.push({
-                type: `${prefix}${text || "MP3"} [MP3]`,
-                url: href.startsWith("http") ? href : "https://aplmate.com" + href,
+                type: isMultiTrack
+                  ? `${prefix}${text || "MP3"} [MP3]`
+                  : isCover
+                    ? "Cover [HD]"
+                    : "MP3",
+                url: fullUrl,
+                ext: isCover ? "jpg" : "mp3",
               });
             }
+          });
+
+          // Sort so MP3 comes first, followed by Cover
+          downloads.sort((a, b) => {
+            const aIsCover = a.type.includes("Cover");
+            const bIsCover = b.type.includes("Cover");
+            if (aIsCover && !bIsCover) return 1;
+            if (!aIsCover && bIsCover) return -1;
+            return 0;
           });
         } catch (e) {}
       }
 
       if (downloads.length === 0 || isMultiTrack) {
         downloads.push({
-          type: `${prefix}${itemTitle || "Track " + (i + 1)} [MP3]`,
+          type: isMultiTrack
+            ? `${prefix}${itemTitle || "Track " + (i + 1)} [MP3]`
+            : "MP3",
           url: `applemusic_resolve:${payloadStr}`,
+          ext: "mp3",
         });
       }
     }

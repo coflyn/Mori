@@ -151,13 +151,7 @@ export async function scrapeTikTok(url) {
       }
 
       if (info.downloadUrl) {
-        downloads.push({ type: "MP4", url: info.downloadUrl });
-      }
-      if (info.hdDownloadUrl) {
-        const hdUrl = info.hdDownloadUrl.startsWith("http")
-          ? info.hdDownloadUrl
-          : "https://snaptik.app" + info.hdDownloadUrl;
-        downloads.push({ type: "MP4 (HD)", url: hdUrl });
+        downloads.push({ type: "720p", url: info.downloadUrl });
       }
 
       if (!downloads.length)
@@ -278,6 +272,7 @@ export async function scrapeTikTok(url) {
       } else {
         const anchorTagRegex = /<a[\s\S]*?<\/a>/gi;
         let anchorMatch;
+        let videoCount = 0;
         while ((anchorMatch = anchorTagRegex.exec(html)) !== null) {
           const tag = anchorMatch[0];
 
@@ -292,24 +287,59 @@ export async function scrapeTikTok(url) {
             .trim()
             .toLowerCase();
 
-          let label = null;
           if (
-            innerText.includes("without watermark") ||
-            tag.includes("download-btn-blue") ||
-            tag.includes("download-btn-green")
+            innerText.includes("download watermark") &&
+            !innerText.includes("without")
           ) {
-            label = "VIDEO";
-          } else if (
+            continue;
+          }
+
+          let isVideo = false;
+          let isMp3 = false;
+          if (
             innerText.includes("mp3") ||
             innerText.includes("music") ||
             tag.includes("download-btn-purple")
           ) {
-            label = "MP3";
+            isMp3 = true;
+          } else if (
+            innerText.includes("without watermark") ||
+            tag.includes("download-btn-blue") ||
+            tag.includes("download-btn-green")
+          ) {
+            isVideo = true;
           }
 
-          if (label) {
-            const isMirror = downloads.some((d) => d.type === label);
-            downloads.push({ type: label, url: href, isMirror });
+          if (isVideo) {
+            videoCount++;
+            const isHd =
+              tag.includes("download-btn-green") ||
+              innerText.includes("(hd)") ||
+              innerText.includes("1080");
+
+            let label;
+            if (isHd) {
+              label = downloads.some((d) => d.type === "1080p")
+                ? `VIDEO ${videoCount}`
+                : "1080p";
+            } else if (videoCount === 1) {
+              label = "720p";
+            } else if (!downloads.some((d) => d.type === "1080p")) {
+              label = "1080p";
+            } else if (!downloads.some((d) => d.type === "720p")) {
+              label = "720p";
+            } else {
+              label = `VIDEO ${videoCount}`;
+            }
+
+            const isMirror = videoCount > 1;
+            if (!downloads.some((d) => d.url === href)) {
+              downloads.push({ type: label, url: href, isMirror });
+            }
+          } else if (isMp3) {
+            if (!downloads.some((d) => d.url === href)) {
+              downloads.push({ type: "MP3", url: href, isMirror: false });
+            }
           }
         }
       }

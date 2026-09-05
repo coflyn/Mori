@@ -151,8 +151,7 @@ export async function scrapeRedNote(url) {
                   }
                   downloads.push({
                     url: secureUrl,
-                    type: "VIDEO",
-                    quality: "HD",
+                    type: "MP4",
                   });
                 }
               }
@@ -169,11 +168,7 @@ export async function scrapeRedNote(url) {
                     }
                     downloads.push({
                       url: imgUrl,
-                      type: "IMAGE",
-                      quality:
-                        noteData.imageList.length > 1
-                          ? `Photo ${idx + 1}`
-                          : "HD",
+                      type: "PHOTO",
                     });
                   }
                 });
@@ -221,10 +216,10 @@ export async function scrapeRedNote(url) {
         if (ogVideoMatch) {
           let vUrl = ogVideoMatch[1];
           if (vUrl.startsWith("//")) vUrl = `https:${vUrl}`;
-          downloads.push({ url: vUrl, type: "VIDEO", quality: "HD" });
+          downloads.push({ url: vUrl, type: "MP4" });
         }
         if (ogImageMatch && rawImage) {
-          downloads.push({ url: rawImage, type: "IMAGE", quality: "HD" });
+          downloads.push({ url: rawImage, type: "PHOTO" });
         }
         if (downloads.length > 0) {
           return {

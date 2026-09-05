@@ -139,6 +139,11 @@ export async function scrapeTwitter(url) {
       const lowerHref = href.toLowerCase();
       const lowerLabel = (labelText || "").toLowerCase();
       if (
+        lowerHref === "https://tweeload.com/" ||
+        lowerHref === "https://tweeload.com" ||
+        lowerHref.includes("gumroad.com") ||
+        lowerHref.includes("aculix.link") ||
+        lowerHref.includes("circleboom.com") ||
         lowerHref.includes("checkout") ||
         lowerHref.includes("stripe") ||
         lowerHref.includes("buy") ||
@@ -242,7 +247,7 @@ export async function scrapeTwitter(url) {
             }
           } else if (isImageUrl) {
             if (!imageDownloads.some((d) => d.url === href)) {
-              imageDownloads.push({ type: "IMAGE", url: href });
+              imageDownloads.push({ type: "PHOTO", url: href });
             }
           }
         });
@@ -337,33 +342,40 @@ export async function scrapeTwitter(url) {
         .forEach((tr) => {
           const tds = tr.querySelectorAll("td");
           const quality = tds[0]?.textContent?.trim() || "";
-          let dlUrl = tr
-            .querySelector(
-              "a.download__item__info__actions__button, a.btn, a[href*='acxcdn.com'], a[href*='twimg.com']",
-            )
-            ?.getAttribute("href");
-          if (dlUrl) {
-            if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
-            if (!isPaywallOrInvalid(dlUrl, quality)) {
-              const label = formatResolutionLabel(quality, "", dlUrl);
-              const isVideoUrl =
-                dlUrl.includes("acxcdn.com") ||
-                dlUrl.includes("video.twimg.com") ||
-                /\.(mp4|m3u8)(\?|$)/i.test(dlUrl) ||
-                /^\d+[xXpP]/i.test(label) ||
-                label === "MP4";
-              const isImageUrl =
-                dlUrl.includes("pbs.twimg.com") ||
-                /\.(jpe?g|png|webp)(\?|$)/i.test(dlUrl);
+          const linkEl = tr.querySelector(
+            "a.download__item__info__actions__button, a.btn, a[href*='acxcdn.com'], a[href*='twimg.com']",
+          );
+          if (!linkEl) return;
+          if (
+            linkEl.classList.contains("premium__locked__btn") ||
+            linkEl.classList.contains("locked") ||
+            linkEl.closest(".premium") ||
+            linkEl.querySelector(".premium__badge, svg")
+          ) {
+            return;
+          }
+          let dlUrl = linkEl.getAttribute("href");
+          if (!dlUrl || dlUrl === "/" || dlUrl === "#" || dlUrl.startsWith("javascript:")) return;
+          if (dlUrl.startsWith("/")) dlUrl = "https://tweeload.com" + dlUrl;
+          if (!isPaywallOrInvalid(dlUrl, quality)) {
+            const label = formatResolutionLabel(quality, "", dlUrl);
+            const isVideoUrl =
+              dlUrl.includes("acxcdn.com") ||
+              dlUrl.includes("video.twimg.com") ||
+              /\.(mp4|m3u8)(\?|$)/i.test(dlUrl) ||
+              /^\d+[xXpP]/i.test(label) ||
+              label === "MP4";
+            const isImageUrl =
+              dlUrl.includes("pbs.twimg.com") ||
+              /\.(jpe?g|png|webp)(\?|$)/i.test(dlUrl);
 
-              if (isVideoUrl && !isImageUrl) {
-                if (!videoDownloads.some((d) => d.url === dlUrl)) {
-                  videoDownloads.push({ type: label, url: dlUrl });
-                }
-              } else if (isImageUrl) {
-                if (!imageDownloads.some((d) => d.url === dlUrl)) {
-                  imageDownloads.push({ type: "IMAGE", url: dlUrl });
-                }
+            if (isVideoUrl && !isImageUrl) {
+              if (!videoDownloads.some((d) => d.url === dlUrl)) {
+                videoDownloads.push({ type: label, url: dlUrl });
+              }
+            } else if (isImageUrl) {
+              if (!imageDownloads.some((d) => d.url === dlUrl)) {
+                imageDownloads.push({ type: "PHOTO", url: dlUrl });
               }
             }
           }
@@ -375,7 +387,16 @@ export async function scrapeTwitter(url) {
             "a.btn, a[href*='downloads.acxcdn.com'], a[href*='twimg.com']",
           )
           .forEach((a) => {
+            if (
+              a.classList.contains("premium__locked__btn") ||
+              a.classList.contains("locked") ||
+              a.closest(".premium")
+            ) {
+              return;
+            }
             let href = a.getAttribute("href");
+            if (!href || href === "/" || href === "#" || href.startsWith("javascript:")) return;
+            if (href.startsWith("/")) href = "https://tweeload.com" + href;
             if (
               href &&
               (href.includes("downloads.acxcdn.com") ||
@@ -404,7 +425,7 @@ export async function scrapeTwitter(url) {
                   }
                 } else if (isImageUrl) {
                   if (!imageDownloads.some((d) => d.url === href)) {
-                    imageDownloads.push({ type: "IMAGE", url: href });
+                    imageDownloads.push({ type: "PHOTO", url: href });
                   }
                 }
               }

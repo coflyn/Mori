@@ -42,6 +42,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
   const activeUrl = window._moriActiveDownloadUrl || null;
 
   const dlStatsEl = document.getElementById("historyDlStatsVal");
+  const historyStatsEl = document.getElementById("historyItemsCountVal");
   if (dlStatsEl) {
     const storedCount = parseInt(
       localStorage.getItem("mori_dl_count") || "0",
@@ -49,6 +50,9 @@ export function renderHistory(onItemClick, onDeleteClick) {
     );
     const count = Math.max(storedCount, history.length);
     dlStatsEl.textContent = count.toLocaleString();
+  }
+  if (historyStatsEl) {
+    historyStatsEl.textContent = history.length.toLocaleString();
   }
 
   const emptyState = historyPage.querySelector(".empty-state");
