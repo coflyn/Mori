@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.3.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.3.1-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
@@ -39,11 +39,12 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 ## Features
 
 - **All-in-One Social Downloader**: Easily save high-definition videos (without watermarks), photos, and music from 14 top platforms: TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, and RedNote.
+- **Smart Multi-Engine Fallback**: Resilient scraper engine with automatic fallback providers to ensure high download success rates even if a provider is temporarily unavailable.
 - **One-Tap Playlist & Album Downloader**: Download entire albums or music playlists from **Spotify**, **Apple Music**, and **YouTube** in one go, no need to download songs one by one.
 - **Quick Save via Share Menu (Android)**: Found a video you like? Tap **Share** in any app and select Mori to download it immediately in a sleek popup overlay without leaving your current app.
 - **Multi-Link Batch Mode**: Paste several links at once and let Mori analyze and download them all automatically in the background.
-- **Interactive Live Backgrounds**: Beautiful animated canvas backgrounds (Constellations, Smooth Waves, Floating Particles, and Fireflies).
-- **Built-in Media Preview**: Watch videos, listen to songs, and swipe through photo carousels right inside the app before or after downloading.
+- **Interactive Live Backgrounds & Glassmorphism**: Dynamic animated canvas backgrounds (Constellations, Waves, Particles, Fireflies) paired with modern, customizable frosted glassmorphism effects.
+- **Built-in Media Player & Preview**: Play videos, stream tracks, and view multi-photo galleries right inside the app, with optional Auto-Play and gesture controls.
 - **Instant Photo-to-PDF Export**: Combine multi-photo posts or image galleries into a single, clean PDF file ready for offline reading or sharing.
 - **PIN & Biometric Privacy Lock**: Keep your download history private with a secure 4-digit PIN or fingerprint/Face ID biometric lock.
 - **Smart History & Folder Manager**: View your saved files anytime with clean folder paths (e.g. `Movies/Mori`, `Music/Mori`, `Pictures/Mori`), quick copy paths, and a long-press gesture to easily delete items.
@@ -276,8 +277,8 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-- **macOS Release Asset**: `Mori-v4.3.0-macOS-arm64.dmg` & `Mori-v4.3.0-macOS-arm64.app.tar.gz`
-- **Windows Release Asset**: `Mori-v4.3.0-Windows-x64-Setup.exe` & `Mori-v4.3.0-Windows-x64.msi`
+- **macOS Release Asset**: `Mori-v4.3.1-macOS-arm64.dmg` & `Mori-v4.3.1-macOS-arm64.app.tar.gz`
+- **Windows Release Asset**: `Mori-v4.3.1-Windows-x64-Setup.exe` & `Mori-v4.3.1-Windows-x64.msi`
 
 ### Running & Building for iOS
 
@@ -313,14 +314,14 @@ npx cap sync ios
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
 
 # 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.3.0.ipa" Payload && rm -rf Payload build
+mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.3.1.ipa" Payload && rm -rf Payload build
 ```
 
-This outputs `Mori v4.3.0.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
+This outputs `Mori v4.3.1.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
 
 ## iOS Sideloading Guide
 
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.3.0.ipa` using one of the following sideloading methods:
+Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.3.1.ipa` using one of the following sideloading methods:
 
 - **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.

@@ -1,6 +1,6 @@
 {
   "name": "mori",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,8 +11,8 @@
     "tauri:build": "tauri build",
     "build:android": "npx cap sync android && cd android && ./gradlew assembleDebug",
     "build:android:release": "npx cap sync android && cd android && ./gradlew assembleRelease",
-    "build:ios:ipa": "npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=\"\" && mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r \"Mori v4.3.0.ipa\" Payload && rm -rf Payload build",
-    "build:macos": "npm run tauri:build && rm -rf /tmp/dmg_build && mkdir -p /tmp/dmg_build && cp -r src-tauri/target/release/bundle/macos/Mori.app /tmp/dmg_build/ && cp src-tauri/README.txt /tmp/dmg_build/ && ln -s /Applications /tmp/dmg_build/Applications && hdiutil create -volname \"Mori\" -srcfolder /tmp/dmg_build -ov -format UDZO \"Mori-v4.3.0-macOS-arm64.dmg\" && rm -rf /tmp/dmg_build && tar -czf \"Mori-v4.3.0-macOS-arm64.app.tar.gz\" -C src-tauri/target/release/bundle/macos Mori.app"
+    "build:ios:ipa": "npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=\"\" && mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r \"Mori v4.3.1.ipa\" Payload && rm -rf Payload build",
+    "build:macos": "npm run tauri:build && rm -rf /tmp/dmg_build && mkdir -p /tmp/dmg_build && cp -r src-tauri/target/release/bundle/macos/Mori.app /tmp/dmg_build/ && cp src-tauri/README.txt /tmp/dmg_build/ && ln -s /Applications /tmp/dmg_build/Applications && hdiutil create -volname \"Mori\" -srcfolder /tmp/dmg_build -ov -format UDZO \"Mori-v4.3.1-macOS-arm64.dmg\" && rm -rf /tmp/dmg_build && tar -czf \"Mori-v4.3.1-macOS-arm64.app.tar.gz\" -C src-tauri/target/release/bundle/macos Mori.app"
   },
   "keywords": [],
   "author": "",
