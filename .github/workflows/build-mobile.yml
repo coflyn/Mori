@@ -1,4 +1,4 @@
-name: Build Mobile Release (Android & iOS)
+name: Build Mobile Release (iOS)
 
 on:
   release:
@@ -12,64 +12,6 @@ permissions:
   contents: write
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Sync Capacitor Android
-        run: npx cap sync android
-
-      - name: Generate Release Keystore
-        run: |
-          if [ ! -f android/app/release.keystore ]; then
-            keytool -genkey -v -keystore android/app/release.keystore -alias mori \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass android123 -keypass android123 \
-              -dname "CN=Mori, OU=Development, O=MoriApp, L=Unknown, ST=Unknown, C=ID"
-          fi
-
-      - name: Build Android APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Prepare APK Release Asset
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          mkdir -p dist-assets
-          find android/app/build/outputs/apk -name "*.apk" -exec cp {} "dist-assets/Mori-v${VERSION}-Android.apk" \;
-
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mori-Android-APK
-          path: dist-assets/*.apk
-
-      - name: Upload Release Asset (Android)
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist-assets/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-ios:
     runs-on: macos-latest
