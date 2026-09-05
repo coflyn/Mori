@@ -83,7 +83,9 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
           return v;
         })();
 
-  const isBilibili = /bilibili|bilivideo/i.test(videoUrl);
+  const isBilibili =
+    /bilibili|bilivideo|akamaized/i.test(videoUrl) ||
+    (dl?.headers?.Referer && dl.headers.Referer.includes("bilibili"));
   const isRedNote = /xiaohongshu|rednote|xhscdn/i.test(videoUrl);
   const isPixiv =
     /pixiv|ugoira/i.test(videoUrl) ||
@@ -759,6 +761,13 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     window.removeEventListener("mouseup", stopDrag);
     window.removeEventListener("touchmove", doDrag);
     window.removeEventListener("touchend", stopDrag);
+    try {
+      video._isStopped = true;
+      video.autoplay = false;
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    } catch (_) {}
     if (playerContainer._blobUrl) {
       URL.revokeObjectURL(playerContainer._blobUrl);
     }

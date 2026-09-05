@@ -375,6 +375,7 @@ export async function showModal(item, onRedownload) {
       redownloadBtn.onclick = (e) => {
         e.stopPropagation();
         stopAllMedia(slidesWrapper);
+        slidesWrapper.innerHTML = "";
         modalOverlay.classList.add("hidden");
         modalOverlay.style.display = "none";
         onRedownload(item.url);

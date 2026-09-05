@@ -280,6 +280,7 @@ export async function scraperFetch(options, serverName = "Server") {
       status: res.status,
       headers: Object.fromEntries(res.headers.entries()),
       data: resData,
+      url: res.url,
     };
   }
 

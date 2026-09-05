@@ -1265,6 +1265,18 @@ input[type="text"]:focus {
   color: var(--primary);
 }
 
+.history-stats-card .stats-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.history-stats-card .stats-divider {
+  width: 1px;
+  height: 26px;
+  background-color: var(--border, rgba(255, 255, 255, 0.12));
+}
+
 .history-stats-card .stats-val-wrapper {
   display: flex;
   flex-direction: column;
@@ -1283,6 +1295,24 @@ input[type="text"]:focus {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--primary);
+}
+
+@media (max-width: 420px) {
+  .history-stats-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .history-stats-card .stats-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .history-stats-card .stats-val-wrapper {
+    align-items: flex-start;
+  }
+  .history-stats-card .stats-val-wrapper:last-child {
+    align-items: flex-end;
+  }
 }
 
 .history-actions-wrapper {

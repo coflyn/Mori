@@ -429,14 +429,15 @@ setupCustomSelect(
 // Download Statistics — read + live update on every file saved
 export function updateDlStatsDisplay() {
   const el = document.getElementById("historyDlStatsVal");
-  if (!el) return;
+  const historyEl = document.getElementById("historyItemsCountVal");
   const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
   const storedCount = parseInt(
     localStorage.getItem("mori_dl_count") || "0",
     10,
   );
   const count = Math.max(storedCount, history.length);
-  el.textContent = count.toLocaleString();
+  if (el) el.textContent = count.toLocaleString();
+  if (historyEl) historyEl.textContent = history.length.toLocaleString();
 }
 updateDlStatsDisplay();
 window.addEventListener("mori_file_saved", () => {

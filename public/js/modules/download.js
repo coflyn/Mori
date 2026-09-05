@@ -9,6 +9,7 @@ import {
   checkWifiOnlyGuard,
   getNetworkStatus,
   autoClearInputBox,
+  stopAllMedia,
 } from "../utils/index.js";
 import { startNativeDownload, renderResult, escapeHtml } from "../ui.js";
 import { cancelCurrentDownload } from "../ui/nativeDownload.js";
@@ -299,7 +300,8 @@ downloadBtn.addEventListener("click", async () => {
                 (d) =>
                   /video/i.test(d.type) ||
                   /\.mp4/i.test(d.url) ||
-                  d.type === "MP4",
+                  d.type === "MP4" ||
+                  /\d+p/i.test(d.type),
               );
 
               if (isVideoPost) {
@@ -541,11 +543,7 @@ downloadBtn.addEventListener("click", async () => {
   if (supportedSection) supportedSection.classList.add("hidden");
 
   // Stop any previous media playing in background
-  document.querySelectorAll("video").forEach((v) => {
-    v.pause();
-    v.src = "";
-    v.load();
-  });
+  stopAllMedia(document);
 
   showLoader();
   downloadBtn.disabled = false; // Keep enabled so it acts as Cancel
@@ -581,7 +579,7 @@ downloadBtn.addEventListener("click", async () => {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
-          "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (HD/MP4 Video · Photo Slideshow)";
+          "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (720p Video · Photo Slideshow)";
         if (cancelConfirmBtn) {
           cancelConfirmBtn.textContent = "SERVER 2";
           cancelConfirmBtn.style.color = "";
@@ -653,9 +651,19 @@ downloadBtn.addEventListener("click", async () => {
         data = await scrapeInstagram(url);
       }
     } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      if (preferServer === "server1") setYouTubeSource("gg");
-      else if (preferServer === "server2") setYouTubeSource("mobi");
-      else setYouTubeSource(null);
+      const playlistMatch = url.match(/[?&]list=([^"&?\/\s]+)/i);
+      const videoMatch = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+      );
+      const isPlaylist =
+        !!playlistMatch?.[1] && (!videoMatch?.[1] || url.includes("/playlist"));
+      if (isPlaylist) {
+        setYouTubeSource("gg");
+      } else {
+        if (preferServer === "server1") setYouTubeSource("gg");
+        else if (preferServer === "server2") setYouTubeSource("mobi");
+        else setYouTubeSource(null);
+      }
       data = await scrapeYouTube(url);
       if (data && data.requireSource) {
         confirmTitle.textContent =
@@ -699,15 +707,15 @@ downloadBtn.addEventListener("click", async () => {
       url.includes("fxtwitter.com") ||
       url.includes("vxtwitter.com")
     ) {
-      if (preferServer === "server1") setTwitterSource("tweeload");
-      else if (preferServer === "server2") setTwitterSource("tvd");
+      if (preferServer === "server1") setTwitterSource("tvd");
+      else if (preferServer === "server2") setTwitterSource("tweeload");
       else setTwitterSource(null);
       data = await scrapeTwitter(url);
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
         confirmMessage.textContent =
-          "Server 1: TweeLoad (Multi Resolution HD / SD Video)\nServer 2: TVD (Multi Resolution HD / SD Video)";
+          "Server 1: TVD (Full HD 1080p · 720p · Multi-Res)\nServer 2: TweeLoad (SD 320p Video)";
         if (cancelConfirmBtn) {
           cancelConfirmBtn.textContent = "SERVER 2";
           cancelConfirmBtn.style.color = "";
@@ -722,17 +730,17 @@ downloadBtn.addEventListener("click", async () => {
         const chosen = await new Promise((resolve) => {
           confirmOverlay._onDismissOutside = () => {
             hideConfirm();
-            resolve("tweeload");
+            resolve("tvd");
           };
           okConfirmBtn.onclick = () => {
             confirmOverlay._onDismissOutside = null;
             hideConfirm();
-            resolve("tweeload");
+            resolve("tvd");
           };
           cancelConfirmBtn.onclick = () => {
             confirmOverlay._onDismissOutside = null;
             hideConfirm();
-            resolve("tvd");
+            resolve("tweeload");
           };
         });
         setTwitterSource(chosen);

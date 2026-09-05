@@ -236,17 +236,25 @@ export async function startNativeDownload(
     let ext = isAudio ? "mp3" : isImage ? "jpg" : "mp4";
     const typeStr = (type || "").toLowerCase();
     const urlLower = (url || "").toLowerCase();
-    if (/\.png(\?|$)/i.test(urlLower) || typeStr.includes("png"))
-      ext = "png";
+    if (/\.png(\?|$)/i.test(urlLower) || typeStr.includes("png")) ext = "png";
     else if (/\.webp(\?|$)/i.test(urlLower) || typeStr.includes("webp"))
       ext = "webp";
     else if (/\.m4a(\?|$)/i.test(urlLower) || typeStr.includes("m4a"))
       ext = "m4a";
     else if (/\.mp3(\?|$)/i.test(urlLower) || typeStr.includes("mp3"))
       ext = "mp3";
-    else if (/\.jpe?g(\?|$)/i.test(urlLower) || typeStr.includes("jpg") || typeStr.includes("jpeg"))
+    else if (
+      /\.jpe?g(\?|$)/i.test(urlLower) ||
+      typeStr.includes("jpg") ||
+      typeStr.includes("jpeg")
+    )
       ext = "jpg";
-    else if (/\.mp4(\?|$)/i.test(urlLower) || typeStr.includes("video") || typeStr.includes("mp4"))
+    else if (
+      /\.mp4(\?|$)/i.test(urlLower) ||
+      typeStr.includes("video") ||
+      typeStr.includes("mp4") ||
+      /\d+p/i.test(typeStr)
+    )
       ext = "mp4";
 
     ext = ext.toLowerCase();
@@ -467,6 +475,8 @@ export async function startNativeDownload(
     const needsResolving =
       (url.includes("ytdown") ||
         url.includes("worker") ||
+        url.includes("youtube_resolve:") ||
+        url.includes("ytmp3gg_resolve:") ||
         url.includes("soundloaders_resolve:") ||
         url.includes("spotidown_resolve:") ||
         url.includes("applemusic_resolve:") ||
@@ -516,11 +526,20 @@ export async function startNativeDownload(
                 const text = a.textContent.trim();
                 if (
                   href &&
-                  (href.includes("/dl?token=") || a.classList.contains("abutton"))
+                  (href.includes("/dl?token=") ||
+                    a.classList.contains("abutton"))
                 ) {
-                  if (href.includes("ko-fi.com") || href.includes("premium.html"))
+                  if (
+                    href.includes("ko-fi.com") ||
+                    href.includes("premium.html")
+                  )
                     return;
-                  if (text.toLowerCase().includes("another song")) return;
+                  if (
+                    text.toLowerCase().includes("another song") ||
+                    text.toLowerCase().includes("cover") ||
+                    href.includes("cover=")
+                  )
+                    return;
                   if (!foundLink) {
                     foundLink = href.startsWith("http")
                       ? href
@@ -538,7 +557,8 @@ export async function startNativeDownload(
             actualDownloadUrl = foundLink;
           } else {
             throw (
-              lastErr || new Error("Could not resolve Apple Music download link")
+              lastErr ||
+              new Error("Could not resolve Apple Music download link")
             );
           }
         } else if (url.startsWith("spotidown_resolve:")) {
@@ -710,125 +730,217 @@ export async function startNativeDownload(
               new Error("Could not resolve Soundloaders download link")
             );
           }
-        } else if (url.startsWith("ytmp3gg_resolve:")) {
-          const parts = url.replace("ytmp3gg_resolve:", "").split("|||");
+        } else if (
+          url.startsWith("youtube_resolve:") ||
+          url.startsWith("ytmp3gg_resolve:")
+        ) {
+          const raw = url.startsWith("youtube_resolve:")
+            ? url.replace("youtube_resolve:", "")
+            : url.replace("ytmp3gg_resolve:", "");
+          const parts = raw.split("|||");
           const ytId = parts[0];
-          const format = parts[1]; // mp3 or mp4
-          const quality = parts[2]; // 128 or 720
-
-          if (btn)
-            btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (Init)</div>`;
-          updateProgress(5, "Initializing Conversion...");
-
-          const headers = {
-            Origin: "https://media.ytmp3.gg",
-            Referer: "https://media.ytmp3.gg/",
-            "User-Agent": getUserAgent(),
-            Accept: "application/json, text/plain, */*",
-            "Content-Type": "application/json",
-          };
-
-          let conv = null;
-          let initErr = null;
-          for (let initAttempt = 1; initAttempt <= 3; initAttempt++) {
-            if (window._moriDownloadCancelled) break;
-            try {
-              if (initAttempt > 1) {
-                await new Promise((r) => setTimeout(r, 1500 * initAttempt));
-              }
-              const convRes = await scraperFetch({
-                url: "https://hub.convert1s.com/api/download",
-                method: "POST",
-                headers,
-                data: JSON.stringify({
-                  url: `https://www.youtube.com/watch?v=${ytId}`,
-                  os: "macos",
-                  output: {
-                    type: format === "mp4" ? "video" : "audio",
-                    format,
-                    quality,
-                  },
-                  audio: { bitrate: "128k" },
-                }),
-              });
-              let parsedConv = convRes;
-              if (typeof parsedConv === "string")
-                parsedConv = JSON.parse(parsedConv);
-              if (parsedConv && !parsedConv.error && parsedConv.statusUrl) {
-                conv = parsedConv;
-                break;
-              }
-            } catch (e) {
-              initErr = e;
-            }
-          }
-
-          if (!conv || !conv.statusUrl) {
-            throw (
-              initErr ||
-              new Error("Failed to initialize ytmp3.gg conversion")
-            );
-          }
+          const format = parts[1] || "mp3"; // mp3 or mp4
+          const quality = parts[2] || "128"; // 128 or 720
 
           let downloadUrl = null;
-          let pollCount = 0;
-          const maxPolls = 40;
 
-          while (!downloadUrl && pollCount < maxPolls) {
-            // Check cancel between polls
-            if (window._moriDownloadCancelled) {
-              if (!window._moriPlaylistDownloading) {
-                cancelDownloadProgressToast();
-              } else {
-                const lingering = document.querySelectorAll(".download-progress-toast");
-                lingering.forEach((el) => el.remove());
-              }
-              if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-              }
-              if (progressContainer) progressContainer.classList.add("hidden");
-              return { success: false, error: "Cancelled" };
-            }
+          try {
             if (btn)
-              btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${pollCount + 1}/${maxPolls})</div>`;
-            updateProgress(
-              Math.min(90, 10 + pollCount * 2),
-              `Converting... (${pollCount + 1}/${maxPolls})`,
+              btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (ytmp3)</div>`;
+            updateProgress(10, "Converting with ytmp3.mobi...");
+
+            const mobiHeaders = {
+              Origin: "https://ytmp3.mobi",
+              Referer: "https://ytmp3.mobi/",
+              "User-Agent": getUserAgent(),
+            };
+
+            const initData = await scraperFetch(
+              {
+                url: "https://a.ymcdn.org/api/v1/init?p=y&23=1llum1n471",
+                headers: mobiHeaders,
+              },
+              "ytmp3.mobi Init",
             );
 
-            await new Promise((r) => setTimeout(r, 1500));
-            try {
-              const pollData = await scraperFetch({
-                url: conv.statusUrl,
-                headers: {
-                  Origin: "https://media.ytmp3.gg",
-                  Referer: "https://media.ytmp3.gg/",
-                  "User-Agent": getUserAgent(),
-                  Accept: "application/json, text/plain, */*",
+            if (initData && !initData.error && initData.convertURL) {
+              const convData = await scraperFetch(
+                {
+                  url: `${initData.convertURL}&v=${ytId}&f=${format}`,
+                  headers: mobiHeaders,
                 },
-              });
-              let poll =
-                typeof pollData === "string" ? JSON.parse(pollData) : pollData;
-              if (poll && poll.status === "completed" && poll.downloadUrl) {
-                downloadUrl = poll.downloadUrl;
-                break;
+                "ytmp3.mobi Convert",
+              );
+
+              if (convData && !convData.error) {
+                let dlUrl = convData.downloadURL;
+                let progUrl = convData.progressURL;
+                let progress = 0;
+                let attempts = 0;
+                const maxAttempts = 30;
+
+                while (progress < 3 && attempts < maxAttempts) {
+                  if (window._moriDownloadCancelled) break;
+
+                  await new Promise((r) => setTimeout(r, 1500));
+                  if (!progUrl) break;
+
+                  const progData = await scraperFetch(
+                    { url: progUrl, headers: mobiHeaders },
+                    "ytmp3.mobi Progress",
+                  );
+                  if (!progData || progData.error) break;
+                  progress = progData.progress;
+                  if (progData.downloadURL) dlUrl = progData.downloadURL;
+
+                  if (btn) {
+                    btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${attempts + 1}/${maxAttempts})</div>`;
+                  }
+                  updateProgress(
+                    Math.min(
+                      90,
+                      10 + Math.round(((attempts + 1) / maxAttempts) * 80),
+                    ),
+                    `Converting with ytmp3... (${attempts + 1}/${maxAttempts})`,
+                  );
+
+                  if (progress >= 3) break;
+                  attempts++;
+                }
+
+                if (dlUrl && progress >= 3) {
+                  if (dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
+                  if (dlUrl.startsWith("/"))
+                    dlUrl = "https://ytmp3.mobi" + dlUrl;
+                  downloadUrl = dlUrl;
+                }
               }
-              if (poll && (poll.status === "error" || poll.status === "failed")) {
-                throw new Error("Conversion failed on ytmp3.gg server");
-              }
-            } catch (pollErr) {
-              console.warn("Poll attempt error:", pollErr);
-              if (pollErr?.message?.includes("Conversion failed"))
-                throw pollErr;
             }
-            pollCount++;
+          } catch (mobiErr) {
+            console.warn(
+              "ytmp3.mobi engine failed, falling back to convert1s:",
+              mobiErr,
+            );
           }
+
+          if (!downloadUrl && !window._moriDownloadCancelled) {
+            try {
+              if (btn)
+                btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (convert1s)</div>`;
+              updateProgress(15, "Converting with ytmp3.gg...");
+
+              const headers = {
+                Origin: "https://media.ytmp3.gg",
+                Referer: "https://media.ytmp3.gg/",
+                "User-Agent": getUserAgent(),
+                Accept: "application/json, text/plain, */*",
+                "Content-Type": "application/json",
+              };
+
+              let conv = null;
+              for (let initAttempt = 1; initAttempt <= 2; initAttempt++) {
+                if (window._moriDownloadCancelled) break;
+                try {
+                  if (initAttempt > 1) {
+                    await new Promise((r) => setTimeout(r, 1500));
+                  }
+                  const convRes = await scraperFetch({
+                    url: "https://hub.convert1s.com/api/download",
+                    method: "POST",
+                    headers,
+                    data: JSON.stringify({
+                      url: `https://www.youtube.com/watch?v=${ytId}`,
+                      os: "macos",
+                      output: {
+                        type: format === "mp4" ? "video" : "audio",
+                        format,
+                        quality,
+                      },
+                      audio: { bitrate: "128k" },
+                    }),
+                  });
+                  let parsedConv = convRes;
+                  if (typeof parsedConv === "string")
+                    parsedConv = JSON.parse(parsedConv);
+                  if (parsedConv && !parsedConv.error && parsedConv.statusUrl) {
+                    conv = parsedConv;
+                    break;
+                  }
+                } catch (e) {}
+              }
+
+              if (conv && conv.statusUrl) {
+                let pollCount = 0;
+                const maxPolls = 30;
+                while (!downloadUrl && pollCount < maxPolls) {
+                  if (window._moriDownloadCancelled) break;
+                  if (btn)
+                    btn.innerHTML = `<div>${translations[currentLang]["btn-processing"] || "Processing..."} (${pollCount + 1}/${maxPolls})</div>`;
+                  updateProgress(
+                    Math.min(90, 20 + pollCount * 2),
+                    `Converting... (${pollCount + 1}/${maxPolls})`,
+                  );
+
+                  await new Promise((r) => setTimeout(r, 1500));
+                  try {
+                    const pollData = await scraperFetch({
+                      url: conv.statusUrl,
+                      headers: {
+                        Origin: "https://media.ytmp3.gg",
+                        Referer: "https://media.ytmp3.gg/",
+                        "User-Agent": getUserAgent(),
+                        Accept: "application/json, text/plain, */*",
+                      },
+                    });
+                    let poll =
+                      typeof pollData === "string"
+                        ? JSON.parse(pollData)
+                        : pollData;
+                    if (
+                      poll &&
+                      poll.status === "completed" &&
+                      poll.downloadUrl
+                    ) {
+                      downloadUrl = poll.downloadUrl;
+                      break;
+                    }
+                    if (
+                      poll &&
+                      (poll.status === "error" || poll.status === "failed")
+                    ) {
+                      break;
+                    }
+                  } catch (_) {}
+                  pollCount++;
+                }
+              }
+            } catch (ggErr) {
+              console.warn("convert1s engine failed:", ggErr);
+            }
+          }
+
+          if (window._moriDownloadCancelled) {
+            if (!window._moriPlaylistDownloading) {
+              cancelDownloadProgressToast();
+            } else {
+              const lingering = document.querySelectorAll(
+                ".download-progress-toast",
+              );
+              lingering.forEach((el) => el.remove());
+            }
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = originalContent;
+            }
+            if (progressContainer) progressContainer.classList.add("hidden");
+            return { success: false, error: "Cancelled" };
+          }
+
           if (downloadUrl) {
             actualDownloadUrl = downloadUrl;
           } else {
             throw new Error(
-              "Conversion timed out after " + maxPolls + " attempts.",
+              "Failed to convert YouTube track. All download servers were unreachable.",
             );
           }
         } else {
@@ -843,7 +955,9 @@ export async function startNativeDownload(
               if (!window._moriPlaylistDownloading) {
                 cancelDownloadProgressToast();
               } else {
-                const lingering = document.querySelectorAll(".download-progress-toast");
+                const lingering = document.querySelectorAll(
+                  ".download-progress-toast",
+                );
                 lingering.forEach((el) => el.remove());
               }
               if (btn) {
@@ -916,7 +1030,6 @@ export async function startNativeDownload(
     }
 
     const isYtmp3GG =
-      (url && url.startsWith("ytmp3gg_resolve:")) ||
       actualDownloadUrl.includes("ytmp3.gg") ||
       actualDownloadUrl.includes("convert1s.com") ||
       actualDownloadUrl.includes("lilillliiillliillii.shop");
@@ -980,10 +1093,23 @@ export async function startNativeDownload(
       downloadHeaders["Origin"] = "https://media.ytmp3.gg";
     } else if (isYoutube) {
       downloadHeaders["Referer"] = "https://ytmp3.mobi/";
+      if (
+        actualDownloadUrl.includes("ymcdn.org") ||
+        actualDownloadUrl.includes("ytmp3.mobi")
+      ) {
+        downloadHeaders["Origin"] = "https://ytmp3.mobi";
+      }
     }
     if (isPixivDirect) downloadHeaders["Referer"] = "https://www.pixiv.net/";
     if (isUgoiraCom) downloadHeaders["Referer"] = "https://ugoira.com/";
-    if (isBilibili) downloadHeaders["Referer"] = "https://www.bilibili.tv/";
+    if (isBilibili) {
+      downloadHeaders["Referer"] =
+        (sourceUrl || url || "").includes("bilibili.com") ||
+        (sourceUrl || url || "").includes("b23.tv") ||
+        actualDownloadUrl.includes("bilivideo.com")
+          ? "https://www.bilibili.com/"
+          : "https://www.bilibili.tv/";
+    }
     if (isPinterest) {
       if (actualDownloadUrl.includes("pindown.io")) {
         downloadHeaders["Referer"] = "https://pindown.io/";
@@ -1158,7 +1284,9 @@ export async function startNativeDownload(
         if (!window._moriPlaylistDownloading) {
           cancelDownloadProgressToast();
         } else {
-          const lingering = document.querySelectorAll(".download-progress-toast");
+          const lingering = document.querySelectorAll(
+            ".download-progress-toast",
+          );
           lingering.forEach((el) => el.remove());
         }
         if (btn) {
@@ -1282,7 +1410,10 @@ export async function startNativeDownload(
     );
 
     // Trigger System Tray Notification when download finishes
-    if (!window._moriPlaylistDownloading && window.MoriMainBridge?.showCompleteNotification) {
+    if (
+      !window._moriPlaylistDownloading &&
+      window.MoriMainBridge?.showCompleteNotification
+    ) {
       try {
         window.MoriMainBridge.showCompleteNotification(
           effectiveTitle,
@@ -1334,7 +1465,10 @@ export async function startNativeDownload(
     failDownloadProgressToast(errorMsg, failDismissMs);
 
     // Trigger System Tray Notification when download fails
-    if (!window._moriPlaylistDownloading && window.MoriMainBridge?.showFailedNotification) {
+    if (
+      !window._moriPlaylistDownloading &&
+      window.MoriMainBridge?.showFailedNotification
+    ) {
       try {
         window.MoriMainBridge.showFailedNotification(
           effectiveTitle || "Media",

@@ -70,7 +70,8 @@ export function renderMediaSlides(container, items, resultThumbnail) {
         lowerUrl.includes(".m3u8") ||
         lowerUrl.includes("video") ||
         upperType.includes("VIDEO") ||
-        upperType.includes("MP4"));
+        upperType.includes("MP4") ||
+        /\d+p/i.test(upperType));
 
     const isLocal =
       dl.url.includes("_capacitor_file_") ||
@@ -166,6 +167,7 @@ export function renderMediaSlides(container, items, resultThumbnail) {
           : "audio/mpeg";
         tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
           .then((bytes) => {
+            if (audio._isStopped || !audio.isConnected) return;
             if (bytes && bytes.length > 0) {
               const blob = new Blob([new Uint8Array(bytes)], { type: mime });
               const blobUrl = URL.createObjectURL(blob);
@@ -179,6 +181,7 @@ export function renderMediaSlides(container, items, resultThumbnail) {
             }
           })
           .catch((e) => {
+            if (audio._isStopped || !audio.isConnected) return;
             console.warn("Tauri audio read error:", e);
             if (dl.remoteUrl && navigator.onLine) {
               audio.src = dl.remoteUrl;
@@ -251,6 +254,7 @@ export function renderMediaSlides(container, items, resultThumbnail) {
             }
 
             if (res && res.data) {
+              if (audio._isStopped || !audio.isConnected) return;
               const byteChars = atob(res.data);
               const byteArr = new Uint8Array(byteChars.length);
               for (let i = 0; i < byteChars.length; i++) {
@@ -272,6 +276,7 @@ export function renderMediaSlides(container, items, resultThumbnail) {
           audio.src !== dl.remoteUrl &&
           navigator.onLine
         ) {
+          if (audio._isStopped || !audio.isConnected) return;
           audioRemoteRetried = true;
           audio.src = dl.remoteUrl;
           audio.load();
@@ -524,10 +529,17 @@ export function renderResult(result, originalUrl) {
     (/xiaohongshu|rednote/i.test(urlInput.value) ||
       (result.title &&
         /xiaohongshu|rednote/i.test(result.title.toLowerCase()))) &&
-    sliderItems.some((dl) => dl.type?.toUpperCase() === "VIDEO");
+    sliderItems.some((dl) => {
+      const t = dl.type?.toUpperCase() || "";
+      return t.includes("VIDEO") || t.includes("MP4") || /\d+p/i.test(t);
+    });
   const isTwitterVideo =
     (/twitter\.com|x\.com|fixupx|fxtwitter|vxtwitter/i.test(urlInput.value) ||
       (result.title && /twitter/i.test(result.title.toLowerCase()))) &&
+    !sliderItems.some((dl) => dl.type === "IMAGE" || dl.type === "PHOTO");
+  const isTikTokVideo =
+    (/tiktok\.com/i.test(urlInput.value) ||
+      (result.title && /tiktok/i.test(result.title.toLowerCase()))) &&
     !sliderItems.some((dl) => dl.type === "IMAGE" || dl.type === "PHOTO");
 
   if (isDouyin) {
@@ -548,7 +560,7 @@ export function renderResult(result, originalUrl) {
           ? [sliderItems[0]]
           : [];
     }
-  } else if (isBilibili || isRedNoteVideo || isTwitterVideo) {
+  } else if (isBilibili || isRedNoteVideo || isTwitterVideo || isTikTokVideo) {
     const firstItem = sliderItems.find((dl) => !dl.isMirror) || sliderItems[0];
     sliderItems = firstItem ? [firstItem] : [];
   }
@@ -638,7 +650,11 @@ export function renderResult(result, originalUrl) {
       type.includes("IMAGE") ||
       type.includes("PHOTO") ||
       url.match(/\.(jpg|jpeg|png|webp)/);
-    const isVideo = type.includes("VIDEO") || url.match(/\.(mp4|mkv|mov|avi)/);
+    const isVideo =
+      type.includes("VIDEO") ||
+      type.includes("MP4") ||
+      /\d+p/i.test(type) ||
+      url.match(/\.(mp4|mkv|mov|avi)/);
     return isImage && !isVideo;
   });
 
