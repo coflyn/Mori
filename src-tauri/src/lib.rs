@@ -314,6 +314,13 @@ async fn tauri_get_folder_size(folder: Option<String>) -> Result<u64, String> {
     Ok(dir_size(&target_dir))
 }
 
+mod engine_sec;
+
+#[tauri::command]
+fn tauri_get_engine_key(challenge: String) -> Result<String, String> {
+    engine_sec::get_key(&challenge)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -325,7 +332,8 @@ pub fn run() {
         tauri_fetch_bytes,
         tauri_save_bytes_file,
         tauri_open_url,
-        tauri_get_folder_size
+        tauri_get_folder_size,
+        tauri_get_engine_key
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

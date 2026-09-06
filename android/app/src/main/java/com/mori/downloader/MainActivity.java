@@ -22,9 +22,192 @@ import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
  
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import android.os.Handler;
+import android.os.Looper;
+
 public class MainActivity extends BridgeActivity {
 
+    static {
+        try {
+            System.loadLibrary("morisec");
+        } catch (Throwable ignored) {}
+    }
+
+    public static native String getEngineSecurityKeyNative(Context context, String challenge);
+
+    private static final CookieJar memoryCookieJar = new CookieJar() {
+        private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
+
+        @Override
+        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+            cookieStore.put(url.host(), cookies);
+        }
+
+        @Override
+        public List<Cookie> loadForRequest(HttpUrl url) {
+            List<Cookie> cookies = cookieStore.get(url.host());
+            return cookies != null ? cookies : new ArrayList<>();
+        }
+    };
+
+    private static final OkHttpClient sharedClient = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .cookieJar(memoryCookieJar)
+            .build();
+
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     public class MoriMainBridge {
+        @JavascriptInterface
+        public String getEngineSecurityKey(String challenge) {
+            try {
+                return getEngineSecurityKeyNative(MainActivity.this, challenge);
+            } catch (Throwable e) {
+                return "UNAUTHORIZED_CLONE";
+            }
+        }
+
+        @JavascriptInterface
+        public void httpRequestAsync(String optionsJson, String reqId) {
+            executor.execute(() -> {
+                String result;
+                try {
+                    result = httpRequest(optionsJson);
+                } catch (Throwable t) {
+                    String msg = t.getMessage() != null ? t.getMessage().replace("\"", "'") : t.getClass().getSimpleName();
+                    result = "{\"status\":0,\"data\":\"\",\"error\":\"" + msg + "\"}";
+                }
+                final String finalResult = result;
+                mainHandler.post(() -> {
+                    try {
+                        WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+                        if (webView != null) {
+                            String js = "if (window.__moriNativeCallbacks && window.__moriNativeCallbacks['" + reqId + "']) { " +
+                                        "  window.__moriNativeCallbacks['" + reqId + "'](" + JSONObject.quote(finalResult) + "); " +
+                                        "  delete window.__moriNativeCallbacks['" + reqId + "']; " +
+                                        "} else if (window.__moriShareCallbacks && window.__moriShareCallbacks['" + reqId + "']) { " +
+                                        "  window.__moriShareCallbacks['" + reqId + "'](" + JSONObject.quote(finalResult) + "); " +
+                                        "  delete window.__moriShareCallbacks['" + reqId + "']; " +
+                                        "}";
+                            webView.evaluateJavascript(js, null);
+                        }
+                    } catch (Exception e) {
+                        Log.e("MoriMain", "httpRequestAsync callback error: " + e.getMessage());
+                    }
+                });
+            });
+        }
+
+        @JavascriptInterface
+        public String httpRequest(String optionsJson) {
+            try {
+                JSONObject opts = new JSONObject(optionsJson);
+                String url        = opts.getString("url");
+                String method     = opts.optString("method", "GET").toUpperCase();
+                JSONObject hdrsIn = opts.optJSONObject("headers");
+                String body       = opts.optString("data", null);
+                JSONObject params = opts.optJSONObject("params");
+                String respType   = opts.optString("responseType", "text");
+
+                if (params != null && params.length() > 0) {
+                    StringBuilder sb = new StringBuilder(url.contains("?") ? url + "&" : url + "?");
+                    Iterator<String> keys = params.keys();
+                    while (keys.hasNext()) {
+                        String k = keys.next();
+                        sb.append(Uri.encode(k)).append("=").append(Uri.encode(params.getString(k)));
+                        if (keys.hasNext()) sb.append("&");
+                    }
+                    url = sb.toString();
+                }
+
+                OkHttpClient client = sharedClient;
+
+                Headers.Builder hb = new Headers.Builder();
+                if (hdrsIn != null) {
+                    Iterator<String> keys = hdrsIn.keys();
+                    while (keys.hasNext()) {
+                        String k = keys.next();
+                        String v = hdrsIn.optString(k, "");
+                        try {
+                            hb.set(k, v);
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                Request.Builder rb = new Request.Builder().url(url).headers(hb.build());
+                if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
+                    String ct = hdrsIn != null ? hdrsIn.optString("Content-Type", "") : "";
+                    if (ct.isEmpty() && hdrsIn != null) {
+                        ct = hdrsIn.optString("content-type", "");
+                    }
+                    if (ct.isEmpty()) {
+                        ct = (body != null && (body.trim().startsWith("{") || body.trim().startsWith("[")))
+                                ? "application/json; charset=utf-8"
+                                : "application/x-www-form-urlencoded; charset=utf-8";
+                    }
+                    RequestBody rb2 = body != null
+                            ? RequestBody.create(body, MediaType.parse(ct))
+                            : RequestBody.create("", MediaType.parse(ct));
+                    if ("PUT".equals(method)) rb = rb.put(rb2);
+                    else if ("PATCH".equals(method)) rb = rb.patch(rb2);
+                    else rb = rb.post(rb2);
+                } else if ("DELETE".equals(method)) {
+                    rb = rb.delete();
+                } else if ("HEAD".equals(method)) {
+                    rb = rb.head();
+                } else {
+                    rb = rb.get();
+                }
+
+                Response res = client.newCall(rb.build()).execute();
+
+                JSONObject resHeaders = new JSONObject();
+                for (String name : res.headers().names()) {
+                    resHeaders.put(name.toLowerCase(), res.header(name));
+                }
+
+                String resData;
+                if ("arraybuffer".equals(respType) || "blob".equals(respType)) {
+                    byte[] bytes = res.body() != null ? res.body().bytes() : new byte[0];
+                    resData = Base64.encodeToString(bytes, Base64.NO_WRAP);
+                } else {
+                    resData = res.body() != null ? res.body().string() : "";
+                }
+
+                JSONObject result = new JSONObject();
+                result.put("status", res.code());
+                result.put("headers", resHeaders);
+                result.put("data", resData);
+                return result.toString();
+
+            } catch (Throwable e) {
+                Log.e("MoriMain", "httpRequest error: " + e.getMessage());
+                String msg = e.getMessage() != null ? e.getMessage().replace("\"", "'") : e.getClass().getSimpleName();
+                return "{\"status\":0,\"data\":\"\",\"error\":\"" + msg + "\"}";
+            }
+        }
+
         @JavascriptInterface
         public String getPendingHistoryList() {
             try {

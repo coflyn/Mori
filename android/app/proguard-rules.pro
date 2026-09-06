@@ -12,10 +12,17 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-keepattributes *Annotation*
+-keep class com.mori.downloader.** { *; }
+-keepclassmembers class com.mori.downloader.** {
+    @android.webkit.JavascriptInterface <methods>;
+    *;
+}
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+-keep class com.getcapacitor.** { *; }
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**

@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
 </p>
 
@@ -80,6 +80,8 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 - **HTML5 & CSS3**: Custom minimalist design system with dark mode and smooth transitions.
 - **Tauri v2 (Rust)**: Ultra-lightweight desktop engine for macOS & Windows (`.dmg`, `.app`, `.msi`, `.exe`).
 - **CapacitorJS**: Native Android and iOS bridge for filesystem, share sheet, clipboard, and biometrics.
+- **OkHttp (Native Android)**: High-performance native HTTP engine to seamlessly bypass WebView CORS and network restrictions.
+- **Native Security Engine (C / Rust)**: Dynamic handshake and integrity verification layer for scraper runtime security.
 - **Cheerio & Axios**: Fast DOM HTML parsing and HTTP client request handling.
 - **pdf-lib**: Client-side PDF generation and bundling.
 
@@ -88,15 +90,17 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 ```
 Mori/
 ├── android/                    # Capacitor Android native project
-│   ├── app/src/main/java/com/mori/downloader/
-│   │   ├── MainActivity.java   # Main Capacitor Activity + native bridge
-│   │   └── ShareActivity.java  # Native Quick Save Share overlay & MediaStore indexer
+│   ├── app/src/main/
+│   │   ├── java/com/mori/downloader/
+│   │   │   ├── MainActivity.java   # Main Activity + native HTTP bridge (CORS bypass) & security key
+│   │   │   └── ShareActivity.java  # Native Quick Save Share overlay & MediaStore indexer
+│   │   └── jniLibs/            # Native compiled security libraries (libmorisec.so: arm64, armv7, x86_64)
 │   └── gradle/                 # Gradle build scripts & configurations
 ├── ios/                        # Capacitor iOS Xcode workspace
 │   └── App/                    # iOS Xcode project, Info.plist, and CocoaPods
 ├── src-tauri/                  # Tauri v2 Desktop Rust backend (macOS & Windows)
 │   ├── capabilities/           # Application permissions & security capabilities
-│   ├── src/                    # Rust native HTTP & local filesystem commands
+│   ├── src/                    # Rust native HTTP, local filesystem & security key provider
 │   └── tauri.conf.json         # Desktop app configuration & window bounds
 ├── assets/                     # App icons, mockups, & screenshots
 ├── public/                     # Frontend web assets (Vanilla JS + CSS)
@@ -119,23 +123,10 @@ Mori/
 │   │   │   ├── modals.js       # Confirmation dialogs & information modals
 │   │   │   ├── settings.js     # User preferences & theme customization
 │   │   │   └── update.js       # Automatic GitHub release update checker
-│   │   ├── scrapers/           # Modular scraper engines for 14 platforms
-│   │   │   ├── applemusic.js
-│   │   │   ├── bandcamp.js
-│   │   │   ├── bilibili.js
-│   │   │   ├── douyin.js
-│   │   │   ├── facebook.js
-│   │   │   ├── httpHelper.js   # Unified HTTP engine with retry, timeout & UA rotation
-│   │   │   ├── index.js
-│   │   │   ├── instagram.js
-│   │   │   ├── pinterest.js
-│   │   │   ├── pixiv.js
-│   │   │   ├── rednote.js
-│   │   │   ├── spotify.js
-│   │   │   ├── threads.js
-│   │   │   ├── tiktok.js
-│   │   │   ├── twitter.js
-│   │   │   └── youtube.js
+│   │   ├── scrapers.bin        # Pre-compiled & encrypted core scraper binary bytecode (14 platforms)
+│   │   ├── scrapers/           # Scraper runtime loader & HTTP helper
+│   │   │   ├── httpHelper.js   # Unified HTTP engine (native OkHttp/Tauri bridge + UA rotation)
+│   │   │   └── index.js        # Dynamic handshake runtime loader & decryptor for scrapers.bin
 │   │   ├── ui/                 # UI rendering & presentation layer
 │   │   │   ├── nativeDownload.js # Download progress tracking & file system writer
 │   │   │   ├── result.js       # Analysis results view, media slider, & PDF creator
@@ -143,7 +134,7 @@ Mori/
 │   │   ├── share.js            # Android Quick Save Share Overlay controller
 │   │   ├── ui.js               # History rendering & gesture handlers (long-press delete)
 │   │   ├── utils/              # Helper utilities
-│   │   │   ├── index.js        # Haptics, toasts, wake lock, filesystem helpers
+│   │   │   ├── index.js        # Haptics, toasts, wake lock, filesystem & plugin sync helpers
 │   │   │   ├── pdfHelper.js    # PDF generation & image bundling via pdf-lib
 │   │   │   └── urlUtils.js     # URL sanitization & tracking parameter remover
 │   │   └── vendor/             # Bundled third-party libraries (pdf-lib)
@@ -192,7 +183,7 @@ Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trac
 Mori is built using Tauri, Capacitor, and Vanilla JS for high performance.
 
 - **On macOS & Windows (Desktop)**: Powered by **Tauri v2** with a native Rust HTTP engine (`tauri_http_request`) to bypass CORS and save downloads directly to your system's `Downloads/Mori` folder.
-- **On Android & iOS**: Uses `CapacitorHttp` to bypass CORS and download directly from the device IP. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
+- **On Android & iOS**: Uses native HTTP bridges (**OkHttp** on Android / **CapacitorHttp** on iOS) to seamlessly bypass WebView CORS and network restrictions. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
 - **On Web**: Preview mode only — runs directly in the browser with limited functionality.
 
 ### Building for Android
@@ -333,6 +324,19 @@ Developed with ❤️ by coflyn.
 GitHub: https://github.com/coflyn
 Instagram: @\_coflyn
 
-## License
+## License & Terms of Use
 
-Mori is released under the **MIT License**. Feel free to use, modify, and distribute it.
+Mori is free and open-source software licensed under the **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)**.
+
+- **Copyleft Enforcement**: Anyone who modifies or distributes copies of this software is strictly required to provide the complete corresponding source code under the same GPL-3.0 license.
+- **No Unauthorized Commercial Re-selling**: Packaging, rebranding, or distributing closed-source, paid, or monetized variants of Mori without honoring GPL-3.0 requirements violates copyright law and will be subject to official DMCA takedowns.
+- **Trademark & Identity**: The name "Mori", app logo, and associated visual designs are the property of the original author. Derivative works must be clearly distinguished and must not claim affiliation with the original project.
+
+### Why Scraper Core is Pre-Compiled (`scrapers.bin`)
+
+Mori was created as a free, privacy-first, and community-driven project with countless hours of research dedicated to reverse-engineering and maintaining social media parsers. 
+
+Unfortunately, bad actors frequently **clone the repository, rebrand the UI, inject predatory ads/trackers, and sell the app for profit** while offloading all scraper maintenance onto the original author. To deter low-effort leeching and protect the project's integrity while keeping Mori 100% free and functional for legitimate users:
+- The scraper engine is distributed as a pre-compiled, integrity-protected binary bytecode (`scrapers.bin`).
+- The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.
+- Honest developers who wish to contribute directly to scraper algorithms or report engine improvements are encouraged to open an issue or pull request.

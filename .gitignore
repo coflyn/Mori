@@ -40,3 +40,9 @@ npm-debug.log*
 # Tauri Desktop Build
 src-tauri/target/
 src-tauri/gen/
+
+# Private Core Scrapers Source & Build Tools
+src-scrapers/
+scripts/
+android/app/src/main/cpp/
+src-tauri/src/engine_sec.rs

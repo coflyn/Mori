@@ -128,8 +128,10 @@ export async function scraperFetch(options, serverName = "Server") {
     window.__TAURI_INTERNALS__?.invoke ||
     window.__TAURI__?.invoke;
 
-  // Share overlay: use native Android bridge (MoriShareBridge) when CapacitorHttp is unavailable
-  if (window.MoriShareBridge?.httpRequestAsync) {
+  const nativeBridge = window.MoriMainBridge || window.MoriShareBridge;
+  const capHttp = window.Capacitor?.Plugins?.CapacitorHttp || CapacitorHttp;
+
+  if (nativeBridge?.httpRequestAsync) {
     let fetchUrl = options.url;
     if (options.params) {
       const q = new URLSearchParams(options.params).toString();
@@ -149,22 +151,38 @@ export async function scraperFetch(options, serverName = "Server") {
 
     const reqId =
       "req_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
-    const raw = await new Promise((resolve) => {
-      if (!window.__moriShareCallbacks) window.__moriShareCallbacks = {};
-      window.__moriShareCallbacks[reqId] = resolve;
-      window.MoriShareBridge.httpRequestAsync(
-        JSON.stringify(bridgeOpts),
-        reqId,
-      );
+    const raw = await new Promise((resolve, reject) => {
+      if (!window.__moriNativeCallbacks) window.__moriNativeCallbacks = {};
+      const timeoutMs = getRequestTimeout();
+      const timer = setTimeout(() => {
+        delete window.__moriNativeCallbacks[reqId];
+        if (window.__moriShareCallbacks)
+          delete window.__moriShareCallbacks[reqId];
+        reject(
+          new Error(
+            `${serverName} request timed out after ${timeoutMs / 1000}s`,
+          ),
+        );
+      }, timeoutMs + 2000);
+
+      window.__moriNativeCallbacks[reqId] = (val) => {
+        clearTimeout(timer);
+        resolve(val);
+      };
+      if (!window.__moriShareCallbacks)
+        window.__moriShareCallbacks = window.__moriNativeCallbacks;
+      nativeBridge.httpRequestAsync(JSON.stringify(bridgeOpts), reqId);
     });
     const parsed = JSON.parse(raw);
+    if (parsed.status === 0 && parsed.error) {
+      throw new Error(`${serverName} request failed: ${parsed.error}`);
+    }
     response = {
       status: parsed.status,
       headers: parsed.headers || {},
       data: parsed.data,
     };
-  } else if (window.MoriShareBridge?.httpRequest) {
-    await new Promise((r) => setTimeout(r, 60));
+  } else if (nativeBridge?.httpRequest) {
     let fetchUrl = options.url;
     if (options.params) {
       const q = new URLSearchParams(options.params).toString();
@@ -181,22 +199,25 @@ export async function scraperFetch(options, serverName = "Server") {
         typeof options.data === "object"
           ? JSON.stringify(options.data)
           : String(options.data);
-    const raw = window.MoriShareBridge.httpRequest(JSON.stringify(bridgeOpts));
+    const raw = nativeBridge.httpRequest(JSON.stringify(bridgeOpts));
     const parsed = JSON.parse(raw);
+    if (parsed.status === 0 && parsed.error) {
+      throw new Error(`${serverName} request failed: ${parsed.error}`);
+    }
     response = {
       status: parsed.status,
       headers: parsed.headers || {},
       data: parsed.data,
     };
-  } else if (CapacitorHttp) {
+  } else if (capHttp) {
     if (method === "POST") {
-      response = await CapacitorHttp.post(httpConfig);
+      response = await capHttp.post(httpConfig);
     } else if (method === "PUT") {
-      response = await CapacitorHttp.put(httpConfig);
+      response = await capHttp.put(httpConfig);
     } else if (method === "DELETE") {
-      response = await CapacitorHttp.delete(httpConfig);
+      response = await capHttp.delete(httpConfig);
     } else {
-      response = await CapacitorHttp.get(httpConfig);
+      response = await capHttp.get(httpConfig);
     }
   } else if (invoke) {
     // Native Rust reqwest for Tauri Desktop (100% CORS-free)

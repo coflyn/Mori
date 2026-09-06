@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
+    "compile:scrapers": "node scripts/compile-scrapers.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
@@ -16,7 +17,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "@capacitor-community/media": "^8.0.1",
     "@capacitor/android": "^7.6.8",
@@ -37,7 +38,9 @@
     "form-data": "^4.0.6"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4"
+    "@tauri-apps/cli": "^2.11.4",
+    "esbuild": "^0.28.2",
+    "javascript-obfuscator": "^5.6.0"
   },
   "overrides": {
     "tar": "7.5.21",
