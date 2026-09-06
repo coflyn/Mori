@@ -318,12 +318,6 @@ Since Mori is client-side only and not distributed on the Apple App Store, iOS u
 - **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.
 - **Scarlet / Esign**: Directly install on-device without a PC using enterprise/public developer certificates.
 
----
-
-Developed with ❤️ by coflyn.
-GitHub: https://github.com/coflyn
-Instagram: @\_coflyn
-
 ## License & Terms of Use
 
 Mori is free and open-source software licensed under the **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)**.
@@ -334,9 +328,16 @@ Mori is free and open-source software licensed under the **[GNU General Public L
 
 ### Why Scraper Core is Pre-Compiled (`scrapers.bin`)
 
-Mori was created as a free, privacy-first, and community-driven project with countless hours of research dedicated to reverse-engineering and maintaining social media parsers. 
+Mori was created as a free, privacy-first, and community-driven project with countless hours of research dedicated to reverse-engineering and maintaining social media parsers.
 
 Unfortunately, bad actors frequently **clone the repository, rebrand the UI, inject predatory ads/trackers, and sell the app for profit** while offloading all scraper maintenance onto the original author. To deter low-effort leeching and protect the project's integrity while keeping Mori 100% free and functional for legitimate users:
+
 - The scraper engine is distributed as a pre-compiled, integrity-protected binary bytecode (`scrapers.bin`).
 - The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.
 - Honest developers who wish to contribute directly to scraper algorithms or report engine improvements are encouraged to open an issue or pull request.
+
+---
+
+Developed with ❤️ by coflyn.
+GitHub: https://github.com/coflyn
+Instagram: @\_coflyn
