@@ -152,12 +152,12 @@ Mori/
 
 Pre-compiled, ready-to-use binaries are available for all platforms on **[GitHub Releases](https://github.com/coflyn/Mori/releases)**.
 
-| Platform                                                                                                                        | Available Packages                                                                    | Guide                                                                               |
-| :------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------- |
-| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> **Android**                                                 | `Mori v4.3.1.apk`                                                                     | [Installation & Play Protect Guide](GUIDE.md#android-installation--troubleshooting) |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **macOS**                                                     | `Mori-v4.3.1-macOS-arm64.dmg` _(DMG)_<br>`Mori-v4.3.1-macOS-arm64.app.tar.gz` _(Tar)_ | [Gatekeeper Quarantine Fix](GUIDE.md#macos-installation--gatekeeper-fix)            |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="16" /> **Windows** | `Mori-v4.3.1-Windows-x64-Setup.exe` _(EXE)_<br>`Mori-v4.3.1-Windows-x64.msi` _(MSI)_  | [Windows Setup Guide](GUIDE.md#windows-installation)                                |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **iOS**                                                       | `Mori v4.3.1.ipa`                                                                     | [AltStore / TrollStore Sideloading](GUIDE.md#ios-sideloading-guide)                 |
+| Platform                                                                                                                        | Available Packages                                                                | Guide                                                                               |
+| :------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------- |
+| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> **Android**                                                 | `Mori v...apk`                                                                    | [Installation & Play Protect Guide](GUIDE.md#android-installation--troubleshooting) |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **macOS**                                                     | `Mori-v...-macOS-arm64.dmg` _(DMG)_<br>`Mori-v...-macOS-arm64.app.tar.gz` _(Tar)_ | [Gatekeeper Quarantine Fix](GUIDE.md#macos-installation--gatekeeper-fix)            |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="16" /> **Windows** | `Mori-v...-Windows-x64-Setup.exe` _(EXE)_<br>`Mori-v...-Windows-x64.msi` _(MSI)_  | [Windows Setup Guide](GUIDE.md#windows-installation)                                |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **iOS**                                                       | `Mori v...ipa`                                                                    | [AltStore / TrollStore Sideloading](GUIDE.md#ios-sideloading-guide)                 |
 
 > 📖 **Need help installing or troubleshooting?**  
 > Read the complete **[Installation, Sideloading & User Guide (GUIDE.md)](GUIDE.md)**.
@@ -167,7 +167,7 @@ Pre-compiled, ready-to-use binaries are available for all platforms on **[GitHub
 Interested in customizing the interface, contributing translations, or compiling binaries locally?  
 All build commands, release logs, and prerequisites are documented in:
 
-👉 **[Developer & Compilation Guide (BUILD.md)](BUILD.md)**  
+👉 **[Contributing & Build Guide (CONTRIBUTING.md)](CONTRIBUTING.md)**  
 📜 **[Release History & Version Logs (CHANGELOG.md)](CHANGELOG.md)**
 
 ## 📄 License & Terms of Use
@@ -178,7 +178,7 @@ Mori is free and open-source software licensed under the **[GNU General Public L
 - **No Unauthorized Commercial Re-selling**: Packaging, rebranding, or distributing closed-source, paid, or monetized variants of Mori without honoring GPL-3.0 requirements violates copyright law and will be subject to official DMCA takedowns.
 - **Trademark & Identity**: The name "Mori", app logo, and associated visual designs are the property of the original author. Derivative works must be clearly distinguished and must not claim affiliation with the original project.
 
-### 🔒 Why the Scraper Core is Pre-Compiled (`scrapers.bin`)
+## 🔒 Why the Scraper Core is Pre-Compiled (`scrapers.bin`)
 
 Mori was built from scratch as a free, privacy-first, zero-bullshit project with countless hours spent hunting down, reverse-engineering, and maintaining elusive third-party scraper endpoints & web APIs.
 
@@ -188,7 +188,7 @@ I have zero patience for parasites exploiting open-source goodwill. To shut down
 
 - **Distributed as an integrity-protected pre-compiled binary (`scrapers.bin`) backed by native Android OkHttp.**
 - **The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.**
-- **If you actually want to write code, improve algorithms, or contribute genuine scraper patches, hit me up via GitHub Issues or PRs. No freeloaders allowed.**
+- **If you actually want to write code, improve algorithms, or contribute genuine scraper patches, check [CONTRIBUTING.md](CONTRIBUTING.md) and hit me up via GitHub Issues or PRs. No freeloaders allowed.**
 
 ---
 
