@@ -36,7 +36,7 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
-## Features
+## 📜 Features
 
 - **All-in-One Social Downloader**: Easily save high-definition videos (without watermarks), photos, and music from 14 top platforms: TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, and RedNote.
 - **Smart Multi-Engine Fallback**: Resilient scraper engine with automatic fallback providers to ensure high download success rates even if a provider is temporarily unavailable.
@@ -148,177 +148,29 @@ Mori/
 └── README.md
 ```
 
-## Security & Safety Notice
+## 📥 Download & Installation
 
-Mori is **100% open-source, ad-free, and contains zero malware, spyware, or trackers**. All network requests and file downloads run locally on your device without external analytics servers.
+Pre-compiled, ready-to-use binaries are available for all platforms on **[GitHub Releases](https://github.com/coflyn/Mori/releases)**.
 
-> [!TIP]
-> **Doubtful or concerned about false-positive security warnings?**  
-> Because Mori release binaries (`.apk`, `.dmg`, `.exe`, `.ipa`) are open-source builds compiled without expensive commercial enterprise signing certificates, some OS security software or browsers may display standard false-positive warnings.  
-> If you have any doubts, you can upload and scan any release file directly on **[VirusTotal](https://www.virustotal.com/)** before installing!
+| Platform                                                                                                                        | Available Packages                                                                    | Guide                                                                               |
+| :------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------- |
+| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> **Android**                                                 | `Mori v4.3.1.apk`                                                                     | [Installation & Play Protect Guide](GUIDE.md#android-installation--troubleshooting) |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **macOS**                                                     | `Mori-v4.3.1-macOS-arm64.dmg` _(DMG)_<br>`Mori-v4.3.1-macOS-arm64.app.tar.gz` _(Tar)_ | [Gatekeeper Quarantine Fix](GUIDE.md#macos-installation--gatekeeper-fix)            |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="16" /> **Windows** | `Mori-v4.3.1-Windows-x64-Setup.exe` _(EXE)_<br>`Mori-v4.3.1-Windows-x64.msi` _(MSI)_  | [Windows Setup Guide](GUIDE.md#windows-installation)                                |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **iOS**                                                       | `Mori v4.3.1.ipa`                                                                     | [AltStore / TrollStore Sideloading](GUIDE.md#ios-sideloading-guide)                 |
 
-> [!NOTE]
-> **macOS Gatekeeper Warning ("Mori" is damaged and can't be opened):**  
-> When downloading the `.dmg` or `.app` via web browsers (Brave, Safari, Chrome), macOS flags unnotarized internet downloads with a quarantine attribute (`com.apple.quarantine`).  
-> To open Mori smoothly on macOS:
->
-> 1. Run in Terminal: `sudo xattr -cr /Applications/Mori.app`
-> 2. Or **Right-Click** (Control + Click) `Mori.app` in Finder → Select **Open** → Click **Open**.
+> 📖 **Need help installing or troubleshooting?**  
+> Read the complete **[Installation, Sideloading & User Guide (GUIDE.md)](GUIDE.md)**.
 
-> [!NOTE]
-> **Android Play Protect Warning:**  
-> When installing the `.apk` manually (sideloading outside Google Play Store), Play Protect may display a prompt. Tap **"More Details"** → **"Install Anyway"**.
+## 🛠️ Building from Source & Changelog
 
-## How to Use
+Interested in customizing the interface, contributing translations, or compiling binaries locally?  
+All build commands, release logs, and prerequisites are documented in:
 
-1. Copy a link from a supported platform or Share it directly to Mori.
-2. Use the **Paste** button or let the auto-detection handle the link.
-3. Tap **Analyze** to verify the content.
-4. Preview the media (swipe through carousels if available).
-5. Choose your format and tap **Download**.
-6. Files are saved to your internal history for offline access.
+👉 **[Developer & Compilation Guide (BUILD.md)](BUILD.md)**  
+📜 **[Release History & Version Logs (CHANGELOG.md)](CHANGELOG.md)**
 
-## For Developers
-
-Mori is built using Tauri, Capacitor, and Vanilla JS for high performance.
-
-- **On macOS & Windows (Desktop)**: Powered by **Tauri v2** with a native Rust HTTP engine (`tauri_http_request`) to bypass CORS and save downloads directly to your system's `Downloads/Mori` folder.
-- **On Android & iOS**: Uses native HTTP bridges (**OkHttp** on Android / **CapacitorHttp** on iOS) to seamlessly bypass WebView CORS and network restrictions. Files are saved to local device storage and accessible via the **Files app** (`On My iPhone/Mori`) on iOS.
-- **On Web**: Preview mode only — runs directly in the browser with limited functionality.
-
-### Building for Android
-
-> [!TIP]
-> **Pre-built APKs**: You can download pre-compiled `.apk` binaries directly from **[GitHub Releases](https://github.com/coflyn/Mori/releases)** or from the Actions tab!
-
-#### Single-Command Quick Build
-
-```bash
-# Build Debug APK
-npm run build:android
-
-# Build Signed Release APK
-npm run build:android:release
-```
-
-#### Manual Steps
-
-```bash
-# 1. Sync Capacitor with Android
-npx cap sync android
-
-# 2. Build the release APK
-cd android && ./gradlew assembleRelease
-
-# 3. Output located at:
-#    android/app/build/outputs/apk/release/Mori v{VERSION}.apk
-```
-
-For a release APK, first generate a signing keystore (one-time):
-
-```bash
-keytool -genkey -v -keystore android/app/release.keystore -alias mori \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -storepass android123 -keypass android123 \
-  -dname "CN=Mori, OU=Development, O=MoriApp, L=Unknown, ST=Unknown, C=ID"
-```
-
-Then add `signingConfigs` block to `android/app/build.gradle`:
-
-```groovy
-android {
-    signingConfigs {
-        release {
-            storeFile file('release.keystore')
-            storePassword 'android123'
-            keyAlias 'mori'
-            keyPassword 'android123'
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            // ...
-        }
-    }
-}
-```
-
-Build the signed release APK:
-
-```bash
-cd android && ./gradlew assembleRelease
-```
-
-Output at: `android/app/build/outputs/apk/release/Mori v{VERSION}.apk`
-
-### Running & Building for Desktop (macOS & Windows)
-
-Mori uses **Tauri v2** for lightweight, high-performance desktop apps on macOS (.dmg, .app) and Windows (.msi, .exe).
-
-#### Development Mode
-
-```bash
-npm run tauri:dev
-```
-
-#### Building Release Installers
-
-```bash
-npm run tauri:build
-```
-
-- **macOS Release Asset**: `Mori-v4.3.1-macOS-arm64.dmg` & `Mori-v4.3.1-macOS-arm64.app.tar.gz`
-- **Windows Release Asset**: `Mori-v4.3.1-Windows-x64-Setup.exe` & `Mori-v4.3.1-Windows-x64.msi`
-
-### Running & Building for iOS
-
-#### Running on Simulator or Device
-
-```bash
-# 1. Sync web assets & iOS CocoaPods dependencies
-npx cap sync ios
-
-# 2. Open the Xcode workspace
-npx cap open ios
-
-# 3. Select target (iPhone Simulator or connected iOS device) and press Run (Cmd + R)
-```
-
-#### Building Unsigned IPA (For Sideloading/Distribution)
-
-If you do not have an iPhone connected or a paid Apple Developer Account, you can build a generic unsigned `.ipa` for distribution via single-command or step-by-step CLI:
-
-##### Single-Command Build
-
-```bash
-npm run build:ios:ipa
-```
-
-##### Manual Steps
-
-```bash
-# 1. Sync assets
-npx cap sync ios
-
-# 2. Compile target for generic iOS device without code signing
-xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO
-
-# 3. Package compiled app bundle into a Payload folder and Zip to IPA
-mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r "Mori v4.3.1.ipa" Payload && rm -rf Payload build
-```
-
-This outputs `Mori v4.3.1.ipa` in your project root directory, ready to be sideloaded via AltStore, Sideloadly, Scarlet, or TrollStore.
-
-## iOS Sideloading Guide
-
-Since Mori is client-side only and not distributed on the Apple App Store, iOS users can install `Mori v4.3.1.ipa` using one of the following sideloading methods:
-
-- **AltStore / Sideloadly**: Best for all iOS versions. Requires a PC/Mac for initial installation, and app signatures need to be refreshed every 7 days (free personal Apple ID).
-- **TrollStore**: Best for compatible iOS versions. Installs permanently, requires no computer after setup, and does not expire.
-- **Scarlet / Esign**: Directly install on-device without a PC using enterprise/public developer certificates.
-
-## License & Terms of Use
+## 📄 License & Terms of Use
 
 Mori is free and open-source software licensed under the **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)**.
 
@@ -326,18 +178,20 @@ Mori is free and open-source software licensed under the **[GNU General Public L
 - **No Unauthorized Commercial Re-selling**: Packaging, rebranding, or distributing closed-source, paid, or monetized variants of Mori without honoring GPL-3.0 requirements violates copyright law and will be subject to official DMCA takedowns.
 - **Trademark & Identity**: The name "Mori", app logo, and associated visual designs are the property of the original author. Derivative works must be clearly distinguished and must not claim affiliation with the original project.
 
-### Why Scraper Core is Pre-Compiled (`scrapers.bin`)
+### 🔒 Why the Scraper Core is Pre-Compiled (`scrapers.bin`)
 
-Mori was created as a free, privacy-first, and community-driven project with countless hours of research dedicated to reverse-engineering and maintaining social media parsers.
+Mori was built from scratch as a free, privacy-first, zero-bullshit project with countless hours spent hunting down, reverse-engineering, and maintaining elusive third-party scraper endpoints & web APIs.
 
-Unfortunately, bad actors frequently **clone the repository, rebrand the UI, inject predatory ads/trackers, and sell the app for profit** while offloading all scraper maintenance onto the original author. To deter low-effort leeching and protect the project's integrity while keeping Mori 100% free and functional for legitimate users:
+**Too many lazy script kiddies and leeches keep cloning this repo, slapping their ugly AI-generated logo or rebranding over it, injecting predatory ads & trackers, and shamelessly selling it for quick cash**, all while expecting me to fix and maintain the scrapers for free whenever upstream services break. 🤡
 
-- The scraper engine is distributed as a pre-compiled, integrity-protected binary bytecode (`scrapers.bin`).
-- The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.
-- Honest developers who wish to contribute directly to scraper algorithms or report engine improvements are encouraged to open an issue or pull request.
+I have zero patience for parasites exploiting open-source goodwill. To shut down low-effort skids while keeping Mori 100% free, clean, and blazing fast for real users:
+
+- **Distributed as an integrity-protected pre-compiled binary (`scrapers.bin`) backed by native Android OkHttp.**
+- **The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.**
+- **If you actually want to write code, improve algorithms, or contribute genuine scraper patches, hit me up via GitHub Issues or PRs. No freeloaders allowed.**
 
 ---
 
-Developed with ❤️ by coflyn.
-GitHub: https://github.com/coflyn
+Developed with ❤️ by coflyn.  
+GitHub: https://github.com/coflyn  
 Instagram: @\_coflyn
