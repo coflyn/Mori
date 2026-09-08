@@ -1,5 +1,6 @@
 // modals.js — custom confirm & info modals
 import { stopAllMedia } from "../utils/index.js";
+import { t } from "../i18n/index.js";
 // DOM refs (queried locally, same pattern as authManager)
 const confirmOverlay = document.getElementById("confirmOverlay");
 const confirmTitle = document.getElementById("confirmTitle");
@@ -22,12 +23,12 @@ export const hideConfirm = () => {
     confirmOverlay._onDismissOutside = null;
   }
   if (cancelConfirmBtn) {
-    cancelConfirmBtn.textContent = "CANCEL";
+    cancelConfirmBtn.textContent = t("btn-cancel");
     cancelConfirmBtn.style.color = "";
     cancelConfirmBtn.classList.remove("neutral-btn");
   }
   if (okConfirmBtn) {
-    okConfirmBtn.textContent = "CONFIRM";
+    okConfirmBtn.textContent = t("btn-confirm");
     okConfirmBtn.style.color = "";
     okConfirmBtn.classList.remove("neutral-btn");
   }
@@ -51,10 +52,10 @@ export function showConfirm(title, message, onConfirm, onCancel = null) {
 
   // Reset button states when showing
   cancelConfirmBtn.classList.remove("hidden");
-  cancelConfirmBtn.textContent = "CANCEL";
+  cancelConfirmBtn.textContent = t("btn-cancel");
   cancelConfirmBtn.style.color = "";
   cancelConfirmBtn.classList.remove("neutral-btn");
-  okConfirmBtn.textContent = "CONFIRM";
+  okConfirmBtn.textContent = t("btn-confirm");
   okConfirmBtn.style.color = "";
   okConfirmBtn.classList.remove("neutral-btn");
 }
@@ -70,7 +71,7 @@ export function showInfoModal(title, message, options = {}) {
     infoDontShowCheckbox.checked = false;
     if (infoDontShowLabel) {
       infoDontShowLabel.textContent =
-        options.dontShowLabel || "Don't show again";
+        options.dontShowLabel || t("label-dont-show-again");
     }
     // Store flag on close if checked
     const origClose = () => infoOverlay.classList.add("hidden");

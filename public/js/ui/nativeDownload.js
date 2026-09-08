@@ -1,5 +1,5 @@
 // nativeDownload.js — native download flow with progress toast
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import {
   showToast,
   triggerHaptic,
@@ -54,7 +54,7 @@ export async function startNativeDownload(
     url.includes("_capacitor_file_") ||
     url.startsWith("content://")
   ) {
-    showToast("File is already stored locally");
+    showToast(t("toast-already-local"));
     return { success: true, skipped: true };
   }
 
@@ -1482,7 +1482,7 @@ export async function startNativeDownload(
       const b = btn.querySelector(".dl-badge");
       if (b) {
         if (window._moriPlaylistDownloading) {
-          b.textContent = "FAILED";
+          b.textContent = t("status-failed");
           b.style.backgroundColor = "var(--color-danger, #ef4444)";
           b.style.color = "#ffffff";
         } else {

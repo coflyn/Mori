@@ -200,6 +200,45 @@ zip -r "Mori.ipa" Payload && rm -rf Payload build
 
 ---
 
+## 🌐 Contributing Translations (i18n)
+
+Mori supports multiple languages out-of-the-box (`en`, `id`, `ja`, `ko`, `zh`, `ar`, `ru`, `tl`, `hi`). All language strings are modularized into individual locale files located in:
+
+```
+public/js/i18n/
+├── locales/
+│   ├── en.js        # English (Source of Truth / Fallback)
+│   ├── id.js        # Bahasa Indonesia
+│   ├── ja.js        # 日本語 (Japanese)
+│   ├── ko.js        # 한국어 (Korean)
+│   ├── zh.js        # 中文 (Simplified Chinese)
+│   ├── ar.js        # العربية (Arabic with RTL)
+│   ├── ru.js        # Русский (Russian)
+│   ├── tl.js        # Tagalog (Filipino)
+│   └── hi.js        # हिन्दी (Hindi)
+└── index.js         # Translation registry & fallback helper
+```
+
+### Improving an Existing Language
+1. Open the relevant file in `public/js/i18n/locales/<lang>.js`.
+2. Update the translation value for the desired key.
+3. Verify the changes by switching to that language in Mori Settings.
+
+### Adding a New Language
+1. Create a new locale file in `public/js/i18n/locales/<new_code>.js` (e.g. `es.js` for Spanish).
+2. Copy the key structure from `en.js` and translate the values.
+3. Import and register the new locale in `public/js/i18n/index.js`:
+   ```javascript
+   import es from "./locales/es.js";
+   export const translations = { ..., es };
+   ```
+4. Add the language name to `langNames` in `public/js/modules/settings.js` and the language option in `public/index.html`.
+
+> [!TIP]
+> **Safe Fallback**: If a key is not yet translated in your locale, Mori automatically falls back to English (`en`), preventing blank text or broken UI.
+
+---
+
 ## 🚀 Submitting a Pull Request
 
 1. Fork the repo and create a descriptive branch:

@@ -1,5 +1,5 @@
 // result.js — result section rendering, slider UI, PDF gallery export
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import { createVideoPlayer } from "../components/player.js";
 import {
   truncate,
@@ -843,7 +843,7 @@ export function renderResult(result, originalUrl) {
               if (targetBtn) {
                 const b = targetBtn.querySelector(".dl-badge");
                 if (b) {
-                  b.textContent = "SAVED";
+                  b.textContent = t("status-saved");
                   b.style.backgroundColor = "";
                   b.style.color = "";
                 }
@@ -853,7 +853,7 @@ export function renderResult(result, originalUrl) {
               if (targetBtn) {
                 const b = targetBtn.querySelector(".dl-badge");
                 if (b) {
-                  b.textContent = "FAILED";
+                  b.textContent = t("status-failed");
                   b.style.backgroundColor = "var(--color-danger, #ef4444)";
                   b.style.color = "#ffffff";
                 }
@@ -915,7 +915,7 @@ export function renderResult(result, originalUrl) {
               try {
                 window.MoriMainBridge.showCompleteNotification(
                   result.title || "Playlist",
-                  `All ${total} items successfully downloaded.`,
+                  t("notif-all-downloaded", { total }),
                 );
               } catch (_) {}
             }
@@ -947,7 +947,7 @@ export function renderResult(result, originalUrl) {
 
             if (titleSpan) titleSpan.textContent = retryTitle;
             if (badgeEl) {
-              badgeEl.textContent = "RETRY";
+              badgeEl.textContent = t("status-retry");
               badgeEl.style.backgroundColor = "var(--color-danger, #ef4444)";
               badgeEl.style.color = "#ffffff";
             }

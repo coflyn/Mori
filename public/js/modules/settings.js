@@ -1,5 +1,5 @@
 // settings.js — settings UI: theme, toggles, selects, paths, language
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import {
   CapacitorHttp,
   Filesystem,
@@ -742,7 +742,7 @@ if (testLatencyBtn) {
   testLatencyBtn.addEventListener("click", async () => {
     const resultVal = document.getElementById("latencyResultVal");
     if (resultVal) resultVal.textContent = "...";
-    showToast("Testing server latency...");
+    showToast(t("toast-latency-testing"));
     const start = Date.now();
     try {
       if (CapacitorHttp) {
@@ -755,10 +755,10 @@ if (testLatencyBtn) {
       }
       const duration = Date.now() - start;
       if (resultVal) resultVal.textContent = `${duration} ms`;
-      showToast(`Server latency: ${duration} ms (Online)`);
+      showToast(t("toast-latency-result", { duration }));
     } catch (err) {
       if (resultVal) resultVal.textContent = "Error";
-      showToast("Latency check failed. Offline?");
+      showToast(t("toast-latency-failed"));
     }
   });
 }
@@ -1202,14 +1202,17 @@ export function updateCustomSelectsUI() {
 }
 
 export function updateLanguageUI() {
-  const lang = translations[currentLang];
+  const lang = translations[currentLang] || translations["en"];
+  const fallback = translations["en"] || {};
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
-    if (lang[key]) el.textContent = lang[key];
+    const val = lang?.[key] ?? fallback[key];
+    if (val !== undefined) el.textContent = val;
   });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     const key = el.getAttribute("data-i18n-placeholder");
-    if (lang[key]) el.placeholder = lang[key];
+    const val = lang?.[key] ?? fallback[key];
+    if (val !== undefined) el.placeholder = val;
   });
 
   if (currentLangDisplay) {

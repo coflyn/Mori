@@ -1,5 +1,5 @@
 // update.js — GitHub release check & about/share modals
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import { CapacitorHttp, Share, showToast } from "../utils/index.js";
 import { showInfoModal } from "./modals.js";
 import {
@@ -164,7 +164,7 @@ shareAppBtn?.addEventListener("click", async () => {
         url: "https://github.com/coflyn/Mori",
       });
     } else {
-      showToast("Sharing not supported on this browser.");
+      showToast(t("toast-share-not-supported"));
     }
   }
 });

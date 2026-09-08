@@ -36,10 +36,12 @@ function applyShareLanguage() {
     currentLang === "ar" ? "rtl" : "ltr",
   );
 
+  const fallback = translations.en || {};
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
-    if (lang[key]) {
-      el.textContent = lang[key];
+    const val = lang?.[key] ?? fallback[key];
+    if (val !== undefined) {
+      el.textContent = val;
     }
   });
 }

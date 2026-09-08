@@ -33,7 +33,7 @@ if (typeof window !== "undefined") {
   setTimeout(syncCapacitorPlugins, 1000);
 }
 
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 
 export let currentLang = "en";
 export function setUtilsState(state) {
@@ -324,7 +324,7 @@ export function cancelDownloadProgressToast(autoDismissMs = 2000) {
   const cancelBtn = el.querySelector(".dpt-cancel-btn");
   if (cancelBtn) cancelBtn.style.display = "none";
 
-  if (platform) platform.textContent = "Download Cancelled";
+  if (platform) platform.textContent = t("toast-download-cancelled");
   if (pct) pct.textContent = "—";
   if (status) status.textContent = "";
 

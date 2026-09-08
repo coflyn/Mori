@@ -1,5 +1,5 @@
 // download.js — main download flow (analyze + batch download)
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import { convertImagesToPdf } from "../utils/pdfHelper.js";
 import {
   Filesystem,
@@ -98,7 +98,7 @@ async function enforceNetworkGuards() {
     if (netStatus.connectionType === "cellular") {
       const confirmed = await new Promise((resolve) => {
         showConfirm(
-          "Cellular Data Warning",
+          t("title-cellular-warning"),
           translations[currentLang]["msg-cellular-warning"] ||
             "You are connected to Cellular Data. Proceed with media download?",
           () => resolve(true),
@@ -172,7 +172,7 @@ downloadBtn.addEventListener("click", async () => {
 
         if (statusEl) {
           statusEl.className = "batch-item-status analyzing";
-          statusEl.textContent = "ANALYZING...";
+          statusEl.textContent = t("status-analyzing");
         }
 
         const data = await analyzeUrlSilent(bUrl, preferServer);
@@ -191,7 +191,7 @@ downloadBtn.addEventListener("click", async () => {
           }
           if (statusEl) {
             statusEl.className = "batch-item-status success";
-            statusEl.textContent = "READY";
+            statusEl.textContent = t("status-ready");
           }
 
           if (localStorage.getItem("mori_incognito") !== "true") {
@@ -222,10 +222,10 @@ downloadBtn.addEventListener("click", async () => {
           if (statusEl) {
             if (data && data.isPlaylist) {
               statusEl.className = "batch-item-status skipped";
-              statusEl.textContent = "SKIPPED (PLAYLIST)";
+              statusEl.textContent = t("status-skipped-playlist");
             } else {
               statusEl.className = "batch-item-status error";
-              statusEl.textContent = "FAILED";
+              statusEl.textContent = t("status-failed");
             }
           }
         }
@@ -277,7 +277,7 @@ downloadBtn.addEventListener("click", async () => {
               );
               if (statusEl) {
                 statusEl.className = "batch-item-status cancelled";
-                statusEl.textContent = "CANCELLED";
+                statusEl.textContent = t("status-cancelled");
               }
               return;
             }
@@ -287,7 +287,7 @@ downloadBtn.addEventListener("click", async () => {
             );
             if (statusEl) {
               statusEl.className = "batch-item-status downloading";
-              statusEl.textContent = "DOWNLOADING...";
+              statusEl.textContent = t("status-downloading");
             }
 
             const downloadsList = item.data.result?.downloads || [];
@@ -309,7 +309,7 @@ downloadBtn.addEventListener("click", async () => {
                 if (batchDownloadCancelled) {
                   if (statusEl) {
                     statusEl.className = "batch-item-status cancelled";
-                    statusEl.textContent = "CANCELLED";
+                    statusEl.textContent = t("status-cancelled");
                   }
                   return;
                 }
@@ -326,7 +326,7 @@ downloadBtn.addEventListener("click", async () => {
                   if (batchDownloadCancelled) {
                     if (statusEl) {
                       statusEl.className = "batch-item-status cancelled";
-                      statusEl.textContent = "CANCELLED";
+                      statusEl.textContent = t("status-cancelled");
                     }
                     return;
                   }
@@ -354,7 +354,7 @@ downloadBtn.addEventListener("click", async () => {
                       if (batchDownloadCancelled) {
                         if (statusEl) {
                           statusEl.className = "batch-item-status cancelled";
-                          statusEl.textContent = "CANCELLED";
+                          statusEl.textContent = t("status-cancelled");
                         }
                         return;
                       }
@@ -404,7 +404,7 @@ downloadBtn.addEventListener("click", async () => {
                         if (batchDownloadCancelled) {
                           if (statusEl) {
                             statusEl.className = "batch-item-status cancelled";
-                            statusEl.textContent = "CANCELLED";
+                            statusEl.textContent = t("status-cancelled");
                           }
                           return;
                         }
@@ -427,7 +427,7 @@ downloadBtn.addEventListener("click", async () => {
                     if (batchDownloadCancelled) {
                       if (statusEl) {
                         statusEl.className = "batch-item-status cancelled";
-                        statusEl.textContent = "CANCELLED";
+                        statusEl.textContent = t("status-cancelled");
                       }
                       return;
                     }
@@ -447,7 +447,7 @@ downloadBtn.addEventListener("click", async () => {
                     if (batchDownloadCancelled) {
                       if (statusEl) {
                         statusEl.className = "batch-item-status cancelled";
-                        statusEl.textContent = "CANCELLED";
+                        statusEl.textContent = t("status-cancelled");
                       }
                       return;
                     }
@@ -472,11 +472,11 @@ downloadBtn.addEventListener("click", async () => {
             if (batchDownloadCancelled) {
               if (statusEl) {
                 statusEl.className = "batch-item-status cancelled";
-                statusEl.textContent = "CANCELLED";
+                statusEl.textContent = t("status-cancelled");
               }
             } else if (statusEl) {
               statusEl.className = "batch-item-status completed";
-              statusEl.textContent = "SAVED";
+              statusEl.textContent = t("status-saved");
             }
           }
 
@@ -491,7 +491,7 @@ downloadBtn.addEventListener("click", async () => {
                 );
                 if (statusEl && !statusEl.classList.contains("completed")) {
                   statusEl.className = "batch-item-status cancelled";
-                  statusEl.textContent = "CANCELLED";
+                  statusEl.textContent = t("status-cancelled");
                 }
               }
               break;
@@ -511,13 +511,11 @@ downloadBtn.addEventListener("click", async () => {
 
           if (batchDownloadCancelled) {
             showToast(
-              translations[currentLang]["toast-download-cancelled"] ||
-                "Download cancelled",
+              t("toast-download-cancelled"),
             );
           } else {
             showToast(
-              translations[currentLang]["label-download-complete"] ||
-                "Batch download complete!",
+              t("batch-complete-toast"),
             );
           }
         };
@@ -578,14 +576,13 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: TikTokIO (HD Video · MP3 · Photo Slideshow)\nServer 2: SnapTik (720p Video · Photo Slideshow)";
+        confirmMessage.textContent = t("server-desc-tiktok");
         if (cancelConfirmBtn) {
-          cancelConfirmBtn.textContent = "SERVER 2";
+          cancelConfirmBtn.textContent = t("btn-server-2");
           cancelConfirmBtn.style.color = "";
         }
         if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.textContent = t("btn-server-1");
           okConfirmBtn.style.color = "";
           okConfirmBtn.classList.add("neutral-btn");
         }
@@ -618,14 +615,13 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: InDown (Reels, Posts & Photos)\nServer 2: SnapSave (Reels, Posts & Photos)";
+        confirmMessage.textContent = t("server-desc-instagram");
         if (cancelConfirmBtn) {
-          cancelConfirmBtn.textContent = "SERVER 2";
+          cancelConfirmBtn.textContent = t("btn-server-2");
           cancelConfirmBtn.style.color = "";
         }
         if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.textContent = t("btn-server-1");
           okConfirmBtn.style.color = "";
           okConfirmBtn.classList.add("neutral-btn");
         }
@@ -668,14 +664,13 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: YTMP3.gg (Multi Resolution 1080p - 360p + MP3)\nServer 2: YTMP3.mobi (Fast & Stable MP4 / MP3)";
+        confirmMessage.textContent = t("server-desc-youtube");
         if (cancelConfirmBtn) {
-          cancelConfirmBtn.textContent = "SERVER 2";
+          cancelConfirmBtn.textContent = t("btn-server-2");
           cancelConfirmBtn.style.color = "";
         }
         if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.textContent = t("btn-server-1");
           okConfirmBtn.style.color = "";
           okConfirmBtn.classList.add("neutral-btn");
         }
@@ -714,14 +709,13 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: TVD (Full HD 1080p · 720p · Multi-Res)\nServer 2: TweeLoad (SD 320p Video)";
+        confirmMessage.textContent = t("server-desc-twitter");
         if (cancelConfirmBtn) {
-          cancelConfirmBtn.textContent = "SERVER 2";
+          cancelConfirmBtn.textContent = t("btn-server-2");
           cancelConfirmBtn.style.color = "";
         }
         if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.textContent = t("btn-server-1");
           okConfirmBtn.style.color = "";
           okConfirmBtn.classList.add("neutral-btn");
         }
@@ -754,14 +748,13 @@ downloadBtn.addEventListener("click", async () => {
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
-        confirmMessage.textContent =
-          "Server 1: SpotiDown (Playlist & Single Track)\nServer 2: SoundLoaders (Playlist & Single Track)";
+        confirmMessage.textContent = t("server-desc-spotify");
         if (cancelConfirmBtn) {
-          cancelConfirmBtn.textContent = "SERVER 2";
+          cancelConfirmBtn.textContent = t("btn-server-2");
           cancelConfirmBtn.style.color = "";
         }
         if (okConfirmBtn) {
-          okConfirmBtn.textContent = "SERVER 1";
+          okConfirmBtn.textContent = t("btn-server-1");
           okConfirmBtn.style.color = "";
           okConfirmBtn.classList.add("neutral-btn");
         }
