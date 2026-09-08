@@ -1,0 +1,143 @@
+/* Base Layout, Reset & Navigation */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  overscroll-behavior-x: none;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 500px;
+  padding: calc(40px + env(safe-area-inset-top)) 20px
+    calc(110px + env(safe-area-inset-bottom)) 20px;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.dynamic-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 40px 0 8px 0;
+  transition: var(--transition);
+}
+
+.dynamic-greeting #greetingText {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--text-main);
+  opacity: 0.9;
+}
+
+.dynamic-greeting #greetingStats {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--bg-color);
+  border-top: 1px solid var(--primary);
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0;
+  z-index: 100;
+}
+
+.is-desktop .bottom-nav {
+  padding: 12px 0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  flex: 1;
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  transition: var(--transition);
+}
+
+.nav-item span {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.nav-item.active {
+  color: var(--text-main);
+}
+
+.nav-item.active svg {
+  color: var(--text-main);
+  transform: translateY(-2px);
+}
+
+.bg-animation-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  display: block;
+}

@@ -1,0 +1,273 @@
+/* Variables, Themes & Presets */
+
+:root {
+  --bg-color: #fffbf2;
+  --bg-rgb: 255, 251, 242;
+  --surface: #f7f3e9;
+  --surface-rgb: 247, 243, 233;
+  --primary: #1a1917;
+  --primary-rgb: 26, 25, 23;
+  --on-primary: #fffbf2;
+  --text-main: #1a1917;
+  --text-secondary: #6e6a64;
+  --radius-l: 4px;
+  --radius-xl: 4px;
+  --transition: all 0.2s ease;
+  /* Animation Speed */
+  --anim-duration: 0.2s;
+  --anim-scale: 1;
+}
+
+[data-theme="dark"] {
+  --bg-color: #141416;
+  --bg-rgb: 20, 20, 22;
+  --surface: #1e1e22;
+  --surface-rgb: 30, 30, 34;
+  --primary: #f8f8fa;
+  --primary-rgb: 248, 248, 250;
+  --on-primary: #141416;
+  --text-main: #f8f8fa;
+  --text-secondary: #94949e;
+}
+
+/* Font Presets */
+body.font-default {
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
+}
+body.font-jakarta {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+body.font-serif {
+  font-family: "Georgia", serif;
+}
+body.font-mono {
+  font-family: "Space Mono", monospace;
+}
+body.font-display {
+  font-family: "Outfit", sans-serif;
+}
+
+/* Animation Speed Presets */
+body.anim-off * {
+  transition: none !important;
+  animation: none !important;
+}
+body.anim-slow * {
+  transition-duration: 0.5s !important;
+}
+/* anim-normal = default, no override */
+body.anim-fast * {
+  transition-duration: 0.08s !important;
+}
+
+/* Glassmorphism Presets */
+body.glass-off {
+  --glass-blur: 0px;
+  --glass-bg-opacity: 1;
+}
+
+body.glass-off .settings-list,
+body.glass-off .settings-menu-item,
+body.glass-off .bottom-nav,
+body.glass-off .custom-toast,
+body.glass-off .media-card,
+body.glass-off .result-card,
+body.glass-off .history-item,
+body.glass-off .bg-anim-card,
+body.glass-off .back-btn-settings,
+body.glass-off .path-setting-item {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: var(--surface) !important;
+}
+
+body.glass-off .bottom-nav,
+body.glass-off .settings-list {
+  background-color: var(--bg-color) !important;
+}
+
+.modal-content,
+.confirm-modal,
+.quick-action-sheet,
+.action-sheet {
+  background-color: var(--bg-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.glass-subtle {
+  --glass-blur: 8px;
+  --glass-bg-opacity: 0.92;
+}
+
+body.glass-subtle .settings-list,
+body.glass-subtle .settings-menu-item,
+body.glass-subtle .custom-toast,
+body.glass-subtle .media-card,
+body.glass-subtle .result-card,
+body.glass-subtle .history-item,
+body.glass-subtle .bg-anim-card,
+body.glass-subtle .back-btn-settings,
+body.glass-subtle .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.92) !important;
+  backdrop-filter: blur(8px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+  border-color: rgba(var(--primary-rgb), 0.18) !important;
+}
+
+body.glass-subtle .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.9) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
+  border-top-color: rgba(var(--primary-rgb), 0.18) !important;
+}
+
+body.glass-subtle .settings-item {
+  border-bottom-color: rgba(var(--primary-rgb), 0.12) !important;
+}
+
+body.glass-deep {
+  --glass-blur: 14px;
+  --glass-bg-opacity: 0.84;
+}
+
+body.glass-deep .settings-list,
+body.glass-deep .settings-menu-item,
+body.glass-deep .custom-toast,
+body.glass-deep .media-card,
+body.glass-deep .result-card,
+body.glass-deep .history-item,
+body.glass-deep .bg-anim-card,
+body.glass-deep .back-btn-settings,
+body.glass-deep .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.84) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.22) !important;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+body.glass-deep .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.82) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  border-top: 1px solid rgba(var(--primary-rgb), 0.22) !important;
+  box-shadow:
+    0 -8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.glass-deep .settings-item {
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.12) !important;
+}
+
+[data-theme="dark"] body.glass-deep .settings-list,
+[data-theme="dark"] body.glass-deep .settings-menu-item,
+[data-theme="dark"] body.glass-deep .custom-toast,
+[data-theme="dark"] body.glass-deep .media-card,
+[data-theme="dark"] body.glass-deep .result-card,
+[data-theme="dark"] body.glass-deep .history-item,
+[data-theme="dark"] body.glass-deep .bg-anim-card,
+[data-theme="dark"] body.glass-deep .back-btn-settings,
+[data-theme="dark"] body.glass-deep .path-setting-item {
+  background: rgba(var(--surface-rgb), 0.84) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] body.glass-deep .bottom-nav {
+  background: rgba(var(--bg-rgb), 0.82) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 -10px 36px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] body.glass-deep .settings-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* UI Corner Radius Presets */
+body.corner-sharp {
+  --radius-l: 3px;
+  --radius-xl: 4px;
+}
+body.corner-sharp input[type="text"],
+body.corner-sharp .custom-select,
+body.corner-sharp .action-btn,
+body.corner-sharp .modal-content,
+body.corner-sharp .confirm-modal,
+body.corner-sharp .path-display-pill,
+body.corner-sharp .mori-input-with-icon,
+body.corner-sharp .bg-shape-card,
+body.corner-sharp .result-card,
+body.corner-sharp .history-item {
+  border-radius: 4px !important;
+}
+body.corner-sharp .path-preset-chip,
+body.corner-sharp .platform-chip,
+body.corner-sharp .badge {
+  border-radius: 4px !important;
+}
+
+/* corner-modern = default (6px - 12px) */
+body.corner-modern {
+  --radius-l: 6px;
+  --radius-xl: 10px;
+}
+
+/* corner-round = Pill / Soft Round (18px - 26px) */
+body.corner-round {
+  --radius-l: 16px;
+  --radius-xl: 24px;
+}
+body.corner-round input[type="text"] {
+  border-radius: 28px !important;
+}
+body.corner-round .custom-select {
+  border-radius: 22px !important;
+}
+body.corner-round .dropdown-menu {
+  border-radius: 18px !important;
+}
+body.corner-round .modal-content,
+body.corner-round .confirm-modal {
+  border-radius: 24px !important;
+}
+body.corner-round .path-display-pill,
+body.corner-round .mori-input-with-icon,
+body.corner-round .bg-shape-card,
+body.corner-round .result-card,
+body.corner-round .history-item {
+  border-radius: 18px !important;
+}
+body.corner-round .path-preset-chip,
+body.corner-round .platform-chip,
+body.corner-round .filter-chip {
+  border-radius: 24px !important;
+}
+
+/* Compact Mode */
+body.compact-mode .settings-item {
+  padding: 8px 14px;
+  min-height: 44px;
+}
+body.compact-mode .page-header {
+  margin-bottom: 12px;
+}
+body.compact-mode .settings-list {
+  gap: 0;
+}
+body.compact-mode .history-item {
+  padding: 8px 12px;
+}
+body.compact-mode .app-container {
+  padding-top: calc(30px + env(safe-area-inset-top));
+}

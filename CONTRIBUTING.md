@@ -15,7 +15,9 @@ Thank you for your interest in contributing to **Mori**! Whether you want to fix
    * [Building for Desktop (macOS & Windows)](#-building-for-desktop-macos--windows)
    * [Building for iOS](#-building-for-ios)
 4. [Architecture & Scraper Engine](#-architecture--scraper-engine)
-5. [Submitting a Pull Request](#-submitting-a-pull-request)
+5. [Contributing Translations (i18n)](#-contributing-translations-i18n)
+6. [CSS & Styling Architecture](#-css--styling-architecture-publiccss)
+7. [Submitting a Pull Request](#-submitting-a-pull-request)
 
 ---
 
@@ -236,6 +238,30 @@ public/js/i18n/
 
 > [!TIP]
 > **Safe Fallback**: If a key is not yet translated in your locale, Mori automatically falls back to English (`en`), preventing blank text or broken UI.
+
+---
+
+## 🎨 CSS & Styling Architecture (`public/css/`)
+
+Mori's stylesheet is modularized into domain-focused files under `public/css/`:
+
+```
+public/css/
+├── variables.css    # Design tokens, themes (dark/light), font, speed, glass, corner presets
+├── base.css         # Reset, body typography, layout wrappers, bottom navigation
+├── components.css   # Reusable buttons, custom toasts, floating progress toasts, badges
+├── home.css         # Main URL input bar, batch input, skeleton loader, media cards
+├── history.css      # History items, summary stats card, thumbnail overlay & spinners
+├── settings.css     # Menu lists, subpage slide transitions, dropdowns, live BG controls
+├── modals.css       # Universal modal backdrops, PIN keypad, guide, confirm, batch modal
+├── rtl.css          # Right-to-Left (RTL) overrides for Arabic layout
+└── style.css        # Master stylesheet entry point importing all modules
+```
+
+When modifying styles:
+- Edit the specific component/page file instead of cluttering a single file.
+- Design tokens and CSS custom properties live in `variables.css`.
+- Ensure all interactive controls support both dark and light themes.
 
 ---
 

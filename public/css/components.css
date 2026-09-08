@@ -1,0 +1,217 @@
+/* Reusable UI Components (Buttons, Toasts, Badges) */
+
+.secondary-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+}
+
+.primary-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+}
+
+.custom-toast {
+  position: fixed;
+  bottom: calc(105px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(24px) scale(0.94);
+  background: var(--surface);
+  border: 1.5px solid var(--primary);
+  color: var(--text-main);
+  padding: 12px 24px;
+  border-radius: var(--radius-xl);
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  max-width: min(88vw, 420px);
+  text-align: center;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  box-shadow: 4px 4px 0px var(--primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+.custom-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Settings Card Group Wrapper */
+/* Platform Scraper Subtitle & Badge Styling */
+
+.download-progress-toast {
+  position: fixed;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(24px) scale(0.94);
+  background: var(--surface);
+  border: 1.5px solid var(--primary);
+  color: var(--text-main);
+  padding: 14px 20px;
+  border-radius: var(--radius-xl);
+  font-size: 0.85rem;
+  font-weight: 500;
+  z-index: 9999;
+  width: auto;
+  min-width: 260px;
+  max-width: min(90vw, 420px);
+  box-shadow: 4px 4px 0px var(--primary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.download-progress-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.download-progress-toast .dpt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.download-progress-toast .dpt-platform {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+.download-progress-toast .dpt-percent {
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.download-progress-toast .dpt-bar-track {
+  width: 100%;
+  height: 5px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.download-progress-toast .dpt-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--text-main);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: none;
+}
+
+.download-progress-toast .dpt-status {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+  max-height: 4.5em;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.download-progress-toast.completed {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0px var(--primary);
+}
+
+.download-progress-toast.completed .dpt-percent {
+  color: var(--text-main);
+}
+
+.download-progress-toast.completed .dpt-bar-fill {
+  background: var(--text-main);
+  box-shadow: none;
+}
+
+.download-progress-toast.failed {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0px var(--primary);
+}
+
+.download-progress-toast.failed .dpt-percent {
+  color: var(--text-secondary);
+}
+
+.download-progress-toast.failed .dpt-bar-fill {
+  background: var(--text-secondary);
+  box-shadow: none;
+}
+
+/* Cancel button inside floating progress toast */
+.dpt-cancel-btn {
+  align-self: flex-end;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: -2px;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+  line-height: 1.4;
+}
+
+.dpt-cancel-btn:hover {
+  background: rgba(231, 76, 60, 0.18);
+  border-color: rgba(231, 76, 60, 0.55);
+  color: #e74c3c;
+}
+
+.dpt-cancel-btn:active {
+  transform: scale(0.95);
+}
+
+/* Cancelled state for floating toast */
+.download-progress-toast.cancelled {
+  border-color: var(--border-color, rgba(255, 255, 255, 0.15));
+  box-shadow: none;
+}
+
+.download-progress-toast.cancelled .dpt-percent {
+  color: var(--text-secondary);
+}
+
+.download-progress-toast.cancelled .dpt-bar-fill {
+  background: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.download-progress-toast.cancelled .dpt-platform {
+  color: var(--text-secondary);
+}
