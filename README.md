@@ -137,6 +137,7 @@ Mori/
 ├── android/                    # Capacitor Android native project
 │   ├── app/src/main/
 │   │   ├── java/com/mori/downloader/
+│   │   │   ├── DownloadForegroundService.java # Background download persistent service & wake-lock
 │   │   │   ├── MainActivity.java   # Main Activity + native HTTP bridge (CORS bypass) & security key
 │   │   │   └── ShareActivity.java  # Native Quick Save Share overlay & MediaStore indexer
 │   │   └── jniLibs/            # Native compiled security libraries (libmorisec.so: arm64, armv7, x86_64)
@@ -149,14 +150,30 @@ Mori/
 │   └── tauri.conf.json         # Desktop app configuration & window bounds
 ├── assets/                     # App icons, mockups, & screenshots
 ├── public/                     # Frontend web assets (Vanilla JS + CSS)
-│   ├── css/
-│   │   └── style.css           # Modern design system, dynamic themes, & responsive layouts
+│   ├── css/                    # Modular CSS architecture
+│   │   ├── variables.css       # Design tokens, themes (dark/light), typography, glass, corner presets
+│   │   ├── base.css            # CSS reset, typography, header, dynamic greeting, bottom navigation
+│   │   ├── components.css      # Reusable buttons, custom toast, floating download progress toast
+│   │   ├── home.css            # URL input bar, batch textarea, skeleton loader, media preview cards
+│   │   ├── history.css         # History layout, summary stats card, cards, actions bar, thumbnail overlay
+│   │   ├── settings.css        # Settings menu list, sub-page slide transitions, custom dropdowns
+│   │   ├── modals.css          # Modal overlays, PIN keypad, user guide, confirm & info dialogs
+│   │   ├── rtl.css             # Right-to-Left (RTL) language overrides for Arabic [dir="rtl"]
+│   │   └── style.css           # Master stylesheet entry point with sequential @import rules
 │   ├── js/
 │   │   ├── app.js              # Main application entry point & startup lifecycle
 │   │   ├── components/         # Reusable UI components
 │   │   │   └── player.js       # In-app media player (video, audio, gestures)
+│   │   ├── downloader/         # Modular native download engine
+│   │   │   ├── filename.js     # Extension resolution, title sanitization, template & folder logic
+│   │   │   ├── headers.js      # Platform-specific Referer/Origin headers builder & URL unwrapper
+│   │   │   ├── resolver.js     # Asynchronous link resolver (YouTube, Spotify, Apple Music, workers)
+│   │   │   ├── storage.js      # Desktop/Mobile filesystem persistence, retry loops, temp cleanup
+│   │   │   ├── postProcess.js  # MediaScanner, feedback haptics/audio, tray notifications, UI reset
+│   │   │   └── index.js        # Barrel re-export for downloader sub-modules
 │   │   ├── i18n/               # Multi-language translations (9 languages + RTL support)
-│   │   │   └── index.js
+│   │   │   ├── locales/        # Modular locale dictionaries (en, id, ja, ko, zh, ar, ru, tl, hi)
+│   │   │   └── index.js        # Translation registry, t() helper, and fallback resolver
 │   │   ├── modules/            # Core business logic & application state
 │   │   │   ├── authManager.js  # PIN passcode & biometric lock system
 │   │   │   ├── batchManager.js # Multi-link batch queue & playlist manager
@@ -166,28 +183,42 @@ Mori/
 │   │   │   ├── history.js      # Download history manager, local storage, & cleanup
 │   │   │   ├── intents.js      # Auto-clipboard detection & deep link receiver
 │   │   │   ├── modals.js       # Confirmation dialogs & information modals
-│   │   │   ├── settings.js     # User preferences & theme customization
+│   │   │   ├── settings/       # Modular user settings & configuration subsystem
+│   │   │   │   ├── nativeSync.js # Native SharedPreferences bridge & platform detection
+│   │   │   │   ├── appearance.js # Themes (dark/light), color accents, fonts, & visual presets
+│   │   │   │   ├── behavior.js   # Toggles (incognito, data saver, Wi-Fi only, keep awake, anti-403)
+│   │   │   │   ├── storage.js    # Download subfolder pickers, cache cleanup, wipe data & stats
+│   │   │   │   ├── language.js   # Dropdown select engine, i18n switcher, sub-page navigation
+│   │   │   │   └── index.js      # Barrel re-export for settings sub-modules
+│   │   │   ├── settings.js     # User preferences orchestrator & backward-compatible facade
 │   │   │   └── update.js       # Automatic GitHub release update checker
 │   │   ├── scrapers.bin        # Pre-compiled & encrypted core scraper binary bytecode (14 platforms)
 │   │   ├── scrapers/           # Scraper runtime loader & HTTP helper
 │   │   │   ├── httpHelper.js   # Unified HTTP engine (native OkHttp/Tauri bridge + UA rotation)
 │   │   │   └── index.js        # Dynamic handshake runtime loader & decryptor for scrapers.bin
 │   │   ├── ui/                 # UI rendering & presentation layer
-│   │   │   ├── nativeDownload.js # Download progress tracking & file system writer
+│   │   │   ├── nativeDownload.js # Native download flow orchestrator & progress tracking
 │   │   │   ├── result.js       # Analysis results view, media slider, & PDF creator
 │   │   │   └── resultModal.js  # Detailed preview modal & folder path navigator
 │   │   ├── share.js            # Android Quick Save Share Overlay controller
 │   │   ├── ui.js               # History rendering & gesture handlers (long-press delete)
-│   │   ├── utils/              # Helper utilities
-│   │   │   ├── index.js        # Haptics, toasts, wake lock, filesystem & plugin sync helpers
+│   │   ├── utils/              # Helper utilities subsystem
+│   │   │   ├── plugins.js      # Capacitor native plugin registry & auto-sync lifecycle
+│   │   │   ├── http.js         # User-Agent presets, cookie parser, query serializer, error handler
+│   │   │   ├── device.js       # Haptic feedback triggers, clipboard writer, wake lock, Wi-Fi guard
+│   │   │   ├── toast.js        # Standard app toast & floating download progress toast lifecycle
+│   │   │   ├── sound.js        # Web Audio API procedural synthesizer & sound pack generator
+│   │   │   ├── media.js        # Video canvas thumbnail generator & playback safe controls
 │   │   │   ├── pdfHelper.js    # PDF generation & image bundling via pdf-lib
-│   │   │   └── urlUtils.js     # URL sanitization & tracking parameter remover
+│   │   │   ├── urlUtils.js     # URL sanitization & tracking parameter remover
+│   │   │   └── index.js        # Barrel re-exporter providing 100% backward compatibility
 │   │   └── vendor/             # Bundled third-party libraries (pdf-lib)
 │   │       └── pdf-lib.min.js
 │   ├── index.html              # Main single-page application markup
 │   └── share.html              # Standalone Android Quick Save Share Overlay markup
 ├── capacitor.config.json       # Capacitor cross-platform configuration
 ├── package.json                # Project dependencies & build scripts
+
 ├── .gitignore
 ├── LICENSE
 └── README.md

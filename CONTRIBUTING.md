@@ -234,7 +234,7 @@ public/js/i18n/
    import es from "./locales/es.js";
    export const translations = { ..., es };
    ```
-4. Add the language name to `langNames` in `public/js/modules/settings.js` and the language option in `public/index.html`.
+4. Add the language name to `langNames` in `public/js/modules/settings/language.js` and the language option in `public/index.html`.
 
 > [!TIP]
 > **Safe Fallback**: If a key is not yet translated in your locale, Mori automatically falls back to English (`en`), preventing blank text or broken UI.
