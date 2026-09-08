@@ -12,6 +12,7 @@ import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 import java.io.File;
+import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URLDecoder;
 import android.os.Environment;
@@ -85,6 +86,21 @@ public class MainActivity extends BridgeActivity {
                 return getEngineSecurityKeyNative(MainActivity.this, challenge);
             } catch (Throwable e) {
                 return "UNAUTHORIZED_CLONE";
+            }
+        }
+
+        @JavascriptInterface
+        public String getScrapersBinaryBase64() {
+            try (InputStream is = getAssets().open("public/js/scrapers.bin")) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                int nRead;
+                byte[] data = new byte[16384];
+                while ((nRead = is.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                return Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
             }
         }
 

@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +51,12 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class ShareActivity extends AppCompatActivity {
+
+    static {
+        try {
+            System.loadLibrary("morisec");
+        } catch (Throwable ignored) {}
+    }
 
     private static final String TAG = "MoriShare";
     private static final String CHANNEL_ID = "mori_download";
@@ -138,7 +145,9 @@ public class ShareActivity extends AppCompatActivity {
         settings.setMediaPlaybackRequiresUserGesture(false);
 
         // Expose JavascriptInterface
-        webView.addJavascriptInterface(new MoriShareBridge(), "MoriShareBridge");
+        MoriShareBridge shareBridge = new MoriShareBridge();
+        webView.addJavascriptInterface(shareBridge, "MoriShareBridge");
+        webView.addJavascriptInterface(shareBridge, "MoriMainBridge");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -220,6 +229,31 @@ public class ShareActivity extends AppCompatActivity {
     }
 
     public class MoriShareBridge {
+        @JavascriptInterface
+        public String getEngineSecurityKey(String challenge) {
+            try {
+                return MainActivity.getEngineSecurityKeyNative(ShareActivity.this, challenge);
+            } catch (Throwable e) {
+                Log.e(TAG, "getEngineSecurityKey error", e);
+                return "UNAUTHORIZED_CLONE";
+            }
+        }
+
+        @JavascriptInterface
+        public String getScrapersBinaryBase64() {
+            try (InputStream is = getAssets().open("public/js/scrapers.bin")) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                int nRead;
+                byte[] data = new byte[16384];
+                while ((nRead = is.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                return android.util.Base64.encodeToString(buffer.toByteArray(), android.util.Base64.NO_WRAP);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to read scrapers.bin from assets", e);
+                return "";
+            }
+        }
 
         /**
          * Asynchronous HTTP request bridge to keep WebView UI thread completely unblocked.
