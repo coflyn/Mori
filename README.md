@@ -15,7 +15,7 @@
 
 <div align="center">
 
-Mori is a fast and simple downloader for saving videos, photos, and music from 14 popular social media apps. Everything runs directly on your device, with no external servers, tracking, or ads. Your downloads stay private and in your control.
+Mori is a free, fast, and private downloader for saving videos, photos, and music from 14 popular social media platforms. No ads, no tracking, and no external servers, everything runs directly on your device.
 
 <a href="https://sociabuzz.com/coflyn/tribe" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" />
@@ -36,24 +36,60 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
   <img src="assets/6.png" width="30%">
 </p>
 
+---
+
+## 📋 Table of Contents
+
+1. [How to Use](#-how-to-use)
+2. [Download & Installation](#-download--installation)
+3. [Features](#-features)
+4. [Supported Platforms & Scraper Engines](#-supported-platforms--scraper-engines)
+5. [For Developers & Building from Source](#-for-developers--building-from-source)
+6. [Why the Scraper Core is Pre-Compiled](#-why-the-scraper-core-is-pre-compiled-scrapersbin)
+7. [Disclaimer](#-disclaimer)
+8. [License & Terms of Use](#-license--terms-of-use)
+
+---
+
+## 🚀 How to Use
+
+Saving media with Mori takes only three simple steps:
+
+1. **Copy Link**: Copy any video, photo, or music link from your favorite app (TikTok, Instagram, YouTube, Spotify, etc.).
+2. **Open Mori**: Mori automatically detects the link from your clipboard and analyzes it right away. _(On Android, you can also just tap **Share** on any post and choose **Mori** to download directly without leaving the app!)_
+3. **Download**: Pick your preferred quality (HD video without watermarks, audio MP3, or photo gallery) and tap **Download**. Your media is saved straight to your device's gallery or music folder.
+
+## 📥 Download & Installation
+
+Pre-compiled, ready-to-use packages are available for all devices on **[GitHub Releases](https://github.com/coflyn/Mori/releases)**.
+
+| Platform                                                                                                                        | Available Packages                                                | Installation Guide                                                                  |
+| :------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------------------------------------- | :---------------------------------------------------------------------------------- |
+| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> **Android**                                                 | `Mori v...apk`                                                    | [Installation & Play Protect Guide](GUIDE.md#android-installation--troubleshooting) |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **macOS**                                                     | `Mori-v...-macOS-arm64.dmg`<br>`Mori-v...-macOS-arm64.app.tar.gz` | [Gatekeeper Quarantine Fix](GUIDE.md#macos-installation--gatekeeper-fix)            |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="16" /> **Windows** | `Mori-v...-Windows-x64-Setup.exe`<br>`Mori-v...-Windows-x64.msi`  | [Windows Setup Guide](GUIDE.md#windows-installation)                                |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **iOS**                                                       | `Mori v...ipa`                                                    | [AltStore / TrollStore Sideloading](GUIDE.md#ios-sideloading-guide)                 |
+
+> 📖 **Need help installing or troubleshooting?**  
+> Read the complete **[Installation, Sideloading & User Guide (GUIDE.md)](GUIDE.md)**.
+
 ## 📜 Features
 
-- **All-in-One Social Downloader**: Easily save high-definition videos (without watermarks), photos, and music from 14 top platforms: TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, and RedNote.
-- **Smart Multi-Engine Fallback**: Resilient scraper engine with automatic fallback providers to ensure high download success rates even if a provider is temporarily unavailable.
-- **One-Tap Playlist & Album Downloader**: Download entire albums or music playlists from **Spotify**, **Apple Music**, and **YouTube** in one go, no need to download songs one by one.
-- **Quick Save via Share Menu (Android)**: Found a video you like? Tap **Share** in any app and select Mori to download it immediately in a sleek popup overlay without leaving your current app.
-- **Multi-Link Batch Mode**: Paste several links at once and let Mori analyze and download them all automatically in the background.
-- **Interactive Live Backgrounds & Glassmorphism**: Dynamic animated canvas backgrounds (Constellations, Waves, Particles, Fireflies) paired with modern, customizable frosted glassmorphism effects.
-- **Built-in Media Player & Preview**: Play videos, stream tracks, and view multi-photo galleries right inside the app, with optional Auto-Play and gesture controls.
-- **Instant Photo-to-PDF Export**: Combine multi-photo posts or image galleries into a single, clean PDF file ready for offline reading or sharing.
-- **PIN & Biometric Privacy Lock**: Keep your download history private with a secure 4-digit PIN or fingerprint/Face ID biometric lock.
-- **Smart History & Folder Manager**: View your saved files anytime with clean folder paths (e.g. `Movies/Mori`, `Music/Mori`, `Pictures/Mori`), quick copy paths, and a long-press gesture to easily delete items.
-- **Automatic Clipboard Detection**: Automatically detects copied links when you open the app for instant one-tap downloading.
-- **9 Languages with Full RTL Support**: Fully translated into English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic (with full right-to-left layout), Russian, Tagalog, and Hindi.
-- **Background & Foreground Downloads**: Downloads continue running seamlessly even if you switch apps or minimize Mori, ensuring your videos and large playlists finish downloading without interruption.
-- **Instant Download Cancellation**: Cancel any in-progress download or batch queue with a single tap, instantly stopping network requests and automatically cleaning up partial files.
-- **Corrupt File Protection**: Safe downloads using temporary `.tmp` files that only save to your gallery once 100% complete, preventing broken or unplayable files.
-- **100% Private & Ad-Free**: No tracking, no data collection, no ads, and no external servers. Everything happens directly on your device.
+- **14 Platforms in One App**: Save watermark-free videos, high-resolution photos, and audio from TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, and RedNote.
+- **One-Tap Playlists & Albums**: Download full music albums or playlists from **Spotify**, **Apple Music**, and **YouTube** in one click instead of saving songs one by one.
+- **Quick Save via Android Share Menu**: Spot a video you love? Tap **Share** in any app and select Mori to download it instantly in a neat overlay without switching apps.
+- **Multi-Link Batch Mode**: Paste several links at once and let Mori queue and download them all automatically in the background.
+- **Built-in Media Player & Preview**: Play videos, stream tracks, and browse photo carousels right inside the app before or after downloading.
+- **Smart Backup Servers**: If an upstream server is temporarily slow or down, Mori automatically switches to backup sources so your download completes smoothly.
+- **Instant Photo-to-PDF**: Combine photo galleries or multi-image posts into a single, clean PDF file for offline reading or sharing.
+- **PIN & Biometric Lock**: Protect your download history with an optional 4-digit PIN code or fingerprint / Face ID lock.
+- **Clean Folder Organization**: Files are neatly organized in standard system folders (`Movies/Mori`, `Music/Mori`, `Pictures/Mori`) for easy access in your gallery.
+- **Automatic Clipboard Detection**: Opening Mori automatically suggests your copied link for instant one-tap downloading.
+- **Background Downloads**: Large videos and playlists keep downloading seamlessly even when you minimize the app or turn off the screen.
+- **Anti-Corrupt File Protection**: Files are saved securely—media only appears in your gallery once 100% complete, preventing broken or unplayable files.
+- **Modern Themes & Live Backgrounds**: Choose from elegant dark modes and interactive animated backgrounds (Stars, Waves, Fireflies).
+- **9 Languages**: English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic (with RTL support), Russian, Tagalog, and Hindi.
+- **100% Private & Ad-Free**: No ads, no analytics, no accounts required, and zero external hosting. Everything runs on your device.
 
 ## 🌐 Supported Platforms & Scraper Engines
 
@@ -74,18 +110,27 @@ Mori is a fast and simple downloader for saving videos, photos, and music from 1
 | <img src="https://cdn.simpleicons.org/tiktok/000000" width="16" /> **Douyin**          | `douyin.com`, `v.douyin.com`                                  | Video (No WM) / Photos       | Direct `iesdouyin.com` API & Multi-Marker SSR Resolver                          |
 | <img src="https://cdn.simpleicons.org/bandcamp/1DA1F2" width="16" /> **Bandcamp**      | `*.bandcamp.com`                                              | Track / Album / MP3          | **BandcampDownloader** (`bandcampdownloader.app`)                               |
 
-## Built With
+## 🛠️ For Developers & Building from Source
 
-- **JavaScript (ES6+)**: Core application logic and scraping engine.
-- **HTML5 & CSS3**: Custom minimalist design system with dark mode and smooth transitions.
+Interested in customizing the interface, contributing translations, or compiling binaries locally?
+
+👉 **[Contributing & Build Guide (CONTRIBUTING.md)](CONTRIBUTING.md)** — Complete prerequisites, environment setup, and compilation instructions for Android, iOS, macOS, and Windows.  
+📜 **[Release History & Changelog (CHANGELOG.md)](CHANGELOG.md)** — Detailed version-by-version release logs.
+
+<details>
+<summary><b>🔍 Click to view Tech Stack & Project Structure</b></summary>
+
+### Built With
+
+- **JavaScript (ES6+)**: Core application logic and client-side UI.
+- **HTML5 & CSS3**: Custom responsive design system with dark mode and smooth animations.
 - **Tauri v2 (Rust)**: Ultra-lightweight desktop engine for macOS & Windows (`.dmg`, `.app`, `.msi`, `.exe`).
 - **CapacitorJS**: Native Android and iOS bridge for filesystem, share sheet, clipboard, and biometrics.
 - **OkHttp (Native Android)**: High-performance native HTTP engine to seamlessly bypass WebView CORS and network restrictions.
-- **Native Security Engine (C / Rust)**: Dynamic handshake and integrity verification layer for scraper runtime security.
 - **Cheerio & Axios**: Fast DOM HTML parsing and HTTP client request handling.
 - **pdf-lib**: Client-side PDF generation and bundling.
 
-## Project Structure
+### Project Structure
 
 ```
 Mori/
@@ -148,27 +193,21 @@ Mori/
 └── README.md
 ```
 
-## 📥 Download & Installation
+</details>
 
-Pre-compiled, ready-to-use binaries are available for all platforms on **[GitHub Releases](https://github.com/coflyn/Mori/releases)**.
+## 🔒 Why the Scraper Core is Pre-Compiled (`scrapers.bin`)
 
-| Platform                                                                                                                        | Available Packages                                                                | Guide                                                                               |
-| :------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------- |
-| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> **Android**                                                 | `Mori v...apk`                                                                    | [Installation & Play Protect Guide](GUIDE.md#android-installation--troubleshooting) |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **macOS**                                                     | `Mori-v...-macOS-arm64.dmg` _(DMG)_<br>`Mori-v...-macOS-arm64.app.tar.gz` _(Tar)_ | [Gatekeeper Quarantine Fix](GUIDE.md#macos-installation--gatekeeper-fix)            |
-| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="16" /> **Windows** | `Mori-v...-Windows-x64-Setup.exe` _(EXE)_<br>`Mori-v...-Windows-x64.msi` _(MSI)_  | [Windows Setup Guide](GUIDE.md#windows-installation)                                |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> **iOS**                                                       | `Mori v...ipa`                                                                    | [AltStore / TrollStore Sideloading](GUIDE.md#ios-sideloading-guide)                 |
+To prevent unauthorized parties from cloning this project, injecting predatory ads or trackers, and distributing monetized knockoffs to unsuspecting users:
 
-> 📖 **Need help installing or troubleshooting?**  
-> Read the complete **[Installation, Sideloading & User Guide (GUIDE.md)](GUIDE.md)**.
+- **Integrity-Protected Scraper Core**: Distributed as a pre-compiled, tamper-resistant binary (`scrapers.bin`) backed by native Android OkHttp.
+- **Open Client Architecture**: The entire frontend, UI design system, and core app logic remain **100% open source under GPL-3.0**.
+- **Collaborative Development**: Honest developers who want to improve scrapers or fix broken endpoints are always welcome to coordinate through [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 🛠️ Building from Source & Changelog
+## ⚖️ Disclaimer
 
-Interested in customizing the interface, contributing translations, or compiling binaries locally?  
-All build commands, release logs, and prerequisites are documented in:
-
-👉 **[Contributing & Build Guide (CONTRIBUTING.md)](CONTRIBUTING.md)**  
-📜 **[Release History & Version Logs (CHANGELOG.md)](CHANGELOG.md)**
+- **Personal & Educational Use Only**: Mori is an open-source educational utility designed solely for personal media archiving and research. Users are solely responsible for complying with local copyright laws and the terms of service of source platforms.
+- **Zero Media Hosting**: Mori does not host, stream, cache, or redistribute any media on external servers. All operations execute strictly on-demand directly on the user's local device.
+- **Respect for Third-Party Providers**: Mori acts purely as a client-side wrapper querying publicly available web endpoints. If you are an operator or developer of an upstream service and wish to have your endpoint excluded or removed from Mori, please reach out via GitHub Issues or email (riazrepo@gmail.com), and we will promptly accommodate your request.
 
 ## 📄 License & Terms of Use
 
@@ -177,18 +216,6 @@ Mori is free and open-source software licensed under the **[GNU General Public L
 - **Copyleft Enforcement**: Anyone who modifies or distributes copies of this software is strictly required to provide the complete corresponding source code under the same GPL-3.0 license.
 - **No Unauthorized Commercial Re-selling**: Packaging, rebranding, or distributing closed-source, paid, or monetized variants of Mori without honoring GPL-3.0 requirements violates copyright law and will be subject to official DMCA takedowns.
 - **Trademark & Identity**: The name "Mori", app logo, and associated visual designs are the property of the original author. Derivative works must be clearly distinguished and must not claim affiliation with the original project.
-
-## 🔒 Why the Scraper Core is Pre-Compiled (`scrapers.bin`)
-
-Mori was built from scratch as a free, privacy-first, zero-bullshit project with countless hours spent hunting down, reverse-engineering, and maintaining elusive third-party scraper endpoints & web APIs.
-
-**Too many lazy script kiddies and leeches keep cloning this repo, slapping their ugly AI-generated logo or rebranding over it, injecting predatory ads & trackers, and shamelessly selling it for quick cash**, all while expecting me to fix and maintain the scrapers for free whenever upstream services break. 🤡
-
-I have zero patience for parasites exploiting open-source goodwill. To shut down low-effort skids while keeping Mori 100% free, clean, and blazing fast for real users:
-
-- **Distributed as an integrity-protected pre-compiled binary (`scrapers.bin`) backed by native Android OkHttp.**
-- **The application remains fully open for UI customization, feature contributions, and personal inspection under GPL-3.0.**
-- **If you actually want to write code, improve algorithms, or contribute genuine scraper patches, check [CONTRIBUTING.md](CONTRIBUTING.md) and hit me up via GitHub Issues or PRs. No freeloaders allowed.**
 
 ---
 
