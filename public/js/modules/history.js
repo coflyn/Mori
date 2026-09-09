@@ -100,7 +100,7 @@ export async function onHistoryDeleteClick(url) {
       history.splice(index, 1);
       localStorage.setItem("mori_history", JSON.stringify(history));
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
-    }
+    },
   );
 }
 
@@ -125,7 +125,8 @@ window.addEventListener("mori_file_saved", async (e) => {
       (sourceClean && sourceClean === target) ||
       (item.url && item.url.includes(url)) ||
       (url && url.includes(item.url)) ||
-      (item.sourceUrl && (item.sourceUrl.includes(url) || url.includes(item.sourceUrl)));
+      (item.sourceUrl &&
+        (item.sourceUrl.includes(url) || url.includes(item.sourceUrl)));
 
     if (!matched && isUrlMatch) {
       matched = true;
@@ -194,6 +195,7 @@ window.addEventListener("mori_file_saved", async (e) => {
               localThumbnail: localThumbnail || item.localThumbnail,
               versionCode: 17,
               versionName: "4.3.1",
+              thumbRepaired: true,
             };
           }
           return item;

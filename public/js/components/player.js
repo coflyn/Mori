@@ -501,6 +501,38 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         fbImg.style.objectFit = "contain";
         fbImg.style.borderRadius = "8px";
         fbImg.setAttribute("referrerpolicy", "no-referrer");
+
+        if (isLocal && (dl.rawPath || dl.rawUri || videoUrl)) {
+          fbImg.style.cursor = "pointer";
+          const openTarget = () => {
+            const targetPath = dl.rawPath || dl.rawUri || videoUrl;
+            if (window.MoriMainBridge?.openFile) {
+              window.MoriMainBridge.openFile(targetPath);
+            }
+          };
+          fbImg.onclick = openTarget;
+
+          const playBadge = document.createElement("div");
+          playBadge.className = "mori-player-external-play";
+          playBadge.innerHTML = `
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="white" style="filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          `;
+          playBadge.style.position = "absolute";
+          playBadge.style.top = "50%";
+          playBadge.style.left = "50%";
+          playBadge.style.transform = "translate(-50%, -50%)";
+          playBadge.style.cursor = "pointer";
+          playBadge.style.zIndex = "5";
+          playBadge.style.pointerEvents = "auto";
+          playBadge.onclick = (e) => {
+            e.stopPropagation();
+            openTarget();
+          };
+          playerContainer.appendChild(playBadge);
+        }
+
         playerContainer.appendChild(fbImg);
       } else {
         const errOverlay = document.createElement("div");

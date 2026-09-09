@@ -170,7 +170,7 @@ export async function showModal(item, onRedownload) {
       if (localFiles.length > 0) {
         localFiles.forEach((file) => {
           if (file && (file.path || file.uri)) {
-            const fileSrc = file.path || file.uri;
+            const fileSrc = file.uri || file.path;
             const mediaType =
               file.type ||
               (fileSrc.toLowerCase().endsWith(".mp4")
@@ -179,14 +179,54 @@ export async function showModal(item, onRedownload) {
                   ? "MP3"
                   : "IMAGE");
 
+            let thumb = file.thumbnail || item.localThumbnail || item.thumbnail;
+            if (
+              window.MoriMainBridge?.getVideoThumbnail &&
+              mediaType === "VIDEO" &&
+              (!thumb || thumb.length < 500 || !item.thumbRepaired)
+            ) {
+              try {
+                const freshThumb = window.MoriMainBridge.getVideoThumbnail(
+                  file.path || file.uri,
+                );
+                if (freshThumb) {
+                  thumb = freshThumb;
+                  file.thumbnail = freshThumb;
+                  item.localThumbnail = freshThumb;
+                  item.thumbRepaired = true;
+                  try {
+                    const hist = JSON.parse(
+                      localStorage.getItem("mori_history") || "[]",
+                    );
+                    const idx = hist.findIndex(
+                      (h) => h.url === item.url || h.sourceUrl === item.url,
+                    );
+                    if (idx !== -1) {
+                      hist[idx].localThumbnail = freshThumb;
+                      hist[idx].thumbRepaired = true;
+                      if (hist[idx].localFiles) {
+                        const targetFile = hist[idx].localFiles.find(
+                          (f) => f.path === file.path,
+                        );
+                        if (targetFile) targetFile.thumbnail = freshThumb;
+                      }
+                      localStorage.setItem(
+                        "mori_history",
+                        JSON.stringify(hist),
+                      );
+                    }
+                  } catch (_) {}
+                }
+              } catch (_) {}
+            }
+
             displayItems.push({
               url: toCapacitorUrl(fileSrc),
               remoteUrl: null,
               rawPath: file.path,
               rawUri: file.uri,
               type: mediaType,
-              thumbnail:
-                file.thumbnail || item.localThumbnail || item.thumbnail,
+              thumbnail: thumb,
               isLocal: true,
             });
           }
@@ -367,7 +407,12 @@ export async function showModal(item, onRedownload) {
       }
 
       modalPath.onclick = () => {
-        copyToClipboard(dirPath);
+        if (rawPath && window.MoriMainBridge?.openFile) {
+          const opened = window.MoriMainBridge.openFile(rawPath);
+          if (!opened) copyToClipboard(dirPath);
+        } else {
+          copyToClipboard(dirPath);
+        }
       };
     }
 

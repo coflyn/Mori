@@ -18,6 +18,11 @@ import java.net.URLDecoder;
 import android.os.Environment;
 import android.media.MediaScannerConnection;
 import android.media.MediaMetadataRetriever;
+import android.media.ThumbnailUtils;
+import android.util.Size;
+import android.provider.MediaStore;
+import android.graphics.Matrix;
+import androidx.core.content.FileProvider;
 import android.graphics.Bitmap;
 import android.util.Base64;
 import android.util.Log;
@@ -337,6 +342,14 @@ public class MainActivity extends BridgeActivity {
                     File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
                     if (d1.exists()) f = d1;
                 }
+                if (!f.exists()) {
+                    File d2 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), cleanPath.replaceFirst("^/+", ""));
+                    if (d2.exists()) f = d2;
+                }
+                if (!f.exists()) {
+                    File d3 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), cleanPath.replaceFirst("^/+", ""));
+                    if (d3.exists()) f = d3;
+                }
                 if (f.exists()) {
                     f.setLastModified(System.currentTimeMillis());
                     String name = f.getName().toLowerCase();
@@ -365,10 +378,144 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
+        private Bitmap extractBestFrame(MediaMetadataRetriever retriever) {
+            Bitmap bitmap = null;
+            long timeUs = 1000000;
+            try {
+                String durStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                if (durStr != null) {
+                    long durMs = Long.parseLong(durStr);
+                    if (durMs > 0 && durMs < 1000) {
+                        timeUs = (durMs / 2) * 1000;
+                    }
+                }
+            } catch (Throwable ignored) {}
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+                try {
+                    bitmap = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, 512, 512);
+                } catch (Throwable ignored) {}
+            }
+            if (bitmap == null) {
+                try {
+                    bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST);
+                } catch (Throwable ignored) {}
+            }
+            if (bitmap == null) {
+                try {
+                    bitmap = retriever.getFrameAtTime();
+                } catch (Throwable ignored) {}
+            }
+
+            if (bitmap != null) {
+                try {
+                    String rotStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                    if (rotStr != null) {
+                        int rotation = Integer.parseInt(rotStr);
+                        if (rotation == 90 || rotation == 180 || rotation == 270) {
+                            Matrix matrix = new Matrix();
+                            matrix.postRotate(rotation);
+                            Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                            if (rotated != bitmap) {
+                                bitmap.recycle();
+                                bitmap = rotated;
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
+            return bitmap;
+        }
+
         @JavascriptInterface
         public String getVideoThumbnail(String rawPath) {
             try {
                 if (rawPath == null || rawPath.isEmpty()) return null;
+                Bitmap bitmap = null;
+
+                if (rawPath.startsWith("content://")) {
+                    Uri contentUri = Uri.parse(rawPath);
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        try {
+                            bitmap = getApplicationContext().getContentResolver().loadThumbnail(
+                                contentUri, new Size(512, 512), null);
+                        } catch (Throwable ignored) {}
+                    }
+                    if (bitmap == null) {
+                        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                        try {
+                            retriever.setDataSource(getApplicationContext(), contentUri);
+                            bitmap = extractBestFrame(retriever);
+                        } catch (Throwable ignored) {
+                        } finally {
+                            try { retriever.release(); } catch (Throwable ignored) {}
+                        }
+                    }
+                } else {
+                    String cleanPath = rawPath;
+                    if (cleanPath.startsWith("file://")) {
+                        cleanPath = cleanPath.substring(7);
+                    }
+                    cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
+                    File f = new File(cleanPath);
+                    if (!f.isAbsolute()) {
+                        f = new File(Environment.getExternalStorageDirectory(), cleanPath.replaceFirst("^/+", ""));
+                    }
+                    if (!f.exists()) {
+                        File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
+                        if (d1.exists()) f = d1;
+                    }
+                    if (!f.exists()) {
+                        File d2 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), cleanPath.replaceFirst("^/+", ""));
+                        if (d2.exists()) f = d2;
+                    }
+                    if (!f.exists()) {
+                        File d3 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), cleanPath.replaceFirst("^/+", ""));
+                        if (d3.exists()) f = d3;
+                    }
+
+                    if (f.exists()) {
+                        try {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                bitmap = ThumbnailUtils.createVideoThumbnail(f, new Size(512, 512), null);
+                            } else {
+                                bitmap = ThumbnailUtils.createVideoThumbnail(f.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
+                            }
+                        } catch (Throwable ignored) {
+                            bitmap = null;
+                        }
+
+                        if (bitmap == null) {
+                            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                            try {
+                                retriever.setDataSource(f.getAbsolutePath());
+                                bitmap = extractBestFrame(retriever);
+                            } catch (Throwable ignored) {
+                                bitmap = null;
+                            } finally {
+                                try { retriever.release(); } catch (Throwable ignored) {}
+                            }
+                        }
+                    }
+                }
+
+                if (bitmap != null) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+                    byte[] bytes = baos.toByteArray();
+                    bitmap.recycle();
+                    return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @JavascriptInterface
+        public boolean openFile(String rawPath) {
+            try {
+                if (rawPath == null || rawPath.isEmpty()) return false;
                 String cleanPath = rawPath;
                 if (cleanPath.startsWith("file://")) {
                     cleanPath = cleanPath.substring(7);
@@ -382,26 +529,48 @@ public class MainActivity extends BridgeActivity {
                     File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
                     if (d1.exists()) f = d1;
                 }
+                if (!f.exists()) {
+                    File d2 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), cleanPath.replaceFirst("^/+", ""));
+                    if (d2.exists()) f = d2;
+                }
+                if (!f.exists()) {
+                    File d3 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), cleanPath.replaceFirst("^/+", ""));
+                    if (d3.exists()) f = d3;
+                }
                 if (f.exists()) {
-                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                    retriever.setDataSource(f.getAbsolutePath());
-                    Bitmap bitmap = retriever.getFrameAtTime(1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-                    if (bitmap == null) {
-                        bitmap = retriever.getFrameAtTime();
+                    Uri fileUri;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                        fileUri = FileProvider.getUriForFile(
+                            MainActivity.this,
+                            getApplicationContext().getPackageName() + ".fileprovider",
+                            f
+                        );
+                    } else {
+                        fileUri = Uri.fromFile(f);
                     }
-                    retriever.release();
-                    if (bitmap != null) {
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
-                        byte[] bytes = baos.toByteArray();
-                        bitmap.recycle();
-                        return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                    String mime = null;
+                    String name = f.getName().toLowerCase();
+                    int dot = name.lastIndexOf('.');
+                    if (dot > 0 && dot < name.length() - 1) {
+                        mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substring(dot + 1));
                     }
+                    if (mime == null) {
+                        if (name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".webm") || name.endsWith(".mkv")) mime = "video/mp4";
+                        else if (name.endsWith(".mp3") || name.endsWith(".m4a")) mime = "audio/mpeg";
+                        else if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp")) mime = "image/jpeg";
+                        else mime = "*/*";
+                    }
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(fileUri, mime);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    return true;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            return null;
+            return false;
         }
     }
 
