@@ -570,7 +570,7 @@ downloadBtn.addEventListener("click", async () => {
       throw Object.assign(new Error("cancelled"), { _isCancelled: true });
     if (url.includes("tiktok.com")) {
       if (preferServer === "server1") setTikTokSource("tiktokio");
-      else if (preferServer === "server2") setTikTokSource("snaptik");
+      else if (preferServer === "server2") setTikTokSource("tikdownloader");
       else setTikTokSource(null);
       data = await scrapeTikTok(url);
       if (data && data.requireSource) {
@@ -601,7 +601,7 @@ downloadBtn.addEventListener("click", async () => {
           cancelConfirmBtn.onclick = () => {
             confirmOverlay._onDismissOutside = null;
             hideConfirm();
-            resolve("snaptik");
+            resolve("tikdownloader");
           };
         });
         setTikTokSource(chosen);
@@ -703,7 +703,7 @@ downloadBtn.addEventListener("click", async () => {
       url.includes("vxtwitter.com")
     ) {
       if (preferServer === "server1") setTwitterSource("tvd");
-      else if (preferServer === "server2") setTwitterSource("tweeload");
+      else if (preferServer === "server2") setTwitterSource("savetwt");
       else setTwitterSource(null);
       data = await scrapeTwitter(url);
       if (data && data.requireSource) {
@@ -734,7 +734,7 @@ downloadBtn.addEventListener("click", async () => {
           cancelConfirmBtn.onclick = () => {
             confirmOverlay._onDismissOutside = null;
             hideConfirm();
-            resolve("tweeload");
+            resolve("savetwt");
           };
         });
         setTwitterSource(chosen);

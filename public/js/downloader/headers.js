@@ -41,6 +41,7 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
 
   const isTwitter =
     actualDownloadUrl.includes("tweeload") ||
+    actualDownloadUrl.includes("savetwt") ||
     actualDownloadUrl.includes("twimg.com") ||
     actualDownloadUrl.includes("acxcdn.com") ||
     (url && (url.includes("twitter") || url.includes("x.com")));
@@ -107,8 +108,10 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
   if (isTwitter) {
     if (actualDownloadUrl.includes("twimg.com")) {
       downloadHeaders["Referer"] = "https://twitter.com/";
-    } else {
+    } else if (actualDownloadUrl.includes("tweeload")) {
       downloadHeaders["Referer"] = "https://tweeload.com/";
+    } else {
+      downloadHeaders["Referer"] = "https://savetwt.com/";
     }
   }
 

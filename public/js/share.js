@@ -70,7 +70,11 @@ let statusTimer = null;
 const SERVERS = {
   tiktok: [
     { id: "tiktokio", name: "Server 1", sub: "TikTokIO (HD / MP3)" },
-    { id: "snaptik", name: "Server 2", sub: "SnapTik (720p / Photo)" },
+    {
+      id: "tikdownloader",
+      name: "Server 2",
+      sub: "TikDownloader (1080p / 720p / MP3)",
+    },
   ],
   instagram: [
     { id: "indown", name: "Server 1", sub: "InDown (Reels / Posts)" },
@@ -86,7 +90,11 @@ const SERVERS = {
   ],
   twitter: [
     { id: "tvd", name: "Server 1", sub: "TVD (Full HD 1080p / 720p)" },
-    { id: "tweeload", name: "Server 2", sub: "TweeLoad (SD 320p Video)" },
+    {
+      id: "savetwt",
+      name: "Server 2",
+      sub: "SaveTWT (HD MP4 / All Resolutions)",
+    },
   ],
   spotify: [
     { id: "spotidown", name: "Server 1", sub: "SpotiDown (Album / Track)" },

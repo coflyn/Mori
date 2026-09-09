@@ -93,11 +93,11 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       url.includes("vt.tiktok.com") ||
       url.includes("vm.tiktok.com")
     ) {
-      setTikTokSource(isServer2 ? "snaptik" : "tiktokio");
+      setTikTokSource(isServer2 ? "tikdownloader" : "tiktokio");
       data = await scrapeTikTok(url);
       if (!data || !data.status) {
         // Silent fallback
-        setTikTokSource(isServer2 ? "tiktokio" : "snaptik");
+        setTikTokSource(isServer2 ? "tiktokio" : "tikdownloader");
         data = await scrapeTikTok(url);
       }
     } else if (
@@ -128,10 +128,10 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       url.includes("fxtwitter.com") ||
       url.includes("vxtwitter.com")
     ) {
-      setTwitterSource(isServer2 ? "tweeload" : "tvd");
+      setTwitterSource(isServer2 ? "savetwt" : "tvd");
       data = await scrapeTwitter(url);
       if (!data || !data.status) {
-        setTwitterSource(isServer2 ? "tvd" : "tweeload");
+        setTwitterSource(isServer2 ? "tvd" : "savetwt");
         data = await scrapeTwitter(url);
       }
     } else if (url.includes("spotify.com")) {

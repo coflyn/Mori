@@ -413,7 +413,12 @@ export function setupImageLoading(img, src, resultThumbnail) {
         : img.src;
 
       let referer = "https://www.google.com/";
-      if (targetUrl.includes("snaptik.app")) referer = "https://snaptik.app/";
+      if (
+        targetUrl.includes("snaptik.app") ||
+        targetUrl.includes("tikdownloader.io") ||
+        targetUrl.includes("snapcdn.app")
+      )
+        referer = "https://tikdownloader.io/";
       if (targetUrl.includes("tiktokio.com")) referer = "https://tiktokio.com/";
       if (targetUrl.includes("instagram.com"))
         referer = "https://www.instagram.com/";
@@ -1044,7 +1049,12 @@ export async function exportGalleryToPdf(title, items) {
       const chunk = items.slice(i, i + chunkSize);
       const downloadPromises = chunk.map((item) => {
         let referer = "https://www.google.com/";
-        if (item.url.includes("snaptik.app")) referer = "https://snaptik.app/";
+        if (
+          item.url.includes("snaptik.app") ||
+          item.url.includes("tikdownloader.io") ||
+          item.url.includes("snapcdn.app")
+        )
+          referer = "https://tikdownloader.io/";
         if (item.url.includes("instagram.com"))
           referer = "https://www.instagram.com/";
         if (item.url.includes("pixiv.net") || item.url.includes("pximg.net"))

@@ -121,7 +121,11 @@ guideToSettingsBtn?.addEventListener("click", () => {
 });
 
 // Run guide check on startup
-document.addEventListener("DOMContentLoaded", initUserGuide);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initUserGuide);
+} else {
+  initUserGuide();
+}
 
 // Global document click (dropdown close + haptic)
 document.addEventListener("click", (e) => {
