@@ -193,6 +193,8 @@ window.addEventListener("mori_file_saved", async (e) => {
               ...item,
               localFiles,
               localThumbnail: localThumbnail || item.localThumbnail,
+              thumbnail: localThumbnail || item.thumbnail,
+              thumbVersion: 3,
               versionCode: 17,
               versionName: "4.3.1",
               thumbRepaired: true,
@@ -335,5 +337,117 @@ export function autoClearOldCache() {
     );
     clearCacheSilently();
     localStorage.setItem("mori_last_cache_cleanup_ts", String(now));
+  }
+}
+
+let isRefreshingThumbnails = false;
+export function refreshAllVideoThumbnails() {
+  if (!window.MoriMainBridge?.getVideoThumbnail || isRefreshingThumbnails)
+    return;
+  try {
+    const modalOverlay = document.getElementById("modalOverlay");
+    if (
+      window._moriIsModalOpen ||
+      (modalOverlay &&
+        !modalOverlay.classList.contains("hidden") &&
+        modalOverlay.style.display !== "none")
+    ) {
+      setTimeout(refreshAllVideoThumbnails, 3000);
+      return;
+    }
+
+    const raw = localStorage.getItem("mori_history");
+    if (!raw) return;
+    let history = JSON.parse(raw);
+
+    const pendingIndices = [];
+    for (let i = 0; i < history.length; i++) {
+      if (history[i].thumbVersion !== 3) {
+        pendingIndices.push(i);
+      }
+    }
+
+    if (pendingIndices.length === 0) return;
+
+    isRefreshingThumbnails = true;
+
+    const processNext = (idxListIndex) => {
+      const currentModal = document.getElementById("modalOverlay");
+      if (
+        window._moriIsModalOpen ||
+        (currentModal &&
+          !currentModal.classList.contains("hidden") &&
+          currentModal.style.display !== "none")
+      ) {
+        setTimeout(() => processNext(idxListIndex), 3000);
+        return;
+      }
+
+      if (idxListIndex >= pendingIndices.length) {
+        isRefreshingThumbnails = false;
+        return;
+      }
+
+      const itemIdx = pendingIndices[idxListIndex];
+      const currentHistory = JSON.parse(
+        localStorage.getItem("mori_history") || "[]",
+      );
+      if (!currentHistory[itemIdx]) {
+        setTimeout(() => processNext(idxListIndex + 1), 300);
+        return;
+      }
+
+      const item = currentHistory[itemIdx];
+      let videoPath = null;
+      if (item.localFiles && item.localFiles.length > 0) {
+        const vf = item.localFiles.find(
+          (f) =>
+            f.type === "VIDEO" ||
+            /\.(mp4|mov|mkv|webm)/i.test(f.path || f.name || ""),
+        );
+        if (vf) videoPath = vf.path || vf.uri;
+      }
+      if (
+        !videoPath &&
+        item.localUri &&
+        /\.(mp4|mov|mkv|webm)/i.test(item.localUri)
+      ) {
+        videoPath = item.localUri;
+      }
+
+      if (videoPath) {
+        try {
+          const freshThumb = window.MoriMainBridge.getVideoThumbnail(videoPath);
+          if (freshThumb) {
+            item.localThumbnail = freshThumb;
+            item.thumbnail = freshThumb;
+            if (item.localFiles) {
+              item.localFiles.forEach((f) => {
+                if (f.path === videoPath || f.uri === videoPath)
+                  f.thumbnail = freshThumb;
+              });
+            }
+          }
+        } catch (_) {}
+      }
+      item.thumbVersion = 3;
+      localStorage.setItem("mori_history", JSON.stringify(currentHistory));
+
+      const historyList = document.querySelector(".history-list");
+      if (historyList) {
+        const cards = historyList.querySelectorAll(".history-item");
+        if (cards[itemIdx] && item.localThumbnail) {
+          const img = cards[itemIdx].querySelector(".hist-img");
+          if (img) img.src = item.localThumbnail;
+        }
+      }
+
+      setTimeout(() => processNext(idxListIndex + 1), 400);
+    };
+
+    setTimeout(() => processNext(0), 500);
+  } catch (err) {
+    console.warn("Auto refresh thumbnails error:", err);
+    isRefreshingThumbnails = false;
   }
 }

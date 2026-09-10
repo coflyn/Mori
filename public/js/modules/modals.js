@@ -90,14 +90,13 @@ export function showInfoModal(title, message, options = {}) {
   infoOverlay.classList.remove("hidden");
 }
 
-// The close handler is now managed inside showInfoModal via options.
-// Clicking the overlay background still dismisses.
 infoOverlay?.addEventListener("click", (e) => {
   if (e.target === infoOverlay) infoOverlay.classList.add("hidden");
 });
 
 // Modal close handling (delegated to this module)
 export const hideModal = () => {
+  window._moriIsModalOpen = false;
   const slidesWrapper = document.getElementById("modalSlidesWrapper");
   if (slidesWrapper) {
     stopAllMedia(slidesWrapper);

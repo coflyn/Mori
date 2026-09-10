@@ -176,7 +176,19 @@
   border: 1px solid var(--primary);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  animation: moriEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalContentEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes modalContentEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {

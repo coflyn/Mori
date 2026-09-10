@@ -16,6 +16,7 @@ import {
   autoClearOldCache,
   onHistoryItemClick,
   onHistoryDeleteClick,
+  refreshAllVideoThumbnails,
 } from "./modules/history.js";
 import { handlePasteFromClipboard } from "./modules/intents.js";
 import {
@@ -120,14 +121,12 @@ guideToSettingsBtn?.addEventListener("click", () => {
   switchPage("settings");
 });
 
-// Run guide check on startup
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initUserGuide);
 } else {
   initUserGuide();
 }
 
-// Global document click (dropdown close + haptic)
 document.addEventListener("click", (e) => {
   document
     .querySelectorAll(".dropdown-menu")
@@ -251,8 +250,11 @@ async function switchPage(pageId) {
     } else {
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
     }
+    setTimeout(refreshAllVideoThumbnails, 3000);
   }
 }
+
+setTimeout(refreshAllVideoThumbnails, 5000);
 
 // Global Event Delegation for Navigation Items
 document.addEventListener("click", (e) => {

@@ -97,15 +97,15 @@ export function renderHistory(onItemClick, onDeleteClick) {
       : item.thumbnail;
 
     if (!isDataSaver) {
-      if (item.thumbnail) {
-        thumbSrc = item.thumbnail;
-      } else if (item.localThumbnail) {
+      if (item.localThumbnail) {
         thumbSrc = item.localThumbnail;
+      } else if (item.localFiles && item.localFiles.length > 0 && item.localFiles[0].thumbnail) {
+        thumbSrc = item.localFiles[0].thumbnail;
+      } else if (item.thumbnail) {
+        thumbSrc = item.thumbnail;
       } else if (item.localFiles && item.localFiles.length > 0) {
         const first = item.localFiles[0];
-        if (first.thumbnail) {
-          thumbSrc = first.thumbnail;
-        } else if (first.type === "IMAGE") {
+        if (first.type === "IMAGE") {
           thumbSrc = window.Capacitor?.convertFileSrc(first.uri || first.path);
         }
       } else if (item.localUri && window.Capacitor) {

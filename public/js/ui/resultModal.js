@@ -97,6 +97,7 @@ let modalCurrentSlide = 0;
 export async function showModal(item, onRedownload) {
   try {
     if (!item) return;
+    window._moriIsModalOpen = true;
 
     const modalTitle = document.getElementById("modalTitle");
     const modalUrl = document.getElementById("modalUrl");
@@ -179,46 +180,7 @@ export async function showModal(item, onRedownload) {
                   ? "MP3"
                   : "IMAGE");
 
-            let thumb = file.thumbnail || item.localThumbnail || item.thumbnail;
-            if (
-              window.MoriMainBridge?.getVideoThumbnail &&
-              mediaType === "VIDEO" &&
-              (!thumb || thumb.length < 500 || !item.thumbRepaired)
-            ) {
-              try {
-                const freshThumb = window.MoriMainBridge.getVideoThumbnail(
-                  file.path || file.uri,
-                );
-                if (freshThumb) {
-                  thumb = freshThumb;
-                  file.thumbnail = freshThumb;
-                  item.localThumbnail = freshThumb;
-                  item.thumbRepaired = true;
-                  try {
-                    const hist = JSON.parse(
-                      localStorage.getItem("mori_history") || "[]",
-                    );
-                    const idx = hist.findIndex(
-                      (h) => h.url === item.url || h.sourceUrl === item.url,
-                    );
-                    if (idx !== -1) {
-                      hist[idx].localThumbnail = freshThumb;
-                      hist[idx].thumbRepaired = true;
-                      if (hist[idx].localFiles) {
-                        const targetFile = hist[idx].localFiles.find(
-                          (f) => f.path === file.path,
-                        );
-                        if (targetFile) targetFile.thumbnail = freshThumb;
-                      }
-                      localStorage.setItem(
-                        "mori_history",
-                        JSON.stringify(hist),
-                      );
-                    }
-                  } catch (_) {}
-                }
-              } catch (_) {}
-            }
+            const thumb = file.thumbnail || item.localThumbnail || item.thumbnail;
 
             displayItems.push({
               url: toCapacitorUrl(fileSrc),
@@ -308,13 +270,19 @@ export async function showModal(item, onRedownload) {
         const media = s.querySelector("video, audio");
         if (media) {
           if (isActive) {
-            media.currentTime = 0;
             media.loop = localStorage.getItem("mori_loop") !== "false";
             if (localStorage.getItem("mori_autoplay") !== "false") {
-              media.play().catch(() => {});
+              if (media.paused) {
+                media.play().catch(() => {});
+              }
             }
           } else {
             media.pause();
+            try {
+              if (media.currentTime > 0.5) {
+                media.currentTime = 0;
+              }
+            } catch (_) {}
           }
         }
       });
@@ -342,11 +310,13 @@ export async function showModal(item, onRedownload) {
           updateModalSlider();
         };
       }
-      updateModalSlider();
     } else {
       if (sliderNav) sliderNav.classList.add("hidden");
-      updateModalSlider();
     }
+
+    requestAnimationFrame(() => {
+      updateModalSlider();
+    });
 
     if (modalUrl) {
       modalUrl.textContent = item.url || "";
@@ -419,6 +389,7 @@ export async function showModal(item, onRedownload) {
     if (redownloadBtn) {
       redownloadBtn.onclick = (e) => {
         e.stopPropagation();
+        window._moriIsModalOpen = false;
         stopAllMedia(slidesWrapper);
         slidesWrapper.innerHTML = "";
         modalOverlay.classList.add("hidden");

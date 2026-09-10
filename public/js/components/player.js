@@ -307,7 +307,7 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   video.loop = loopSetting;
   video.preload = index === 0 ? "auto" : "metadata";
   const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
-  video.autoplay = index === 0 && autoPlaySetting;
+  video.autoplay = false;
   video.playsInline = true;
   video.setAttribute("playsinline", "true");
   video.setAttribute("webkit-playsinline", "true");

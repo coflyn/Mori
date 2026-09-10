@@ -143,7 +143,7 @@ export function renderMediaSlides(container, items, resultThumbnail) {
       audio.style.width = "100%";
       const autoPlaySetting = localStorage.getItem("mori_autoplay") !== "false";
       const loopSetting = localStorage.getItem("mori_loop") !== "false";
-      audio.autoplay = index === 0 && autoPlaySetting;
+      audio.autoplay = false;
       audio.loop = loopSetting;
 
       const tauriInvoke =
@@ -485,16 +485,21 @@ export function updateSliderUI() {
     if (index === currentSlideIndex) {
       slide.classList.add("active");
       if (media) {
-        if (media.readyState < 1) media.load();
-        media.currentTime = 0;
         media.loop = localStorage.getItem("mori_loop") !== "false";
         if (localStorage.getItem("mori_autoplay") !== "false") {
-          media.play().catch(() => {});
+          if (media.paused) {
+            media.play().catch(() => {});
+          }
         }
       }
     } else {
       slide.classList.remove("active");
-      if (media) media.pause();
+      if (media) {
+        media.pause();
+        try {
+          if (media.currentTime > 0.5) media.currentTime = 0;
+        } catch (_) {}
+      }
     }
   });
 

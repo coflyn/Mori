@@ -380,20 +380,52 @@ public class MainActivity extends BridgeActivity {
 
         private Bitmap extractBestFrame(MediaMetadataRetriever retriever) {
             Bitmap bitmap = null;
-            long timeUs = 1000000;
+            long timeUs = 2000000;
             try {
                 String durStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
                 if (durStr != null) {
                     long durMs = Long.parseLong(durStr);
-                    if (durMs > 0 && durMs < 1000) {
+                    if (durMs > 0) {
                         timeUs = (durMs / 2) * 1000;
                     }
                 }
             } catch (Throwable ignored) {}
 
+            int videoWidth = 0;
+            int videoHeight = 0;
+            int rotation = 0;
+            try {
+                String wStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                String hStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                String rotStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                if (wStr != null) videoWidth = Integer.parseInt(wStr);
+                if (hStr != null) videoHeight = Integer.parseInt(hStr);
+                if (rotStr != null) rotation = Integer.parseInt(rotStr);
+            } catch (Throwable ignored) {}
+
+            boolean isTargetPortrait;
+            if (rotation == 90 || rotation == 270) {
+                isTargetPortrait = (videoWidth >= videoHeight);
+            } else {
+                isTargetPortrait = (videoHeight >= videoWidth);
+            }
+
+            int dstWidth = 512;
+            int dstHeight = 512;
+            if (videoWidth > 0 && videoHeight > 0) {
+                int maxDim = 512;
+                if (videoWidth >= videoHeight) {
+                    dstWidth = maxDim;
+                    dstHeight = Math.max(1, (videoHeight * maxDim) / videoWidth);
+                } else {
+                    dstHeight = maxDim;
+                    dstWidth = Math.max(1, (videoWidth * maxDim) / videoHeight);
+                }
+            }
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
                 try {
-                    bitmap = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, 512, 512);
+                    bitmap = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, dstWidth, dstHeight);
                 } catch (Throwable ignored) {}
             }
             if (bitmap == null) {
@@ -408,21 +440,50 @@ public class MainActivity extends BridgeActivity {
             }
 
             if (bitmap != null) {
-                try {
-                    String rotStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-                    if (rotStr != null) {
-                        int rotation = Integer.parseInt(rotStr);
-                        if (rotation == 90 || rotation == 180 || rotation == 270) {
-                            Matrix matrix = new Matrix();
-                            matrix.postRotate(rotation);
-                            Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                            if (rotated != bitmap) {
-                                bitmap.recycle();
-                                bitmap = rotated;
-                            }
+                boolean isBitmapPortrait = bitmap.getHeight() >= bitmap.getWidth();
+
+                if (isTargetPortrait != isBitmapPortrait) {
+                    int rotToApply = (rotation != 0) ? rotation : 90;
+                    try {
+                        Matrix matrix = new Matrix();
+                        matrix.postRotate(rotToApply);
+                        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                        if (rotated != bitmap) {
+                            bitmap.recycle();
+                            bitmap = rotated;
                         }
+                    } catch (Throwable ignored) {}
+                } else if (rotation == 180) {
+                    try {
+                        Matrix matrix = new Matrix();
+                        matrix.postRotate(180);
+                        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                        if (rotated != bitmap) {
+                            bitmap.recycle();
+                            bitmap = rotated;
+                        }
+                    } catch (Throwable ignored) {}
+                }
+
+                if (bitmap.getWidth() > 512 || bitmap.getHeight() > 512) {
+                    int bw = bitmap.getWidth();
+                    int bh = bitmap.getHeight();
+                    int scaledW, scaledH;
+                    if (bw >= bh) {
+                        scaledW = 512;
+                        scaledH = Math.max(1, (bh * 512) / bw);
+                    } else {
+                        scaledH = 512;
+                        scaledW = Math.max(1, (bw * 512) / bh);
                     }
-                } catch (Throwable ignored) {}
+                    try {
+                        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, scaledW, scaledH, true);
+                        if (scaled != bitmap) {
+                            bitmap.recycle();
+                            bitmap = scaled;
+                        }
+                    } catch (Throwable ignored) {}
+                }
             }
             return bitmap;
         }
@@ -435,21 +496,21 @@ public class MainActivity extends BridgeActivity {
 
                 if (rawPath.startsWith("content://")) {
                     Uri contentUri = Uri.parse(rawPath);
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    try {
+                        retriever.setDataSource(getApplicationContext(), contentUri);
+                        bitmap = extractBestFrame(retriever);
+                    } catch (Throwable ignored) {
+                        bitmap = null;
+                    } finally {
+                        try { retriever.release(); } catch (Throwable ignored) {}
+                    }
+
+                    if (bitmap == null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                         try {
                             bitmap = getApplicationContext().getContentResolver().loadThumbnail(
                                 contentUri, new Size(512, 512), null);
                         } catch (Throwable ignored) {}
-                    }
-                    if (bitmap == null) {
-                        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                        try {
-                            retriever.setDataSource(getApplicationContext(), contentUri);
-                            bitmap = extractBestFrame(retriever);
-                        } catch (Throwable ignored) {
-                        } finally {
-                            try { retriever.release(); } catch (Throwable ignored) {}
-                        }
                     }
                 } else {
                     String cleanPath = rawPath;
@@ -475,25 +536,25 @@ public class MainActivity extends BridgeActivity {
                     }
 
                     if (f.exists()) {
+                        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                         try {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                                bitmap = ThumbnailUtils.createVideoThumbnail(f, new Size(512, 512), null);
-                            } else {
-                                bitmap = ThumbnailUtils.createVideoThumbnail(f.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
-                            }
+                            retriever.setDataSource(f.getAbsolutePath());
+                            bitmap = extractBestFrame(retriever);
                         } catch (Throwable ignored) {
                             bitmap = null;
+                        } finally {
+                            try { retriever.release(); } catch (Throwable ignored) {}
                         }
 
                         if (bitmap == null) {
-                            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                             try {
-                                retriever.setDataSource(f.getAbsolutePath());
-                                bitmap = extractBestFrame(retriever);
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                    bitmap = ThumbnailUtils.createVideoThumbnail(f, new Size(512, 512), null);
+                                } else {
+                                    bitmap = ThumbnailUtils.createVideoThumbnail(f.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
+                                }
                             } catch (Throwable ignored) {
                                 bitmap = null;
-                            } finally {
-                                try { retriever.release(); } catch (Throwable ignored) {}
                             }
                         }
                     }
