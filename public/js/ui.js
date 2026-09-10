@@ -34,7 +34,20 @@ export function renderHistory(onItemClick, onDeleteClick) {
   if (typeof window.checkAndMergePendingHistorySync === "function") {
     window.checkAndMergePendingHistorySync();
   }
-  const history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const rawHistory = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  // Sort favorites to the top (most recently favorited first), then non-favorites
+  const history = [...rawHistory].sort((a, b) => {
+    if (a.favorite && !b.favorite) return -1;
+    if (!a.favorite && b.favorite) return 1;
+    if (a.favorite && b.favorite) {
+      return (
+        (b.favTimestamp || b.timestamp || 0) -
+        (a.favTimestamp || a.timestamp || 0)
+      );
+    }
+    return 0;
+  });
+
   const historyPage = document.getElementById("historyPage");
   const editHistoryBtn = document.getElementById("editHistoryBtn");
   const historyActions = document.getElementById("historyActions");
@@ -81,7 +94,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
 
   history.forEach((item) => {
     const card = document.createElement("div");
-    card.className = "history-item";
+    card.className = `history-item ${item.favorite ? "is-favorite" : ""}`;
 
     // Check if this item is currently being downloaded
     const isDownloading =
@@ -126,7 +139,15 @@ export function renderHistory(onItemClick, onDeleteClick) {
           <h3>${truncate(escapeHtml(item.title), 60)}</h3>
           <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
       </div>
-      ${isEditingHistory ? `<button class="delete-item-btn" data-url="${escapeHtml(item.url)}">×</button>` : ""}
+      ${
+        isEditingHistory
+          ? `<button class="delete-item-btn" data-url="${escapeHtml(item.url)}">×</button>`
+          : `<button class="hist-fav-btn ${item.favorite ? "active" : ""}" data-url="${escapeHtml(item.url)}" aria-label="Favorite" title="${item.favorite ? "Favorited" : "Favorite"}">
+              <svg class="heart-icon" viewBox="0 0 24 24" width="18" height="18" fill="${item.favorite ? "#ff3b5c" : "none"}" stroke="${item.favorite ? "#ff3b5c" : "currentColor"}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>`
+      }
     `;
 
     const img = card.querySelector(".hist-img");
@@ -138,6 +159,17 @@ export function renderHistory(onItemClick, onDeleteClick) {
       }
     };
 
+    const favBtn = card.querySelector(".hist-fav-btn");
+    if (favBtn) {
+      favBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (typeof window.toggleMoriFavorite === "function") {
+          window.toggleMoriFavorite(item.url);
+        }
+      });
+    }
+
     if (!isEditingHistory) {
       let pressTimer = null;
       let isLongPress = false;
@@ -145,13 +177,20 @@ export function renderHistory(onItemClick, onDeleteClick) {
       let startY = 0;
 
       const startPress = (e) => {
+        if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
         isLongPress = false;
+        try {
+          window.getSelection()?.removeAllRanges();
+        } catch (_) {}
         if (e.touches && e.touches[0]) {
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
         }
         pressTimer = setTimeout(() => {
           isLongPress = true;
+          try {
+            window.getSelection()?.removeAllRanges();
+          } catch (_) {}
           triggerHaptic();
           onDeleteClick(item.url);
         }, 500);
@@ -184,8 +223,13 @@ export function renderHistory(onItemClick, onDeleteClick) {
       });
       card.addEventListener("mouseup", cancelPress);
       card.addEventListener("mouseleave", cancelPress);
+      card.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
 
       card.addEventListener("click", (e) => {
+        if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
         if (isLongPress) {
           e.preventDefault();
           e.stopPropagation();

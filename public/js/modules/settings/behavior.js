@@ -174,13 +174,24 @@ export function initBehaviorSettings() {
     });
   }
 
-  // Auto-Retry Toggle
+  // Auto-Retry Toggle & Max Retry Visibility
   const autoRetryToggle = document.getElementById("autoRetryToggle");
+  const maxRetryItem = document.getElementById("maxRetryItem");
+
+  const updateMaxRetryVisibility = () => {
+    if (!maxRetryItem) return;
+    const isRetryEnabled =
+      localStorage.getItem("mori_auto_retry") !== "false";
+    maxRetryItem.style.display = isRetryEnabled ? "flex" : "none";
+  };
+  updateMaxRetryVisibility();
+
   if (autoRetryToggle) {
     autoRetryToggle.checked =
       localStorage.getItem("mori_auto_retry") !== "false";
     autoRetryToggle.addEventListener("change", (e) => {
       localStorage.setItem("mori_auto_retry", e.target.checked);
+      updateMaxRetryVisibility();
       const lang = translations[currentLang] || translations.en;
       showToast(
         e.target.checked

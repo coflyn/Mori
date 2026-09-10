@@ -127,6 +127,18 @@ if (document.readyState === "loading") {
   initUserGuide();
 }
 
+// Prevent native long-press context menu and text selection toolbar on non-inputs
+document.addEventListener("contextmenu", (e) => {
+  const isInput =
+    e.target.tagName === "INPUT" ||
+    e.target.tagName === "TEXTAREA" ||
+    e.target.isContentEditable ||
+    e.target.closest(".selectable");
+  if (!isInput) {
+    e.preventDefault();
+  }
+});
+
 document.addEventListener("click", (e) => {
   document
     .querySelectorAll(".dropdown-menu")

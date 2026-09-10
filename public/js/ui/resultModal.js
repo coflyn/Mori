@@ -10,11 +10,15 @@ import {
 import { currentLang } from "../modules/core.js";
 import { renderMediaSlides } from "./result.js";
 
-export function getCleanDirectoryPath(item, rawFile) {
+export function getCleanDirectoryPath(item, rawFile, itemType) {
   let p = rawFile || "";
   if (!p) {
     if (item?.localFiles && item.localFiles.length > 0) {
-      p = item.localFiles[0].path || item.localFiles[0].uri || "";
+      const match = itemType
+        ? item.localFiles.find((f) => f.type === itemType)
+        : null;
+      const chosen = match || item.localFiles[0];
+      p = chosen.path || chosen.uri || "";
     } else if (item?.localUri) {
       p = item.localUri;
     } else if (item?.filePath) {
@@ -45,8 +49,10 @@ export function getCleanDirectoryPath(item, rawFile) {
   }
 
   // Fallback by format / category
+  const type = (itemType || item?.type || "").toUpperCase();
   const title = (item?.title || item?.url || "").toLowerCase();
   const isPdf =
+    type.includes("PDF") ||
     title.endsWith(".pdf") ||
     item?.type === "PDF" ||
     (item?.localFiles &&
@@ -63,6 +69,8 @@ export function getCleanDirectoryPath(item, rawFile) {
   }
 
   const isAudio =
+    type === "AUDIO" ||
+    type === "MP3" ||
     item?.type === "AUDIO" ||
     item?.type === "MP3" ||
     title.endsWith(".mp3") ||
@@ -78,6 +86,8 @@ export function getCleanDirectoryPath(item, rawFile) {
   }
 
   const isPhoto =
+    type === "IMAGE" ||
+    type === "PHOTO" ||
     item?.type === "IMAGE" ||
     item?.type === "PHOTO" ||
     title.endsWith(".jpg") ||
@@ -185,11 +195,13 @@ export async function showModal(item, onRedownload) {
             displayItems.push({
               url: toCapacitorUrl(fileSrc),
               remoteUrl: null,
-              rawPath: file.path,
-              rawUri: file.uri,
+              rawPath: file.path || file.uri,
+              rawUri: file.uri || file.path,
               type: mediaType,
               thumbnail: thumb,
+              title: file.title || item.title,
               isLocal: true,
+              file: file,
             });
           }
         });
@@ -206,6 +218,7 @@ export async function showModal(item, onRedownload) {
           rawUri: item.localUri,
           type: mediaType,
           thumbnail: item.localThumbnail || item.thumbnail,
+          title: item.title,
           isLocal: true,
         });
       } else if (item.downloads && item.downloads.length > 0) {
@@ -222,8 +235,11 @@ export async function showModal(item, onRedownload) {
             displayItems.push({
               url: localUrl,
               remoteUrl: dl.url || dl.src,
+              rawPath: dl.localPath || dl.path || localUrl,
+              rawUri: dl.localUri || dl.uri || localUrl,
               type: mediaType,
               thumbnail: dl.thumbnail || item.localThumbnail || item.thumbnail,
+              title: dl.title || item.title,
               isLocal: true,
             });
           }
@@ -243,6 +259,7 @@ export async function showModal(item, onRedownload) {
             url: dl.url || dl.src,
             type: "IMAGE",
             thumbnail: dl.thumbnail || item.thumbnail,
+            title: dl.title || item.title,
             isLocal: false,
           });
         });
@@ -255,12 +272,36 @@ export async function showModal(item, onRedownload) {
             "",
           type: "IMAGE",
           thumbnail: item.thumbnail,
+          title: item.title,
           isLocal: false,
         });
       }
     }
 
     renderMediaSlides(slidesWrapper, displayItems, item.thumbnail);
+
+    const modalPath = document.getElementById("modalPath");
+    const pathVal = modalPath ? modalPath.querySelector(".path-val") : null;
+    const pathStatus = modalPath ? modalPath.querySelector(".path-status") : null;
+
+    const showMissingStatus = () => {
+      if (!modalPath) return;
+      modalPath.classList.add("file-deleted");
+      if (pathStatus) {
+        const missingText =
+          translations[currentLang]?.["label-file-missing"] ||
+          translations["en"]?.["label-file-missing"] ||
+          "File missing";
+        pathStatus.textContent = `(${missingText})`;
+        pathStatus.classList.remove("hidden");
+      }
+    };
+
+    const clearMissingStatus = () => {
+      if (!modalPath) return;
+      modalPath.classList.remove("file-deleted");
+      if (pathStatus) pathStatus.classList.add("hidden");
+    };
 
     const updateModalSlider = () => {
       const slides = slidesWrapper.querySelectorAll(".preview-slide");
@@ -286,9 +327,55 @@ export async function showModal(item, onRedownload) {
           }
         }
       });
+
       const indicator = document.getElementById("modalSlideIndicator");
       if (indicator)
         indicator.textContent = `${modalCurrentSlide + 1} / ${displayItems.length}`;
+
+      // Update Directory Path and open file action for the current active slide
+      const currentSlide = displayItems[modalCurrentSlide];
+      if (modalPath && currentSlide) {
+        let rawPath =
+          currentSlide.rawPath ||
+          currentSlide.rawUri ||
+          currentSlide.file?.path ||
+          currentSlide.file?.uri ||
+          "";
+
+        if (!rawPath && item.localFiles && item.localFiles.length > 0) {
+          const matched =
+            item.localFiles.find((f) => f.type === currentSlide.type) ||
+            item.localFiles[modalCurrentSlide] ||
+            item.localFiles[0];
+          rawPath = matched?.path || matched?.uri || "";
+        }
+        if (!rawPath) {
+          rawPath = item.localUri || item.filePath || "";
+        }
+
+        const dirPath = getCleanDirectoryPath(item, rawPath, currentSlide.type);
+
+        if (pathVal) {
+          pathVal.textContent = dirPath;
+        } else {
+          modalPath.textContent = dirPath;
+        }
+
+        if (!hasDownloadedFiles || !currentSlide.isLocal) {
+          showMissingStatus();
+        } else {
+          clearMissingStatus();
+        }
+
+        modalPath.onclick = () => {
+          if (rawPath && window.MoriMainBridge?.openFile) {
+            const opened = window.MoriMainBridge.openFile(rawPath);
+            if (!opened) copyToClipboard(dirPath);
+          } else {
+            copyToClipboard(dirPath);
+          }
+        };
+      }
     };
 
     if (displayItems.length > 1) {
@@ -310,8 +397,63 @@ export async function showModal(item, onRedownload) {
           updateModalSlider();
         };
       }
+
+      // Horizontal Touch Swipe for modal slider
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      slidesWrapper.ontouchstart = (e) => {
+        if (e.touches && e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      };
+
+      slidesWrapper.ontouchend = (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        const target = e.target;
+        if (
+          target.closest("input") ||
+          target.closest("button") ||
+          target.closest(".mori-player-controls") ||
+          target.closest(".custom-controls") ||
+          target.closest(".player-control-btn") ||
+          target.closest(".timeline-container") ||
+          target.closest(".scrubber-bar")
+        ) {
+          return;
+        }
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+
+        if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+          if (diffX > 0) {
+            modalCurrentSlide = (modalCurrentSlide + 1) % displayItems.length;
+            updateModalSlider();
+          } else {
+            modalCurrentSlide =
+              (modalCurrentSlide - 1 + displayItems.length) % displayItems.length;
+            updateModalSlider();
+          }
+        }
+      };
     } else {
       if (sliderNav) sliderNav.classList.add("hidden");
+      slidesWrapper.ontouchstart = null;
+      slidesWrapper.ontouchend = null;
+    }
+
+    if (hasDownloadedFiles) {
+      slidesWrapper.addEventListener("error", showMissingStatus, true);
+      slidesWrapper.addEventListener(
+        "mori_media_load_error",
+        showMissingStatus,
+      );
+      slidesWrapper.addEventListener("loadeddata", clearMissingStatus, true);
+      slidesWrapper.addEventListener("load", clearMissingStatus, true);
     }
 
     requestAnimationFrame(() => {
@@ -319,71 +461,53 @@ export async function showModal(item, onRedownload) {
     });
 
     if (modalUrl) {
-      modalUrl.textContent = item.url || "";
-      modalUrl.onclick = () => copyToClipboard(item.url);
+      const rawUrl = item.url || "";
+      const displayUrl =
+        rawUrl.length > 50 ? rawUrl.substring(0, 50) + "..." : rawUrl;
+      modalUrl.textContent = displayUrl;
+      modalUrl.title = rawUrl;
+      modalUrl.onclick = () => copyToClipboard(rawUrl);
     }
 
-    const modalPath = document.getElementById("modalPath");
-    if (modalPath) {
-      let rawPath = "";
-      if (item.localFiles && item.localFiles.length > 0) {
-        rawPath = item.localFiles[0].path || item.localFiles[0].uri || "";
-      } else if (item.localUri) {
-        rawPath = item.localUri;
-      } else if (item.filePath) {
-        rawPath = item.filePath;
-      }
+    const modalFavBtn = document.getElementById("modalFavBtn");
+    if (modalFavBtn) {
+      let isFav = !!item.favorite;
+      const hist = JSON.parse(localStorage.getItem("mori_history") || "[]");
+      const found = hist.find((h) => h.url === item.url);
+      if (found) isFav = !!found.favorite;
 
-      const dirPath = getCleanDirectoryPath(item, rawPath);
-      const pathVal = modalPath.querySelector(".path-val");
-      const pathStatus = modalPath.querySelector(".path-status");
+      const updateFavUI = (active) => {
+        modalFavBtn.classList.toggle("active", active);
+        const icon = modalFavBtn.querySelector(".heart-icon");
+        if (icon) {
+          icon.setAttribute("fill", active ? "#ff3b5c" : "none");
+          icon.setAttribute("stroke", active ? "#ff3b5c" : "currentColor");
+        }
+      };
+      updateFavUI(isFav);
 
-      if (pathVal) {
-        pathVal.textContent = dirPath;
-      } else {
-        modalPath.textContent = dirPath;
-      }
-
-      const showMissingStatus = () => {
-        modalPath.classList.add("file-deleted");
-        if (pathStatus) {
-          const missingText =
-            translations[currentLang]?.["label-file-missing"] ||
-            translations["en"]?.["label-file-missing"] ||
-            "File missing";
-          pathStatus.textContent = `(${missingText})`;
-          pathStatus.classList.remove("hidden");
+      modalFavBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (typeof window.toggleMoriFavorite === "function") {
+          const newFavState = window.toggleMoriFavorite(item.url);
+          updateFavUI(newFavState);
+          item.favorite = newFavState;
         }
       };
 
-      const clearMissingStatus = () => {
-        modalPath.classList.remove("file-deleted");
-        if (pathStatus) pathStatus.classList.add("hidden");
-      };
-
-      if (!hasDownloadedFiles) {
-        showMissingStatus();
-      } else {
-        clearMissingStatus();
-
-        slidesWrapper.addEventListener("error", showMissingStatus, true);
-        slidesWrapper.addEventListener(
-          "mori_media_load_error",
-          showMissingStatus,
-        );
-
-        slidesWrapper.addEventListener("loadeddata", clearMissingStatus, true);
-        slidesWrapper.addEventListener("load", clearMissingStatus, true);
-      }
-
-      modalPath.onclick = () => {
-        if (rawPath && window.MoriMainBridge?.openFile) {
-          const opened = window.MoriMainBridge.openFile(rawPath);
-          if (!opened) copyToClipboard(dirPath);
-        } else {
-          copyToClipboard(dirPath);
+      const onFavSync = (e) => {
+        if (
+          e.detail &&
+          (e.detail.url === item.url ||
+            (e.detail.item && e.detail.item.url === item.url))
+        ) {
+          item.favorite = e.detail.favorite;
+          updateFavUI(e.detail.favorite);
         }
       };
+      window.addEventListener("mori_favorite_toggled", onFavSync, {
+        once: true,
+      });
     }
 
     if (redownloadBtn) {

@@ -1,6 +1,11 @@
 // history.js — history CRUD, callbacks, auto-clear
 import { translations } from "../i18n/index.js";
-import { getVideoThumbnail, Filesystem, cleanUrl } from "../utils/index.js";
+import {
+  getVideoThumbnail,
+  Filesystem,
+  cleanUrl,
+  triggerHaptic,
+} from "../utils/index.js";
 import { showModal, renderHistory, setUIState } from "../ui.js";
 import { showConfirm } from "./modals.js";
 import {
@@ -103,6 +108,51 @@ export async function onHistoryDeleteClick(url) {
     },
   );
 }
+
+export function toggleFavorite(url) {
+  if (!url) return false;
+  let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
+  const target = cleanUrl(url);
+  const index = history.findIndex(
+    (h) =>
+      h.url === url ||
+      (h.sourceUrl && h.sourceUrl === url) ||
+      cleanUrl(h.url) === target ||
+      (h.sourceUrl && cleanUrl(h.sourceUrl) === target),
+  );
+  if (index === -1) return false;
+
+  const item = history[index];
+  const isNowFav = !item.favorite;
+  item.favorite = isNowFav;
+  item.favTimestamp = isNowFav ? Date.now() : 0;
+
+  history.splice(index, 1);
+
+  if (isNowFav) {
+    history.unshift(item);
+  } else {
+    const firstNonFavIdx = history.findIndex((h) => !h.favorite);
+    if (firstNonFavIdx === -1) {
+      history.push(item);
+    } else {
+      history.splice(firstNonFavIdx, 0, item);
+    }
+  }
+
+  localStorage.setItem("mori_history", JSON.stringify(history));
+  renderHistory(onHistoryItemClick, onHistoryDeleteClick);
+  triggerHaptic?.();
+
+  window.dispatchEvent(
+    new CustomEvent("mori_favorite_toggled", {
+      detail: { url: item.url, favorite: isNowFav, item },
+    }),
+  );
+
+  return isNowFav;
+}
+window.toggleMoriFavorite = toggleFavorite;
 
 // Global Event for File Saved (Syncing UI and History)
 window.addEventListener("mori_file_saved", async (e) => {
@@ -240,6 +290,8 @@ export function saveToHistory(result, url) {
     localFiles: existingItem ? existingItem.localFiles || [] : [],
     localUri: existingItem ? existingItem.localUri : null,
     localThumbnail: existingItem ? existingItem.localThumbnail : null,
+    favorite: existingItem ? existingItem.favorite || false : false,
+    favTimestamp: existingItem ? existingItem.favTimestamp || 0 : 0,
   };
 
   // Remove old entry if exists (using targetUrl match)
@@ -247,7 +299,16 @@ export function saveToHistory(result, url) {
     history.splice(existingIndex, 1);
   }
 
-  history.unshift(newItem);
+  if (newItem.favorite) {
+    history.unshift(newItem);
+  } else {
+    const firstNonFavIdx = history.findIndex((h) => !h.favorite);
+    if (firstNonFavIdx === -1) {
+      history.unshift(newItem);
+    } else {
+      history.splice(firstNonFavIdx, 0, newItem);
+    }
+  }
 
   // Apply user-configured history limit
   const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
@@ -269,7 +330,7 @@ export function saveToHistory(result, url) {
   }
 }
 
-// Auto-Clear Old History (Items > 30 days)
+// Auto-Clear Old History (Items > 30 days, protecting favorites)
 export async function autoClearOldHistory() {
   const daysVal = localStorage.getItem("mori_auto_clear_days") || "off";
   if (daysVal === "off") return;
@@ -282,7 +343,7 @@ export async function autoClearOldHistory() {
   const now = Date.now();
 
   const filtered = history.filter((item) => {
-    return now - (item.timestamp || 0) < cutoffTime;
+    return item.favorite || now - (item.timestamp || 0) < cutoffTime;
   });
 
   if (filtered.length !== history.length) {

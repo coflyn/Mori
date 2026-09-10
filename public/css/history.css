@@ -6,6 +6,13 @@
   gap: 12px;
 }
 
+.history-item,
+.history-item * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 .history-item {
   display: flex;
   align-items: center;
@@ -181,8 +188,8 @@
 .history-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 14px 16px;
   background-color: var(--surface);
   border: 1px solid var(--primary);
   border-radius: var(--radius-xl);
@@ -190,6 +197,51 @@
   transition: var(--transition);
   position: relative;
   margin-bottom: 12px;
+}
+
+.history-item.is-favorite {
+  border-color: rgba(255, 59, 92, 0.4);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 0%,
+    rgba(255, 59, 92, 0.04) 100%
+  );
+}
+
+.hist-fav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #777);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-left: auto;
+  padding: 0;
+}
+
+.hist-fav-btn:hover {
+  color: #ff3b5c;
+  transform: scale(1.15);
+}
+
+.hist-fav-btn:active {
+  transform: scale(0.88);
+}
+
+.hist-fav-btn.active {
+  color: #ff3b5c;
+}
+
+.hist-fav-btn.active .heart-icon {
+  fill: #ff3b5c;
+  stroke: #ff3b5c;
+  animation: heartPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .delete-item-btn {
@@ -267,6 +319,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .history-info h3 {

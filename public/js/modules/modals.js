@@ -35,6 +35,9 @@ export const hideConfirm = () => {
 };
 
 export function showConfirm(title, message, onConfirm, onCancel = null) {
+  try {
+    window.getSelection()?.removeAllRanges();
+  } catch (_) {}
   confirmTitle.innerHTML = title;
   confirmMessage.innerHTML = message;
   confirmOverlay.classList.remove("hidden");
