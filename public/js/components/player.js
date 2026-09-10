@@ -113,6 +113,55 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     window.__TAURI_INTERNALS__?.convertFileSrc ||
     window.__TAURI__?.convertFileSrc;
 
+  let userPaused = false;
+  let unmuteIcon = null;
+  let muteIcon = null;
+
+  const isSlideActive = () => {
+    if (video._isStopped) return false;
+    const parentSlide =
+      playerContainer.closest(".preview-slide") ||
+      playerContainer.parentElement;
+    if (parentSlide) {
+      return parentSlide.classList.contains("active");
+    }
+    return index === 0;
+  };
+
+  const tryAutoPlay = () => {
+    if (video._isStopped || userPaused) return;
+    const isAutoPlay = localStorage.getItem("mori_autoplay") !== "false";
+    if (isAutoPlay && isSlideActive() && video.paused) {
+      video.loop = localStorage.getItem("mori_loop") !== "false";
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (
+            err &&
+            (err.name === "NotAllowedError" || err.name === "AbortError") &&
+            !video.muted
+          ) {
+            console.warn(
+              "Unmuted autoplay restricted, attempting muted autoplay:",
+              err,
+            );
+            video.muted = true;
+            if (unmuteIcon && muteIcon) {
+              unmuteIcon.classList.add("hidden");
+              muteIcon.classList.remove("hidden");
+            }
+            video.play().catch(() => {});
+          }
+        });
+      }
+    }
+  };
+
+  playerContainer._tryAutoPlay = () => {
+    userPaused = false;
+    tryAutoPlay();
+  };
+
   if (isLocal && (isNative || tauriConvertFileSrc || tauriInvoke)) {
     playerContainer.classList.add("mori-loading");
     let cleanPath = dl.rawUri || videoUrl || dl.rawPath || "";
@@ -124,73 +173,83 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
       console.log("Loading content:// URI:", capSrc);
       video.src = capSrc;
       removeLoading();
-      return playerContainer;
-    }
-    if (cleanPath.includes("_capacitor_file_")) {
-      cleanPath = cleanPath.substring(
-        cleanPath.indexOf("_capacitor_file_") + 16,
-      );
-    }
-    if (cleanPath.startsWith("file://")) {
-      cleanPath = cleanPath.replace(/^file:\/\//, "");
-    }
-    try {
-      cleanPath = decodeURIComponent(cleanPath);
-    } catch (_) {}
+      tryAutoPlay();
+    } else {
+      if (cleanPath.includes("_capacitor_file_")) {
+        cleanPath = cleanPath.substring(
+          cleanPath.indexOf("_capacitor_file_") + 16,
+        );
+      }
+      if (cleanPath.startsWith("file://")) {
+        cleanPath = cleanPath.replace(/^file:\/\//, "");
+      }
+      try {
+        cleanPath = decodeURIComponent(cleanPath);
+      } catch (_) {}
 
-    if (tauriInvoke) {
-      // Desktop: read file bytes via Rust → Blob URL (no asset protocol permission needed)
-      const mimeType = isAudioOnly
-        ? fileNameLower.endsWith(".m4a")
-          ? "audio/mp4"
-          : "audio/mpeg"
-        : "video/mp4";
-      tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
-        .then((bytes) => {
-          if (bytes && bytes.length > 0) {
-            const blob = new Blob([new Uint8Array(bytes)], { type: mimeType });
-            const blobUrl = URL.createObjectURL(blob);
-            playerContainer._blobUrl = blobUrl;
-            video.src = blobUrl;
-            video.load();
-            removeLoading();
-          } else {
+      if (tauriInvoke) {
+        const mimeType = isAudioOnly
+          ? fileNameLower.endsWith(".m4a")
+            ? "audio/mp4"
+            : "audio/mpeg"
+          : "video/mp4";
+        tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
+          .then((bytes) => {
+            if (video._isStopped) return;
+            if (bytes && bytes.length > 0) {
+              const blob = new Blob([new Uint8Array(bytes)], {
+                type: mimeType,
+              });
+              const blobUrl = URL.createObjectURL(blob);
+              playerContainer._blobUrl = blobUrl;
+              video.src = blobUrl;
+              video.load();
+              removeLoading();
+              tryAutoPlay();
+            } else {
+              // fallback to convertFileSrc
+              if (tauriConvertFileSrc) {
+                video.src = tauriConvertFileSrc(cleanPath);
+                removeLoading();
+                tryAutoPlay();
+              }
+            }
+          })
+          .catch(() => {
+            if (video._isStopped) return;
             // fallback to convertFileSrc
             if (tauriConvertFileSrc) {
               video.src = tauriConvertFileSrc(cleanPath);
               removeLoading();
+              tryAutoPlay();
             }
-          }
-        })
-        .catch(() => {
-          // fallback to convertFileSrc
-          if (tauriConvertFileSrc) {
-            video.src = tauriConvertFileSrc(cleanPath);
-            removeLoading();
-          }
-        });
-    } else if (tauriConvertFileSrc) {
-      video.src = tauriConvertFileSrc(cleanPath);
-      removeLoading();
-    } else if (isNative) {
-      let rawFileUrl;
-      if (cleanPath.startsWith("/")) {
-        rawFileUrl = "file://" + cleanPath;
-      } else {
-        const platform = window.Capacitor?.getPlatform?.();
-        if (platform === "android") {
-          rawFileUrl =
-            "file:///storage/emulated/0/" + cleanPath.replace(/^\//, "");
+          });
+      } else if (tauriConvertFileSrc) {
+        video.src = tauriConvertFileSrc(cleanPath);
+        removeLoading();
+        tryAutoPlay();
+      } else if (isNative) {
+        let rawFileUrl;
+        if (cleanPath.startsWith("/")) {
+          rawFileUrl = "file://" + cleanPath;
         } else {
-          rawFileUrl = dl.rawUri || "file:///" + cleanPath.replace(/^\//, "");
+          const platform = window.Capacitor?.getPlatform?.();
+          if (platform === "android") {
+            rawFileUrl =
+              "file:///storage/emulated/0/" + cleanPath.replace(/^\//, "");
+          } else {
+            rawFileUrl = dl.rawUri || "file:///" + cleanPath.replace(/^\//, "");
+          }
         }
-      }
-      const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
+        const capSrc = window.Capacitor.convertFileSrc(rawFileUrl);
 
-      video.src = capSrc;
-      removeLoading();
-    } else {
-      video.src = "file://" + cleanPath;
+        video.src = capSrc;
+        removeLoading();
+        tryAutoPlay();
+      } else {
+        video.src = "file://" + cleanPath;
+        tryAutoPlay();
+      }
     }
   }
 
@@ -237,20 +296,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
             const fileUrl = URL.createObjectURL(res.data);
             playerContainer._blobUrl = fileUrl;
             video.src = fileUrl;
-
-            // Auto-play if active
-            const isCurrentActiveSlide =
-              playerContainer.parentElement &&
-              playerContainer.parentElement.classList.contains("active");
-            const autoPlaySetting =
-              localStorage.getItem("mori_autoplay") !== "false";
-            if (
-              (index === 0 || isCurrentActiveSlide) &&
-              autoPlaySetting &&
-              video.paused
-            ) {
-              video.play().catch(() => {});
-            }
+            removeLoading();
+            tryAutoPlay();
           } else {
             throw new Error(`Invalid response (Status ${res.status})`);
           }
@@ -258,6 +305,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
         .catch((err) => {
           console.error("Native preview fetch failed, falling back:", err);
           video.src = videoUrl;
+          removeLoading();
+          tryAutoPlay();
         });
     } else if (tauriInvoke) {
       tauriInvoke("tauri_fetch_bytes", {
@@ -273,31 +322,22 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
             playerContainer._blobUrl = blobUrl;
             video.src = blobUrl;
             removeLoading();
-
-            const isCurrentActiveSlide =
-              playerContainer.parentElement &&
-              playerContainer.parentElement.classList.contains("active");
-            const autoPlaySetting =
-              localStorage.getItem("mori_autoplay") !== "false";
-            if (
-              (index === 0 || isCurrentActiveSlide) &&
-              autoPlaySetting &&
-              video.paused
-            ) {
-              video.play().catch(() => {});
-            }
+            tryAutoPlay();
           } else {
             video.src = videoUrl;
             removeLoading();
+            tryAutoPlay();
           }
         })
         .catch((err) => {
           console.error("Desktop preview fetch failed, falling back:", err);
           video.src = videoUrl;
           removeLoading();
+          tryAutoPlay();
         });
     } else {
       video.src = videoUrl;
+      tryAutoPlay();
     }
   } else if (!isLocal) {
     video.src = videoUrl;
@@ -342,9 +382,19 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
 
   video.onwaiting = () => playerContainer.classList.add("mori-loading");
   video.onplaying = removeLoading;
-  video.oncanplay = removeLoading;
-  video.onloadeddata = removeLoading;
-  video.onloadedmetadata = removeLoading;
+  video.oncanplay = () => {
+    removeLoading();
+    tryAutoPlay();
+  };
+  video.onloadeddata = () => {
+    removeLoading();
+    tryAutoPlay();
+  };
+  video.onloadedmetadata = () => {
+    removeLoading();
+    updateProgress();
+    playerContainer.style.aspectRatio = "auto";
+  };
   video.onstalled = removeLoading;
   video.onpause = removeLoading;
 
@@ -607,8 +657,8 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   const prog = controls.querySelector(".mori-player-progress");
   const progInner = controls.querySelector(".mori-player-progress-inner");
   const muteBtn = controls.querySelector(".mute-toggle");
-  const unmuteIcon = muteBtn.querySelector(".unmute-icon");
-  const muteIcon = muteBtn.querySelector(".mute-icon");
+  unmuteIcon = muteBtn.querySelector(".unmute-icon");
+  muteIcon = muteBtn.querySelector(".mute-icon");
   const fsBtn = controls.querySelector(".fullscreen-btn");
   if (isDesktop && fsBtn) {
     fsBtn.style.display = "none";
@@ -645,11 +695,13 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
     if (video.paused) {
+      userPaused = false;
       video.loop = localStorage.getItem("mori_loop") !== "false";
       video.play().catch((err) => {
         console.warn("video.play() failed:", err);
       });
     } else {
+      userPaused = true;
       video.pause();
     }
   };
@@ -794,6 +846,7 @@ export function createVideoPlayer(dl, index, resultThumbnail) {
     window.removeEventListener("touchmove", doDrag);
     window.removeEventListener("touchend", stopDrag);
     try {
+      userPaused = true;
       video._isStopped = true;
       video.autoplay = false;
       video.pause();

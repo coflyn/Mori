@@ -309,15 +309,43 @@ export async function showModal(item, onRedownload) {
         const isActive = i === modalCurrentSlide;
         s.classList.toggle("active", isActive);
         const media = s.querySelector("video, audio");
-        if (media) {
-          if (isActive) {
+        const playerContainer = s.querySelector(".mori-player-container");
+        if (isActive) {
+          if (playerContainer && typeof playerContainer._tryAutoPlay === "function") {
+            playerContainer._tryAutoPlay();
+          } else if (media) {
             media.loop = localStorage.getItem("mori_loop") !== "false";
             if (localStorage.getItem("mori_autoplay") !== "false") {
               if (media.paused) {
-                media.play().catch(() => {});
+                const playPromise = media.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch((err) => {
+                    if (
+                      err &&
+                      (err.name === "NotAllowedError" || err.name === "AbortError") &&
+                      !media.muted &&
+                      media.tagName === "VIDEO"
+                    ) {
+                      console.warn("Unmuted autoplay restricted, attempting muted:", err);
+                      media.muted = true;
+                      const pc = media.closest(".mori-player-container");
+                      if (pc) {
+                        const unmute = pc.querySelector(".unmute-icon");
+                        const mute = pc.querySelector(".mute-icon");
+                        if (unmute && mute) {
+                          unmute.classList.add("hidden");
+                          mute.classList.remove("hidden");
+                        }
+                      }
+                      media.play().catch(() => {});
+                    }
+                  });
+                }
               }
             }
-          } else {
+          }
+        } else {
+          if (media) {
             media.pause();
             try {
               if (media.currentTime > 0.5) {

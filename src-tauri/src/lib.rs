@@ -8,6 +8,7 @@ async fn tauri_http_request(
     body: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let client = reqwest::Client::builder()
+        .http1_only()
         .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
         .timeout(std::time::Duration::from_secs(30))
@@ -22,27 +23,47 @@ async fn tauri_http_request(
         _ => client.get(&url),
     };
 
-    if let Some(hdrs) = headers {
+    if let Some(hdrs) = &headers {
         for (k, v) in hdrs {
             req = req.header(k, v);
         }
     }
 
-    if let Some(b) = body {
-        req = req.body(b);
+    if let Some(b) = &body {
+        req = req.body(b.clone());
     }
 
-    let res = req.send().await.map_err(|e| e.to_string())?;
-    let status = res.status().as_u16();
+    let (status, text, res_headers) = match req.send().await {
+        Ok(res) => {
+            let s = res.status().as_u16();
+            let mut hdrs = HashMap::new();
+            for (k, v) in res.headers() {
+                if let Ok(v_str) = v.to_str() {
+                    hdrs.insert(k.as_str().to_string(), v_str.to_string());
+                }
+            }
+            let t = res.text().await.unwrap_or_default();
+            (s, t, hdrs)
+        }
+        Err(_) => {
+            // Reqwest network error, attempt curl fallback
+            if let Ok(curl_res) = run_curl_fallback(&url, &m, headers.as_ref(), body.as_deref()) {
+                return Ok(curl_res);
+            }
+            return Err("Network request failed".to_string());
+        }
+    };
 
-    let mut res_headers = HashMap::new();
-    for (k, v) in res.headers() {
-        if let Ok(v_str) = v.to_str() {
-            res_headers.insert(k.as_str().to_string(), v_str.to_string());
+    let is_challenge_or_blocked = status == 403 || status == 429 || (status >= 400 && text.trim().starts_with('<'));
+    if is_challenge_or_blocked {
+        if let Ok(curl_res) = run_curl_fallback(&url, &m, headers.as_ref(), body.as_deref()) {
+            let curl_status = curl_res["status"].as_u64().unwrap_or(0);
+            let curl_data = curl_res["data"].as_str().unwrap_or("");
+            if curl_status == 200 || !curl_data.trim().starts_with("<!DOCTYPE") {
+                return Ok(curl_res);
+            }
         }
     }
-
-    let text = res.text().await.map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
         "status": status,
@@ -59,6 +80,7 @@ async fn tauri_download_file(
     headers: Option<HashMap<String, String>>,
 ) -> Result<serde_json::Value, String> {
     let client = reqwest::Client::builder()
+        .http1_only()
         .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
         .timeout(std::time::Duration::from_secs(120))
@@ -67,18 +89,11 @@ async fn tauri_download_file(
 
     let mut req = client.get(&url);
 
-    if let Some(hdrs) = headers {
+    if let Some(hdrs) = &headers {
         for (k, v) in hdrs {
             req = req.header(k, v);
         }
     }
-
-    let res = req.send().await.map_err(|e| format!("Network error: {}", e))?;
-    if !res.status().is_success() {
-        return Err(format!("HTTP error {}", res.status()));
-    }
-
-    let bytes = res.bytes().await.map_err(|e| format!("Download body error: {}", e))?;
 
     let download_dir = dirs::download_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     let mut target_dir = download_dir.join("Mori");
@@ -116,7 +131,38 @@ async fn tauri_download_file(
         }
     }
 
-    std::fs::write(&target_file, &bytes).map_err(|e| format!("File write error: {}", e))?;
+    let res = req.send().await;
+    let mut download_succeeded = false;
+
+    if let Ok(r) = res {
+        if r.status().is_success() {
+            if let Ok(bytes) = r.bytes().await {
+                if std::fs::write(&target_file, &bytes).is_ok() {
+                    download_succeeded = true;
+                }
+            }
+        }
+    }
+
+    // Fallback to curl if reqwest download was blocked (e.g. Cloudflare CDN)
+    if !download_succeeded {
+        let mut cmd = std::process::Command::new("curl");
+        cmd.args(["--http1.1", "-L", "-s", "-o", target_file.to_str().unwrap_or(""), &url]);
+        if let Some(hdrs) = &headers {
+            for (k, v) in hdrs {
+                cmd.arg("-H").arg(format!("{}: {}", k, v));
+            }
+        }
+        if let Ok(out) = cmd.output() {
+            if out.status.success() && target_file.exists() && target_file.metadata().map(|m| m.len() > 0).unwrap_or(false) {
+                download_succeeded = true;
+            }
+        }
+    }
+
+    if !download_succeeded {
+        return Err("Download failed via native and fallback engines.".to_string());
+    }
 
     Ok(serde_json::json!({
         "status": true,
@@ -124,6 +170,7 @@ async fn tauri_download_file(
         "uri": format!("file://{}", target_file.to_string_lossy())
     }))
 }
+
 
 #[tauri::command]
 async fn tauri_read_file_bytes(path: String) -> Result<Vec<u8>, String> {
@@ -184,6 +231,7 @@ async fn tauri_fetch_bytes(
     headers: Option<HashMap<String, String>>,
 ) -> Result<Vec<u8>, String> {
     let client = reqwest::Client::builder()
+        .http1_only()
         .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
         .timeout(std::time::Duration::from_secs(60))
@@ -348,3 +396,76 @@ pub fn run() {
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+
+fn run_curl_fallback(
+    url: &str,
+    method: &str,
+    headers: Option<&HashMap<String, String>>,
+    body: Option<&str>,
+) -> Result<serde_json::Value, String> {
+    let mut cmd = std::process::Command::new("curl");
+    cmd.args(["--http1.1", "-s", "-i", "-X", method, url]);
+
+    if let Some(hdrs) = headers {
+        for (k, v) in hdrs {
+            cmd.arg("-H").arg(format!("{}: {}", k, v));
+        }
+    }
+
+    if let Some(b) = body {
+        cmd.arg("--data-raw").arg(b);
+    }
+
+    let output = cmd.output().map_err(|e| format!("Curl execution failed: {}", e))?;
+    let raw = String::from_utf8_lossy(&output.stdout).to_string();
+
+    let mut status = 200u16;
+    let mut res_headers = HashMap::new();
+    let mut body_str = raw.clone();
+
+    if let Some(idx) = raw.rfind("\r\n\r\n") {
+        let (head_section, body_part) = raw.split_at(idx);
+        body_str = body_part[4..].to_string();
+
+        let head_block = if let Some(prev_idx) = head_section.rfind("\r\n\r\n") {
+            &head_section[prev_idx + 4..]
+        } else {
+            head_section
+        };
+
+        for line in head_block.lines() {
+            if line.starts_with("HTTP/") {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    if let Ok(code) = parts[1].parse::<u16>() {
+                        status = code;
+                    }
+                }
+            } else if let Some((k, v)) = line.split_once(':') {
+                res_headers.insert(k.trim().to_lowercase(), v.trim().to_string());
+            }
+        }
+    } else if let Some(idx) = raw.rfind("\n\n") {
+        let (head_section, body_part) = raw.split_at(idx);
+        body_str = body_part[2..].to_string();
+        for line in head_section.lines() {
+            if line.starts_with("HTTP/") {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    if let Ok(code) = parts[1].parse::<u16>() {
+                        status = code;
+                    }
+                }
+            } else if let Some((k, v)) = line.split_once(':') {
+                res_headers.insert(k.trim().to_lowercase(), v.trim().to_string());
+            }
+        }
+    }
+
+    Ok(serde_json::json!({
+        "status": status,
+        "headers": res_headers,
+        "data": body_str
+    }))
+}
+

@@ -5,7 +5,7 @@
 <h1 align="center">Mori</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.3.1-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.3.2-brown?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">

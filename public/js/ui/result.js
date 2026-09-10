@@ -173,9 +173,15 @@ export function renderMediaSlides(container, items, resultThumbnail) {
               const blobUrl = URL.createObjectURL(blob);
               audio.src = blobUrl;
               audio.load();
+              if (autoPlaySetting && (index === 0 || slide.classList.contains("active"))) {
+                audio.play().catch(() => {});
+              }
             } else if (dl.remoteUrl && navigator.onLine) {
               audio.src = dl.remoteUrl;
               audio.load();
+              if (autoPlaySetting && (index === 0 || slide.classList.contains("active"))) {
+                audio.play().catch(() => {});
+              }
             } else {
               audio.style.display = "none";
             }
@@ -186,6 +192,9 @@ export function renderMediaSlides(container, items, resultThumbnail) {
             if (dl.remoteUrl && navigator.onLine) {
               audio.src = dl.remoteUrl;
               audio.load();
+              if (autoPlaySetting && (index === 0 || slide.classList.contains("active"))) {
+                audio.play().catch(() => {});
+              }
             } else {
               audio.style.display = "none";
             }
@@ -263,6 +272,9 @@ export function renderMediaSlides(container, items, resultThumbnail) {
               const blob = new Blob([byteArr], { type: "audio/mp3" });
               audio.src = URL.createObjectURL(blob);
               audio.load();
+              if (autoPlaySetting && (index === 0 || slide.classList.contains("active"))) {
+                audio.play().catch(() => {});
+              }
               return;
             }
           } catch (e) {
@@ -482,13 +494,39 @@ export function updateSliderUI() {
 
   slides.forEach((slide, index) => {
     const media = slide.querySelector("video, audio");
+    const playerContainer = slide.querySelector(".mori-player-container");
     if (index === currentSlideIndex) {
       slide.classList.add("active");
-      if (media) {
+      if (playerContainer && typeof playerContainer._tryAutoPlay === "function") {
+        playerContainer._tryAutoPlay();
+      } else if (media) {
         media.loop = localStorage.getItem("mori_loop") !== "false";
         if (localStorage.getItem("mori_autoplay") !== "false") {
           if (media.paused) {
-            media.play().catch(() => {});
+            const playPromise = media.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((err) => {
+                if (
+                  err &&
+                  (err.name === "NotAllowedError" || err.name === "AbortError") &&
+                  !media.muted &&
+                  media.tagName === "VIDEO"
+                ) {
+                  console.warn("Unmuted autoplay restricted, attempting muted:", err);
+                  media.muted = true;
+                  const pc = media.closest(".mori-player-container");
+                  if (pc) {
+                    const unmute = pc.querySelector(".unmute-icon");
+                    const mute = pc.querySelector(".mute-icon");
+                    if (unmute && mute) {
+                      unmute.classList.add("hidden");
+                      mute.classList.remove("hidden");
+                    }
+                  }
+                  media.play().catch(() => {});
+                }
+              });
+            }
           }
         }
       }
@@ -588,10 +626,10 @@ export function renderResult(result, originalUrl) {
     renderMediaSlides(slidesWrapper, sliderItems, result.thumbnail);
     if (sliderItems.length > 1) {
       sliderNav?.classList.remove("hidden");
-      updateSliderUI();
     } else {
       sliderNav?.classList.add("hidden");
     }
+    updateSliderUI();
   } else if (sliderItems.length > 0 && isSinglePreview) {
     slidesWrapper.innerHTML = "";
     const slide = document.createElement("div");
