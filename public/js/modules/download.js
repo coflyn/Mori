@@ -866,9 +866,6 @@ downloadBtn.addEventListener("click", async () => {
       }
       hideLoader();
 
-      // Refresh UI explicitly to ensure result is visible immediately
-      updateSliderUI();
-
       // Auto-Clear Input Box
       autoClearInputBox();
 
