@@ -86,8 +86,9 @@ Pre-compiled, ready-to-use packages are available for all devices on **[GitHub R
 - **Quick Save via Android Share Menu**: Spot a video you love? Tap **Share** in any app and select Mori to download it instantly in a neat overlay without switching apps.
 - **Multi-Link Batch Mode**: Paste several links at once and let Mori queue and download them all automatically in the background.
 - **Built-in Custom Fullscreen Player & Preview**: Play videos, stream tracks, and browse photo carousels right inside the app with a sleek custom fullscreen player, real-time title bar, smooth seek scrubbing, double-tap seek, and mute controls.
+- **Integrated Media Gallery**: Browse and play all saved videos, music, photos, and PDF documents directly within the app, complete with media filter chips, real-time search, sorting options, and an in-app viewer.
 - **Instant Photo-to-PDF**: Combine photo galleries or multi-image posts into a single, clean PDF file for offline reading or sharing.
-- **PIN & Biometric Lock**: Protect your download history with an optional 4-digit PIN code or fingerprint / Face ID lock.
+- **PIN & Biometric Lock**: Protect your download history, media gallery, and settings with an optional 4-digit PIN code or fingerprint / Face ID lock.
 - **Clean Folder Organization**: Files are neatly organized in standard system folders (`Movies/Mori`, `Music/Mori`, `Pictures/Mori`) for easy access in your gallery.
 - **Automatic Clipboard Detection**: Opening Mori automatically suggests your copied link for instant one-tap downloading.
 - **Background Downloads**: Large videos and playlists keep downloading seamlessly even when you minimize the app or turn off the screen.
@@ -162,6 +163,7 @@ Mori/
 │   │   ├── base.css            # CSS reset, typography, header, dynamic greeting, bottom navigation
 │   │   ├── components.css      # Reusable buttons, custom toast, floating download bubble & dropup manager
 │   │   ├── home.css            # URL input bar, batch textarea, skeleton loader, media preview cards, custom fullscreen
+│   │   ├── gallery.css         # Media gallery grid, filtering chips, search toolbar, modal viewer
 │   │   ├── history.css         # History layout, summary stats card, cards, actions bar, thumbnail overlay
 │   │   ├── settings.css        # Settings menu list, sub-page slide transitions, custom dropdowns
 │   │   ├── modals.css          # Modal overlays, PIN keypad, user guide, confirm & info dialogs
@@ -187,6 +189,7 @@ Mori/
 │   │   │   ├── bgAnimation.js  # Interactive Live Canvas backgrounds (Stars, Waves, etc.)
 │   │   │   ├── core.js         # Shared global state, DOM references, constants
 │   │   │   ├── download.js     # Analysis pipeline & download controllers
+│   │   │   ├── gallery.js      # Storage scanning, media categorization, filter/sort & viewer modal
 │   │   │   ├── history.js      # Download history manager, local storage, & cleanup
 │   │   │   ├── intents.js      # Auto-clipboard detection & deep link receiver
 │   │   │   ├── modals.js       # Confirmation dialogs & information modals
