@@ -3,8 +3,10 @@ import { showToast } from "../utils/index.js";
 import {
   isHistoryUnlocked,
   isSettingsUnlocked,
+  isGalleryUnlocked,
   setHistoryUnlocked,
   setSettingsUnlocked,
+  setGalleryUnlocked,
 } from "./core.js";
 
 export async function hashPin(pin) {
@@ -234,9 +236,11 @@ export function initAuthListeners(currentLang = "en") {
   const initialLockType = localStorage.getItem("mori_lock_type") || "none";
 
   if (isPrivacyOnInitial && initialLockType !== "none") {
+    setGalleryUnlocked(false);
     setHistoryUnlocked(false);
     setSettingsUnlocked(false);
   } else {
+    setGalleryUnlocked(true);
     setHistoryUnlocked(true);
     setSettingsUnlocked(true);
   }
@@ -260,6 +264,7 @@ export function initAuthListeners(currentLang = "en") {
 
       localStorage.setItem("mori_privacy_lock", isChecked ? "true" : "false");
       if (isChecked) {
+        setGalleryUnlocked(false);
         setHistoryUnlocked(false);
         setSettingsUnlocked(false);
         if (currentLockType === "none") {
@@ -273,6 +278,7 @@ export function initAuthListeners(currentLang = "en") {
           }
         }
       } else {
+        setGalleryUnlocked(true);
         setHistoryUnlocked(true);
         setSettingsUnlocked(true);
       }
@@ -372,6 +378,7 @@ export function initAuthListeners(currentLang = "en") {
 
   const handleAutoLock = () => {
     if (localStorage.getItem("mori_privacy_lock") === "true") {
+      setGalleryUnlocked(false);
       setHistoryUnlocked(false);
       setSettingsUnlocked(false);
     }

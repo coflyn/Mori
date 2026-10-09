@@ -123,11 +123,15 @@ export const setPinBtn = document.getElementById("setPinBtn");
 
 export let isHistoryUnlocked = false; // Session-based unlock state
 export let isSettingsUnlocked = false; // Session-based settings lock state
+export let isGalleryUnlocked = false; // Session-based gallery lock state
 export function setHistoryUnlocked(v) {
   isHistoryUnlocked = v;
 }
 export function setSettingsUnlocked(v) {
   isSettingsUnlocked = v;
+}
+export function setGalleryUnlocked(v) {
+  isGalleryUnlocked = v;
 }
 
 // Settings Elements

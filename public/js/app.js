@@ -36,8 +36,10 @@ import {
   pasteBtn,
   isHistoryUnlocked,
   isSettingsUnlocked,
+  isGalleryUnlocked,
   setHistoryUnlocked,
   setSettingsUnlocked,
+  setGalleryUnlocked,
   setCurrentSlideIndex,
   slideData,
   currentSlideIndex,
@@ -195,6 +197,19 @@ const pages = ["home", "gallery", "history", "settings"];
 async function switchPage(pageId) {
   const isPrivacyOn = localStorage.getItem("mori_privacy_lock") === "true";
   const lockType = localStorage.getItem("mori_lock_type") || "none";
+
+  if (pageId === "gallery" && !isGalleryUnlocked) {
+    if (isPrivacyOn && lockType !== "none") {
+      const verified = await verifyLock("label-biometric-reason", currentLang);
+      if (verified) {
+        setGalleryUnlocked(true);
+      } else {
+        return;
+      }
+    } else {
+      setGalleryUnlocked(true);
+    }
+  }
 
   if (pageId === "history" && !isHistoryUnlocked) {
     if (isPrivacyOn && lockType !== "none") {
