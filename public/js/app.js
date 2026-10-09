@@ -60,6 +60,7 @@ import "./modules/intents.js";
 import "./modules/download.js";
 import "./ui/downloadBubble.js";
 import { initBgAnimation } from "./modules/bgAnimation.js";
+import { refreshGalleryPage } from "./modules/gallery.js";
 
 initBgAnimation();
 
@@ -189,7 +190,7 @@ window.addEventListener("mori_download_started", refreshHistoryIfVisible);
 window.addEventListener("mori_download_ended", refreshHistoryIfVisible);
 window.addEventListener("mori_download_cancelled", refreshHistoryIfVisible);
 
-const pages = ["home", "history", "settings"];
+const pages = ["home", "gallery", "history", "settings"];
 
 async function switchPage(pageId) {
   const isPrivacyOn = localStorage.getItem("mori_privacy_lock") === "true";
@@ -264,6 +265,10 @@ async function switchPage(pageId) {
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
     }
     setTimeout(refreshAllVideoThumbnails, 3000);
+  }
+
+  if (pageId === "gallery") {
+    refreshGalleryPage();
   }
 }
 

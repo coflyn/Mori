@@ -541,6 +541,53 @@
           </div>
         </div>
 
+        <!-- Gallery Page -->
+        <div id="galleryPage" class="page-content hidden">
+          <div class="page-header">
+            <h2 data-i18n="nav-gallery">Gallery</h2>
+            <p data-i18n="gallery-desc">Media saved in your Mori folders</p>
+          </div>
+
+          <div class="gallery-toolbar">
+            <div class="gallery-search-wrap">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+              <input type="text" class="gallery-search" placeholder="Search files..." data-i18n-placeholder="gallery-search-placeholder" autocomplete="off" />
+            </div>
+            <div class="gallery-toolbar-actions">
+              <select class="gallery-sort">
+                <option value="newest" data-i18n="gallery-sort-newest">Newest</option>
+                <option value="oldest" data-i18n="gallery-sort-oldest">Oldest</option>
+                <option value="name" data-i18n="gallery-sort-name">Name A-Z</option>
+                <option value="largest" data-i18n="gallery-sort-largest">Largest</option>
+                <option value="smallest" data-i18n="gallery-sort-smallest">Smallest</option>
+              </select>
+              <button class="gallery-rescan" aria-label="Rescan">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="gallery-chips">
+            <button class="gallery-chip active" data-filter="all" data-i18n="gallery-filter-all">All</button>
+            <button class="gallery-chip" data-filter="video" data-i18n="gallery-filter-video">Video</button>
+            <button class="gallery-chip" data-filter="audio" data-i18n="gallery-filter-audio">Audio</button>
+            <button class="gallery-chip" data-filter="image" data-i18n="gallery-filter-image">Photo</button>
+          </div>
+          <span class="gallery-count"></span>
+
+          <div class="gallery-grid"></div>
+          <div class="gallery-empty hidden">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+            <p data-i18n="gallery-empty">No media found in your Mori folders yet.</p>
+          </div>
+        </div>
+
         <!-- Settings Page -->
         <div id="settingsPage" class="page-content hidden">
           <!-- Main Settings Menu -->
@@ -3543,6 +3590,12 @@
             <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
           </svg>
           <span data-i18n="nav-home">Home</span>
+        </a>
+        <a href="#" class="nav-item" data-page="gallery">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5zM19 3H5v8.5l3.5-3.5 3 3 4-4L19 10.5V3z"/>
+          </svg>
+          <span data-i18n="nav-gallery">Gallery</span>
         </a>
         <a href="#" class="nav-item" data-page="history">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
