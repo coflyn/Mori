@@ -273,6 +273,8 @@ class DownloadBubbleManager {
       if (cancelBtn) cancelBtn.style.display = "none";
     }
 
+    this.updateOverallProgress();
+
     triggerHaptic?.("light");
 
     setTimeout(() => {

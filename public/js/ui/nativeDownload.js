@@ -38,6 +38,18 @@ function handleCancelCleanup(btn, originalContent, progressContainer) {
   if (progressContainer) progressContainer.classList.add("hidden");
 }
 
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  let v = bytes;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
 export async function startNativeDownload(
   url,
   type,
@@ -187,6 +199,12 @@ export async function startNativeDownload(
     }
     if (progressBar) progressBar.style.width = `${currentProgressVal}%`;
     downloadBubble.updateProgress(dlId, currentProgressVal, statusText);
+    if (btn) {
+      const b = btn.querySelector(".dl-badge");
+      if (b) {
+        b.textContent = currentProgressVal >= 100 ? "SAVED" : `${currentProgressVal}%`;
+      }
+    }
   };
 
   try {
@@ -217,49 +235,89 @@ export async function startNativeDownload(
     }
     console.log("Starting download for:", url);
 
-    let simProgress = 0;
+    let downloadStartTime = Date.now();
+    let lastBytes = 0;
+    let lastTime = downloadStartTime;
+    let currentSpeedBps = 0;
     let realProgressReceived = false;
+
+    // Fallback simulation timer while connecting or waiting for initial stream data
+    let simProgress = 0;
     window._moriActiveSimInterval = setInterval(() => {
-      if (realProgressReceived) return;
-      if (simProgress < 50) {
-        simProgress += 6 + Math.random() * 4;
-      } else if (simProgress < 80) {
-        simProgress += 2.5 + Math.random() * 2.5;
-      } else if (simProgress < 95) {
-        simProgress += 0.6 + Math.random() * 0.9;
+      if (realProgressReceived) {
+        if (window._moriActiveSimInterval) {
+          clearInterval(window._moriActiveSimInterval);
+          window._moriActiveSimInterval = null;
+        }
+        return;
       }
-      const currentPct = Math.min(95, Math.round(simProgress));
-      updateProgress(currentPct, "Downloading...");
-    }, 160);
+      if (simProgress < 30) {
+        simProgress += 4 + Math.random() * 3;
+      } else if (simProgress < 60) {
+        simProgress += 1.5 + Math.random() * 1.5;
+      } else if (simProgress < 85) {
+        simProgress += 0.3 + Math.random() * 0.5;
+      }
+      const currentPct = Math.min(85, Math.round(simProgress));
+      updateProgress(currentPct, translations[currentLang]?.["btn-processing"] || "Connecting...");
+    }, 200);
 
     // Remove any existing listeners first to avoid double-firing
     if (window._moriProgressListener) {
       try {
-        await window._moriProgressListener.remove();
+        await window._moriProgressListener.remove?.();
       } catch (_) {}
       window._moriProgressListener = null;
     }
+
+    const onRealProgress = (progress) => {
+      if (!progress) return;
+      const bytes = Number(progress.bytes ?? progress.bytesWritten ?? 0);
+      const contentLength = Number(progress.contentLength ?? 0);
+
+      if (bytes > 0 || contentLength > 0) {
+        if (!realProgressReceived) {
+          realProgressReceived = true;
+          if (window._moriActiveSimInterval) {
+            clearInterval(window._moriActiveSimInterval);
+            window._moriActiveSimInterval = null;
+          }
+        }
+      }
+
+      const now = Date.now();
+      const timeDiff = (now - lastTime) / 1000;
+      if (timeDiff >= 0.25) {
+        if (bytes > lastBytes) {
+          currentSpeedBps = (bytes - lastBytes) / timeDiff;
+          lastBytes = bytes;
+        }
+        lastTime = now;
+      }
+
+      const elapsedSec = (now - downloadStartTime) / 1000 || 0.001;
+      const speed = currentSpeedBps > 0 ? currentSpeedBps : bytes / elapsedSec;
+
+      let pct = 0;
+      let statusText = "Downloading...";
+
+      if (contentLength > 0) {
+        pct = Math.min(100, Math.round((bytes / contentLength) * 100));
+        statusText = `${formatBytes(bytes)} / ${formatBytes(contentLength)} (${formatBytes(speed)}/s)`;
+      } else if (bytes > 0) {
+        statusText = `${formatBytes(bytes)} (${formatBytes(speed)}/s)`;
+        pct = Math.min(98, Math.round(100 * (1 - Math.exp(-bytes / 2500000))));
+      }
+
+      updateProgress(pct, statusText);
+    };
 
     // Listen for real progress if Filesystem exists
     if (Filesystem?.addListener) {
       try {
         window._moriProgressListener = await Filesystem.addListener(
-          "downloadProgress",
-          (progress) => {
-            realProgressReceived = true;
-            let percentage = 0;
-            if (progress.contentLength > 0) {
-              percentage = Math.round(
-                (progress.bytesWritten / progress.contentLength) * 100,
-              );
-            } else if (progress.bytesWritten > 0) {
-              percentage = Math.min(
-                95,
-                Math.round(progress.bytesWritten / 10240),
-              );
-            }
-            updateProgress(Math.min(95, percentage), "Downloading...");
-          },
+          "progress",
+          onRealProgress,
         );
       } catch (e) {
         console.warn("Could not attach Filesystem progress listener:", e);
@@ -405,7 +463,7 @@ export async function startNativeDownload(
       window._moriActiveSimInterval = null;
     }
 
-    updateProgress(100, "Downloading...");
+    updateProgress(100, translations[currentLang]?.["status-saved"] || "Saved");
     if (btn) {
       const b = btn.querySelector(".dl-badge");
       if (b) {
@@ -508,7 +566,9 @@ export async function startNativeDownload(
       window._moriActiveSimInterval = null;
     }
     if (window._moriProgressListener) {
-      await window._moriProgressListener.remove();
+      try {
+        await window._moriProgressListener.remove?.();
+      } catch (_) {}
       window._moriProgressListener = null;
     }
   }

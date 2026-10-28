@@ -49,6 +49,7 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
 
   const downloadHeaders = {
     "User-Agent": getUserAgent(),
+    "Accept-Encoding": "identity",
   };
 
   const isPixivDirect =
