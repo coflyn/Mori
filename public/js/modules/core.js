@@ -2,26 +2,11 @@
 import { translations, getInitialLanguage } from "../i18n/index.js";
 import { Filesystem } from "../utils/index.js";
 
-export const APP_VERSION = "4.5.1";
+export const APP_VERSION = "4.5.2";
 export const GITHUB_REPO = "coflyn/Mori";
 export const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 export const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
-const tauriInvoke =
-  window.__TAURI__?.core?.invoke ||
-  window.__TAURI_INTERNALS__?.invoke ||
-  window.__TAURI__?.invoke;
-
-if (tauriInvoke && !window.Capacitor?.isNativePlatform?.()) {
-  document.documentElement.classList.add("is-desktop");
-  if (document.body) {
-    document.body.classList.add("is-desktop");
-  } else {
-    document.addEventListener("DOMContentLoaded", () => {
-      document.body?.classList.add("is-desktop");
-    });
-  }
-}
 
 export const urlInput = document.getElementById("urlInput");
 export const batchUrlInput = document.getElementById("batchUrlInput");
@@ -183,17 +168,6 @@ export const t = (key) =>
 
 export function openExternalUrl(targetUrl) {
   try {
-    const tauriInvoke =
-      window.__TAURI__?.core?.invoke ||
-      window.__TAURI_INTERNALS__?.invoke ||
-      window.__TAURI__?.invoke;
-    if (tauriInvoke) {
-      tauriInvoke("tauri_open_url", { url: targetUrl }).catch(() => {
-        window.open(targetUrl, "_blank");
-      });
-      return;
-    }
-
     if (window.Capacitor?.isNativePlatform?.()) {
       window.open(targetUrl, "_system");
     } else {
@@ -233,23 +207,7 @@ export async function updateStorageInfo() {
 
   try {
     let totalSize = 0;
-    const tauriInvoke =
-      window.__TAURI__?.core?.invoke ||
-      window.__TAURI_INTERNALS__?.invoke ||
-      window.__TAURI__?.invoke;
-
-    if (tauriInvoke) {
-      try {
-        const desktopSize = await tauriInvoke("tauri_get_folder_size", {
-          folder: "Mori",
-        });
-        if (typeof desktopSize === "number") {
-          totalSize = desktopSize;
-        }
-      } catch (err) {
-        console.warn("Tauri folder size error:", err);
-      }
-    } else if (Filesystem) {
+    if (Filesystem) {
       totalSize += await getFolderSize("", "CACHE");
       const primary = await getFolderSize("Download/Mori", "EXTERNAL_STORAGE");
       const legacy = await getFolderSize("Download/Mori", "EXTERNAL");

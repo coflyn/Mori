@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.5.2] - 2026-11-06
+
+### Added
+
+- **Batch Media Format Setting**:
+  - Added user preference under Settings -> Behavior Settings (`mori_batch_format`) to select default media format during batch downloads: "Video (Best Available)" or "Audio Only (MP3)".
+  - Full localization support across all 9 supported languages (English, Indonesian, Japanese, Chinese, Korean, Russian, Tagalog, Arabic, Hindi).
+- **Pure Audio Batch Handling**:
+  - Added dedicated audio post handling in batch downloader for pure audio sources (Spotify, Apple Music, Bandcamp) so songs download directly without entering photo carousel or PDF merge logic.
+- **Batch YouTube Shorts Normalization**:
+  - Added silent Shorts canonicalization in `batchManager.js` (`analyzeUrlSilent`) so queued Shorts links resolve reliably without manual format changes.
+
+### Fixed
+
+- **YouTube Shorts Download (#20)**:
+  - Canonicalized YouTube Shorts URLs (`/shorts/VIDEO_ID`) to standard watch links (`https://www.youtube.com/watch?v=VIDEO_ID`) in `cleanUrl`, download module, scrapers, and CLI engine.
+  - Canonicalized target YouTube video URLs in `src-scrapers/youtube.js` ensuring downstream converter engines (`convert1s.com`) receive standard watch links.
+  - Added dynamic `.shop/` domain support to YouTube headers in `headers.js`.
+- **Core Scraper Backend Repairs**:
+  - **Instagram**: Migrated to FastDL backend with automated token and expiry extraction (`k_exp`, `k_token`), added direct embed fallback (`/embed/captioned/`), and integrated InDown token caching.
+  - **Spotify**: Fixed session cookie loss across Spotimate endpoints (`/en1`, `/api/userverify`, `/action`), replaced fragile regex parsing with DOMParser, and enabled instant direct MP3 link resolution for single tracks.
+  - **Bilibili**: Added shortlink redirect resolver for `b23.tv` and `bili.im`, added support for `bilibili.tv` international aid/OGV anime endpoints, and added OpenGraph metadata fallback.
+  - **Bandcamp**: Full scraper rewrite using `bandcampdownloader.app` with dynamic CSRF token extraction and complete multi-track album support with 320kbps MP3 streams.
+  - **Pixiv**: Added `meta-preload-data` fallback for login-walled/R-18 artworks, added Ugoira MP4 conversion, and added `pixiv.re` reverse-proxy fallback for artwork thumbnails and multi-page galleries.
+  - **Threads**: Fixed empty `Cookie: ""` header bug wiping request cookies during media extraction, added guarded `/t/` shortlink redirect resolver, and expanded media selectors.
+- **UI & Web Browser Downloads**:
+  - Added Pixiv referer header in `result.js` to avoid 403 Forbidden errors when loading artwork preview thumbnails.
+  - Added blob-to-objectURL download flow in `nativeDownload.js` when native Capacitor bridge is absent in standard web browsers.
+
+### Changed & Removed
+
+- **Desktop Tauri GUI Retirement & Mori CLI Consolidation**:
+  - Retired standalone desktop GUI builds (`.dmg`, `.exe`, `.msi`) previously built with Tauri in favor of the universal standalone **Mori CLI** (`@coflyn/mori` / `npx @coflyn/mori`).
+  - Removed `src-tauri/` desktop Rust engine, `@tauri-apps/cli` dependencies, and desktop CI build workflows.
+  - Cleaned up obsolete Tauri runtime invocations (`tauriInvoke`, `tauriConvertFileSrc`, `tauri_http_request`) across web, player, and gallery modules.
+  - Replaced legacy desktop download cards on the landing page with the official Mori CLI runner.
+
+---
+
 ## [4.5.1] - 2026-10-19
 
 ### Added

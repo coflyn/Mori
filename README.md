@@ -6,7 +6,7 @@
 <p align="center"><em><strong>Save anything, From anywhere.</strong></em></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.5.1-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.5.2-brown?style=flat-square" alt="Version">
   <a href="https://www.npmjs.com/package/@coflyn/mori"><img src="https://img.shields.io/npm/v/@coflyn/mori?style=flat-square&color=CB3837&logo=npm&logoColor=white" alt="NPM Version"></a>
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
