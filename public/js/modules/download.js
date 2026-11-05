@@ -655,6 +655,10 @@ downloadBtn.addEventListener("click", async () => {
       );
       const isPlaylist =
         !!playlistMatch?.[1] && (!videoMatch?.[1] || url.includes("/playlist"));
+      const targetYouTubeUrl =
+        !isPlaylist && videoMatch?.[1]
+          ? `https://www.youtube.com/watch?v=${videoMatch[1]}`
+          : url;
       if (isPlaylist) {
         setYouTubeSource("gg");
       } else {
@@ -662,7 +666,7 @@ downloadBtn.addEventListener("click", async () => {
         else if (preferServer === "server2") setYouTubeSource("mobi");
         else setYouTubeSource(null);
       }
-      data = await scrapeYouTube(url);
+      data = await scrapeYouTube(targetYouTubeUrl);
       if (data && data.requireSource) {
         confirmTitle.textContent =
           translations[currentLang]["label-choose-server"] || "Choose Server";
@@ -695,7 +699,7 @@ downloadBtn.addEventListener("click", async () => {
           };
         });
         setYouTubeSource(chosen);
-        data = await scrapeYouTube(url);
+        data = await scrapeYouTube(targetYouTubeUrl);
       }
     } else if (
       url.includes("twitter.com") ||

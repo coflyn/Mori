@@ -61,6 +61,10 @@ export function cleanUrl(url) {
       u.hostname.includes("youtube.com") ||
       u.hostname.includes("youtu.be")
     ) {
+      const shortsMatch = u.pathname.match(/\/shorts\/([^"&?/\s]{11})/i);
+      if (shortsMatch) {
+        return `https://www.youtube.com/watch?v=${shortsMatch[1]}`;
+      }
       if (u.hostname.includes("youtube.com") && u.searchParams.has("v")) {
         const v = u.searchParams.get("v");
         u.search = "";

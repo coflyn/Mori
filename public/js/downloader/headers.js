@@ -28,6 +28,7 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
   const isYtmp3GG =
     actualDownloadUrl.includes("ytmp3.gg") ||
     actualDownloadUrl.includes("convert1s.com") ||
+    actualDownloadUrl.includes(".shop/") ||
     actualDownloadUrl.includes("lilillliiillliillii.shop");
 
   const isYoutube =

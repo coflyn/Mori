@@ -58,7 +58,13 @@ function serializeData(obj) {
 }
 
 function cleanUrl(u) {
-  return u ? u.split("?")[0] : "";
+  if (!u) return "";
+  const clean = u.split("?")[0];
+  const shortsMatch = clean.match(/(?:youtube\.com\/shorts\/|youtu\.be\/)([^"&?/\s]{11})/i);
+  if (shortsMatch) {
+    return `https://www.youtube.com/watch?v=${shortsMatch[1]}`;
+  }
+  return clean;
 }
 
 const SAFARI_MOBILE_UA = CHROME_MOBILE_UA;
@@ -1362,21 +1368,30 @@ export async function scrapeWithMori(url, platform, serverPreference = "auto") {
       break;
     }
     case "youtube": {
+      const videoMatch = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+      );
+      const isPlaylist =
+        url.includes("list=") && (!videoMatch?.[1] || url.includes("/playlist"));
+      const targetUrl =
+        !isPlaylist && videoMatch?.[1]
+          ? `https://www.youtube.com/watch?v=${videoMatch[1]}`
+          : url;
       if (srv === "server2") {
         scrapers.setYouTubeSource("mobi");
-        res = await scrapers.scrapeYouTube(url);
+        res = await scrapers.scrapeYouTube(targetUrl);
         usedServer = "ytmp3.mobi";
       } else if (srv === "server1") {
         scrapers.setYouTubeSource("gg");
-        res = await scrapers.scrapeYouTube(url);
+        res = await scrapers.scrapeYouTube(targetUrl);
         usedServer = "ytmp3.gg";
       } else {
         scrapers.setYouTubeSource("gg");
-        res = await scrapers.scrapeYouTube(url);
+        res = await scrapers.scrapeYouTube(targetUrl);
         usedServer = "ytmp3.gg";
         if (!res?.status) {
           scrapers.setYouTubeSource("mobi");
-          res = await scrapers.scrapeYouTube(url);
+          res = await scrapers.scrapeYouTube(targetUrl);
           usedServer = "ytmp3.mobi";
         }
       }
@@ -1574,17 +1589,26 @@ export async function scrapeWithScrapr(
       break;
     }
     case "youtube": {
+      const videoMatch = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+      );
+      const isPlaylist =
+        url.includes("list=") && (!videoMatch?.[1] || url.includes("/playlist"));
+      const targetUrl =
+        !isPlaylist && videoMatch?.[1]
+          ? `https://www.youtube.com/watch?v=${videoMatch[1]}`
+          : url;
       if (srv === "ytmp3gg" || srv === "server1") {
-        res = await scrapr.youtube.ytmp3gg(url);
+        res = await scrapr.youtube.ytmp3gg(targetUrl);
         usedServer = "ytmp3.gg";
       } else if (srv === "ytmp3" || srv === "server2") {
-        res = await scrapr.youtube.ytmp3(url);
+        res = await scrapr.youtube.ytmp3(targetUrl);
         usedServer = "ytmp3";
       } else {
-        res = await scrapr.youtube.ytmp3gg(url);
+        res = await scrapr.youtube.ytmp3gg(targetUrl);
         usedServer = "ytmp3.gg";
         if (!res?.status) {
-          res = await scrapr.youtube.ytmp3(url);
+          res = await scrapr.youtube.ytmp3(targetUrl);
           usedServer = "ytmp3";
         }
       }
