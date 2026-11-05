@@ -2460,6 +2460,55 @@
                   </div>
                 </div>
               </div>
+              <!-- Batch Format Mode -->
+              <div class="settings-item">
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                    />
+                  </svg>
+                  <span data-i18n="label-batch-format-mode"
+                    >Batch Media Format</span
+                  >
+                </div>
+                <div class="custom-select" id="batchFormatSelect">
+                  <div class="selected-text" id="batchFormatText">
+                    Video (Best Available)
+                  </div>
+                  <div class="dropdown-arrow">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-menu hidden" id="batchFormatMenu">
+                    <div
+                      class="dropdown-item"
+                      data-value="video"
+                      data-i18n="batch-format-video"
+                    >
+                      Video (Best Available)
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="audio"
+                      data-i18n="batch-format-audio"
+                    >
+                      Audio Only (MP3)
+                    </div>
+                  </div>
+                </div>
+              </div>
               <!-- Subfolder per Platform -->
               <div class="settings-item">
                 <div class="item-label">

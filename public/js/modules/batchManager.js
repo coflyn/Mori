@@ -119,11 +119,21 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
       url.includes("youtu.be") ||
       url.includes("music.youtube.com")
     ) {
+      const videoMatch = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+      );
+      const isPlaylist =
+        url.includes("list=") && (!videoMatch?.[1] || url.includes("/playlist"));
+      const targetYouTubeUrl =
+        !isPlaylist && videoMatch?.[1]
+          ? `https://www.youtube.com/watch?v=${videoMatch[1]}`
+          : url;
+
       setYouTubeSource(isServer2 ? "mobi" : "gg");
-      data = await scrapeYouTube(url);
+      data = await scrapeYouTube(targetYouTubeUrl);
       if (!data || !data.status) {
         setYouTubeSource(isServer2 ? "gg" : "mobi");
-        data = await scrapeYouTube(url);
+        data = await scrapeYouTube(targetYouTubeUrl);
       }
     } else if (
       url.includes("twitter.com") ||

@@ -298,6 +298,15 @@ downloadBtn.addEventListener("click", async () => {
             );
 
             if (downloadsList.length > 0) {
+              const batchFormat =
+                localStorage.getItem("mori_batch_format") || "video";
+
+              const isAudioPost = downloadsList.every(
+                (d) =>
+                  /audio|mp3|m4a|wav|flac/i.test(d.type) ||
+                  /\.(mp3|m4a|wav|flac)(\?|$)/i.test(d.url),
+              );
+
               const isVideoPost = downloadsList.some(
                 (d) =>
                   /video/i.test(d.type) ||
@@ -306,8 +315,30 @@ downloadBtn.addEventListener("click", async () => {
                   /\d+p/i.test(d.type),
               );
 
-              if (isVideoPost) {
-                const primaryVideo = downloadsList[0];
+              if (isAudioPost) {
+                for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
+                  if (batchDownloadCancelled) {
+                    if (statusEl) {
+                      statusEl.className = "batch-item-status cancelled";
+                      statusEl.textContent = t("status-cancelled");
+                    }
+                    return;
+                  }
+                  const audioItem = downloadsList[dIdx];
+                  const audioTitle =
+                    downloadsList.length > 1
+                      ? `${itemTitle}_${dIdx + 1}`
+                      : itemTitle;
+                  await startNativeDownload(
+                    audioItem.url,
+                    audioItem.type,
+                    audioTitle,
+                    null,
+                    item.url,
+                    false,
+                  );
+                }
+              } else if (isVideoPost) {
                 if (batchDownloadCancelled) {
                   if (statusEl) {
                     statusEl.className = "batch-item-status cancelled";
@@ -315,9 +346,19 @@ downloadBtn.addEventListener("click", async () => {
                   }
                   return;
                 }
+
+                const targetMedia =
+                  batchFormat === "audio"
+                    ? (downloadsList.find(
+                        (d) =>
+                          /audio|mp3/i.test(d.type) ||
+                          /\.(mp3|m4a)(\?|$)/i.test(d.url),
+                      ) || downloadsList[0])
+                    : downloadsList[0];
+
                 await startNativeDownload(
-                  primaryVideo.url,
-                  primaryVideo.type,
+                  targetMedia.url,
+                  targetMedia.type,
                   itemTitle,
                   null,
                   item.url,

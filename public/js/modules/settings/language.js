@@ -58,9 +58,11 @@ export function setupCustomSelect(selectId, storageKey, textId, menuId) {
                           ? "off"
                           : storageKey === "mori_toast_dur"
                             ? "3"
-                            : storageKey === "mori_lang"
-                              ? currentLang
-                              : "default";
+                            : storageKey === "mori_batch_format"
+                              ? "video"
+                              : storageKey === "mori_lang"
+                                ? currentLang
+                                : "default";
   const currentVal = localStorage.getItem(storageKey) || defaultFallback;
 
   // Update display on load
@@ -198,6 +200,13 @@ export function updateCustomSelectsUI() {
   if (batchPhotoModeText)
     batchPhotoModeText.textContent =
       lang[`batch-photo-${currentBatchPhoto}`] || currentBatchPhoto;
+
+  const currentBatchFormat =
+    localStorage.getItem("mori_batch_format") || "video";
+  const batchFormatText = document.getElementById("batchFormatText");
+  if (batchFormatText)
+    batchFormatText.textContent =
+      lang[`batch-format-${currentBatchFormat}`] || currentBatchFormat;
 
   const currentBackup = localStorage.getItem("mori_auto_backup") || "off";
   const autoBackupText = document.getElementById("autoBackupText");
@@ -350,6 +359,7 @@ export function initLanguageAndNavigation() {
   setupCustomSelect("autoClearCacheDaysSelect", "mori_auto_clear_cache_days", "autoClearCacheDaysText", "autoClearCacheDaysMenu");
   setupCustomSelect("preferServerSelect", "mori_prefer_server", "preferServerText", "preferServerMenu");
   setupCustomSelect("batchPhotoModeSelect", "mori_batch_photo_mode", "batchPhotoModeText", "batchPhotoModeMenu");
+  setupCustomSelect("batchFormatSelect", "mori_batch_format", "batchFormatText", "batchFormatMenu");
   setupCustomSelect("userAgentSelect", "mori_user_agent", "userAgentText", "userAgentMenu");
   setupCustomSelect("requestTimeoutSelect", "mori_request_timeout", "requestTimeoutText", "requestTimeoutMenu");
   setupCustomSelect("animSpeedSelect", "mori_anim_speed", "animSpeedText", "animSpeedMenu");
