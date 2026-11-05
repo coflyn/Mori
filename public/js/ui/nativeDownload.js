@@ -86,6 +86,26 @@ export async function startNativeDownload(
 
   if (!Filesystem && !tauriInvoke) {
     try {
+      if (!url.startsWith("blob:") && !url.startsWith("data:")) {
+        const blobRes = await fetch(url).catch(() => null);
+        if (blobRes && blobRes.ok) {
+          const blobData = await blobRes.blob();
+          const blobUrl = URL.createObjectURL(blobData);
+          const ext = resolveExtension(type, url);
+          const sanitizedTitle = sanitizeTitle(title, type);
+          const fileName = generateFileName(sanitizedTitle, ext, sourceUrl, url);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+          return { success: true };
+        }
+      }
+    } catch (_) {}
+    try {
       const a = document.createElement("a");
       a.href = url;
       a.download = "";

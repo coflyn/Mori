@@ -476,6 +476,12 @@ export function setupImageLoading(img, src, resultThumbnail) {
         targetUrl.includes("snapsave")
       )
         referer = "https://snapsave.app/";
+      if (
+        targetUrl.includes("pixiv") ||
+        targetUrl.includes("pximg") ||
+        targetUrl.includes("pixiv.re")
+      )
+        referer = "https://www.pixiv.net/";
 
       if (CapacitorHttp) {
         CapacitorHttp.get({
