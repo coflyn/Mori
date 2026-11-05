@@ -1977,50 +1977,231 @@ export async function resolveUrl(url, onStatus) {
     return foundLink;
   }
 
-  if (url.startsWith("spotidown_resolve:")) {
+  if (
+    url.startsWith("spotidown_resolve:") ||
+    url.startsWith("soundloaders_resolve:")
+  ) {
     if (onStatus) onStatus("Resolving Spotify direct track...");
-    const parts = url.replace("spotidown_resolve:", "").split("|||");
-    const payloadStr = parts[0];
-    let cookiesStr = parts[1] ? decodeURIComponent(parts[1]) : "";
+    function createMultipartBody(fields) {
+      const boundary =
+        "----WebKitFormBoundary" + Math.random().toString(36).substring(2);
+      let body = "";
+      for (const [k, v] of Object.entries(fields)) {
+        if (v !== undefined && v !== null) {
+          body += `--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`;
+        }
+      }
+      body += `--${boundary}--\r\n`;
+      return {
+        body,
+        contentType: `multipart/form-data; boundary=${boundary}`,
+      };
+    }
 
-    const reqHeaders = {
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "User-Agent": CHROME_UA,
-      "X-Requested-With": "XMLHttpRequest",
-      Referer: "https://spotidown.app/",
-      Origin: "https://spotidown.app",
-    };
-    if (cookiesStr) reqHeaders["Cookie"] = cookiesStr;
+    const isSoundloaders = url.startsWith("soundloaders_resolve:");
+    const parts = url
+      .replace("spotidown_resolve:", "")
+      .replace("soundloaders_resolve:", "")
+      .split("|||");
+    let dataVal = parts[0] || "";
+    let tokenVal = parts[1] || "";
+    let baseVal = parts[2] ? decodeURIComponent(parts[2]) : "";
+    let cookiesStr = parts[3] ? decodeURIComponent(parts[3]) : "";
 
-    const res = await scraperFetch({
-      url: "https://spotidown.app/action/track",
-      method: "POST",
-      headers: reqHeaders,
-      data: payloadStr,
-      rawResponse: true,
-    });
-    let dd = res?.data ?? res;
-    if (typeof dd === "string") {
+    if (dataVal.includes("=") && (!tokenVal || !tokenVal.startsWith("http"))) {
       try {
-        dd = JSON.parse(dd);
+        const sp = new URLSearchParams(dataVal);
+        if (sp.has("data")) dataVal = sp.get("data") || "";
+        if (sp.has("token")) tokenVal = sp.get("token") || "";
+        if (sp.has("base")) baseVal = sp.get("base") || "";
+        if (parts[1]) cookiesStr = decodeURIComponent(parts[1]);
       } catch (_) {}
     }
-    let dlHtml = (typeof dd === "object" ? dd?.data || dd?.html : dd) || "";
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(dlHtml, "text/html");
+
     let foundLink = "";
-    doc.querySelectorAll("a").forEach((a) => {
-      const href = a.getAttribute("href");
-      const text = a.textContent.trim();
-      if (
-        href &&
-        href.startsWith("http") &&
-        !href.includes("premium.html") &&
-        text !== "Download Another Song"
-      ) {
-        if (!foundLink) foundLink = href;
+
+    // 1. If Soundloaders, try Spotimate first (if it doesn't fail with turnstile token)
+    if (isSoundloaders && !tokenVal.startsWith("bccpF:")) {
+      try {
+        if (!cookiesStr) {
+          try {
+            const rHome = await scraperFetch({
+              url: "https://spotimate.app/en1",
+              headers: { "User-Agent": CHROME_UA },
+              rawResponse: true,
+            });
+            let freshCookies = getCookiesFromHeaders(rHome.headers) || "";
+            const rVerify = await scraperFetch({
+              url: "https://spotimate.app/api/userverify",
+              method: "POST",
+              data: "url=" + encodeURIComponent(baseVal || "https://open.spotify.com"),
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": CHROME_UA,
+                Referer: "https://spotimate.app/en1",
+                Origin: "https://spotimate.app",
+                ...(freshCookies ? { Cookie: freshCookies } : {}),
+              },
+              rawResponse: true,
+            });
+            const vCookies = getCookiesFromHeaders(rVerify.headers);
+            if (vCookies) freshCookies = freshCookies ? `${freshCookies}; ${vCookies}` : vCookies;
+            if (freshCookies) cookiesStr = freshCookies;
+          } catch (_) {}
+        }
+
+        const mp = createMultipartBody({
+          data: dataVal,
+          token: tokenVal,
+          track_token: tokenVal,
+          ...(baseVal ? { base: baseVal } : {}),
+        });
+        const slHeaders = {
+          "Content-Type": mp.contentType,
+          "User-Agent": CHROME_UA,
+          Referer: "https://spotimate.app/en1",
+          Origin: "https://spotimate.app",
+        };
+        if (cookiesStr) slHeaders["Cookie"] = cookiesStr;
+
+        const res = await scraperFetch({
+          url: "https://spotimate.app/action/track",
+          method: "POST",
+          headers: slHeaders,
+          data: mp.body,
+          rawResponse: true,
+        });
+        let dd = res?.data ?? res;
+        if (typeof dd === "string") {
+          try {
+            dd = JSON.parse(dd);
+          } catch (_) {}
+        }
+        let dlHtml = (typeof dd === "object" ? dd?.html || dd?.data : dd) || "";
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(dlHtml, "text/html");
+        doc.querySelectorAll("a").forEach((a) => {
+          const href = a.getAttribute("href")?.trim();
+          const text = a.textContent.trim();
+          if (
+            href &&
+            href.startsWith("http") &&
+            !href.includes("tunecable.com") &&
+            !href.includes("premium") &&
+            !text.toLowerCase().includes("cover") &&
+            !href.includes("scdn.co") &&
+            text !== "Download Another Song"
+          ) {
+            if (!foundLink) foundLink = href;
+          }
+        });
+        if (!foundLink) {
+          const match =
+            dlHtml.match(
+              /href=["'](https:\/\/(?:dl\.spotimate\.app|dl\.soundloaders\.app)[^"']+)["']/,
+            ) ||
+            dlHtml.match(
+              /href=["'](https:\/\/[^"']*(?:cdnv1|\/v1\?token=)[^"']+)["']/,
+            );
+          if (match && match[1]) {
+            foundLink = match[1];
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. If SpotiDown or Spotimate fallback needed:
+    if (!foundLink && baseVal) {
+      let spData = dataVal;
+      let spToken = tokenVal;
+      let spBase = baseVal;
+      let spCookies = cookiesStr;
+
+      // If came from Soundloaders, we need genuine SpotiDown tokens
+      if (isSoundloaders || !spData || !spToken || spToken.startsWith("bccpF:")) {
+        try {
+          const rSession = await scraperFetch({
+            url: "https://spotidown.app/action",
+            method: "POST",
+            data: `url=${encodeURIComponent(baseVal)}&g-recaptcha-response=dummy_token`,
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded; charset=UTF-8",
+              "User-Agent": CHROME_UA,
+              "X-Requested-With": "XMLHttpRequest",
+              Origin: "https://spotidown.app",
+              Referer: "https://spotidown.app/",
+            },
+            rawResponse: true,
+          });
+          const freshCookies = getCookiesFromHeaders(rSession.headers) || "";
+          if (freshCookies) spCookies = freshCookies;
+          let rData = rSession?.data;
+          if (typeof rData === "string") {
+            try {
+              rData = JSON.parse(rData);
+            } catch (_) {}
+          }
+          const html = rData?.data || rData?.html || "";
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const form = doc.querySelector('form[name="submitspurl"]');
+          if (form) {
+            spData = form.querySelector('input[name="data"]')?.value || "";
+            spToken = form.querySelector('input[name="token"]')?.value || "";
+            spBase = form.querySelector('input[name="base"]')?.value || baseVal;
+          }
+        } catch (_) {}
       }
-    });
+
+      if (spData && spToken) {
+        const mp = createMultipartBody({
+          data: spData,
+          base: spBase,
+          token: spToken,
+        });
+
+        const reqHeaders = {
+          "Content-Type": mp.contentType,
+          "User-Agent": CHROME_UA,
+          "X-Requested-With": "XMLHttpRequest",
+          Referer: "https://spotidown.app/",
+          Origin: "https://spotidown.app",
+        };
+        if (spCookies) reqHeaders["Cookie"] = spCookies;
+
+        const res = await scraperFetch({
+          url: "https://spotidown.app/action/track",
+          method: "POST",
+          headers: reqHeaders,
+          data: mp.body,
+          rawResponse: true,
+        });
+        let dd = res?.data ?? res;
+        if (typeof dd === "string") {
+          try {
+            dd = JSON.parse(dd);
+          } catch (_) {}
+        }
+        let dlHtml = (typeof dd === "object" ? dd?.data || dd?.html : dd) || "";
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(dlHtml, "text/html");
+        doc.querySelectorAll("a").forEach((a) => {
+          const href = a.getAttribute("href");
+          const text = a.textContent.trim();
+          if (
+            href &&
+            href.startsWith("http") &&
+            !href.includes("premium.html") &&
+            !href.includes("ko-fi.com") &&
+            text !== "Download Another Song"
+          ) {
+            if (!foundLink) foundLink = href;
+          }
+        });
+      }
+    }
+
     if (!foundLink) throw new Error("Could not resolve Spotify download link.");
     return foundLink;
   }
