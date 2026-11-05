@@ -100,28 +100,7 @@ export async function updateStorageInfo() {
 
   try {
     let totalSize = 0;
-    const tauriInvoke =
-      window.__TAURI__?.core?.invoke ||
-      window.__TAURI_INTERNALS__?.invoke ||
-      window.__TAURI__?.invoke;
-
-    if (tauriInvoke) {
-      try {
-        const vSize = await tauriInvoke("tauri_get_folder_size", {
-          folder: customPath || "Download/Mori",
-        });
-        if (typeof vSize === "number") totalSize += vSize;
-
-        if (customMusicPath && customMusicPath !== customPath) {
-          const mSize = await tauriInvoke("tauri_get_folder_size", {
-            folder: customMusicPath,
-          });
-          if (typeof mSize === "number") totalSize += mSize;
-        }
-      } catch (err) {
-        console.warn("Tauri folder size error:", err);
-      }
-    } else if (Filesystem) {
+    if (Filesystem) {
       totalSize += await getFolderSize("", "CACHE");
       const vPath = customPath || "Download/Mori";
       const mPath = customMusicPath || "Music/Mori";
@@ -203,11 +182,6 @@ export async function clearCacheSilently() {
 export function initStorageSettings() {
   const isAndroid = window.Capacitor?.getPlatform?.() === "android";
   const isIos = window.Capacitor?.getPlatform?.() === "ios";
-  const isDesktop = Boolean(
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke
-  );
 
   // 1. Initial display
   if (pathVal) pathVal.textContent = formatPathDisplay(customPath);
@@ -290,8 +264,6 @@ export function initStorageSettings() {
   const getVideoPresets = () => {
     if (isAndroid) {
       return ["Download/Mori", "Movies/Mori", "DCIM/Mori", "Download"];
-    } else if (isDesktop) {
-      return ["Movies/Mori", "Downloads/Mori", "Desktop/Mori"];
     }
     return ["Mori", "Videos"];
   };
@@ -299,8 +271,6 @@ export function initStorageSettings() {
   const getMusicPresets = () => {
     if (isAndroid) {
       return ["Download/Mori/Music", "Music/Mori", "Download/Mori"];
-    } else if (isDesktop) {
-      return ["Music/Mori", "Downloads/Mori"];
     }
     return ["Music", "Mori/Music"];
   };
@@ -309,7 +279,7 @@ export function initStorageSettings() {
   changePathBtn?.addEventListener("click", () => {
     const lang = translations[currentLang] || translations.en;
     const presets = getVideoPresets();
-    const canBrowse = isDesktop || isAndroid;
+    const canBrowse = isAndroid;
     const hasPerm = isAndroid && window.MoriMainBridge?.hasAllFilesPermission
       ? window.MoriMainBridge.hasAllFilesPermission()
       : true;
@@ -434,7 +404,7 @@ export function initStorageSettings() {
   changeMusicPathBtn?.addEventListener("click", () => {
     const lang = translations[currentLang] || translations.en;
     const presets = getMusicPresets();
-    const canBrowse = isDesktop || isAndroid;
+    const canBrowse = isAndroid;
     const hasPerm = isAndroid && window.MoriMainBridge?.hasAllFilesPermission
       ? window.MoriMainBridge.hasAllFilesPermission()
       : true;

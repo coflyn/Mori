@@ -155,11 +155,6 @@ export function renderMediaSlides(container, items, resultThumbnail) {
         }
       });
 
-      const tauriInvoke =
-        window.__TAURI__?.core?.invoke ||
-        window.__TAURI_INTERNALS__?.invoke ||
-        window.__TAURI__?.invoke;
-
       let cleanPath = dl.rawUri || dl.rawPath || dl.url || "";
       if (cleanPath.includes("_capacitor_file_")) {
         cleanPath = cleanPath.substring(
@@ -169,57 +164,11 @@ export function renderMediaSlides(container, items, resultThumbnail) {
       if (cleanPath.startsWith("file://")) {
         cleanPath = cleanPath.replace(/^file:\/\//, "");
       }
+      try {
+        cleanPath = decodeURIComponent(cleanPath);
+      } catch (_) {}
 
-      if (tauriInvoke && isLocal) {
-        const mime = cleanPath.toLowerCase().endsWith(".m4a")
-          ? "audio/mp4"
-          : "audio/mpeg";
-        tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
-          .then((bytes) => {
-            if (audio._isStopped || !audio.isConnected) return;
-            if (bytes && bytes.length > 0) {
-              const blob = new Blob([new Uint8Array(bytes)], { type: mime });
-              const blobUrl = URL.createObjectURL(blob);
-              audio.src = blobUrl;
-              audio.load();
-              if (
-                autoPlaySetting &&
-                (index === 0 || slide.classList.contains("active"))
-              ) {
-                audio.play().catch(() => {});
-              }
-            } else if (!isLocal && dl.remoteUrl && navigator.onLine) {
-              audio.src = dl.remoteUrl;
-              audio.load();
-              if (
-                autoPlaySetting &&
-                (index === 0 || slide.classList.contains("active"))
-              ) {
-                audio.play().catch(() => {});
-              }
-            } else {
-              audio.style.display = "none";
-            }
-          })
-          .catch((e) => {
-            if (audio._isStopped || !audio.isConnected) return;
-            console.warn("Tauri audio read error:", e);
-            if (!isLocal && dl.remoteUrl && navigator.onLine) {
-              audio.src = dl.remoteUrl;
-              audio.load();
-              if (
-                autoPlaySetting &&
-                (index === 0 || slide.classList.contains("active"))
-              ) {
-                audio.play().catch(() => {});
-              }
-            } else {
-              audio.style.display = "none";
-            }
-          });
-      } else {
-        audio.src = dl.url;
-      }
+      audio.src = dl.url;
 
       let audioRetried = false;
       let audioRemoteRetried = false;
@@ -1204,11 +1153,6 @@ export async function exportGalleryToPdf(title, items) {
         if (item.url.includes("pixiv.net") || item.url.includes("pximg.net"))
           referer = "https://www.pixiv.net/";
 
-        const tauriInvoke =
-          window.__TAURI__?.core?.invoke ||
-          window.__TAURI_INTERNALS__?.invoke ||
-          window.__TAURI__?.invoke;
-
         if (CapacitorHttp) {
           return CapacitorHttp.get({
             url: item.url,
@@ -1217,19 +1161,6 @@ export async function exportGalleryToPdf(title, items) {
             readTimeout: 60000,
             headers: { Referer: referer, "User-Agent": CHROME_UA },
           }).catch((err) => ({ status: 0, error: err }));
-        } else if (tauriInvoke) {
-          return tauriInvoke("tauri_fetch_bytes", {
-            url: item.url,
-            headers: { Referer: referer, "User-Agent": CHROME_UA },
-          })
-            .then((bytes) => {
-              if (bytes && bytes.length > 0) {
-                const arr = new Uint8Array(bytes);
-                return { status: 200, data: arr.buffer };
-              }
-              throw new Error("Empty image bytes");
-            })
-            .catch((err) => ({ status: 0, error: err }));
         } else {
           return fetch(item.url, { headers: { Referer: referer } })
             .then((res) => res.arrayBuffer())
@@ -1493,49 +1424,16 @@ export async function exportGalleryToPdf(title, items) {
       };
       reader.readAsDataURL(blob);
     } else {
-      const tauriInvoke =
-        window.__TAURI__?.core?.invoke ||
-        window.__TAURI_INTERNALS__?.invoke ||
-        window.__TAURI__?.invoke;
-
-      let savedTauri = false;
-      if (tauriInvoke) {
-        try {
-          const customFolder = targetFolder;
-          await tauriInvoke("tauri_save_bytes_file", {
-            bytes: Array.from(pdfBytes),
-            filename: fileName,
-            folder: customFolder,
-          });
-          savedTauri = true;
-          showToast(
-            translations[currentLang]["pdf-toast-saved"] ||
-              "PDF saved to Mori folder!",
-          );
-          downloadBubble.completeDownload(
-            pdfDlId,
-            translations[currentLang]["status-saved"] || "Saved",
-          );
-        } catch (e) {
-          console.warn(
-            "Tauri save PDF failed, falling back to browser download:",
-            e,
-          );
-        }
-      }
-
-      if (!savedTauri) {
-        const blob = new Blob([pdfBytes], { type: "application/pdf" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-        showToast(translations[currentLang]["toast-pdf-downloaded"]);
-        downloadBubble.completeDownload(
-          pdfDlId,
-          translations[currentLang]["status-saved"] || "Saved",
-        );
-      }
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      showToast(translations[currentLang]["toast-pdf-downloaded"]);
+      downloadBubble.completeDownload(
+        pdfDlId,
+        translations[currentLang]["status-saved"] || "Saved",
+      );
     }
   } catch (err) {
     console.error("PDF Export failed", err);

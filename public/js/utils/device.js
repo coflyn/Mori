@@ -134,23 +134,8 @@ export async function releaseWakeLock() {
   }
 }
 
-// Native Folder Picker Helper (macOS, Windows, Android)
+// Native Folder Picker Helper (Android)
 export async function pickNativeFolder() {
-  // 1. Desktop Tauri (macOS & Windows)
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
-  if (tauriInvoke) {
-    try {
-      const res = await tauriInvoke("tauri_pick_folder");
-      return res || null;
-    } catch (e) {
-      console.warn("Tauri pick folder error:", e);
-      return null;
-    }
-  }
 
   // 2. Android
   if (window.MoriMainBridge?.pickFolder) {
@@ -168,24 +153,9 @@ export async function pickNativeFolder() {
   return null;
 }
 
-// Native Folder Opener Helper (Finder / Explorer / Files app)
+// Native Folder Opener Helper (Android / Files app)
 export async function openNativeFolder(targetPath) {
   if (!targetPath) return false;
-
-  // 1. Desktop Tauri (macOS & Windows)
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
-  if (tauriInvoke) {
-    try {
-      await tauriInvoke("tauri_open_folder", { path: targetPath });
-      return true;
-    } catch (e) {
-      console.warn("Tauri open folder error:", e);
-    }
-  }
 
   // 2. Android
   if (window.MoriMainBridge?.openFolder) {

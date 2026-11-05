@@ -79,12 +79,7 @@ export async function startNativeDownload(
     return { success: true, skipped: true };
   }
 
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
-  if (!Filesystem && !tauriInvoke) {
+  if (!Filesystem) {
     try {
       if (!url.startsWith("blob:") && !url.startsWith("data:")) {
         const blobRes = await fetch(url).catch(() => null);

@@ -44,31 +44,12 @@ export function syncAllSettingsToNative() {
 export function initPlatformDisplay() {
   if (!platformVal) return;
 
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-  const isDesktop = Boolean(tauriInvoke && !window.Capacitor?.isNativePlatform?.());
-
-  if (isDesktop) {
-    const ua = (navigator.userAgent || "").toLowerCase();
-    if (ua.includes("mac")) {
-      platformVal.textContent = "macOS";
-    } else if (ua.includes("win")) {
-      platformVal.textContent = "Windows";
-    } else if (ua.includes("linux")) {
-      platformVal.textContent = "Linux";
-    } else {
-      platformVal.textContent = "Desktop";
-    }
+  const capPlatform = window.Capacitor?.getPlatform?.();
+  if (capPlatform === "ios") {
+    platformVal.textContent = "iOS";
+  } else if (capPlatform === "android") {
+    platformVal.textContent = "Android";
   } else {
-    const capPlatform = window.Capacitor?.getPlatform?.();
-    if (capPlatform === "ios") {
-      platformVal.textContent = "iOS";
-    } else if (capPlatform === "android") {
-      platformVal.textContent = "Android";
-    } else {
-      platformVal.textContent = "Web Browser";
-    }
+    platformVal.textContent = "Web Browser";
   }
 }

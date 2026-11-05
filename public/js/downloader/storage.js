@@ -31,7 +31,7 @@ export async function deleteSavedFile(savedFile, directoriesToTry) {
 }
 
 /**
- * Executes file download using Tauri, Capacitor Filesystem, or CapacitorHttp fallback
+ * Executes file download using Capacitor Filesystem or CapacitorHttp fallback
  */
 export async function saveToStorage({
   actualDownloadUrl,
@@ -53,34 +53,7 @@ export async function saveToStorage({
   );
   const maxAttempts = isAutoRetry ? customMaxRetry : 1;
 
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
-  // 1. Desktop / Tauri Invocation
-  if (tauriInvoke) {
-    try {
-      const desktopRes = await tauriInvoke("tauri_download_file", {
-        url: actualDownloadUrl,
-        filename: fileName,
-        folder: fullPath || targetFolder || "",
-        headers: downloadHeaders || {},
-      });
-      if (desktopRes && desktopRes.status) {
-        savedFile = { path: desktopRes.path, uri: desktopRes.uri };
-      }
-    } catch (tErr) {
-      console.warn("Tauri native download failed:", tErr);
-      throw new Error(
-        typeof tErr === "string"
-          ? tErr
-          : tErr?.message || JSON.stringify(tErr),
-      );
-    }
-  }
-
-  // 2. Mobile / Capacitor Filesystem Download
+  // 1. Mobile / Capacitor Filesystem Download
   const tempFileName = `${fileName}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.tmp`;
 
   if (!savedFile && Filesystem) {

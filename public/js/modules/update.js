@@ -36,11 +36,6 @@ export function isNewerVersion(latest, current) {
 
 async function fetchLatestRelease() {
   let data;
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
   if (CapacitorHttp) {
     const res = await CapacitorHttp.get({
       url: UPDATE_CHECK_URL,
@@ -50,17 +45,6 @@ async function fetchLatestRelease() {
       },
     });
     data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-  } else if (tauriInvoke) {
-    const res = await tauriInvoke("tauri_http_request", {
-      url: UPDATE_CHECK_URL,
-      method: "GET",
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "Mori-App",
-      },
-    });
-    const rawData = res?.data || res?.body || res;
-    data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
   } else {
     const res = await fetch(UPDATE_CHECK_URL);
     data = await res.json();

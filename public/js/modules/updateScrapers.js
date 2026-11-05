@@ -28,11 +28,6 @@ export function getActiveScraperVersion() {
 }
 
 async function fetchRemoteJson(url) {
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
   if (CapacitorHttp) {
     const res = await CapacitorHttp.get({
       url,
@@ -43,18 +38,6 @@ async function fetchRemoteJson(url) {
       },
     });
     return typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-  } else if (tauriInvoke) {
-    const res = await tauriInvoke("tauri_http_request", {
-      url,
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Mori-App",
-        "Cache-Control": "no-cache",
-      },
-    });
-    const rawData = res?.data || res?.body || res;
-    return typeof rawData === "string" ? JSON.parse(rawData) : rawData;
   } else {
     const res = await fetch(url, { cache: "no-store" });
     return await res.json();
@@ -62,25 +45,12 @@ async function fetchRemoteJson(url) {
 }
 
 async function fetchRemoteText(url) {
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
   if (CapacitorHttp) {
     const res = await CapacitorHttp.get({
       url,
       headers: { "Cache-Control": "no-cache", "User-Agent": "Mori-App" },
     });
     return typeof res.data === "string" ? res.data : JSON.stringify(res.data);
-  } else if (tauriInvoke) {
-    const res = await tauriInvoke("tauri_http_request", {
-      url,
-      method: "GET",
-      headers: { "Cache-Control": "no-cache", "User-Agent": "Mori-App" },
-    });
-    const rawData = res?.data || res?.body || res;
-    return typeof rawData === "string" ? rawData : JSON.stringify(rawData);
   } else {
     const res = await fetch(url, { cache: "no-store" });
     return res.text();

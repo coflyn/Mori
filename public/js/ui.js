@@ -150,19 +150,7 @@ export function renderHistory(onItemClick, onDeleteClick) {
         !thumbSrc.startsWith("blob:") &&
         !thumbSrc.startsWith("capacitor:")
       ) {
-        if (window.__TAURI__) {
-          const tauriConvert =
-            window.__TAURI__?.core?.convertFileSrc ||
-            window.__TAURI_INTERNALS__?.convertFileSrc ||
-            window.__TAURI__?.convertFileSrc;
-          if (tauriConvert) {
-            let p = thumbSrc.replace(/^file:\/\//i, "");
-            try {
-              p = decodeURIComponent(p);
-            } catch (_) {}
-            thumbSrc = tauriConvert(p);
-          }
-        } else if (window.Capacitor?.convertFileSrc) {
+        if (window.Capacitor?.convertFileSrc) {
           let raw = thumbSrc;
           if (raw.includes("_capacitor_file_")) {
             raw = raw.substring(raw.indexOf("_capacitor_file_") + 16);

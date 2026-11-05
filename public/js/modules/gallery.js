@@ -62,8 +62,7 @@ function toLocalMediaUrl(pathOrUri) {
     raw.startsWith("blob:") ||
     raw.startsWith("content://") ||
     raw.startsWith("capacitor://") ||
-    raw.startsWith("asset://") ||
-    raw.startsWith("tauri://")
+    raw.startsWith("asset://")
   ) {
     return raw;
   }
@@ -75,19 +74,6 @@ function toLocalMediaUrl(pathOrUri) {
     p = p.substring(p.indexOf("_capacitor_file_") + 16);
   }
   p = p.replace(/^file:\/\//i, "");
-
-  const tauriConvert =
-    window.__TAURI__?.core?.convertFileSrc ||
-    window.__TAURI_INTERNALS__?.convertFileSrc ||
-    window.__TAURI__?.convertFileSrc;
-  if (tauriConvert) {
-    const cleanTauri = /^[a-zA-Z]:/i.test(p)
-      ? p.replace(/^([a-zA-Z]:)[/\\]/, "$1/")
-      : p.startsWith("/")
-        ? p
-        : "/" + p;
-    return tauriConvert(cleanTauri);
-  }
 
   const platform = window.Capacitor?.getPlatform?.();
   if (!p.startsWith("/")) {
@@ -128,10 +114,6 @@ export async function scanGallery(force = false) {
   activeScanPromise = (async () => {
     try {
       const folders = getGalleryScanFolders();
-      const tauriInvoke =
-        window.__TAURI__?.core?.invoke ||
-        window.__TAURI_INTERNALS__?.invoke ||
-        window.__TAURI__?.invoke;
       const items = [];
       const seen = new Set();
 
@@ -166,34 +148,7 @@ export async function scanGallery(force = false) {
         } catch (_) {}
       }
 
-      if (tauriInvoke) {
-        for (const folder of folders) {
-          try {
-            const entries = await tauriInvoke("tauri_list_dir", { folder });
-            for (const entry of entries || []) {
-              const name = entry.name || "";
-              const cat = fileCategory(name);
-              if (!cat) continue;
-              const fullPath = (entry.path || `${folder}/${name}`).replace(
-                /\/+/g,
-                "/",
-              );
-              const key = fullPath.toLowerCase();
-              if (seen.has(key)) continue;
-              seen.add(key);
-              items.push({
-                name,
-                path: entry.path || fullPath,
-                directory: "DESKTOP",
-                category: cat,
-                size: entry.size || 0,
-                mtime: entry.modified ? entry.modified * 1000 : 0,
-                folder: folder,
-              });
-            }
-          } catch (_) {}
-        }
-      } else if (Filesystem) {
+      if (Filesystem) {
         const dirs = [
           { directory: "EXTERNAL_STORAGE" },
           { directory: "EXTERNAL" },
@@ -506,22 +461,7 @@ export async function deleteGalleryItem(item) {
     }
   }
 
-  // 2. Desktop Tauri
-  if (!deleted) {
-    const tauriInvoke =
-      window.__TAURI__?.core?.invoke ||
-      window.__TAURI_INTERNALS__?.invoke ||
-      window.__TAURI__?.invoke;
-    if (tauriInvoke && item.path) {
-      try {
-        deleted = await tauriInvoke("tauri_delete_file", { path: item.path });
-      } catch (e) {
-        console.warn("Tauri delete file failed:", e);
-      }
-    }
-  }
-
-  // 3. Capacitor Filesystem fallback
+  // 2. Capacitor Filesystem fallback
   if (!deleted && Filesystem) {
     if (item.directory && item.path) {
       try {
@@ -716,7 +656,7 @@ function extractCanvasThumb(mediaUrl, onData) {
   video.addEventListener("error", cleanup);
 
   const canFragment =
-    /^(https?|file|asset|tauri):/i.test(mediaUrl) || mediaUrl.startsWith("/");
+    /^(https?|file|asset):/i.test(mediaUrl) || mediaUrl.startsWith("/");
   video.src = canFragment ? `${mediaUrl}#t=0.5` : mediaUrl;
 }
 
@@ -1321,18 +1261,7 @@ function openFileExternal(item) {
       if (window.MoriMainBridge.openFile(rawPath)) return;
     } catch (_) {}
   }
-  // 2. Desktop Tauri
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-  if (tauriInvoke) {
-    try {
-      tauriInvoke("tauri_open_folder", { path: rawPath });
-      return;
-    } catch (_) {}
-  }
-  // 3. Fallback
+  // 2. Fallback
   const url = toLocalMediaUrl(rawPath);
   if (url) {
     window.open(url, "_blank");
@@ -1340,18 +1269,6 @@ function openFileExternal(item) {
 }
 
 async function fetchPdfBytes(item) {
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-  if (tauriInvoke && item.path) {
-    try {
-      const bytes = await tauriInvoke("tauri_read_file_bytes", {
-        path: item.path,
-      });
-      if (bytes && bytes.length > 0) return new Uint8Array(bytes);
-    } catch (_) {}
-  }
 
   const url = toLocalMediaUrl(item.path);
   if (url) {
@@ -1624,50 +1541,8 @@ function renderAudioInViewer(body, item, mediaUrl) {
     }
   });
 
-  const tauriInvoke =
-    window.__TAURI__?.core?.invoke ||
-    window.__TAURI_INTERNALS__?.invoke ||
-    window.__TAURI__?.invoke;
-
-  let cleanPath = item.path || mediaUrl || "";
-  if (cleanPath.includes("_capacitor_file_")) {
-    cleanPath = cleanPath.substring(cleanPath.indexOf("_capacitor_file_") + 16);
-  }
-  if (cleanPath.startsWith("file://")) {
-    cleanPath = cleanPath.replace(/^file:\/\//, "");
-  }
-  try {
-    cleanPath = decodeURIComponent(cleanPath);
-  } catch (_) {}
-
-  if (tauriInvoke) {
-    const mime = cleanPath.toLowerCase().endsWith(".m4a")
-      ? "audio/mp4"
-      : "audio/mpeg";
-    tauriInvoke("tauri_read_file_bytes", { path: cleanPath })
-      .then((bytes) => {
-        if (audio._isStopped || !audio.isConnected) return;
-        if (bytes && bytes.length > 0) {
-          const blob = new Blob([new Uint8Array(bytes)], { type: mime });
-          const blobUrl = URL.createObjectURL(blob);
-          audio._blobUrl = blobUrl;
-          audio.src = blobUrl;
-          audio.load();
-          if (autoPlaySetting) audio.play().catch(() => {});
-        } else {
-          audio.src = mediaUrl;
-          if (autoPlaySetting) audio.play().catch(() => {});
-        }
-      })
-      .catch((e) => {
-        console.warn("Gallery audio tauri read error:", e);
-        audio.src = mediaUrl;
-        if (autoPlaySetting) audio.play().catch(() => {});
-      });
-  } else {
-    audio.src = mediaUrl;
-    if (autoPlaySetting) audio.play().catch(() => {});
-  }
+  audio.src = mediaUrl;
+  if (autoPlaySetting) audio.play().catch(() => {});
 
   let audioRetried = false;
   audio.onerror = async () => {

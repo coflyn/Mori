@@ -798,8 +798,7 @@
 
     const defaultLabels = {
       android: `Mori v${num}.apk`,
-      macos: `Mori-v${num}-macOS-arm64.dmg`,
-      windows: `Mori-v${num}-Windows-x64-Setup.exe`,
+      cli: "npx @coflyn/mori",
       ios: `Mori v${num}.ipa (AltStore / TrollStore)`,
     };
 
@@ -812,7 +811,9 @@
 
     document.querySelectorAll("[data-dl-card]").forEach((card) => {
       const platform = card.getAttribute("data-dl-card");
-      if (assets && assets[platform]) {
+      if (platform === "cli") {
+        card.href = "https://www.npmjs.com/package/@coflyn/mori";
+      } else if (assets && assets[platform]) {
         card.href = assets[platform];
       } else {
         card.href = `https://github.com/coflyn/Mori/releases/tag/${tag}`;
@@ -831,12 +832,12 @@
         floatingText: "Download APK",
       },
       macos: {
-        heroText: "Download for macOS (.dmg)",
-        floatingText: "Download macOS",
+        heroText: "Install CLI: npx @coflyn/mori",
+        floatingText: "Run Mori CLI",
       },
       windows: {
-        heroText: "Download for Windows (.exe)",
-        floatingText: "Download Windows",
+        heroText: "Install CLI: npx @coflyn/mori",
+        floatingText: "Run Mori CLI",
       },
       ios: {
         heroText: "Download for iOS (.ipa)",
@@ -846,9 +847,11 @@
 
     if (os && osMeta[os]) {
       const targetUrl =
-        assets && assets[os]
-          ? assets[os]
-          : `https://github.com/coflyn/Mori/releases/tag/${tag}`;
+        os === "macos" || os === "windows"
+          ? "https://www.npmjs.com/package/@coflyn/mori"
+          : assets && assets[os]
+            ? assets[os]
+            : `https://github.com/coflyn/Mori/releases/tag/${tag}`;
 
       if (heroBtn) {
         heroBtn.textContent = osMeta[os].heroText;

@@ -1,7 +1,7 @@
 {
-  "scraperVersion": 5,
-  "updatedAt": 1792322752097,
+  "scraperVersion": 6,
+  "updatedAt": 1793915612106,
   "minAppVersion": "4.3.0",
-  "sourceHash": "42772008c118455c11604480d7cdf6d55d328569f389f6fdfdbeb41f08d7b8b3",
-  "changelog": "Add support for TikTok tt.site shortlinks with automatic redirect resolving"
+  "sourceHash": "40271377c649548886da29d2186e19be31602a483cdc0a1ebf4179c1a3cd12a2",
+  "changelog": "Fix multiple scrapers and engine optimizations"
 }

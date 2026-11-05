@@ -187,22 +187,9 @@ export async function showModal(item, onRedownload) {
         pathOrUri.startsWith("https://") ||
         pathOrUri.startsWith("data:") ||
         pathOrUri.startsWith("blob:") ||
-        pathOrUri.startsWith("asset:") ||
-        pathOrUri.startsWith("tauri:")
+        pathOrUri.startsWith("asset:")
       ) {
         return pathOrUri;
-      }
-      const tauriConvert =
-        window.__TAURI__?.core?.convertFileSrc ||
-        window.__TAURI_INTERNALS__?.convertFileSrc ||
-        window.__TAURI__?.convertFileSrc;
-      if (tauriConvert) {
-        let p = String(pathOrUri);
-        p = p.replace(/^file:\/\//i, "");
-        try {
-          p = decodeURIComponent(p);
-        } catch (_) {}
-        return tauriConvert(p);
       }
       const rawFile = toRawFileUrl(pathOrUri);
       return window.Capacitor?.convertFileSrc(rawFile) || rawFile;
