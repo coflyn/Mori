@@ -208,7 +208,7 @@ export async function startNativeDownload(
   });
 
   let currentProgressVal = 0;
-  const updateProgress = (pct, statusText) => {
+  const updateProgress = (pct, statusText, badgeText = null) => {
     if (hideProgress) return;
     if (typeof pct === "number" && !isNaN(pct)) {
       const maxCap = pct >= 100 ? 100 : 99;
@@ -219,11 +219,22 @@ export async function startNativeDownload(
       currentProgressVal = targetPct;
     }
     if (progressBar) progressBar.style.width = `${currentProgressVal}%`;
-    downloadBubble.updateProgress(dlId, currentProgressVal, statusText);
+    downloadBubble.updateProgress(
+      dlId,
+      currentProgressVal,
+      statusText,
+      badgeText,
+    );
     if (btn) {
       const b = btn.querySelector(".dl-badge");
       if (b) {
-        b.textContent = currentProgressVal >= 100 ? "SAVED" : `${currentProgressVal}%`;
+        if (currentProgressVal >= 100) {
+          b.textContent = "SAVED";
+        } else if (badgeText) {
+          b.textContent = badgeText;
+        } else {
+          b.textContent = `${currentProgressVal}%`;
+        }
       }
     }
   };
@@ -262,27 +273,6 @@ export async function startNativeDownload(
     let currentSpeedBps = 0;
     let realProgressReceived = false;
 
-    // Fallback simulation timer while connecting or waiting for initial stream data
-    let simProgress = 0;
-    window._moriActiveSimInterval = setInterval(() => {
-      if (realProgressReceived) {
-        if (window._moriActiveSimInterval) {
-          clearInterval(window._moriActiveSimInterval);
-          window._moriActiveSimInterval = null;
-        }
-        return;
-      }
-      if (simProgress < 30) {
-        simProgress += 4 + Math.random() * 3;
-      } else if (simProgress < 60) {
-        simProgress += 1.5 + Math.random() * 1.5;
-      } else if (simProgress < 85) {
-        simProgress += 0.3 + Math.random() * 0.5;
-      }
-      const currentPct = Math.min(85, Math.round(simProgress));
-      updateProgress(currentPct, translations[currentLang]?.["btn-processing"] || "Connecting...");
-    }, 200);
-
     // Remove any existing listeners first to avoid double-firing
     if (window._moriProgressListener) {
       try {
@@ -291,19 +281,15 @@ export async function startNativeDownload(
       window._moriProgressListener = null;
     }
 
+    let lastDataTime = Date.now();
+
     const onRealProgress = (progress) => {
       if (!progress) return;
       const bytes = Number(progress.bytes ?? progress.bytesWritten ?? 0);
       const contentLength = Number(progress.contentLength ?? 0);
 
       if (bytes > 0 || contentLength > 0) {
-        if (!realProgressReceived) {
-          realProgressReceived = true;
-          if (window._moriActiveSimInterval) {
-            clearInterval(window._moriActiveSimInterval);
-            window._moriActiveSimInterval = null;
-          }
-        }
+        realProgressReceived = true;
       }
 
       const now = Date.now();
@@ -312,6 +298,7 @@ export async function startNativeDownload(
         if (bytes > lastBytes) {
           currentSpeedBps = (bytes - lastBytes) / timeDiff;
           lastBytes = bytes;
+          lastDataTime = now;
         }
         lastTime = now;
       }
@@ -321,16 +308,26 @@ export async function startNativeDownload(
 
       let pct = 0;
       let statusText = "Downloading...";
+      let badgeText = null;
 
       if (contentLength > 0) {
-        pct = Math.min(100, Math.round((bytes / contentLength) * 100));
+        pct = Math.min(99, Math.floor((bytes / contentLength) * 100));
         statusText = `${formatBytes(bytes)} / ${formatBytes(contentLength)} (${formatBytes(speed)}/s)`;
+        badgeText = `${pct}%`;
       } else if (bytes > 0) {
+        // Unknown total length (e.g. chunked streams)
+        // Scaled progression that doesn't freeze prematurely at 95%
+        const mb = bytes / (1024 * 1024);
+        pct = Math.min(94, Math.round(15 + 79 * (mb / (mb + 80))));
         statusText = `${formatBytes(bytes)} (${formatBytes(speed)}/s)`;
-        pct = Math.min(98, Math.round(100 * (1 - Math.exp(-bytes / 2500000))));
+        badgeText = formatBytes(bytes);
       }
 
-      updateProgress(pct, statusText);
+      if (bytes > 0 && now - lastDataTime > 12000) {
+        statusText = `${formatBytes(bytes)} (Stalled...)`;
+      }
+
+      updateProgress(pct, statusText, badgeText);
     };
 
     // Listen for real progress if Filesystem exists
@@ -477,6 +474,11 @@ export async function startNativeDownload(
       downloadHeaders,
       directoriesToTry,
       checkCancelled,
+      onSaving: () => {
+        const savingText =
+          translations[currentLang]?.["label-saving"] || "SAVING...";
+        updateProgress(99, savingText, savingText);
+      },
     });
 
     if (cancelled || checkCancelled()) {
@@ -491,6 +493,8 @@ export async function startNativeDownload(
     }
 
     updateProgress(100, translations[currentLang]?.["status-saved"] || "Saved");
+    downloadBubble.completeDownload(dlId, "Saved");
+
     if (btn) {
       const b = btn.querySelector(".dl-badge");
       if (b) {
@@ -514,7 +518,6 @@ export async function startNativeDownload(
       originalContent,
       progressContainer,
     });
-    downloadBubble.completeDownload(dlId, "Saved");
     return postRes;
   } catch (err) {
     console.error("Download failed", err);

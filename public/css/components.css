@@ -101,12 +101,11 @@
 
 .db-ring-svg {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
   width: 44px;
   height: 44px;
-  margin: 0px;
-  transform: rotate(-90deg);
   pointer-events: none;
 }
 
@@ -123,7 +122,9 @@
   stroke-dasharray: 119.38;
   stroke-dashoffset: 119.38;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.25s ease;
+  transition:
+    stroke-dashoffset 0.25s ease,
+    opacity 0.2s ease;
 }
 
 .db-icon-wrap {
@@ -324,6 +325,10 @@
   background: rgba(var(--primary-rgb), 0.06);
 }
 
+.dbd-item.completed .dbd-item-bar {
+  width: 100% !important;
+}
+
 .dbd-item.failed {
   border: 1px dashed var(--text-secondary);
   opacity: 0.75;
@@ -339,6 +344,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .dbd-item-info {
@@ -358,6 +364,10 @@
   background: var(--primary);
   color: var(--on-primary);
   white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dbd-item-name {
@@ -368,10 +378,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  max-width: 175px;
+  flex: 1;
 }
 
 .dbd-item-cancel {
+  flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -416,6 +427,22 @@
   justify-content: space-between;
   font-size: 0.7rem;
   color: var(--text-secondary);
+  gap: 8px;
+}
+
+.dbd-item-status {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dbd-item-percent {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .dbd-item.completed .dbd-item-percent {

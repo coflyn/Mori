@@ -41,6 +41,7 @@ export async function saveToStorage({
   downloadHeaders,
   directoriesToTry,
   checkCancelled,
+  onSaving,
 }) {
   let savedFile = null;
   let successfulDir = "EXTERNAL_STORAGE";
@@ -87,6 +88,7 @@ export async function saveToStorage({
 
           const tempSaved = await Filesystem.downloadFile(dlOpts);
           if (tempSaved) {
+            onSaving?.();
             // Rename .tmp to actual file name atomically on completion
             try {
               await Filesystem.rename({
@@ -137,6 +139,7 @@ export async function saveToStorage({
                 httpRes.data &&
                 typeof httpRes.data === "string"
               ) {
+                onSaving?.();
                 await Filesystem.writeFile({
                   path: fullPath + "/" + fileName,
                   data: httpRes.data,
