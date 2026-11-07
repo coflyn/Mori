@@ -26,6 +26,7 @@ import { cleanUrl } from "./utils/urlUtils.js";
 import { getUserAgent } from "./utils/index.js";
 import { translations, getInitialLanguage } from "./i18n/index.js";
 import { safeSetHistory } from "./modules/history.js";
+import { generateFileName, sanitizeTitle } from "./downloader/filename.js";
 
 let currentLang = getInitialLanguage();
 let lang = translations[currentLang] || translations.en;
@@ -833,14 +834,7 @@ function generateFilename(title, type, index) {
     effectiveTitle = `${effectiveTitle}_${Number(index) + 1}`;
   }
 
-  let sanitized = (effectiveTitle || "")
-    .replace(/[\\/:*?"<>|#%&{}[\]@$^+=~`';,]/g, "")
-    .replace(/[^\w\s\-.\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/gi, "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .substring(0, 60);
-
-  if (!sanitized) sanitized = "Mori_Media";
+  const sanitized = sanitizeTitle(effectiveTitle, type);
 
   let ext = "mp4";
   const t = (type || "").toLowerCase();
@@ -857,51 +851,13 @@ function generateFilename(title, type, index) {
   else if (t.includes("png")) ext = "png";
   else if (t.includes("webp")) ext = "webp";
 
-  ext = ext.toLowerCase();
-
-  const template = localStorage.getItem("mori_filename") || "title";
-  let finalName = `${sanitized}.${ext}`;
-
-  if (template === "title-platform") {
-    let platform = "Media";
-    if (currentPlatform) {
-      if (currentPlatform === "tiktok" || currentPlatform === "douyin")
-        platform = "TikTok";
-      else if (currentPlatform === "instagram") platform = "Instagram";
-      else if (currentPlatform === "youtube") platform = "YouTube";
-      else if (currentPlatform === "twitter") platform = "Twitter";
-      else if (currentPlatform === "facebook") platform = "Facebook";
-      else if (currentPlatform === "pinterest") platform = "Pinterest";
-      else if (currentPlatform === "spotify") platform = "Spotify";
-      else if (currentPlatform === "rednote") platform = "RedNote";
-      else if (currentPlatform === "applemusic") platform = "AppleMusic";
-      else if (currentPlatform === "bilibili") platform = "Bilibili";
-      else if (currentPlatform === "pixiv") platform = "Pixiv";
-      else if (currentPlatform === "bandcamp") platform = "Bandcamp";
-      else if (currentPlatform === "reddit") platform = "Reddit";
-      else if (currentPlatform === "terabox") platform = "TeraBox";
-    }
-    finalName = `${sanitized}_${platform}.${ext}`;
-  } else if (template === "title-date") {
-    const dateStr = new Date().toISOString().split("T")[0];
-    finalName = `${sanitized}_${dateStr}.${ext}`;
-  } else if (template === "title") {
-    finalName = `${sanitized}.${ext}`;
-  } else {
-    // title-timestamp
-    finalName = `${sanitized}_${Date.now()}.${ext}`;
-  }
-
-  // Strictly enforce lowercase extension
-  const dotP = finalName.lastIndexOf(".");
-  if (dotP > 0 && dotP < finalName.length - 1) {
-    finalName =
-      finalName.substring(0, dotP) +
-      "." +
-      finalName.substring(dotP + 1).toLowerCase();
-  }
-
-  return finalName;
+  return generateFileName(
+    sanitized,
+    ext,
+    window.__MORI_SHARE_URL || currentPlatform,
+    null,
+    type,
+  );
 }
 
 // Minimal History Sync

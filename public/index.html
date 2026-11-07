@@ -2286,6 +2286,52 @@
                     >
                       Title + Date
                     </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="platform_date_number"
+                      data-i18n="filename-platform_date_number"
+                    >
+                      Platform + Date + Number
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="platform_time_number"
+                      data-i18n="filename-platform_time_number"
+                    >
+                      Platform + Time + Number
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="platform_quality_number"
+                      data-i18n="filename-platform_quality_number"
+                    >
+                      Platform + Quality + Number
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="platform_date_time_quality_number"
+                      data-i18n="filename-platform_date_time_quality_number"
+                    >
+                      Platform + Date + Time + Quality + Number
+                    </div>
+                    <div
+                      class="dropdown-item"
+                      data-value="custom"
+                      data-i18n="filename-custom"
+                    >
+                      Custom Template
+                    </div>
+                  </div>
+                </div>
+                <div class="custom-template-box hidden" id="customFilenameBox" style="width: 100%; margin-top: 8px;">
+                  <input
+                    type="text"
+                    id="customFilenameInput"
+                    placeholder="{platform}_{date}_{num}"
+                    style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-lg, 10px); font-size: 13px;"
+                  />
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" data-i18n="filename-custom-hint">
+                    Tokens: {platform}, {date}, {time}, {quality}, {num}, {title}
                   </div>
                 </div>
               </div>

@@ -26,6 +26,7 @@ export function syncAllSettingsToNative() {
     "mori_download_path",
     "mori_auto_folder",
     "mori_filename",
+    "mori_filename_custom",
     "mori_incognito",
     "mori_auto_download",
     "mori_wifi_only",

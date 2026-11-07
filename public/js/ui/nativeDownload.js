@@ -88,7 +88,13 @@ export async function startNativeDownload(
           const blobUrl = URL.createObjectURL(blobData);
           const ext = resolveExtension(type, url);
           const sanitizedTitle = sanitizeTitle(title, type);
-          const fileName = generateFileName(sanitizedTitle, ext, sourceUrl, url);
+          const fileName = generateFileName(
+            sanitizedTitle,
+            ext,
+            sourceUrl,
+            url,
+            type,
+          );
           const a = document.createElement("a");
           a.href = blobUrl;
           a.download = fileName;
@@ -350,7 +356,13 @@ export async function startNativeDownload(
     }
 
     const sanitizedTitle = sanitizeTitle(title, type);
-    let fileName = generateFileName(sanitizedTitle, ext, sourceUrl, url);
+    let fileName = generateFileName(
+      sanitizedTitle,
+      ext,
+      sourceUrl,
+      url,
+      type,
+    );
 
     const isAudio = /mp3|audio|128k|48k|m4a|wav|flac/i.test(type);
     const rawVideoFolder = (localStorage.getItem("mori_download_path") || "").trim();

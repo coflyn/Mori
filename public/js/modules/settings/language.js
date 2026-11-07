@@ -123,6 +123,22 @@ export function setupCustomSelect(selectId, storageKey, textId, menuId) {
       if (storageKey === "mori_ui_corner") applyUiCorner();
       if (storageKey === "mori_sound_pack") previewSound(val);
 
+      if (storageKey === "mori_filename") {
+        const customFilenameBox = document.getElementById("customFilenameBox");
+        const customFilenameInput = document.getElementById("customFilenameInput");
+        if (val === "custom") {
+          customFilenameBox?.classList.remove("hidden");
+          if (customFilenameInput) {
+            customFilenameInput.value =
+              localStorage.getItem("mori_filename_custom") ||
+              "{platform}_{date}_{num}";
+            customFilenameInput.focus();
+          }
+        } else {
+          customFilenameBox?.classList.add("hidden");
+        }
+      }
+
       const labelText =
         select.closest(".settings-item")?.querySelector(".settings-title span")
           ?.textContent || "Setting";
@@ -139,6 +155,19 @@ export function updateCustomSelectsUI() {
   if (filenameText)
     filenameText.textContent =
       lang[`filename-${currentFilename}`] || currentFilename;
+
+  const customFilenameBox = document.getElementById("customFilenameBox");
+  const customFilenameInput = document.getElementById("customFilenameInput");
+  if (customFilenameBox && customFilenameInput) {
+    if (currentFilename === "custom") {
+      customFilenameBox.classList.remove("hidden");
+      customFilenameInput.value =
+        localStorage.getItem("mori_filename_custom") ||
+        "{platform}_{date}_{num}";
+    } else {
+      customFilenameBox.classList.add("hidden");
+    }
+  }
 
   const currentUA = localStorage.getItem("mori_user_agent") || "default";
   const userAgentText = document.getElementById("userAgentText");
@@ -373,6 +402,15 @@ export function initLanguageAndNavigation() {
   setupCustomSelect("dohSelect", "mori_doh", "dohText", "dohMenu");
   setupCustomSelect("toastDurSelect", "mori_toast_dur", "toastDurText", "toastDurMenu");
 
+  const customFilenameInput = document.getElementById("customFilenameInput");
+  if (customFilenameInput) {
+    customFilenameInput.addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      localStorage.setItem("mori_filename_custom", val);
+      syncSettingToNative("mori_filename_custom", val);
+    });
+  }
+
   // 2. Sub-page Navigation
   document.addEventListener("click", (e) => {
     const menuItem = e.target.closest(".settings-menu-item, [data-target]");
@@ -423,7 +461,9 @@ export function initLanguageAndNavigation() {
             if (v !== null) preserved[k] = v;
           });
           Object.keys(localStorage)
-            .filter((k) => k.startsWith("mori_"))
+            .filter(
+              (k) => k.startsWith("mori_") && !k.startsWith("mori_counter_"),
+            )
             .forEach((k) => localStorage.removeItem(k));
           Object.entries(preserved).forEach(([k, v]) =>
             localStorage.setItem(k, v),

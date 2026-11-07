@@ -189,8 +189,14 @@ public class ShareActivity extends AppCompatActivity {
         String downloadPath = prefs.getString("mori_download_path", "Mori");
         String autoFolder = prefs.getString("mori_auto_folder", "true");
         String filenameTemplate = prefs.getString("mori_filename", "title");
+        String filenameCustom = prefs.getString("mori_filename_custom", "");
 
         String escapedUrl = sharedUrl
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", " ")
+                .replace("\r", "");
+        String escapedCustom = filenameCustom
                 .replace("\\", "\\\\")
                 .replace("'", "\\'")
                 .replace("\n", " ")
@@ -204,6 +210,7 @@ public class ShareActivity extends AppCompatActivity {
                 "  localStorage.setItem('mori_download_path', '" + downloadPath + "');" +
                 "  localStorage.setItem('mori_auto_folder', '" + autoFolder + "');" +
                 "  localStorage.setItem('mori_filename', '" + filenameTemplate + "');" +
+                "  localStorage.setItem('mori_filename_custom', '" + escapedCustom + "');" +
                 "} catch(e) {};" +
                 "if (typeof window.onMoriConfigReady === 'function') window.onMoriConfigReady();";
         webView.evaluateJavascript(js, null);
