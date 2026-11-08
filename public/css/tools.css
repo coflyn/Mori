@@ -247,6 +247,21 @@
   transition: var(--transition);
 }
 
+.tool-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.tool-btn-row .tool-execute-btn {
+  flex: 1;
+}
+
+.tool-execute-btn.secondary {
+  background: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
 .tool-execute-btn:active {
   transform: scale(0.98);
 }

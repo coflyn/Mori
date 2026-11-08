@@ -88,6 +88,19 @@ export async function saveToStorage({
 
           const tempSaved = await Filesystem.downloadFile(dlOpts);
           if (tempSaved) {
+            // Guard against saving 200-byte HTML 403 error pages as video files
+            const stat = await Filesystem.stat({
+              path: fullPath + "/" + tempFileName,
+              directory: dir,
+            }).catch(() => null);
+            if (stat && typeof stat.size === "number" && stat.size > 0 && stat.size < 500) {
+              await Filesystem.deleteFile({
+                path: fullPath + "/" + tempFileName,
+                directory: dir,
+              }).catch(() => {});
+              throw new Error(`Downloaded file too small (${stat.size} bytes), CDN access denied`);
+            }
+
             onSaving?.();
             // Rename .tmp to actual file name atomically on completion
             try {
@@ -135,9 +148,11 @@ export async function saveToStorage({
               });
               if (
                 httpRes &&
-                httpRes.status === 200 &&
+                (httpRes.status === 200 || httpRes.status === 206) &&
                 httpRes.data &&
-                typeof httpRes.data === "string"
+                typeof httpRes.data === "string" &&
+                !httpRes.data.startsWith("<!") &&
+                !httpRes.data.startsWith("<html")
               ) {
                 onSaving?.();
                 await Filesystem.writeFile({

@@ -140,5 +140,79 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
     downloadHeaders["Referer"] = "https://aplmate.com/";
   }
 
+  const isTikTok =
+    actualDownloadUrl.includes("tiktokcdn.com") ||
+    actualDownloadUrl.includes("tiktok.com") ||
+    actualDownloadUrl.includes("byteoversea.com") ||
+    actualDownloadUrl.includes("ibyteimg.com") ||
+    actualDownloadUrl.includes("/video/tos/") ||
+    (sourceUrl && sourceUrl.includes("tiktok")) ||
+    (url && url.includes("tiktok"));
+
+  if (isTikTok) {
+    const referer =
+      sourceUrl && sourceUrl.includes("tiktok.com")
+        ? sourceUrl
+        : "https://www.tiktok.com/";
+    downloadHeaders["Referer"] = referer;
+    downloadHeaders["Origin"] = "https://www.tiktok.com";
+    downloadHeaders["Range"] = "bytes=0-";
+  }
+
+  const _R34_DOM = atob("cnVsZTM0Lnh4eA==");
+  const isArtGallery =
+    actualDownloadUrl.includes(_R34_DOM) ||
+    (sourceUrl && sourceUrl.includes(_R34_DOM)) ||
+    (url && url.includes(_R34_DOM));
+
+  if (isArtGallery) {
+    downloadHeaders["Referer"] = `https://${_R34_DOM}/`;
+    downloadHeaders["Origin"] = `https://${_R34_DOM}`;
+  }
+
+  const _PH_DOM = atob("cG9ybmh1Yi5jb20=");
+  const _PH_CDN = atob("cGhuY2RuLmNvbQ==");
+  const isPVideo =
+    actualDownloadUrl.includes(_PH_CDN) ||
+    actualDownloadUrl.includes(_PH_DOM) ||
+    (sourceUrl && sourceUrl.includes(_PH_DOM)) ||
+    (url && url.includes(_PH_DOM));
+
+  if (isPVideo) {
+    downloadHeaders["Referer"] = "https://www." + _PH_DOM + "/";
+    downloadHeaders["Origin"] = "https://www." + _PH_DOM;
+  }
+
+  // Universal Fallback: For sniffer & unlisted platforms, set Referer, Origin, Range, and Cookie
+  if (!downloadHeaders["Referer"]) {
+    try {
+      const refTarget = sourceUrl || actualDownloadUrl;
+      if (refTarget && (refTarget.startsWith("http://") || refTarget.startsWith("https://"))) {
+        const parsed = new URL(refTarget);
+        downloadHeaders["Referer"] = parsed.origin + "/";
+        downloadHeaders["Origin"] = parsed.origin;
+      }
+    } catch (_) {}
+  }
+
+  if (!downloadHeaders["Range"]) {
+    downloadHeaders["Range"] = "bytes=0-";
+  }
+
+  if (!downloadHeaders["Cookie"]) {
+    try {
+      const bridge =
+        typeof window !== "undefined"
+          ? window.MoriMainBridge || window.MoriShareBridge
+          : null;
+      if (bridge?.getCookiesForUrl) {
+        const cookies =
+          bridge.getCookiesForUrl(actualDownloadUrl) ||
+          (sourceUrl ? bridge.getCookiesForUrl(sourceUrl) : "");
+        if (cookies) downloadHeaders["Cookie"] = cookies;
+      }
+    } catch (_) {}
+  }
+
   return downloadHeaders;
 }

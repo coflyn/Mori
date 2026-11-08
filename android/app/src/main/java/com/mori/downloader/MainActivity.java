@@ -34,6 +34,22 @@ import androidx.core.content.ContextCompat;
 import androidx.core.app.ActivityCompat;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.app.Dialog;
+import android.widget.LinearLayout;
+import android.widget.EditText;
+import android.widget.Button;
+import android.widget.TextView;
+import android.view.ViewGroup;
+import android.view.Gravity;
+import android.graphics.Color;
+import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
+import android.view.inputmethod.EditorInfo;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.Collections;
+import org.json.JSONArray;
  
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
@@ -327,6 +343,12 @@ public class MainActivity extends BridgeActivity {
 
         @JavascriptInterface
         public String getCookiesForUrl(String urlStr) {
+            try {
+                String webViewCookies = android.webkit.CookieManager.getInstance().getCookie(urlStr);
+                if (webViewCookies != null && !webViewCookies.isEmpty()) {
+                    return webViewCookies;
+                }
+            } catch (Exception ignored) {}
             try {
                 HttpUrl hu = HttpUrl.parse(urlStr);
                 if (hu != null) {
@@ -935,6 +957,366 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception ignored) {}
             return false;
         }
+
+        @JavascriptInterface
+        public void openSnifferBrowser(String initialUrl) {
+            mainHandler.post(() -> {
+                try {
+                    showSnifferBrowserDialog(initialUrl);
+                } catch (Exception e) {
+                    Log.e("MoriSniffer", "Error opening sniffer browser: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private static boolean isSnifferMedia(String url) {
+        if (url == null || url.isEmpty()) return false;
+        String lower = url.toLowerCase();
+        if (lower.startsWith("data:") || lower.startsWith("javascript:")) return false;
+
+        // Discard web assets, ads, trackers, thumbnails, and preview clips
+        if (lower.contains(".css") || lower.contains(".woff") || lower.contains(".ttf") ||
+            lower.contains(".ico") || lower.contains("favicon") || lower.contains("analytics") ||
+            lower.contains("google-analytics") || lower.contains("doubleclick") ||
+            lower.contains("googlesyndication") || lower.contains("adservice") ||
+            lower.contains("scorecardresearch") || lower.contains("telemetry") ||
+            lower.contains("/thumbnails/") || lower.contains("thumbnail_") ||
+            lower.contains("preview.mp4") || lower.contains("short_preview") ||
+            lower.contains("storyboard") || lower.contains("trafficjunky") ||
+            lower.contains("exoclick") || lower.contains("juicyads") ||
+            lower.contains("tsyndicate") || lower.contains("ero-advertising") ||
+            lower.contains("popads") || lower.contains("adnxs") ||
+            lower.contains("stripchat") || lower.contains("chaturbate") ||
+            lower.contains("cam4") || lower.contains("livejasmin") ||
+            lower.contains("bongacams") || lower.contains("banner") ||
+            lower.contains("adtng") || lower.contains("adtng.com")) {
+            return false;
+        }
+
+        // Discard fragmented HLS chunks (.ts segments like seg-1.ts, frag-1.ts, /hls/*.ts)
+        if (lower.contains(".ts") && (lower.contains("seg-") || lower.contains("frag-") ||
+            lower.contains("chunk") || lower.contains("/hls/") || lower.contains("slice-") ||
+            lower.contains(".ts?"))) {
+            return false;
+        }
+
+        // Standard playable video & stream formats
+        if (lower.contains(".mp4") || lower.contains(".m3u8") || lower.contains(".webm") ||
+            lower.contains(".mov") || lower.contains(".mkv") || lower.contains(".mpd") ||
+            lower.contains(".mp3") || lower.contains(".m4a") || lower.contains(".aac") ||
+            lower.contains(".flac") || lower.contains(".opus") || lower.contains(".ogg")) {
+            return true;
+        }
+
+        // Platform-specific media signatures (TikTok, YouTube, Facebook, Vimeo, Media CDNs)
+        if (lower.contains("/video/tos/") || lower.contains("tiktokcdn.com") ||
+            lower.contains("byteoversea.com") || lower.contains("akamaized.net/video/") ||
+            lower.contains("googlevideo.com/videoplayback") || lower.contains("video_versions") ||
+            lower.contains("player.vimeo.com/video") || lower.contains("fbcdn.net/v/") ||
+            lower.contains("wimg." + new String(new byte[]{114, 117, 108, 101, 51, 52, 46, 120, 120, 120})) ||
+            lower.contains("api-cdn." + new String(new byte[]{114, 117, 108, 101, 51, 52, 46, 120, 120, 120})) ||
+            lower.contains("mime_type=video_mp4") || lower.contains("mime=video") ||
+            lower.contains(new String(new byte[]{112, 104, 110, 99, 100, 110, 46, 99, 111, 109})) ||
+            lower.contains(new String(new byte[]{112, 111, 114, 110, 104, 117, 98, 46, 99, 111, 109}))) {
+            return true;
+        }
+
+        // Booru full image posts (only original images under /images/)
+        if ((lower.contains(new String(new byte[]{114, 117, 108, 101, 51, 52, 46, 120, 120, 120})) || lower.contains("booru")) && lower.contains("/images/") &&
+            (lower.contains(".jpeg") || lower.contains(".jpg") || lower.contains(".png") || lower.contains(".gif") || lower.contains(".webp"))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showSnifferBrowserDialog(String initialUrl) {
+        final Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        final Set<String> detectedUrls = Collections.synchronizedSet(new LinkedHashSet<String>());
+
+        float density = getResources().getDisplayMetrics().density;
+        int barHeight = (int) (52 * density);
+        int pad8 = (int) (8 * density);
+        int pad6 = (int) (6 * density);
+        int pad12 = (int) (12 * density);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.parseColor("#121212"));
+
+        // Header bar
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, barHeight));
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(pad8, pad6, pad8, pad6);
+        header.setBackgroundColor(Color.parseColor("#181818"));
+
+        // Back button
+        TextView btnBack = new TextView(this);
+        btnBack.setText("‹");
+        btnBack.setTextSize(26);
+        btnBack.setTextColor(Color.WHITE);
+        btnBack.setGravity(Gravity.CENTER);
+        btnBack.setPadding(pad8, 0, pad8, 0);
+
+        // Close button
+        TextView btnClose = new TextView(this);
+        btnClose.setText("✕");
+        btnClose.setTextSize(18);
+        btnClose.setTextColor(Color.WHITE);
+        btnClose.setGravity(Gravity.CENTER);
+        btnClose.setPadding(pad8, 0, pad8, 0);
+
+        // URL Input
+        EditText urlInput = new EditText(this);
+        LinearLayout.LayoutParams urlLp = new LinearLayout.LayoutParams(0, (int) (36 * density), 1.0f);
+        urlLp.setMargins(pad6, 0, pad6, 0);
+        urlInput.setLayoutParams(urlLp);
+        urlInput.setBackgroundColor(Color.parseColor("#262626"));
+        urlInput.setTextColor(Color.WHITE);
+        urlInput.setHintTextColor(Color.parseColor("#888888"));
+        urlInput.setHint("Enter URL...");
+        urlInput.setTextSize(13);
+        urlInput.setSingleLine(true);
+        urlInput.setPadding(pad12, 0, pad12, 0);
+        urlInput.setImeOptions(EditorInfo.IME_ACTION_GO);
+
+        // Sniff counter badge button
+        Button btnSniff = new Button(this);
+        btnSniff.setText("Sniff (0)");
+        btnSniff.setTextSize(12);
+        btnSniff.setTextColor(Color.WHITE);
+        btnSniff.setBackgroundColor(Color.parseColor("#333333"));
+        btnSniff.setPadding(pad12, 0, pad12, 0);
+        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, (int) (34 * density));
+        btnLp.setMargins(pad6, 0, pad6, 0);
+        btnSniff.setLayoutParams(btnLp);
+
+        header.addView(btnBack);
+        header.addView(urlInput);
+        header.addView(btnSniff);
+        header.addView(btnClose);
+        root.addView(header);
+
+        // Sniffer WebView
+        WebView sniffWebView = new WebView(this);
+        sniffWebView.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f));
+        WebSettings ws = sniffWebView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setDatabaseEnabled(true);
+        ws.setMediaPlaybackRequiresUserGesture(false);
+        ws.setAllowFileAccess(true);
+        ws.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
+
+        sniffWebView.setWebChromeClient(new WebChromeClient());
+        sniffWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (request == null || request.getUrl() == null) return false;
+                return handleUrlScheme(view, request.getUrl().toString());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleUrlScheme(view, url);
+            }
+
+            private boolean handleUrlScheme(WebView view, String url) {
+                if (url == null || url.isEmpty()) return false;
+                // Allow normal HTTP and HTTPS browsing
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    return false;
+                }
+                // Handle intent:// deep links with web fallback
+                if (url.startsWith("intent://")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        String fallback = intent.getStringExtra("browser_fallback_url");
+                        if (fallback != null && (fallback.startsWith("http://") || fallback.startsWith("https://"))) {
+                            view.loadUrl(fallback);
+                            return true;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                // Silently block app-specific schemes (snssdk1180://, snssdk1233://, tiktok://, market://)
+                // Returning true prevents Android WebView net::ERR_UNKNOWN_URL_SCHEME error
+                return true;
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                detectedUrls.clear();
+                mainHandler.post(() -> {
+                    btnSniff.setText("Sniff (0)");
+                    btnSniff.setBackgroundColor(Color.parseColor("#333333"));
+                });
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                if (request != null && request.getUrl() != null) {
+                    String reqUrl = request.getUrl().toString();
+                    if (isSnifferMedia(reqUrl)) {
+                        detectedUrls.add(reqUrl);
+                        mainHandler.post(() -> {
+                            btnSniff.setText("Sniff (" + detectedUrls.size() + ")");
+                            btnSniff.setBackgroundColor(Color.parseColor("#2E7D32"));
+                        });
+                    }
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String finishedUrl) {
+                super.onPageFinished(view, finishedUrl);
+                urlInput.setText(finishedUrl);
+            }
+        });
+
+        // Continuous DOM & Network scanner (handles dynamically streamed video upon user scroll / play)
+        final Runnable periodicScanner = new Runnable() {
+            @Override
+            public void run() {
+                if (!dialog.isShowing()) return;
+                try {
+                    sniffWebView.evaluateJavascript(
+                        "(function(){" +
+                        "  try {" +
+                        "    var d = [];" +
+                        "    document.querySelectorAll('video, audio').forEach(function(el){" +
+                        "      if (el.src && el.src.startsWith('http')) d.push(el.src);" +
+                        "      if (el.currentSrc && el.currentSrc.startsWith('http')) d.push(el.currentSrc);" +
+                        "      el.querySelectorAll('source').forEach(function(s){" +
+                        "        if (s.src && s.src.startsWith('http')) d.push(s.src);" +
+                        "      });" +
+                        "    });" +
+                        "    var gv = document.getElementById('gelcomVideoPlayer');" +
+                        "    if (gv) {" +
+                        "      if (gv.src && gv.src.startsWith('http')) d.push(gv.src);" +
+                        "      gv.querySelectorAll('source').forEach(function(s){ if (s.src && s.src.startsWith('http')) d.push(s.src); });" +
+                        "    }" +
+                        "    var gi = document.getElementById('image');" +
+                        "    if (gi && gi.src && gi.src.startsWith('http')) d.push(gi.src);" +
+                        "    var ifrs = document.getElementsByTagName('iframe');" +
+                        "    for (var i = 0; i < ifrs.length; i++) {" +
+                        "      if (ifrs[i].src && ifrs[i].src.match(/^http.*/)) d.push(ifrs[i].src);" +
+                        "    }" +
+                        "    if (window.performance && window.performance.getEntriesByType) {" +
+                        "      window.performance.getEntriesByType('resource').forEach(function(r) {" +
+                        "        d.push(r.name);" +
+                        "      });" +
+                        "    }" +
+                        "    for (var k in window) {" +
+                        "      if (k.indexOf('flashvars') !== -1 && window[k] && window[k].mediaDefinitions) {" +
+                        "        window[k].mediaDefinitions.forEach(function(m){ if (m && m.videoUrl) d.push(m.videoUrl); });" +
+                        "      }" +
+                        "    }" +
+                        "    return JSON.stringify(d);" +
+                        "  } catch(e) { return '[]'; }" +
+                        "})();",
+                        resJson -> {
+                            if (resJson != null && !resJson.isEmpty() && !resJson.equals("\"[]\"")) {
+                                try {
+                                    String clean = resJson;
+                                    if (clean.startsWith("\"") && clean.endsWith("\"")) {
+                                        clean = clean.substring(1, clean.length() - 1)
+                                                     .replace("\\\"", "\"")
+                                                     .replace("\\\\", "\\");
+                                    }
+                                    JSONArray arr = new JSONArray(clean);
+                                    for (int i = 0; i < arr.length(); i++) {
+                                        String itemUrl = arr.getString(i);
+                                        if (isSnifferMedia(itemUrl)) {
+                                            detectedUrls.add(itemUrl);
+                                        }
+                                    }
+                                    mainHandler.post(() -> {
+                                        btnSniff.setText("Sniff (" + detectedUrls.size() + ")");
+                                        if (detectedUrls.size() > 0) {
+                                            btnSniff.setBackgroundColor(Color.parseColor("#2E7D32"));
+                                        }
+                                    });
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    );
+                } catch (Exception ignored) {}
+                if (dialog.isShowing()) {
+                    mainHandler.postDelayed(this, 1500);
+                }
+            }
+        };
+
+        mainHandler.postDelayed(periodicScanner, 1500);
+
+        root.addView(sniffWebView);
+        dialog.setContentView(root);
+
+        btnBack.setOnClickListener(v -> {
+            if (sniffWebView.canGoBack()) sniffWebView.goBack();
+        });
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        urlInput.setOnEditorActionListener((v, actionId, event) -> {
+            String target = urlInput.getText().toString().trim();
+            if (!target.isEmpty()) {
+                if (!target.startsWith("http://") && !target.startsWith("https://")) {
+                    target = "https://" + target;
+                }
+                sniffWebView.loadUrl(target);
+            }
+            return true;
+        });
+
+        btnSniff.setOnClickListener(v -> {
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("pageTitle", sniffWebView.getTitle() != null ? sniffWebView.getTitle() : "Live Sniffed Page");
+                payload.put("pageUrl", sniffWebView.getUrl() != null ? sniffWebView.getUrl() : "");
+                JSONArray urlArray = new JSONArray();
+                synchronized (detectedUrls) {
+                    for (String u : detectedUrls) {
+                        urlArray.put(u);
+                    }
+                }
+                payload.put("urls", urlArray);
+                final String jsonStr = payload.toString();
+
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().evaluateJavascript(
+                        "if (typeof window.__moriLiveSnifferCallback === 'function') { " +
+                        "  window.__moriLiveSnifferCallback(" + jsonStr + "); " +
+                        "}", null);
+                }
+            } catch (Exception ignored) {}
+            dialog.dismiss();
+        });
+
+        dialog.setOnDismissListener(d -> {
+            mainHandler.removeCallbacks(periodicScanner);
+            sniffWebView.stopLoading();
+            sniffWebView.loadUrl("about:blank");
+            sniffWebView.destroy();
+        });
+
+        String target = initialUrl != null ? initialUrl.trim() : "";
+        if (target.isEmpty()) target = "https://google.com";
+        else if (!target.startsWith("http://") && !target.startsWith("https://")) {
+            target = "https://" + target;
+        }
+        urlInput.setText(target);
+        sniffWebView.loadUrl(target);
+
+        dialog.show();
     }
 
     @Override

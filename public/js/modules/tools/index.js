@@ -112,12 +112,143 @@ function initSnifferController() {
   const input = document.getElementById("snifferUrlInput");
   const pasteBtn = document.getElementById("snifferPasteBtn");
   const runBtn = document.getElementById("snifferRunBtn");
+  const liveBtn = document.getElementById("snifferLiveBtn");
   const loader = document.getElementById("snifferLoader");
   const resultsContainer = document.getElementById("snifferResults");
   const filterChips = document.querySelectorAll(".sniffer-filter-chip");
 
   let lastSniffData = null;
   let activeFilter = "all";
+
+  // Live In-App Browser callback bridge
+  window.__moriLiveSnifferCallback = (data) => {
+    try {
+      const pageTitle = data?.pageTitle || "Live Browser Capture";
+      const pageUrl = data?.pageUrl || "";
+      const rawUrls = Array.isArray(data?.urls) ? data.urls : [];
+
+      const seen = new Set();
+      const videos = [];
+      const audios = [];
+      const images = [];
+
+      const VIDEO_EXT = /\.(mp4|webm|mov|mkv|m4v|3gp|avi|flv)(\?|#|$)/i;
+      const STREAM_EXT = /\.(m3u8|mpd)(\?|#|$)/i;
+      const SEGMENT_EXT = /\.ts(\?|#|$)/i;
+      const AUDIO_EXT = /\.(mp3|m4a|wav|aac|flac|ogg|opus|weba)(\?|#|$)/i;
+      const IMAGE_EXT = /\.(jpe?g|png|webp|gif|svg|avif|bmp)(\?|#|$)/i;
+
+      for (const u of rawUrls) {
+        if (!u || seen.has(u)) continue;
+        seen.add(u);
+
+        // Discard ad networks, trackers, mouseover previews, and booru thumbnails
+        if (
+          /adtng|preview\.mp4|short_preview|storyboard|trafficjunky|exoclick|juicyads|doubleclick|adservice|analytics|telemetry|\/thumbnails\/|thumbnail_/i.test(
+            u,
+          )
+        ) {
+          continue;
+        }
+
+        // TikTok CDN classification:
+        // p16 / p19 / tos-*-p- = Photo / Cover thumbnail
+        // v16 / v19 / tos-*-v- / /video/tos/ = Video stream
+        const isTikTokImage =
+          /(?:[/-]p\d+[-.]|\/tos-[a-z0-9]+-p-)/i.test(u) ||
+          u.includes("p16-") ||
+          u.includes("p19-") ||
+          u.includes("ibyteimg.com");
+
+        const isTikTokVideo =
+          !isTikTokImage &&
+          (/(?:[/-]v\d+[-.]|\/video\/tos\/|\/tos-[a-z0-9]+-v-)/i.test(u) ||
+            u.includes("v16-") ||
+            u.includes("v19-") ||
+            u.includes("mime_type=video_mp4"));
+
+        const _NET_SIG = atob("cGhuY2Ru");
+        const _R34_SIG = atob("cnVsZTM0Lnh4eA==");
+        const isSpecialStream =
+          u.includes(_NET_SIG) ||
+          (u.includes(_R34_SIG) && (u.includes(".mp4") || u.includes(".webm")));
+
+        if (
+          !isTikTokImage &&
+          (VIDEO_EXT.test(u) ||
+            STREAM_EXT.test(u) ||
+            SEGMENT_EXT.test(u) ||
+            u.includes("videoplayback") ||
+            isTikTokVideo ||
+            isSpecialStream)
+        ) {
+          const videoTitle = isTikTokVideo
+            ? `${pageTitle} (TikTok Video ${videos.length + 1})`
+            : `${pageTitle} (Video ${videos.length + 1})`;
+          videos.push({
+            url: u,
+            type: "VIDEO",
+            title: videoTitle,
+            sourceUrl: pageUrl || u,
+          });
+        } else if (AUDIO_EXT.test(u)) {
+          audios.push({
+            url: u,
+            type: "AUDIO",
+            title: `${pageTitle} (Audio ${audios.length + 1})`,
+            sourceUrl: pageUrl || u,
+          });
+        } else if (IMAGE_EXT.test(u) || isTikTokImage) {
+          const imgTitle = isTikTokImage
+            ? `${pageTitle} (TikTok Cover ${images.length + 1})`
+            : `${pageTitle} (Image ${images.length + 1})`;
+          images.push({
+            url: u,
+            type: "IMAGE",
+            title: imgTitle,
+            sourceUrl: pageUrl || u,
+          });
+        }
+      }
+
+      // HLS stream pruning: prioritize m3u8, prune fragmented .ts chunks
+      const hasHls = videos.some((v) => STREAM_EXT.test(v.url));
+      const finalVideos = hasHls
+        ? videos.filter((v) => !SEGMENT_EXT.test(v.url))
+        : videos;
+
+      const formattedData = {
+        status: true,
+        pageTitle,
+        pageUrl,
+        videos: finalVideos,
+        audios,
+        images,
+        total: finalVideos.length + audios.length + images.length,
+      };
+
+      lastSniffData = formattedData;
+      activeFilter = "all";
+      filterChips.forEach((c) => {
+        if (c.getAttribute("data-filter") === "all") c.classList.add("active");
+        else c.classList.remove("active");
+      });
+      renderSnifferResults(formattedData, activeFilter);
+      showToast(`${formattedData.total} media item(s) captured from live browser!`);
+    } catch (e) {
+      console.warn("Live sniffer parsing error:", e);
+    }
+  };
+
+  liveBtn?.addEventListener("click", () => {
+    triggerHaptic("medium");
+    const targetUrl = input?.value?.trim() || "";
+    if (window.MoriMainBridge?.openSnifferBrowser) {
+      window.MoriMainBridge.openSnifferBrowser(targetUrl);
+    } else {
+      showToast("Live Browser requires the Mori Android app for Chromium engine access.");
+    }
+  });
 
   pasteBtn?.addEventListener("click", async () => {
     triggerHaptic("light");
@@ -269,7 +400,7 @@ function initSnifferController() {
         const btn = e.currentTarget;
         btn.disabled = true;
         const dlType = item.type === "VIDEO" ? "MP4" : item.type === "AUDIO" ? "MP3" : "JPG";
-        await startNativeDownload(item.url, dlType, item.title, btn, item.url);
+        await startNativeDownload(item.url, dlType, item.title, btn, item.sourceUrl || item.url);
         btn.disabled = false;
       });
 

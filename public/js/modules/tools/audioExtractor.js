@@ -53,9 +53,20 @@ export function audioBufferToWav(audioBuffer, isStereo = true) {
   return new Blob([wavBuffer], { type: "audio/wav" });
 }
 
-export async function extractAudioFromVideoFile(file, { channels = "stereo" } = {}) {
+export async function extractAudioFromVideoFile(
+  file,
+  { channels = "stereo" } = {},
+) {
   if (!file || !(file instanceof Blob || file instanceof File)) {
     throw new Error("Invalid video file provided.");
+  }
+
+  // Mobile WebView memory protection: prevent OOM crashes on huge videos
+  const MAX_SAFE_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB limit
+  if (file.size > MAX_SAFE_VIDEO_SIZE) {
+    throw new Error(
+      "Video file is too large for in-browser extraction (>200MB). Please select a smaller clip to prevent browser memory crash.",
+    );
   }
 
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -80,6 +91,11 @@ export async function extractAudioFromVideoFile(file, { channels = "stereo" } = 
       format: "audio/wav",
       ext: "wav",
     };
+  } catch (err) {
+    if (err.message?.includes("too large")) throw err;
+    throw new Error(
+      "Could not extract audio track from this video file. It may be silent or use an unsupported audio codec.",
+    );
   } finally {
     try {
       await audioCtx.close();

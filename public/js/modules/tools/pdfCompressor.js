@@ -1,4 +1,5 @@
 // pdfCompressor.js — PDF Compressor via pdf.js rendering + pdf-lib re-packaging
+// High-performance binary stream pipeline using canvas.toBlob & ArrayBuffer
 import { ensurePdfLib } from "../../utils/pdfHelper.js";
 
 let pdfjsLibPromise = null;
@@ -11,7 +12,8 @@ export async function ensurePdfJs() {
       script.src = "js/vendor/pdf.min.js";
       script.onload = () => {
         if (window.pdfjsLib) {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "js/vendor/pdf.worker.min.js";
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "js/vendor/pdf.worker.min.js";
         }
         resolve(window.pdfjsLib);
       };
@@ -68,6 +70,8 @@ export async function compressPdfFile(
 
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     onProgress?.(pageNum, numPages);
+    // Yield event loop to ensure UI progress bar / indicator renders smoothly
+    await new Promise((r) => setTimeout(r, 0));
 
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: cfg.scale });
@@ -85,24 +89,23 @@ export async function compressPdfFile(
       viewport,
     }).promise;
 
-    const dataUrl = canvas.toDataURL("image/jpeg", cfg.quality);
-    const base64 = dataUrl.split(",")[1];
-    const binaryStr = atob(base64);
-    const len = binaryStr.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
+    // High performance zero-copy blob pipeline (eliminates atob base64 string loops)
+    const imgBlob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", cfg.quality),
+    );
 
-    const embeddedImage = await newPdf.embedJpg(bytes.buffer);
-    const origViewport = page.getViewport({ scale: 1.0 });
-    const newPage = newPdf.addPage([origViewport.width, origViewport.height]);
-    newPage.drawImage(embeddedImage, {
-      x: 0,
-      y: 0,
-      width: origViewport.width,
-      height: origViewport.height,
-    });
+    if (imgBlob) {
+      const imgBuffer = await imgBlob.arrayBuffer();
+      const embeddedImage = await newPdf.embedJpg(imgBuffer);
+      const origViewport = page.getViewport({ scale: 1.0 });
+      const newPage = newPdf.addPage([origViewport.width, origViewport.height]);
+      newPage.drawImage(embeddedImage, {
+        x: 0,
+        y: 0,
+        width: origViewport.width,
+        height: origViewport.height,
+      });
+    }
 
     canvas.width = 0;
     canvas.height = 0;
