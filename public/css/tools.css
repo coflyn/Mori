@@ -82,7 +82,7 @@
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   background-color: transparent;
   color: var(--text-secondary);
@@ -237,8 +237,7 @@
   border-radius: var(--radius-xl);
   font-size: 0.9rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.3px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -358,8 +357,7 @@
   border-radius: var(--radius-l, 8px);
   font-size: 0.82rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.15s ease, opacity 0.15s ease;
@@ -408,8 +406,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-main);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .sflgl-detail-row {
@@ -421,8 +418,8 @@
 .sflgl-label {
   font-size: 0.68rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
   color: var(--text-secondary);
 }
 
@@ -577,7 +574,7 @@
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   background: var(--bg-color);
   color: var(--text-secondary);
@@ -623,8 +620,7 @@
   border-radius: var(--radius-l, 6px);
   font-size: 0.82rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   cursor: pointer;
 }
 
@@ -715,7 +711,7 @@
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  text-transform: uppercase;
+  text-transform: capitalize;
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
@@ -786,7 +782,7 @@
 .tiktok-stat-lbl {
   font-size: 0.62rem;
   color: var(--text-secondary);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -955,7 +951,7 @@
 .anime-meta-col .lbl {
   font-size: 0.62rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   color: var(--text-secondary);
 }
@@ -1008,8 +1004,7 @@
 .dropzone-hint {
   font-size: 0.72rem;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .tool-file-preview-wrap {
@@ -1095,8 +1090,8 @@
 .tool-config-label {
   font-size: 0.68rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
   color: var(--text-secondary);
 }
 
@@ -1192,7 +1187,7 @@
 .username-card-category {
   font-size: 0.65rem;
   color: var(--text-secondary);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -1208,7 +1203,7 @@
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 4px;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   border: 1px solid var(--border-color);
 }
