@@ -102,7 +102,8 @@ export function initTools() {
 }
 
 function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  if (!s || typeof s !== "string") return "";
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 // -------------------------------------------------------------
@@ -245,8 +246,13 @@ function initSnifferController() {
     const targetUrl = input?.value?.trim() || "";
     if (window.MoriMainBridge?.openSnifferBrowser) {
       window.MoriMainBridge.openSnifferBrowser(targetUrl);
+    } else if (window.webkit?.messageHandlers?.moriNativeBridge) {
+      window.webkit.messageHandlers.moriNativeBridge.postMessage({
+        action: "openSnifferBrowser",
+        url: targetUrl,
+      });
     } else {
-      showToast("Live Browser requires the Mori Android app for Chromium engine access.");
+      showToast("Live Browser requires the Mori mobile native app.");
     }
   });
 
@@ -380,7 +386,7 @@ function initSnifferController() {
       card.innerHTML = `
         ${previewHtml}
         <div class="sniffer-item-info">
-          <div class="sniffer-item-badge ${item.type.toLowerCase()}">${esc(item.type)}</div>
+          <div class="sniffer-item-badge ${item.type.toLowerCase()}">${esc(capitalize(item.type))}</div>
           <p class="sniffer-item-title" title="${esc(item.title)}">${esc(item.title)}</p>
           <p class="sniffer-item-url" title="${esc(item.url)}">${esc(item.url)}</p>
           <div class="sniffer-item-actions">
