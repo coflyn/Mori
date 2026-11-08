@@ -14,6 +14,7 @@ import com.getcapacitor.BridgeWebViewClient;
 import java.io.File;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.net.URLDecoder;
 import android.os.Environment;
 import android.media.MediaScannerConnection;
@@ -68,14 +69,24 @@ public class MainActivity extends BridgeActivity {
         private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
 
         @Override
-        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-            cookieStore.put(url.host(), cookies);
+        public synchronized void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+            List<Cookie> existing = cookieStore.get(url.host());
+            HashMap<String, Cookie> map = new HashMap<>();
+            if (existing != null) {
+                for (Cookie c : existing) {
+                    map.put(c.name(), c);
+                }
+            }
+            for (Cookie c : cookies) {
+                map.put(c.name(), c);
+            }
+            cookieStore.put(url.host(), new ArrayList<>(map.values()));
         }
 
         @Override
-        public List<Cookie> loadForRequest(HttpUrl url) {
+        public synchronized List<Cookie> loadForRequest(HttpUrl url) {
             List<Cookie> cookies = cookieStore.get(url.host());
-            return cookies != null ? cookies : new ArrayList<>();
+            return cookies != null ? new ArrayList<>(cookies) : new ArrayList<>();
         }
     };
 
@@ -278,7 +289,18 @@ public class MainActivity extends BridgeActivity {
 
                 JSONObject resHeaders = new JSONObject();
                 for (String name : res.headers().names()) {
-                    resHeaders.put(name.toLowerCase(), res.header(name));
+                    String lower = name.toLowerCase();
+                    if ("set-cookie".equals(lower)) {
+                        List<String> values = res.headers().values(name);
+                        StringBuilder sb = new StringBuilder();
+                        for (String v : values) {
+                            if (sb.length() > 0) sb.append("\n");
+                            sb.append(v);
+                        }
+                        resHeaders.put("set-cookie", sb.toString());
+                    } else {
+                        resHeaders.put(lower, res.header(name));
+                    }
                 }
 
                 String resData;
@@ -300,6 +322,69 @@ public class MainActivity extends BridgeActivity {
                 Log.e("MoriMain", "httpRequest error: " + e.getMessage());
                 String msg = e.getMessage() != null ? e.getMessage().replace("\"", "'") : e.getClass().getSimpleName();
                 return "{\"status\":0,\"data\":\"\",\"error\":\"" + msg + "\"}";
+            }
+        }
+
+        @JavascriptInterface
+        public String getCookiesForUrl(String urlStr) {
+            try {
+                HttpUrl hu = HttpUrl.parse(urlStr);
+                if (hu != null) {
+                    List<Cookie> cookies = memoryCookieJar.loadForRequest(hu);
+                    StringBuilder sb = new StringBuilder();
+                    for (Cookie c : cookies) {
+                        if (sb.length() > 0) sb.append("; ");
+                        sb.append(c.name()).append("=").append(c.value());
+                    }
+                    return sb.toString();
+                }
+            } catch (Exception ignored) {}
+            return "";
+        }
+
+        @JavascriptInterface
+        public boolean saveBase64File(String base64Data, String folder, String fileName) {
+            try {
+                if (base64Data == null || fileName == null || base64Data.isEmpty() || fileName.isEmpty()) return false;
+                byte[] bytes = Base64.decode(base64Data, Base64.NO_WRAP);
+                
+                File dir = null;
+                boolean hasAllFiles = hasAllFilesPermission();
+                if (hasAllFiles && folder != null && !folder.isEmpty()) {
+                    dir = new File(Environment.getExternalStorageDirectory(), folder.replaceFirst("^/+", ""));
+                }
+                
+                if (dir == null || !dir.exists()) {
+                    File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    String sub = "Mori";
+                    if (folder != null && !folder.isEmpty()) {
+                        String clean = folder.replaceFirst("^/+", "");
+                        if (clean.toLowerCase().startsWith("download/")) {
+                            sub = clean.substring(9).replaceFirst("^/+", "");
+                        } else if (clean.equalsIgnoreCase("download")) {
+                            sub = "Mori";
+                        } else {
+                            sub = "Mori/" + clean;
+                        }
+                    }
+                    dir = new File(downloadsDir, sub);
+                }
+                
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                
+                File targetFile = new File(dir, fileName);
+                try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+                    fos.write(bytes);
+                    fos.flush();
+                }
+                
+                MediaScannerConnection.scanFile(MainActivity.this, new String[]{targetFile.getAbsolutePath()}, null, null);
+                return true;
+            } catch (Exception e) {
+                Log.e("MoriMain", "saveBase64File error: " + e.getMessage());
+                return false;
             }
         }
 
@@ -907,6 +992,15 @@ public class MainActivity extends BridgeActivity {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "if (typeof window.moriPauseAllMedia === 'function') window.moriPauseAllMedia();", null);
         }
     }
 

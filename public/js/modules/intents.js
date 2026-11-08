@@ -257,7 +257,8 @@ if (App && typeof App.addListener === "function") {
         }, 300);
       }
     } else {
-      // App going to background, reset flags & re-lock sensitive areas
+      // App going to background, pause active media, reset flags & re-lock sensitive areas
+      pauseAllMedia(document);
       setIntentPending(false);
       setHistoryUnlocked(false);
       setSettingsUnlocked(false);

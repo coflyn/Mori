@@ -149,3 +149,22 @@ export function stopAllMedia(rootEl = document) {
     console.warn("stopAllMedia error:", err);
   }
 }
+
+if (typeof window !== "undefined") {
+  window.moriPauseAllMedia = () => pauseAllMedia(document);
+  window.moriStopAllMedia = () => stopAllMedia(document);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      pauseAllMedia(document);
+    }
+  });
+
+  window.addEventListener("pagehide", () => {
+    pauseAllMedia(document);
+  });
+
+  window.addEventListener("blur", () => {
+    pauseAllMedia(document);
+  });
+}

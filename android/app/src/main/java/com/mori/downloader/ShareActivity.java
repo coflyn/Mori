@@ -72,14 +72,24 @@ public class ShareActivity extends AppCompatActivity {
         private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
 
         @Override
-        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-            cookieStore.put(url.host(), cookies);
+        public synchronized void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+            List<Cookie> existing = cookieStore.get(url.host());
+            HashMap<String, Cookie> map = new HashMap<>();
+            if (existing != null) {
+                for (Cookie c : existing) {
+                    map.put(c.name(), c);
+                }
+            }
+            for (Cookie c : cookies) {
+                map.put(c.name(), c);
+            }
+            cookieStore.put(url.host(), new ArrayList<>(map.values()));
         }
 
         @Override
-        public List<Cookie> loadForRequest(HttpUrl url) {
+        public synchronized List<Cookie> loadForRequest(HttpUrl url) {
             List<Cookie> cookies = cookieStore.get(url.host());
-            return cookies != null ? cookies : new ArrayList<>();
+            return cookies != null ? new ArrayList<>(cookies) : new ArrayList<>();
         }
     };
 
@@ -354,7 +364,18 @@ public class ShareActivity extends AppCompatActivity {
 
                 JSONObject resHeaders = new JSONObject();
                 for (String name : res.headers().names()) {
-                    resHeaders.put(name.toLowerCase(), res.header(name));
+                    String lower = name.toLowerCase();
+                    if ("set-cookie".equals(lower)) {
+                        List<String> values = res.headers().values(name);
+                        StringBuilder sb = new StringBuilder();
+                        for (String v : values) {
+                            if (sb.length() > 0) sb.append("\n");
+                            sb.append(v);
+                        }
+                        resHeaders.put("set-cookie", sb.toString());
+                    } else {
+                        resHeaders.put(lower, res.header(name));
+                    }
                 }
 
                 String resData;
@@ -376,6 +397,23 @@ public class ShareActivity extends AppCompatActivity {
                 Log.e(TAG, "httpRequest error: " + e.getMessage());
                 return "{\"status\":0,\"data\":\"\",\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}";
             }
+        }
+
+        @JavascriptInterface
+        public String getCookiesForUrl(String urlStr) {
+            try {
+                HttpUrl hu = HttpUrl.parse(urlStr);
+                if (hu != null) {
+                    List<Cookie> cookies = memoryCookieJar.loadForRequest(hu);
+                    StringBuilder sb = new StringBuilder();
+                    for (Cookie c : cookies) {
+                        if (sb.length() > 0) sb.append("; ");
+                        sb.append(c.name()).append("=").append(c.value());
+                    }
+                    return sb.toString();
+                }
+            } catch (Exception ignored) {}
+            return "";
         }
 
         /**

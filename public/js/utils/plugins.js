@@ -1,15 +1,17 @@
 // Capacitor Native Plugins Registry & Auto-Sync
 
-export let CapacitorHttp = window.Capacitor?.Plugins?.CapacitorHttp;
-export let Filesystem = window.Capacitor?.Plugins?.Filesystem;
-export let Toast = window.Capacitor?.Plugins?.Toast;
-export let Clipboard = window.Capacitor?.Plugins?.Clipboard;
-export let App = window.Capacitor?.Plugins?.App;
-export let Share = window.Capacitor?.Plugins?.Share;
-export let NativeBiometric = window.Capacitor?.Plugins?.NativeBiometric;
-export let Media = window.Capacitor?.Plugins?.Media;
-export let Haptics = window.Capacitor?.Plugins?.Haptics;
-export let Network = window.Capacitor?.Plugins?.Network;
+const win = typeof window !== "undefined" ? window : globalThis;
+
+export let CapacitorHttp = win.Capacitor?.Plugins?.CapacitorHttp;
+export let Filesystem = win.Capacitor?.Plugins?.Filesystem;
+export let Toast = win.Capacitor?.Plugins?.Toast;
+export let Clipboard = win.Capacitor?.Plugins?.Clipboard;
+export let App = win.Capacitor?.Plugins?.App;
+export let Share = win.Capacitor?.Plugins?.Share;
+export let NativeBiometric = win.Capacitor?.Plugins?.NativeBiometric;
+export let Media = win.Capacitor?.Plugins?.Media;
+export let Haptics = win.Capacitor?.Plugins?.Haptics;
+export let Network = win.Capacitor?.Plugins?.Network;
 
 export function syncCapacitorPlugins() {
   const plugins = window.Capacitor?.Plugins;
