@@ -18,6 +18,13 @@ textarea,
   user-select: text;
 }
 
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+}
+
 html,
 body {
   overflow-x: hidden;
