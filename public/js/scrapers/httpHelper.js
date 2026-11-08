@@ -123,8 +123,14 @@ export async function scraperFetch(options, serverName = "Server") {
     httpConfig.responseType = options.responseType;
 
   let response;
-  const nativeBridge = window.MoriMainBridge || window.MoriShareBridge;
-  const capHttp = window.Capacitor?.Plugins?.CapacitorHttp || CapacitorHttp;
+  const nativeBridge =
+    typeof window !== "undefined"
+      ? window.MoriMainBridge || window.MoriShareBridge
+      : null;
+  const capHttp =
+    typeof window !== "undefined"
+      ? window.Capacitor?.Plugins?.CapacitorHttp || CapacitorHttp
+      : null;
 
   if (nativeBridge?.httpRequestAsync) {
     let fetchUrl = options.url;
@@ -252,6 +258,7 @@ export async function scraperFetch(options, serverName = "Server") {
       method,
       headers,
       body,
+      redirect: options.redirect || "follow",
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -260,9 +267,16 @@ export async function scraperFetch(options, serverName = "Server") {
       options.responseType === "arraybuffer"
         ? await res.arrayBuffer()
         : await res.text();
+    const headersObj = Object.fromEntries(res.headers.entries());
+    if (typeof res.headers.getSetCookie === "function") {
+      const allCookies = res.headers.getSetCookie();
+      if (allCookies && allCookies.length > 0) {
+        headersObj["set-cookie"] = allCookies.join("\n");
+      }
+    }
     response = {
       status: res.status,
-      headers: Object.fromEntries(res.headers.entries()),
+      headers: headersObj,
       data: resData,
       url: res.url,
     };
