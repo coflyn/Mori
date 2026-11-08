@@ -70,6 +70,14 @@ export function applyGalleryVisibility() {
   }
 }
 
+export function applyToolsVisibility() {
+  const isEnabled = localStorage.getItem("mori_show_tools") !== "false";
+  const toolsNavItem = document.querySelector('.nav-item[data-page="tools"]');
+  if (toolsNavItem) {
+    toolsNavItem.style.display = isEnabled ? "" : "none";
+  }
+}
+
 /**
  * Initializes theme, typography, presets, and toggle listeners
  */
@@ -142,6 +150,37 @@ export function initAppearance() {
         isEnabled
           ? lang["toast-gallery-tab-on"] || "Gallery tab enabled"
           : lang["toast-gallery-tab-off"] || "Gallery tab hidden",
+      );
+    });
+  }
+
+  // 4. Show Tools Tab initialization
+  const showToolsToggle = document.getElementById("showToolsToggle");
+  if (showToolsToggle) {
+    showToolsToggle.checked =
+      localStorage.getItem("mori_show_tools") !== "false";
+    applyToolsVisibility();
+    showToolsToggle.addEventListener("change", (e) => {
+      const isEnabled = e.target.checked;
+      localStorage.setItem("mori_show_tools", isEnabled);
+      applyToolsVisibility();
+      window.dispatchEvent(
+        new CustomEvent("mori_tools_visibility_changed", {
+          detail: { isEnabled },
+        }),
+      );
+
+      // If user is currently on tools page and disables it, redirect to home
+      const activeNav = document.querySelector(".nav-item.active");
+      if (!isEnabled && activeNav?.getAttribute("data-page") === "tools") {
+        document.querySelector('.nav-item[data-page="home"]')?.click();
+      }
+
+      const lang = translations[currentLang] || translations.en;
+      showToast(
+        isEnabled
+          ? lang["toast-tools-tab-on"] || "Tools tab enabled"
+          : lang["toast-tools-tab-off"] || "Tools tab hidden",
       );
     });
   }

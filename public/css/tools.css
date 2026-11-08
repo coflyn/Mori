@@ -1,0 +1,1237 @@
+/* tools.css — Mori Tools Section & Subviews (Strictly Monochrome & Cream) */
+
+#toolsPage {
+  padding-bottom: 8px;
+}
+
+/* Tools Main Menu */
+#toolsMainMenu .page-header {
+  margin-bottom: 20px;
+}
+
+.tools-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tool-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  position: relative;
+}
+
+.tool-card:active {
+  transform: scale(0.98);
+  background-color: var(--bg-color);
+}
+
+/* Tool Icons — Pure Monochrome */
+.tool-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-l, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  transition: transform 0.15s ease;
+}
+
+.tool-card:active .tool-card-icon {
+  transform: scale(0.95);
+}
+
+.tool-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tool-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* Monochrome Badges */
+.tool-badge-pill {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.tool-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  line-height: 1.35;
+}
+
+.tool-card-chevron {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+/* Sub-View Layout */
+.tool-sub-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: toolViewFade 0.15s ease-out;
+}
+
+@keyframes toolViewFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-view-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.tool-view-back-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  color: var(--text-main);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.tool-view-back-btn:active {
+  transform: scale(0.92);
+  background-color: var(--bg-color);
+}
+
+.tool-view-titles h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.tool-view-titles p {
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Tool Input Section (matches Mori Home Input identically) */
+.tool-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tool-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tool-input-wrapper input {
+  width: 100%;
+  padding: 16px 52px 16px 48px;
+  background-color: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-xl);
+  color: var(--text-main);
+  font-size: 1rem;
+  outline: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.tool-input-wrapper input:focus {
+  box-shadow: 4px 4px 0px var(--primary);
+}
+
+.tool-input-icon {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  pointer-events: none;
+  color: var(--text-main);
+  filter: grayscale(1);
+}
+
+.tool-input-action-btn {
+  position: absolute;
+  right: 12px;
+  top: 16px;
+  transform: none;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.tool-input-action-btn:active {
+  transform: scale(0.9);
+}
+
+.tool-execute-btn {
+  padding: 16px;
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-xl);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.tool-execute-btn:active {
+  transform: scale(0.98);
+}
+
+.tool-execute-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loader Card — Monochrome */
+.tool-loader-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 16px 20px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.tool-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--text-main);
+  border-radius: 50%;
+  animation: toolSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes toolSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error Card — Monochrome with subtle border */
+.tool-error-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 16px 20px;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.tool-error-card svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-secondary);
+}
+
+.tool-error-card p {
+  margin: 0;
+}
+
+/* Empty Box */
+.tool-empty-box {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-l, 8px);
+}
+
+/* Common Result Card */
+.tool-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Buttons inside results — Strictly Monochrome */
+.tool-btn-primary,
+.tool-btn-secondary,
+.tool-btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-l, 8px);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  flex: 1;
+}
+
+.tool-btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid var(--primary);
+}
+
+.tool-btn-secondary {
+  background: var(--bg-color);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.tool-btn-accent {
+  background: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.tool-btn-primary:active,
+.tool-btn-secondary:active,
+.tool-btn-accent:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* SFLGL View Styles — Strictly Monochrome */
+.tool-success-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-main);
+}
+
+.tool-success-header svg {
+  color: var(--text-main);
+}
+
+.tool-success-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sflgl-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sflgl-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+}
+
+.sflgl-url-subtext {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  font-family: monospace;
+}
+
+.sflgl-dest-box {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  padding: 12px;
+}
+
+.sflgl-dest-link {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  word-break: break-all;
+  text-decoration: none;
+  display: block;
+  font-family: monospace;
+}
+
+.sflgl-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Sniffer Styles */
+.sniffer-filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sniffer-filter-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-xl, 20px);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.sniffer-filter-chip.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.sniffer-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 2px;
+}
+
+.sniffer-page-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sniffer-found-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sniffer-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.sniffer-media-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sniffer-preview-wrap {
+  width: 100%;
+  max-height: 240px;
+  border-radius: var(--radius-l, 6px);
+  overflow: hidden;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sniffer-preview-wrap video {
+  width: 100%;
+  max-height: 240px;
+}
+
+.sniffer-preview-wrap audio {
+  width: 100%;
+}
+
+.sniffer-preview-wrap.is-audio {
+  background: transparent;
+  padding: 4px 0;
+  border: none;
+}
+
+.sniffer-preview-wrap.is-image img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+}
+
+.sniffer-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Monochrome Badges */
+.sniffer-item-badge {
+  align-self: flex-start;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.sniffer-item-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sniffer-item-url {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.sniffer-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sniffer-dl-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-l, 6px);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.sniffer-dl-btn:disabled {
+  opacity: 0.5;
+}
+
+.sniffer-copy-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-l, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* TikTok Finder Styles — Strictly Monochrome */
+.tiktok-header-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.tiktok-avatar-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+}
+
+.tiktok-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.tiktok-avatar-dl-btn {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 2px solid var(--surface);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tiktok-names-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.tiktok-display-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tiktok-username {
+  margin: 2px 0 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.tiktok-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tiktok-badge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.tiktok-bio {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 10px 12px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+}
+
+.tiktok-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  padding: 10px 4px;
+  text-align: center;
+}
+
+@media (max-width: 380px) {
+  .tiktok-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
+.tiktok-biolink-wrap {
+  display: flex;
+}
+
+.tiktok-biolink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-all;
+  padding: 6px 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+}
+
+.tiktok-stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tiktok-stat-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.tiktok-stat-lbl {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tiktok-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+.tiktok-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.tiktok-meta-key {
+  color: var(--text-secondary);
+}
+
+.tiktok-meta-val {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.tiktok-copyable-val {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-family: monospace;
+}
+
+.truncate-secuid {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tiktok-copy-small-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiktok-footer-actions {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+/* Anime Search Styles */
+.anime-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.anime-upload-btn {
+  flex: 1;
+  height: 48px;
+}
+
+.anime-search-btn {
+  flex: 1.5;
+  height: 48px;
+  padding: 0 16px;
+}
+
+.anime-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.anime-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.anime-clip-wrap {
+  width: 100%;
+  max-height: 240px;
+  border-radius: var(--radius-l, 6px);
+  overflow: hidden;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anime-clip-wrap video {
+  width: 100%;
+  max-height: 240px;
+}
+
+.anime-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.anime-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.anime-main-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.anime-similarity-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--on-primary);
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  font-family: monospace;
+}
+
+.anime-sub-titles {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.anime-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  padding: 8px 12px;
+}
+
+.anime-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.anime-meta-col .lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.anime-meta-col .val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.anime-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* File Dropzones & Conversion Layouts (Strictly Monochrome & Cream) */
+.tool-file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 30px 16px;
+  background: var(--surface);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+
+.tool-file-dropzone:active {
+  background: var(--bg-color);
+  border-color: var(--primary);
+}
+
+.tool-file-dropzone svg {
+  color: var(--text-main);
+  opacity: 0.8;
+}
+
+.dropzone-text {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.dropzone-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tool-file-preview-wrap {
+  width: 100%;
+  border-radius: var(--radius-l, 6px);
+  overflow: hidden;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-file-preview-wrap img {
+  max-height: 220px;
+  width: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.tool-video-preview-wrap {
+  width: 100%;
+  border-radius: var(--radius-l, 6px);
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-video-preview-wrap video {
+  width: 100%;
+  max-height: 220px;
+}
+
+.tool-audio-preview-wrap {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-audio-preview-wrap audio {
+  width: 100%;
+}
+
+.tool-file-meta-info {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+.tool-file-meta-info .val {
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.tool-file-meta-info .sub {
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.tool-config-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-config-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
+.tool-config-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tool-config-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: monospace;
+}
+
+.tool-chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-chip {
+  flex: 1;
+  min-width: 60px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--radius-l, 6px);
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tool-chip.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.tool-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: var(--primary);
+  outline: none;
+  background: var(--border-color);
+  cursor: pointer;
+}
+
+/* Username Checker Grid & Cards — Strictly Monochrome & Cream */
+.username-results-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.username-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  gap: 12px;
+  transition: transform 0.15s ease;
+}
+
+.username-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.username-card-platform {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.username-card-category {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.username-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.username-status-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border-color);
+}
+
+.username-status-badge.taken {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.username-status-badge.available {
+  background: var(--bg-color);
+  color: var(--text-main);
+}
+
+.username-status-badge.checking {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.username-status-badge.error {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.username-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 6px);
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.username-open-link:active {
+  transform: scale(0.9);
+}

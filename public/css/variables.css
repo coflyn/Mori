@@ -10,6 +10,7 @@
   --on-primary: #fffbf2;
   --text-main: #1a1917;
   --text-secondary: #6e6a64;
+  --border-color: rgba(26, 25, 23, 0.12);
   --radius-l: 4px;
   --radius-xl: 4px;
   --transition: all 0.2s ease;
@@ -28,6 +29,7 @@
   --on-primary: #141416;
   --text-main: #f8f8fa;
   --text-secondary: #94949e;
+  --border-color: rgba(248, 248, 250, 0.12);
 }
 
 /* Font Presets */

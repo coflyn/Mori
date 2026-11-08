@@ -63,10 +63,20 @@ import "./modules/download.js";
 import "./ui/downloadBubble.js";
 import { initBgAnimation } from "./modules/bgAnimation.js";
 import { refreshGalleryPage } from "./modules/gallery.js";
-import { applyGalleryVisibility } from "./modules/settings/appearance.js";
+import {
+  applyGalleryVisibility,
+  applyToolsVisibility,
+} from "./modules/settings/appearance.js";
+import {
+  initTools,
+  isInsideToolSubView,
+  closeCurrentToolSubView,
+} from "./modules/tools/index.js";
 
 initBgAnimation();
 applyGalleryVisibility();
+applyToolsVisibility();
+initTools();
 
 // Batch Mode Toggle
 if (batchToggleBtn) {
@@ -194,10 +204,15 @@ window.addEventListener("mori_download_started", refreshHistoryIfVisible);
 window.addEventListener("mori_download_ended", refreshHistoryIfVisible);
 window.addEventListener("mori_download_cancelled", refreshHistoryIfVisible);
 
-const pages = ["home", "gallery", "history", "settings"];
+const pages = ["home", "gallery", "tools", "history", "settings"];
 
 async function switchPage(pageId) {
   if (pageId === "gallery" && localStorage.getItem("mori_show_gallery") === "false") {
+    switchPage("home");
+    return;
+  }
+
+  if (pageId === "tools" && localStorage.getItem("mori_show_tools") === "false") {
     switchPage("home");
     return;
   }
@@ -292,6 +307,12 @@ async function switchPage(pageId) {
   if (pageId === "gallery") {
     refreshGalleryPage();
   }
+
+  if (pageId === "tools") {
+    if (!isInsideToolSubView()) {
+      closeCurrentToolSubView();
+    }
+  }
 }
 
 setTimeout(refreshAllVideoThumbnails, 5000);
@@ -352,9 +373,11 @@ document.addEventListener(
     if (!activeNavItem) return;
 
     const isGalleryOn = localStorage.getItem("mori_show_gallery") !== "false";
-    const activePages = isGalleryOn
-      ? ["home", "gallery", "history", "settings"]
-      : ["home", "history", "settings"];
+    const isToolsOn = localStorage.getItem("mori_show_tools") !== "false";
+    const activePages = ["home"];
+    if (isGalleryOn) activePages.push("gallery");
+    if (isToolsOn) activePages.push("tools");
+    activePages.push("history", "settings");
 
     const currentPage = activeNavItem.getAttribute("data-page");
     const currentIndex = activePages.indexOf(currentPage);
@@ -424,6 +447,11 @@ if (
       }
       activeSubPage.classList.add("hidden");
       document.getElementById("settingsMainMenu")?.classList.remove("hidden");
+      return;
+    }
+
+    if (isInsideToolSubView()) {
+      closeCurrentToolSubView();
       return;
     }
 

@@ -100,10 +100,10 @@ header p {
   width: 100%;
   max-width: 500px;
   background-color: var(--bg-color);
-  border-top: 1px solid var(--primary);
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-around;
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0;
+  padding: 8px 0 calc(10px + env(safe-area-inset-bottom, 0px)) 0;
   z-index: 100;
 }
 
@@ -112,24 +112,31 @@ header p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   text-decoration: none;
   color: var(--text-secondary);
   transition: var(--transition);
   flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
 }
 
 .nav-item svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   transition: var(--transition);
 }
 
 .nav-item span {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.1;
 }
 
 .nav-item.active {
