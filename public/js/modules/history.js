@@ -282,10 +282,25 @@ window.addEventListener("mori_file_saved", async (e) => {
   const target = cleanUrl(url);
   let history = JSON.parse(localStorage.getItem("mori_history") || "[]");
 
-  const isVideo = path.toLowerCase().endsWith(".mp4");
-  const isAudio = path.toLowerCase().endsWith(".mp3");
-  const isImage = /\.(jpg|jpeg|png|webp)/i.test(path);
+  const isVideo = /\.(mp4|webm|mov|mkv|m4v|3gp|flv)(\?|#|$)/i.test(path);
+  const isAudio = /\.(mp3|wav|m4a|aac|flac|ogg|opus|weba)(\?|#|$)/i.test(path);
+  const isImage = /\.(jpe?g|png|webp|gif|svg|avif|bmp)(\?|#|$)/i.test(path);
+  const isPdf = /\.pdf(\?|#|$)/i.test(path);
+  const fileType =
+    e.detail.type ||
+    (isVideo ? "VIDEO" : isAudio ? "MP3" : isPdf ? "PDF" : isImage ? "IMAGE" : "FILE");
   const fileUri = uri || path;
+
+  let itemThumb = e.detail.thumbnail || null;
+  if (
+    typeof itemThumb === "string" &&
+    itemThumb.startsWith("data:") &&
+    itemThumb.length > 25000
+  ) {
+    itemThumb = null;
+  }
+  const itemTitle =
+    e.detail.title || (path ? path.split("/").pop() : "") || "Downloaded Media";
 
   let matched = false;
   history = history.map((item, index) => {
@@ -294,6 +309,7 @@ window.addEventListener("mori_file_saved", async (e) => {
     const isUrlMatch =
       (itemClean && itemClean === target) ||
       (sourceClean && sourceClean === target) ||
+      (item.url && item.url === url) ||
       (item.url && item.url.includes(url)) ||
       (url && url.includes(item.url)) ||
       (item.sourceUrl &&
@@ -303,20 +319,50 @@ window.addEventListener("mori_file_saved", async (e) => {
       matched = true;
       const localFiles = item.localFiles || [];
       const trackTitle = e.detail.title;
+      const thumb = item.thumbnail || item.localThumbnail || itemThumb;
       if (!localFiles.find((f) => f.path === path)) {
         localFiles.push({
           path,
           uri: fileUri,
-          type: isVideo ? "VIDEO" : isAudio ? "MP3" : "IMAGE",
-          thumbnail: item.thumbnail || item.localThumbnail || null,
+          type: fileType,
+          thumbnail: thumb,
           title: trackTitle || item.title,
         });
       }
       // Preserve original playlist title & playlist thumbnail intact!
-      return { ...item, localFiles, localUri: fileUri };
+      return {
+        ...item,
+        thumbnail: item.thumbnail || itemThumb,
+        localFiles,
+        localUri: fileUri,
+      };
     }
     return item;
   });
+
+  if (!matched) {
+    const fileItem = {
+      path,
+      uri: fileUri,
+      type: fileType,
+      thumbnail: itemThumb,
+      title: itemTitle,
+    };
+    const newItem = {
+      title: itemTitle,
+      thumbnail: itemThumb,
+      url: url,
+      sourceUrl: e.detail.sourceUrl || url,
+      timestamp: Date.now(),
+      downloads: [],
+      localFiles: [fileItem],
+      localUri: fileUri,
+      localThumbnail: itemThumb,
+      favorite: false,
+      favTimestamp: 0,
+    };
+    history.unshift(newItem);
+  }
 
   const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
   if (limitVal !== "unlimited") {
@@ -365,7 +411,9 @@ window.addEventListener("mori_file_saved", async (e) => {
 
       if (!localThumbnail || !isValidThumb(localThumbnail)) {
         history = JSON.parse(localStorage.getItem("mori_history") || "[]");
-        const found = history.find((h) => cleanUrl(h.url) === target);
+        const found = history.find(
+          (h) => (target && cleanUrl(h.url) === target) || h.url === url,
+        );
         if (found?.thumbnail && isValidThumb(found.thumbnail)) {
           localThumbnail = found.thumbnail;
         }
@@ -374,7 +422,7 @@ window.addEventListener("mori_file_saved", async (e) => {
       if (localThumbnail && isValidThumb(localThumbnail)) {
         history = JSON.parse(localStorage.getItem("mori_history") || "[]");
         history = history.map((item) => {
-          if (cleanUrl(item.url) === target) {
+          if ((target && cleanUrl(item.url) === target) || item.url === url) {
             const localFiles = item.localFiles || [];
             localFiles.forEach((f) => {
               if (f.path === path) f.thumbnail = localThumbnail;

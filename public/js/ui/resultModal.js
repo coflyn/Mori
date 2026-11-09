@@ -619,6 +619,13 @@ export async function showModal(item, onRedownload) {
     }
 
     if (redownloadBtn) {
+      const isLocalToolItem = typeof item.url === "string" && item.url.startsWith("mori-tool:");
+      if (isLocalToolItem) {
+        redownloadBtn.classList.add("hidden");
+      } else {
+        redownloadBtn.classList.remove("hidden");
+      }
+
       redownloadBtn.onclick = (e) => {
         e.stopPropagation();
         window._moriIsModalOpen = false;

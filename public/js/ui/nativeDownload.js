@@ -57,6 +57,7 @@ export async function startNativeDownload(
   btn,
   sourceUrl,
   resetCancelFlag = true,
+  meta = {},
 ) {
   if (!url || typeof url !== "string" || !url.trim()) {
     showToast(
@@ -517,6 +518,7 @@ export async function startNativeDownload(
       btn,
       originalContent,
       progressContainer,
+      meta,
     });
     return postRes;
   } catch (err) {

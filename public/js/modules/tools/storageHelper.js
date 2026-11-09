@@ -1,11 +1,36 @@
 // storageHelper.js — Helper to save generated/converted blobs to Mori folders or trigger download
 import { Filesystem, showToast, triggerHaptic } from "../../utils/index.js";
 
-export async function saveBlobToMori(blob, fileName, folder = "Download/Mori") {
+export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", meta = {}) {
   if (!blob) {
     showToast("No data to save");
     return { success: false, error: "No blob data" };
   }
+
+  const notifyFileSaved = (savedPath, savedUri) => {
+    const isAudio = /\.(mp3|wav|m4a|aac|flac|ogg|opus|weba)(\?|#|$)/i.test(fileName);
+    const isPdf = /\.pdf(\?|#|$)/i.test(fileName);
+    const isImage = /\.(jpe?g|png|webp|gif|svg|avif|bmp)(\?|#|$)/i.test(fileName);
+    const isVideo = /\.(mp4|webm|mov|mkv|m4v|3gp|flv)(\?|#|$)/i.test(fileName);
+    const defaultType = isVideo ? "VIDEO" : isAudio ? "MP3" : isPdf ? "PDF" : isImage ? "IMAGE" : "FILE";
+
+    const toolKey = meta.tool || "tool";
+    const itemUrl = meta.url || `mori-tool://${toolKey}/${Date.now()}/${encodeURIComponent(fileName)}`;
+
+    window.dispatchEvent(
+      new CustomEvent("mori_file_saved", {
+        detail: {
+          url: itemUrl,
+          sourceUrl: meta.sourceUrl || itemUrl,
+          path: savedPath,
+          uri: savedUri || savedPath,
+          title: meta.title || fileName,
+          thumbnail: meta.thumbnail || null,
+          type: meta.type || defaultType,
+        },
+      }),
+    );
+  };
 
   // 1. Convert blob to pure base64
   let base64Data = "";
@@ -32,7 +57,9 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori") {
       if (ok) {
         triggerHaptic("success");
         showToast(`Saved: ${fileName}`);
-        return { success: true, path: `${folder}/${fileName}` };
+        const fullSavedPath = `${folder}/${fileName}`;
+        notifyFileSaved(fullSavedPath, fullSavedPath);
+        return { success: true, path: fullSavedPath, uri: fullSavedPath };
       }
     } catch (bridgeErr) {
       console.warn("MoriMainBridge.saveBase64File failed:", bridgeErr);
@@ -64,9 +91,19 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori") {
           if (window.MoriMainBridge?.scanMediaFile) {
             window.MoriMainBridge.scanMediaFile(fullSavedPath);
           }
+          let savedUri = fullSavedPath;
+          try {
+            const uriObj = await Filesystem.getUri({
+              path: fullSavedPath,
+              directory: dir,
+            });
+            if (uriObj?.uri) savedUri = uriObj.uri;
+          } catch (_) {}
+
           triggerHaptic("success");
           showToast(`Saved: ${fileName}`);
-          return { success: true, path: fullSavedPath };
+          notifyFileSaved(fullSavedPath, savedUri);
+          return { success: true, path: fullSavedPath, uri: savedUri };
         } catch (_) {}
       }
     }
@@ -81,10 +118,11 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori") {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
     triggerHaptic("success");
     showToast(`Downloaded: ${fileName}`);
-    return { success: true, path: fileName };
+    notifyFileSaved(fileName, url);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return { success: true, path: fileName, uri: url };
   } catch (err) {
     showToast("Failed to save file");
     return { success: false, error: err.message };

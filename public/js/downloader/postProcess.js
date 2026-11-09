@@ -22,6 +22,7 @@ export async function handlePostDownload({
   btn,
   originalContent,
   progressContainer,
+  meta = {},
 }) {
   triggerHaptic("success");
   if (!window._moriPlaylistDownloading) {
@@ -55,9 +56,12 @@ export async function handlePostDownload({
     new CustomEvent("mori_file_saved", {
       detail: {
         url: sourceUrl || url,
+        sourceUrl: sourceUrl || url,
         path: savedFile.path,
         uri: savedUri,
-        title: effectiveTitle,
+        title: meta.title || effectiveTitle,
+        thumbnail: meta.thumbnail || null,
+        type: meta.type || null,
       },
     }),
   );

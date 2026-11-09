@@ -406,7 +406,19 @@ function initSnifferController() {
         const btn = e.currentTarget;
         btn.disabled = true;
         const dlType = item.type === "VIDEO" ? "MP4" : item.type === "AUDIO" ? "MP3" : "JPG";
-        await startNativeDownload(item.url, dlType, item.title, btn, item.sourceUrl || item.url);
+        await startNativeDownload(
+          item.url,
+          dlType,
+          item.title,
+          btn,
+          item.url,
+          true,
+          {
+            thumbnail: item.type === "IMAGE" ? item.url : (item.poster || null),
+            type: item.type,
+            title: item.title,
+          },
+        );
         btn.disabled = false;
       });
 
@@ -759,9 +771,15 @@ function initTiktokFinderController() {
       await startNativeDownload(
         p.avatarUrl,
         "JPG",
-        `tiktok_avatar_${p.username}`,
+        `@${p.username} (TikTok Avatar)`,
         null,
         p.avatarUrl,
+        true,
+        {
+          thumbnail: p.avatarUrl,
+          type: "IMAGE",
+          title: `@${p.username} (TikTok Avatar)`,
+        },
       );
       btn.style.opacity = "";
       btn.style.pointerEvents = "";
@@ -956,7 +974,19 @@ function initAnimeSearchController() {
         btn.style.opacity = "0.5";
         btn.style.pointerEvents = "none";
         showToast("Downloading anime scene clip...");
-        await startNativeDownload(videoUrl, "MP4", title, null, videoUrl);
+        await startNativeDownload(
+          videoUrl,
+          "MP4",
+          title,
+          null,
+          videoUrl,
+          true,
+          {
+            thumbnail: item.imageUrl || null,
+            type: "VIDEO",
+            title: `${item.mainTitle} (Ep ${item.episode})`,
+          },
+        );
         btn.style.opacity = "";
         btn.style.pointerEvents = "";
       });
@@ -1126,7 +1156,12 @@ function initConverterController() {
     const baseName = (selectedFile?.name || "image").replace(/\.[^/.]+$/, "");
     const fileName = `${baseName}_converted.${convertedExt}`;
     saveBtn.disabled = true;
-    await saveBlobToMori(convertedBlob, fileName, "Download/Mori");
+    await saveBlobToMori(convertedBlob, fileName, "Download/Mori", {
+      title: `${baseName} (Converted ${convertedExt.toUpperCase()})`,
+      type: "IMAGE",
+      tool: "image-converter",
+      thumbnail: resultImg?.src || null,
+    });
     saveBtn.disabled = false;
   });
 }
@@ -1238,7 +1273,11 @@ function initExtractorController() {
     const baseName = (selectedVideoFile?.name || "video_audio").replace(/\.[^/.]+$/, "");
     const fileName = `${baseName}.wav`;
     saveBtn.disabled = true;
-    await saveBlobToMori(extractedAudioBlob, fileName, "Download/Mori/Music");
+    await saveBlobToMori(extractedAudioBlob, fileName, "Download/Mori/Music", {
+      title: `${baseName} (Extracted Audio)`,
+      type: "MP3",
+      tool: "audio-extractor",
+    });
     saveBtn.disabled = false;
   });
 }
@@ -1351,7 +1390,11 @@ function initPdfCompressorController() {
     const baseName = (selectedPdfFile?.name || "document").replace(/\.[^/.]+$/, "");
     const fileName = `${baseName}_compressed.pdf`;
     saveBtn.disabled = true;
-    await saveBlobToMori(compressedPdfBlob, fileName, "Download/Mori");
+    await saveBlobToMori(compressedPdfBlob, fileName, "Download/Mori", {
+      title: `${baseName} (Compressed PDF)`,
+      type: "PDF",
+      tool: "pdf-compressor",
+    });
     saveBtn.disabled = false;
   });
 }

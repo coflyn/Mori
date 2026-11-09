@@ -46,28 +46,42 @@ export function renderMediaSlides(container, items, resultThumbnail) {
     const lowerUrl = rawUrl.toLowerCase();
     const upperType = dl.type ? dl.type.toUpperCase() : "";
 
-    const isImage =
-      lowerUrl.includes(".jpg") ||
-      lowerUrl.includes(".jpeg") ||
-      lowerUrl.includes(".png") ||
-      lowerUrl.includes(".webp") ||
-      lowerUrl.includes(".gif") ||
-      /\.(jpg|jpeg|png|webp|gif)/i.test(lowerUrl) ||
-      upperType.includes("IMAGE") ||
-      upperType.includes("GIF") ||
-      upperType.includes("PHOTO");
+    const isPdf =
+      lowerUrl.includes(".pdf") ||
+      upperType.includes("PDF");
 
     const isAudio =
-      lowerUrl.endsWith(".mp3") ||
-      lowerUrl.includes(".mp3?") ||
-      lowerUrl.includes(".m4a") ||
-      lowerUrl.includes("audio") ||
-      upperType.includes("MP3") ||
-      upperType.includes("AUDIO");
+      !isPdf &&
+      (lowerUrl.endsWith(".mp3") ||
+        lowerUrl.includes(".mp3?") ||
+        lowerUrl.includes(".m4a") ||
+        lowerUrl.includes(".wav") ||
+        lowerUrl.includes(".flac") ||
+        lowerUrl.includes(".aac") ||
+        lowerUrl.includes(".ogg") ||
+        lowerUrl.includes(".opus") ||
+        lowerUrl.includes("audio") ||
+        upperType.includes("MP3") ||
+        upperType.includes("WAV") ||
+        upperType.includes("AUDIO"));
+
+    const isImage =
+      !isPdf &&
+      !isAudio &&
+      (lowerUrl.includes(".jpg") ||
+        lowerUrl.includes(".jpeg") ||
+        lowerUrl.includes(".png") ||
+        lowerUrl.includes(".webp") ||
+        lowerUrl.includes(".gif") ||
+        /\.(jpg|jpeg|png|webp|gif)/i.test(lowerUrl) ||
+        upperType.includes("IMAGE") ||
+        upperType.includes("GIF") ||
+        upperType.includes("PHOTO"));
 
     const isVideo =
       !isImage &&
       !isAudio &&
+      !isPdf &&
       (lowerUrl.includes(".mp4") ||
         lowerUrl.includes(".m3u8") ||
         lowerUrl.includes("video") ||
@@ -270,6 +284,23 @@ export function renderMediaSlides(container, items, resultThumbnail) {
       };
 
       slide.appendChild(audio);
+    } else if (isPdf) {
+      const pdfBox = document.createElement("div");
+      pdfBox.className = "pdf-slide-preview";
+      pdfBox.style.display = "flex";
+      pdfBox.style.flexDirection = "column";
+      pdfBox.style.alignItems = "center";
+      pdfBox.style.justifyContent = "center";
+      pdfBox.style.padding = "48px 16px";
+      pdfBox.style.textAlign = "center";
+      pdfBox.innerHTML = `
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="var(--color-danger, #ef4444)" style="margin-bottom:12px">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+        </svg>
+        <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:600; word-break:break-all;">${escapeHtml(dl.title || "PDF Document")}</h4>
+        <span style="font-size:12px; opacity:0.7;">PDF Document</span>
+      `;
+      slide.appendChild(pdfBox);
     } else {
       if (isDataSaver && !isLocal) {
         const placeholder = document.createElement("div");
@@ -1401,6 +1432,19 @@ export async function exportGalleryToPdf(title, items) {
             translations[currentLang]["status-saved"] || "Saved",
           );
 
+          window.dispatchEvent(
+            new CustomEvent("mori_file_saved", {
+              detail: {
+                url: `mori-tool://pdf-gallery/${Date.now()}/${encodeURIComponent(fileName)}`,
+                sourceUrl: `mori-tool://pdf-gallery/${Date.now()}/${encodeURIComponent(fileName)}`,
+                path: targetPdfPath,
+                uri: targetPdfPath,
+                title: `${(title || "Gallery").replace(/[^\w\s]/gi, "").trim()} (PDF)`,
+                type: "PDF",
+              },
+            }),
+          );
+
           if (window.MoriMainBridge?.showCompleteNotification) {
             try {
               window.MoriMainBridge.showCompleteNotification(
@@ -1433,6 +1477,19 @@ export async function exportGalleryToPdf(title, items) {
       downloadBubble.completeDownload(
         pdfDlId,
         translations[currentLang]["status-saved"] || "Saved",
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("mori_file_saved", {
+          detail: {
+            url: `mori-tool://pdf-gallery/${Date.now()}/${encodeURIComponent(fileName)}`,
+            sourceUrl: `mori-tool://pdf-gallery/${Date.now()}/${encodeURIComponent(fileName)}`,
+            path: fileName,
+            uri: link.href,
+            title: `${(title || "Gallery").replace(/[^\w\s]/gi, "").trim()} (PDF)`,
+            type: "PDF",
+          },
+        }),
       );
     }
   } catch (err) {
