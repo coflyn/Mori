@@ -1,4 +1,4 @@
-export default {
+ export default {
   "about-text":
     "Moriは高速で多機能なメディアダウンローダーです。coflynによって愛を込めて作られました。",
   "anim-fast": "速い",
@@ -37,6 +37,7 @@ export default {
   "btn-download-all-photos": "すべての写真をダウンロード",
   "btn-download-all-title": "全曲一括ダウンロード",
   "btn-edit": "編集",
+  "btn-join": "参加",
   "btn-open-settings": "設定を開く",
   "btn-processing": "処理中...",
   "btn-redownload": "再ダウンロード",
@@ -113,6 +114,8 @@ export default {
   "guide-step-4":
     "「履歴」タブでオフライン再生したり、生体認証ロックで保護することができます。",
   "guide-title": "ユーザーガイド",
+  "guide-wa-action": "チャンネルに参加 →",
+  "guide-wa-channel": "最新情報やサポートについては、公式WhatsAppチャンネルにご参加ください。",
   "history-desc": "最近のダウンロード",
   "history-empty": "履歴はまだありません。",
   "history-unlimited": "無制限",
@@ -151,6 +154,7 @@ export default {
   "label-choose-server": "サーバーを選択:",
   "label-all-files-access": "全ファイルへのアクセス",
   "label-clearcache": "キャッシュを消去",
+  "label-community": "コミュニティ",
   "label-compact-mode": "コンパクトモード",
   "label-show-gallery": "ギャラリータブを表示",
   "label-concurrent-downloads": "同時ダウンロード数",
@@ -230,6 +234,7 @@ export default {
   "label-scraper-uptodate-title": "スクレイパーコア",
   "label-scraper-uptodate-desc": "スクレイパーコアは既に最新バージョンです。",
   "label-wifi-only": "Wi-Fiのみでダウンロード",
+  "label-whatsapp-channel": "WhatsApp チャンネル",
   "label-wipedata": "すべてのデータを消去",
   "lang-ar": "アラビア語",
   "lang-en": "英語",

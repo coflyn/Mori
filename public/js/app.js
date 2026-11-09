@@ -51,6 +51,7 @@ import {
   guideToSettingsBtn,
   settingsMainMenu,
   settingsSubPages,
+  openExternalUrl,
 } from "./modules/core.js";
 
 // imports for side effects (settings UI, history, modals, update, intents, download)
@@ -135,6 +136,10 @@ guideToSettingsBtn?.addEventListener("click", () => {
   }
   guideOverlay?.classList.add("hidden");
   switchPage("settings");
+});
+
+document.getElementById("guideWaChannelBtn")?.addEventListener("click", () => {
+  openExternalUrl("https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A");
 });
 
 if (document.readyState === "loading") {

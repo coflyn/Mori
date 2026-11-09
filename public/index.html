@@ -1776,7 +1776,7 @@
                   <span data-i18n="label-text-size">Text Size</span>
                 </div>
                 <div class="custom-select" id="textSizeSelect">
-                  <div class="selected-text" id="textSizeText">Medium</div>
+                  <div class="selected-text" id="textSizeText" data-i18n="text-small">Small</div>
                   <div class="dropdown-arrow">
                     <svg
                       viewBox="0 0 24 24"
@@ -1948,9 +1948,9 @@
                   <div
                     class="selected-text"
                     id="cornerText"
-                    data-i18n="corner-modern"
+                    data-i18n="corner-sharp"
                   >
-                    Modern (10px)
+                    Sharp (4px)
                   </div>
                   <div class="dropdown-arrow">
                     <svg
@@ -4129,6 +4129,34 @@
               </div>
             </div>
 
+            <!-- Community Section -->
+            <div class="settings-section-divider" data-i18n="label-community">
+              Community
+            </div>
+            <div class="settings-list">
+              <a
+                href="https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A"
+                class="settings-item link-item"
+                target="_blank"
+                id="waChannelAboutBtn"
+              >
+                <div class="item-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19.001 4.908A9.845 9.845 0 0 0 12.012 2c-5.46 0-9.915 4.454-9.917 9.916a9.88 9.88 0 0 0 1.547 5.302L2.3 21.699l4.625-1.213a9.87 9.87 0 0 0 5.087 1.396h.004c5.458 0 9.914-4.455 9.917-9.917a9.85 9.85 0 0 0-2.932-7.057zm-6.989 15.31h-.003a8.21 8.21 0 0 1-4.186-1.144l-.3-.178-3.109.815.83-3.032-.196-.312a8.2 8.2 0 0 1-1.258-4.37c.002-4.542 3.715-8.24 8.23-8.24a8.18 8.18 0 0 1 5.823 2.413 8.19 8.19 0 0 1 2.41 5.825c-.002 4.543-3.716 8.24-8.241 8.243zm4.52-6.17c-.247-.124-1.463-.723-1.69-.806-.226-.082-.39-.124-.555.124-.165.248-.639.806-.784.97-.144.166-.289.186-.536.062-.248-.124-1.045-.386-1.992-1.23-.736-.658-1.233-1.47-1.378-1.718-.144-.248-.015-.382.109-.505.111-.112.247-.29.37-.434.124-.145.165-.248.248-.413.082-.166.041-.31-.02-.434-.063-.124-.557-1.343-.763-1.84-.2-.485-.405-.419-.556-.427h-.474c-.165 0-.433.062-.66.31-.227.248-.865.847-.865 2.066s.886 2.397 1.01 2.562c.124.165 1.743 2.66 4.223 3.732 2.48 1.072 2.48.715 2.933.67.453-.046 1.463-.598 1.668-1.177.206-.578.206-1.074.144-1.177-.061-.103-.226-.165-.473-.289z"
+                    />
+                  </svg>
+                  <span data-i18n="label-whatsapp-channel">WhatsApp Channel</span>
+                </div>
+                <span class="info-val" data-i18n="btn-join">Join</span>
+              </a>
+            </div>
+
             <!-- Developer Section -->
             <div class="settings-section-divider" data-i18n="label-developer">
               Developer
@@ -4456,6 +4484,24 @@
               <div class="guide-text" data-i18n="guide-step-4">
                 Access saved media in History for offline playback or secure
                 with Biometric Lock.
+              </div>
+            </div>
+            <div class="guide-item guide-channel-item" id="guideWaChannelBtn" style="cursor: pointer;">
+              <div class="guide-icon" style="color: #25D366;">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M19.001 4.908A9.845 9.845 0 0 0 12.012 2c-5.46 0-9.915 4.454-9.917 9.916a9.88 9.88 0 0 0 1.547 5.302L2.3 21.699l4.625-1.213a9.87 9.87 0 0 0 5.087 1.396h.004c5.458 0 9.914-4.455 9.917-9.917a9.85 9.85 0 0 0-2.932-7.057zm-6.989 15.31h-.003a8.21 8.21 0 0 1-4.186-1.144l-.3-.178-3.109.815.83-3.032-.196-.312a8.2 8.2 0 0 1-1.258-4.37c.002-4.542 3.715-8.24 8.23-8.24a8.18 8.18 0 0 1 5.823 2.413 8.19 8.19 0 0 1 2.41 5.825c-.002 4.543-3.716 8.24-8.241 8.243zm4.52-6.17c-.247-.124-1.463-.723-1.69-.806-.226-.082-.39-.124-.555.124-.165.248-.639.806-.784.97-.144.166-.289.186-.536.062-.248-.124-1.045-.386-1.992-1.23-.736-.658-1.233-1.47-1.378-1.718-.144-.248-.015-.382.109-.505.111-.112.247-.29.37-.434.124-.145.165-.248.248-.413.082-.166.041-.31-.02-.434-.063-.124-.557-1.343-.763-1.84-.2-.485-.405-.419-.556-.427h-.474c-.165 0-.433.062-.66.31-.227.248-.865.847-.865 2.066s.886 2.397 1.01 2.562c.124.165 1.743 2.66 4.223 3.732 2.48 1.072 2.48.715 2.933.67.453-.046 1.463-.598 1.668-1.177.206-.578.206-1.074.144-1.177-.061-.103-.226-.165-.473-.289z"
+                  />
+                </svg>
+              </div>
+              <div class="guide-text">
+                <span data-i18n="guide-wa-channel">Join our WhatsApp Channel for announcements and instant support.</span>
+                <span style="display: block; font-weight: 600; color: var(--primary); font-size: 0.85rem; margin-top: 2px;" data-i18n="guide-wa-action">Join Channel &rarr;</span>
               </div>
             </div>
           </div>

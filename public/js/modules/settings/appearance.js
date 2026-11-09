@@ -37,9 +37,9 @@ export function applyAnimSpeed() {
 }
 
 export function applyTextSize() {
-  const size = localStorage.getItem("mori_text_size") || "medium";
+  const size = localStorage.getItem("mori_text_size") || "small";
   const fontSizeMap = { small: "14px", medium: "16px", large: "18px" };
-  document.documentElement.style.fontSize = fontSizeMap[size] || "16px";
+  document.documentElement.style.fontSize = fontSizeMap[size] || "14px";
   document.body.classList.remove("text-small", "text-medium", "text-large");
   document.body.classList.add(`text-${size}`);
 }
@@ -53,7 +53,7 @@ export function applyGlassmorphism() {
 
 export function applyUiCorner() {
   if (!document.body) return;
-  const corner = localStorage.getItem("mori_ui_corner") || "modern";
+  const corner = localStorage.getItem("mori_ui_corner") || "sharp";
   document.body.classList.remove(
     "corner-sharp",
     "corner-modern",

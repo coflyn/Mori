@@ -2,6 +2,8 @@
 
 This guide covers everything you need to know about installing, sideloading, troubleshooting, and getting the most out of Mori on Android, iOS, and Desktop (CLI).
 
+> 💬 **Official Community & Updates**: Join our official [WhatsApp Channel](https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A) for release announcements, news, and community discussions.
+
 ---
 
 ## 📥 Download Official Releases
@@ -108,5 +110,6 @@ Mori is **100% ad-free, open-source, and contains zero trackers or telemetry**.
 ---
 
 Developed with ❤️ by coflyn.  
+WhatsApp Channel: https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A  
 GitHub: https://github.com/coflyn  
 Instagram: @\_coflyn

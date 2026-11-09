@@ -13,11 +13,12 @@
   <img src="https://img.shields.io/github/repo-size/coflyn/Mori?style=flat-square&color=purple" alt="Repo Size">
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20CLI-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Platform">
+  <a href="https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A"><img src="https://img.shields.io/badge/WhatsApp-Channel-25D366?style=flat-square&logo=whatsapp&logoColor=white" alt="WhatsApp Channel"></a>
 </p>
 
 <div align="center">
 
-Save and download videos, photos, and music from 16 platforms. No watermarks. No accounts. No tracking. Everything stays on your device.
+Save and download videos, photos, and music from 16 platforms with a built-in offline & online utility tools suite. No watermarks. No accounts. No tracking. Everything stays on your device.
 
 <a href="https://sociabuzz.com/coflyn/tribe" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" />
@@ -46,12 +47,12 @@ Save and download videos, photos, and music from 16 platforms. No watermarks. No
 2. [Download & Installation](#-download--installation)
 3. [Mori CLI (Terminal)](#-mori-cli-terminal)
 4. [Features](#-features)
-5. [Supported Platforms & Scraper Engines](#-supported-platforms--scraper-engines)
-6. [For Developers & Building from Source](#-for-developers--building-from-source)
-7. [Scraper Architecture](#-scraper-architecture)
-
-8. [Disclaimer](#-disclaimer)
-9. [License & Terms of Use](#-license--terms-of-use)
+5. [Built-in Tools Suite](#-built-in-tools-suite)
+6. [Supported Platforms & Scraper Engines](#-supported-platforms--scraper-engines)
+7. [For Developers & Building from Source](#-for-developers--building-from-source)
+8. [Scraper Architecture](#-scraper-architecture)
+9. [Disclaimer](#-disclaimer)
+10. [License & Terms of Use](#-license--terms-of-use)
 
 ---
 
@@ -125,6 +126,7 @@ Key CLI capabilities:
 ## 📜 Features
 
 - **16 Platforms in One App**: Save watermark-free videos, high-resolution photos, and audio from TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, RedNote, Reddit, and TeraBox.
+- **Built-in Offline & Online Tools Suite**: Dedicated multi-utility suite packed with an in-app browser media sniffer, video-to-audio soundtrack extractor, client-side image converter & compressor, PDF document compressor, multi-platform username checker (20+ services), anime scene reverse search, TikTok profile inspector, and shortlink gateway bypasser.
 - **Over-The-Air (OTA) Scraper Hot-Patching**: Never wait for app updates when a platform changes its API. Mori seamlessly hot-patches scraper engines in the background without needing to reinstall the app.
 - **Custom Directory & Storage Freedom**: Pick any folder across your device storage (including SD cards, Movies, Downloads, and custom folders) with native folder pickers and full file management support.
 - **One-Tap Playlists & Albums**: Download full music albums or playlists from **Spotify**, **Apple Music**, and **YouTube** in one click instead of saving songs one by one.
@@ -136,6 +138,8 @@ Key CLI capabilities:
 - **Integrated Media Gallery**: Browse and play all saved videos, music, photos, and PDF documents directly within the app, complete with media filter chips, real-time search, sorting options, and an in-app viewer.
 - **Instant Photo-to-PDF**: Combine photo galleries or multi-image posts into a single, clean PDF file for offline reading or sharing.
 - **PIN & Biometric Lock**: Protect your download history, media gallery, and settings with an optional 4-digit PIN code or fingerprint / Face ID lock.
+- **Clean & Compact Default UI**: Set up for clean readability out of the box with Small typography (14px) and Sharp modern corners (4px), fully customizable under Settings.
+- **Configurable Navigation Tabs**: Easily toggle the Gallery and Tools tabs on or off in Settings to streamline the bottom navigation bar according to your personal workflow.
 - **Clean Folder Organization**: Files are neatly organized in standard system folders (`Movies/Mori`, `Music/Mori`, `Pictures/Mori`) for easy access in your gallery.
 - **Automatic Clipboard Detection**: Opening Mori automatically suggests your copied link for instant one-tap downloading.
 - **Background Downloads**: Large videos and playlists keep downloading seamlessly even when you minimize the app or turn off the screen.
@@ -143,6 +147,25 @@ Key CLI capabilities:
 - **Modern Themes & Live Backgrounds**: Choose from elegant dark modes and interactive animated backgrounds (Stars, Waves, Fireflies).
 - **9 Languages**: English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic (with RTL support), Russian, Tagalog, and Hindi.
 - **100% Private & Ad-Free**: No ads, no analytics, no accounts required, and zero external hosting. Everything runs on your device.
+
+---
+
+## 🧰 Built-in Tools Suite
+
+Mori includes a dedicated **Tools** tab packed with built-in client-side media utilities and lookup tools—running completely on-device without third-party cloud uploads:
+
+| Tool | Type | Capabilities & Description |
+| :--- | :--- | :--- |
+| 🌐 **In-App Media Sniffer** | Network Stream Sniffer | Fullscreen live browser sniffer with dynamic network stream interception (`shouldInterceptRequest`). Detects embedded videos, audio, images, and master `.m3u8` playlists from any website while automatically filtering advertising networks, junk trackers, and fragment segments (`.ts`). |
+| 🎵 **Video to Audio Extractor** | Offline Utility | Native soundtrack extractor running 100% offline via Web Audio API. Decodes any video file (MP4, MKV, WebM, MOV) and exports high-fidelity 16-bit PCM WAV or MP3 audio in milliseconds with Stereo (2-ch) and Mono (1-ch) options and a built-in player. |
+| 🖼️ **Image Converter & Scaler** | Offline Utility | Client-side image converter and compressor supporting WebP, JPG, and PNG formats. Includes quality compression sliders (10% - 100%), resolution scale presets (100%, 75%, 50%, 25%), and transparent background safeguards. |
+| 📄 **PDF Document Compressor** | Offline Utility | Client-side document optimizer utilizing bundled `pdf.js` and `pdf-lib`. Offers 3 compression tiers (Low, Medium, High) with real-time byte reduction statistics and direct device storage export. |
+| 🔍 **Multi-Platform Username Checker** | Online Intelligence | Asynchronous, parallel status checker querying 20+ top social platforms simultaneously (TikTok, YouTube, Twitch, GitHub, GitLab, Telegram, Spotify, SoundCloud, Steam, Roblox, Chess.com, Linktree, Substack, Dev.to, Hacker News, Codeforces, Behance, Mastodon, Gravatar). |
+| 🎬 **Anime Scene Reverse Search** | Online Intelligence | Reverse image search engine powered by trace.moe. Upload any anime screenshot or frame to instantly retrieve the anime title (Romaji, Native, English), episode number, exact timestamp, similarity score, and animated video snippet preview. |
+| 👤 **TikTok Profile Lookup** | Online Intelligence | User inspector retrieving detailed public profile statistics, follower/following counts, total video likes, biographical descriptions, avatars, and official verification badges. |
+| 🔗 **Shortlink Gateway Resolver** | URL Resolver | Safely bypasses ad gateways and shortlinks (e.g. SFLGL) to unwrap and resolve direct destination download links. |
+
+---
 
 ## 🌐 Supported Platforms & Scraper Engines
 
@@ -213,6 +236,7 @@ Mori/
 │   │   ├── components.css      # Reusable buttons, custom toast, floating download bubble & dropup manager
 │   │   ├── home.css            # URL input bar, batch textarea, skeleton loader, media preview cards, custom fullscreen
 │   │   ├── gallery.css         # Media gallery grid, filtering chips, search toolbar, modal viewer, audio & PDF card
+│   │   ├── tools.css           # Multi-utility suite layout, tool cards, sniffer, converter & modal styles
 │   │   ├── history.css         # History layout, summary stats card, cards, actions bar, thumbnail overlay
 │   │   ├── settings.css        # Settings menu list, sub-page slide transitions, custom dropdowns
 │   │   ├── modals.css          # Modal overlays, PIN keypad, user guide, confirm & info dialogs
@@ -250,6 +274,17 @@ Mori/
 │   │   │   │   ├── language.js   # Dropdown select engine, i18n switcher, sub-page navigation
 │   │   │   │   └── index.js      # Barrel re-export for settings sub-modules
 │   │   │   ├── settings.js     # User preferences orchestrator & backward-compatible facade
+│   │   │   ├── tools/          # Built-in offline & online multi-utility tool suite
+│   │   │   │   ├── animeSearch.js     # Anime scene reverse search via screenshot (trace.moe)
+│   │   │   │   ├── audioExtractor.js  # 100% offline video-to-audio extraction (WAV/MP3) via Web Audio API
+│   │   │   │   ├── imageConverter.js  # Client-side image format converter (WebP/JPG/PNG) & quality scaler
+│   │   │   │   ├── pdfCompressor.js   # Client-side PDF compression via pdf-lib & pdf.js
+│   │   │   │   ├── sflgl.js           # Shortlink unwrapper & gateway bypass resolver
+│   │   │   │   ├── sniffer.js         # In-app live browser media stream sniffer & ad-filter
+│   │   │   │   ├── storageHelper.js   # Direct file export & Android MediaScanner indexing helper
+│   │   │   │   ├── tiktokFinder.js    # TikTok profile & user metadata lookup
+│   │   │   │   ├── usernameChecker.js # Real-time username availability checker across 20+ platforms
+│   │   │   │   └── index.js           # Tools tab navigation, tab router & event listeners
 │   │   │   ├── update.js       # Automatic GitHub release update checker
 │   │   │   └── updateScrapers.js # OTA scraper hot-patch downloader & validator
 │   │   ├── scrapers/           # Scraper runtime loader & HTTP helper
@@ -280,6 +315,12 @@ Mori/
 │   ├── index.html              # Main single-page application markup
 │   ├── scrapers-version.json   # Scraper bundle version & SHA256 checksum manifest
 │   └── share.html              # Standalone Android Quick Save Share Overlay markup
+├── test/                       # Automated test suites & verification runners
+│   ├── filename.test.mjs       # Sanitization, naming templates & custom patterns test
+│   ├── progress.test.mjs       # Byte arithmetic, speed calculation & progress tracker test
+│   ├── settings_and_guide.test.mjs # Default settings, WhatsApp channel links & i18n keys test
+│   ├── tools.test.mjs          # Unit tests for tools suite utilities & bypass algorithms
+│   └── runner.js               # Primary test suite runner
 ├── capacitor.config.json       # Capacitor cross-platform configuration
 ├── package.json                # Project dependencies & build scripts
 ├── CHANGELOG.md                # Detailed version-by-version release history
@@ -317,5 +358,6 @@ Mori is free and open-source software licensed under the **[GNU General Public L
 ---
 
 Developed with ❤️ by coflyn.  
+WhatsApp Channel: https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A  
 GitHub: https://github.com/coflyn  
 Instagram: @\_coflyn

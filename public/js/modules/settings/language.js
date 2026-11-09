@@ -41,11 +41,11 @@ export function setupCustomSelect(selectId, storageKey, textId, menuId) {
         : storageKey === "mori_anim_speed"
           ? "normal"
           : storageKey === "mori_text_size"
-            ? "medium"
+            ? "small"
             : storageKey === "mori_glassmorphism"
               ? "subtle"
               : storageKey === "mori_ui_corner"
-                ? "modern"
+                ? "sharp"
                 : storageKey === "mori_sound_pack"
                   ? "chime"
                   : storageKey === "mori_concurrent"
@@ -255,7 +255,7 @@ export function updateCustomSelectsUI() {
     animSpeedText.textContent =
       lang[`anim-${currentAnimSpeed}`] || currentAnimSpeed;
 
-  const currentTextSize = localStorage.getItem("mori_text_size") || "medium";
+  const currentTextSize = localStorage.getItem("mori_text_size") || "small";
   const textSizeText = document.getElementById("textSizeText");
   if (textSizeText)
     textSizeText.textContent =
@@ -294,7 +294,7 @@ export function updateCustomSelectsUI() {
   if (glassText)
     glassText.textContent = lang[`glass-${currentGlass}`] || currentGlass;
 
-  const currentCorner = localStorage.getItem("mori_ui_corner") || "modern";
+  const currentCorner = localStorage.getItem("mori_ui_corner") || "sharp";
   const cornerText = document.getElementById("cornerText");
   if (cornerText)
     cornerText.textContent = lang[`corner-${currentCorner}`] || currentCorner;
@@ -492,7 +492,14 @@ export function initLanguageAndNavigation() {
     }
   });
 
-  // 5. Close dropdowns when clicking outside
+  // 5. WhatsApp Channel Button
+  const waChannelAboutBtn = document.getElementById("waChannelAboutBtn");
+  waChannelAboutBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openExternalUrl("https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A");
+  });
+
+  // 6. Close dropdowns when clicking outside
   document.addEventListener("click", () => {
     document
       .querySelectorAll(".dropdown-menu")

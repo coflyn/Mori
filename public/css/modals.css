@@ -23,6 +23,22 @@
   background: var(--surface);
   border: 1px solid var(--border-color);
   padding: 24px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.guide-channel-item {
+  padding: 10px 12px;
+  background: var(--bg-card, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.guide-channel-item:hover,
+.guide-channel-item:active {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.06));
+  transform: translateY(-1px);
 }
 
 [data-theme="dark"] .guide-modal {
