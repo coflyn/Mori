@@ -1,6 +1,12 @@
 // index.js — Tools Page Manager: Navigation and Tool Controllers
 import { t } from "../../i18n/index.js";
-import { showToast, triggerHaptic, Clipboard, pauseAllMedia, Filesystem } from "../../utils/index.js";
+import {
+  showToast,
+  triggerHaptic,
+  Clipboard,
+  pauseAllMedia,
+  Filesystem,
+} from "../../utils/index.js";
 import { startNativeDownload } from "../../ui/nativeDownload.js";
 import { sniffWebMedia } from "./sniffer.js";
 import { skipSflgl } from "./sflgl.js";
@@ -9,7 +15,11 @@ import { searchAnimeScene, formatTimestamp } from "./animeSearch.js";
 import { convertImage } from "./imageConverter.js";
 import { extractAudioFromVideoFile } from "./audioExtractor.js";
 import { compressPdfFile } from "./pdfCompressor.js";
-import { checkAllUsernames, CHECKER_PLATFORMS } from "./usernameChecker.js";
+import {
+  checkAllUsernames,
+  CHECKER_PLATFORMS,
+  toDomainLabel,
+} from "./usernameChecker.js";
 import { saveBlobToMori } from "./storageHelper.js";
 
 let activeToolSubView = null;
@@ -40,12 +50,22 @@ export async function clearToolsTempCache() {
   }
   revokeAllTrackedUrls();
 
-  if (typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && Filesystem) {
+  if (
+    typeof window !== "undefined" &&
+    window.Capacitor?.isNativePlatform?.() &&
+    Filesystem
+  ) {
     try {
       const res = await Filesystem.readdir({ path: "", directory: "CACHE" });
       for (const file of res.files || []) {
-        if (file.name && (file.name.startsWith("mori_tool_") || file.name.endsWith(".tmp"))) {
-          await Filesystem.deleteFile({ path: file.name, directory: "CACHE" }).catch(() => {});
+        if (
+          file.name &&
+          (file.name.startsWith("mori_tool_") || file.name.endsWith(".tmp"))
+        ) {
+          await Filesystem.deleteFile({
+            path: file.name,
+            directory: "CACHE",
+          }).catch(() => {});
         }
       }
     } catch (_) {}
@@ -113,7 +133,9 @@ export function initTools() {
       triggerHaptic("medium");
       pauseAllMedia(document);
 
-      const targetView = document.getElementById(`tool${capitalize(toolId)}View`);
+      const targetView = document.getElementById(
+        `tool${capitalize(toolId)}View`,
+      );
       if (targetView && mainMenu) {
         mainMenu.classList.add("hidden");
         document
@@ -148,9 +170,6 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-// -------------------------------------------------------------
-// 1. Web Media Sniffer Controller
-// -------------------------------------------------------------
 function initSnifferController() {
   const input = document.getElementById("snifferUrlInput");
   const pasteBtn = document.getElementById("snifferPasteBtn");
@@ -158,6 +177,7 @@ function initSnifferController() {
   const liveBtn = document.getElementById("snifferLiveBtn");
   const loader = document.getElementById("snifferLoader");
   const resultsContainer = document.getElementById("snifferResults");
+  const filterChipsWrap = document.getElementById("snifferFilterChips");
   const filterChips = document.querySelectorAll(".sniffer-filter-chip");
 
   let lastSniffData = null;
@@ -277,7 +297,9 @@ function initSnifferController() {
         else c.classList.remove("active");
       });
       renderSnifferResults(formattedData, activeFilter);
-      showToast(`${formattedData.total} media item(s) captured from live browser!`);
+      showToast(
+        `${formattedData.total} media item(s) captured from live browser!`,
+      );
     } catch (e) {
       console.warn("Live sniffer parsing error:", e);
     }
@@ -319,6 +341,7 @@ function initSnifferController() {
 
     runBtn.disabled = true;
     loader?.classList.remove("hidden");
+    filterChipsWrap?.classList.add("hidden");
     if (resultsContainer) resultsContainer.innerHTML = "";
 
     try {
@@ -360,6 +383,7 @@ function initSnifferController() {
   function renderSnifferResults(data, filter) {
     if (!resultsContainer) return;
     resultsContainer.innerHTML = "";
+    filterChipsWrap?.classList.toggle("hidden", !(data?.total > 0));
 
     let items = [];
     if (filter === "all" || filter === "video") items.push(...data.videos);
@@ -367,18 +391,18 @@ function initSnifferController() {
     if (filter === "all" || filter === "image") items.push(...data.images);
 
     // Update chip counts
-    document.querySelector('.sniffer-filter-chip[data-filter="all"] .chip-count')?.replaceChildren(
-      document.createTextNode(`(${data.total})`),
-    );
-    document.querySelector('.sniffer-filter-chip[data-filter="video"] .chip-count')?.replaceChildren(
-      document.createTextNode(`(${data.videos.length})`),
-    );
-    document.querySelector('.sniffer-filter-chip[data-filter="audio"] .chip-count')?.replaceChildren(
-      document.createTextNode(`(${data.audios.length})`),
-    );
-    document.querySelector('.sniffer-filter-chip[data-filter="image"] .chip-count')?.replaceChildren(
-      document.createTextNode(`(${data.images.length})`),
-    );
+    document
+      .querySelector('.sniffer-filter-chip[data-filter="all"] .chip-count')
+      ?.replaceChildren(document.createTextNode(`(${data.total})`));
+    document
+      .querySelector('.sniffer-filter-chip[data-filter="video"] .chip-count')
+      ?.replaceChildren(document.createTextNode(`(${data.videos.length})`));
+    document
+      .querySelector('.sniffer-filter-chip[data-filter="audio"] .chip-count')
+      ?.replaceChildren(document.createTextNode(`(${data.audios.length})`));
+    document
+      .querySelector('.sniffer-filter-chip[data-filter="image"] .chip-count')
+      ?.replaceChildren(document.createTextNode(`(${data.images.length})`));
 
     if (items.length === 0) {
       resultsContainer.innerHTML = `
@@ -443,26 +467,33 @@ function initSnifferController() {
         </div>
       `;
 
-      card.querySelector(".sniffer-dl-btn")?.addEventListener("click", async (e) => {
-        triggerHaptic("medium");
-        const btn = e.currentTarget;
-        btn.disabled = true;
-        const dlType = item.type === "VIDEO" ? "MP4" : item.type === "AUDIO" ? "MP3" : "JPG";
-        await startNativeDownload(
-          item.url,
-          dlType,
-          item.title,
-          btn,
-          item.url,
-          true,
-          {
-            thumbnail: item.type === "IMAGE" ? item.url : (item.poster || null),
-            type: item.type,
-            title: item.title,
-          },
-        );
-        btn.disabled = false;
-      });
+      card
+        .querySelector(".sniffer-dl-btn")
+        ?.addEventListener("click", async (e) => {
+          triggerHaptic("medium");
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          const dlType =
+            item.type === "VIDEO"
+              ? "MP4"
+              : item.type === "AUDIO"
+                ? "MP3"
+                : "JPG";
+          await startNativeDownload(
+            item.url,
+            dlType,
+            item.title,
+            btn,
+            item.url,
+            true,
+            {
+              thumbnail: item.type === "IMAGE" ? item.url : item.poster || null,
+              type: item.type,
+              title: item.title,
+            },
+          );
+          btn.disabled = false;
+        });
 
       card.querySelector(".sniffer-copy-btn")?.addEventListener("click", () => {
         triggerHaptic("light");
@@ -479,20 +510,20 @@ function initSnifferController() {
   // Sniffer cleanup
   toolCleanups.push(() => {
     lastSniffData = null;
+    filterChipsWrap?.classList.add("hidden");
     if (resultsContainer) {
       pauseAllMedia(resultsContainer);
       resultsContainer.querySelectorAll("video, audio, img").forEach((el) => {
         if (el.src && el.src.startsWith("blob:")) {
-          try { URL.revokeObjectURL(el.src); } catch (_) {}
+          try {
+            URL.revokeObjectURL(el.src);
+          } catch (_) {}
         }
       });
     }
   });
 }
 
-// -------------------------------------------------------------
-// 2. SFLGL Skipper Controller
-// -------------------------------------------------------------
 function initSflglController() {
   const input = document.getElementById("sflglUrlInput");
   const pasteBtn = document.getElementById("sflglPasteBtn");
@@ -514,7 +545,9 @@ function initSflglController() {
   runBtn?.addEventListener("click", async () => {
     const url = input?.value?.trim();
     if (!url) {
-      showToast(t("toast-no-link") || "Please enter a valid Safelinku/SFLGL URL");
+      showToast(
+        t("toast-no-link") || "Please enter a valid Safelinku/SFLGL URL",
+      );
       return;
     }
     triggerHaptic("medium");
@@ -574,10 +607,6 @@ function initSflglController() {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             <span>Open Link</span>
           </a>
-          <button id="sflglDownloadInMoriBtn" class="tool-btn-accent">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
-            <span>Analyze in Mori</span>
-          </button>
         </div>
       </div>
     `;
@@ -586,19 +615,6 @@ function initSflglController() {
       triggerHaptic("light");
       navigator.clipboard.writeText(destUrl);
       showToast("Destination link copied to clipboard");
-    });
-
-    document.getElementById("sflglDownloadInMoriBtn")?.addEventListener("click", () => {
-      triggerHaptic("medium");
-      const homeNav = document.querySelector('.nav-item[data-page="home"]');
-      const urlInput = document.getElementById("urlInput");
-      const downloadBtn = document.getElementById("downloadBtn");
-      if (urlInput) {
-        urlInput.value = destUrl;
-        urlInput.dispatchEvent(new Event("input"));
-      }
-      homeNav?.click();
-      setTimeout(() => downloadBtn?.click(), 300);
     });
   }
 }
@@ -627,7 +643,9 @@ function initTiktokFinderController() {
   runBtn?.addEventListener("click", async () => {
     const query = input?.value?.trim();
     if (!query) {
-      showToast(t("toast-no-link") || "Please enter a username or profile link");
+      showToast(
+        t("toast-no-link") || "Please enter a username or profile link",
+      );
       return;
     }
     triggerHaptic("medium");
@@ -681,6 +699,26 @@ function initTiktokFinderController() {
       createdDateStr = formatTiktokDate(p.createdAt.value);
       if (p.createdAt?.source === "derived") {
         createdDateStr += " (Estimated)";
+      }
+    }
+
+    let langDisplay = "Unavailable";
+    if (p.language) {
+      try {
+        const dn = new Intl.DisplayNames(["en"], { type: "language" });
+        langDisplay = `${p.language.toUpperCase()} (${dn.of(p.language)})`;
+      } catch (_) {
+        langDisplay = p.language.toUpperCase();
+      }
+    }
+
+    let regionDisplay = "Hidden by TikTok (Privacy)";
+    if (p.region) {
+      try {
+        const rn = new Intl.DisplayNames(["en"], { type: "region" });
+        regionDisplay = `${p.region.toUpperCase()} (${rn.of(p.region.toUpperCase())})`;
+      } catch (_) {
+        regionDisplay = p.region;
       }
     }
 
@@ -770,18 +808,12 @@ function initTiktokFinderController() {
           </div>
           <div class="tiktok-meta-item">
             <span class="tiktok-meta-key">Account Language</span>
-            <span class="tiktok-meta-val">${esc(p.language ? p.language.toUpperCase() : "Unavailable")}</span>
+            <span class="tiktok-meta-val">${esc(langDisplay)}</span>
           </div>
-          ${
-            p.region
-              ? `
           <div class="tiktok-meta-item">
             <span class="tiktok-meta-key">Account Region</span>
-            <span class="tiktok-meta-val">${esc(p.region)}</span>
+            <span class="tiktok-meta-val">${esc(regionDisplay)}</span>
           </div>
-          `
-              : ""
-          }
           <div class="tiktok-meta-item">
             <span class="tiktok-meta-key">Numeric User ID</span>
             <div class="tiktok-copyable-val">
@@ -817,39 +849,43 @@ function initTiktokFinderController() {
       </div>
     `;
 
-    document.getElementById("tiktokDownloadAvatarBtn")?.addEventListener("click", async (e) => {
-      triggerHaptic("medium");
-      const btn = e.currentTarget;
-      btn.style.opacity = "0.5";
-      btn.style.pointerEvents = "none";
-      showToast("Downloading avatar...");
-      await startNativeDownload(
-        p.avatarUrl,
-        "JPG",
-        `@${p.username} (TikTok Avatar)`,
-        null,
-        p.avatarUrl,
-        true,
-        {
-          thumbnail: p.avatarUrl,
-          type: "IMAGE",
-          title: `@${p.username} (TikTok Avatar)`,
-        },
-      );
-      btn.style.opacity = "";
-      btn.style.pointerEvents = "";
-    });
-
-    resultContainer.querySelectorAll(".tiktok-copy-small-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        triggerHaptic("light");
-        const val = btn.getAttribute("data-copy");
-        if (val) {
-          navigator.clipboard.writeText(val);
-          showToast("Copied to clipboard");
-        }
+    document
+      .getElementById("tiktokDownloadAvatarBtn")
+      ?.addEventListener("click", async (e) => {
+        triggerHaptic("medium");
+        const btn = e.currentTarget;
+        btn.style.opacity = "0.5";
+        btn.style.pointerEvents = "none";
+        showToast("Downloading avatar...");
+        await startNativeDownload(
+          p.avatarUrl,
+          "JPG",
+          `@${p.username} (TikTok Avatar)`,
+          null,
+          p.avatarUrl,
+          true,
+          {
+            thumbnail: p.avatarUrl,
+            type: "IMAGE",
+            title: `@${p.username} (TikTok Avatar)`,
+          },
+        );
+        btn.style.opacity = "";
+        btn.style.pointerEvents = "";
       });
-    });
+
+    resultContainer
+      .querySelectorAll(".tiktok-copy-small-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => {
+          triggerHaptic("light");
+          const val = btn.getAttribute("data-copy");
+          if (val) {
+            navigator.clipboard.writeText(val);
+            showToast("Copied to clipboard");
+          }
+        });
+      });
   }
 }
 
@@ -908,7 +944,9 @@ function initAnimeSearchController() {
   runBtn?.addEventListener("click", async () => {
     const url = urlInput?.value?.trim();
     if (!selectedFile && !url) {
-      showToast(t("toast-no-link") || "Please paste an image URL or choose a photo");
+      showToast(
+        t("toast-no-link") || "Please paste an image URL or choose a photo",
+      );
       return;
     }
     triggerHaptic("medium");
@@ -967,12 +1005,12 @@ function initAnimeSearchController() {
         </div>
       `
         : item.imageUrl
-        ? `
+          ? `
         <div class="anime-clip-wrap">
           <img src="${esc(item.imageUrl)}" alt="${esc(item.mainTitle)}" />
         </div>
       `
-        : "";
+          : "";
 
       card.innerHTML = `
         ${clipHtml}
@@ -1021,30 +1059,32 @@ function initAnimeSearchController() {
         </div>
       `;
 
-      card.querySelector(".anime-dl-clip-btn")?.addEventListener("click", async (e) => {
-        triggerHaptic("medium");
-        const btn = e.currentTarget;
-        const videoUrl = btn.getAttribute("data-video");
-        const title = btn.getAttribute("data-title") || "anime_clip";
-        btn.style.opacity = "0.5";
-        btn.style.pointerEvents = "none";
-        showToast("Downloading anime scene clip...");
-        await startNativeDownload(
-          videoUrl,
-          "MP4",
-          title,
-          null,
-          videoUrl,
-          true,
-          {
-            thumbnail: item.imageUrl || null,
-            type: "VIDEO",
-            title: `${item.mainTitle} (Ep ${item.episode})`,
-          },
-        );
-        btn.style.opacity = "";
-        btn.style.pointerEvents = "";
-      });
+      card
+        .querySelector(".anime-dl-clip-btn")
+        ?.addEventListener("click", async (e) => {
+          triggerHaptic("medium");
+          const btn = e.currentTarget;
+          const videoUrl = btn.getAttribute("data-video");
+          const title = btn.getAttribute("data-title") || "anime_clip";
+          btn.style.opacity = "0.5";
+          btn.style.pointerEvents = "none";
+          showToast("Downloading anime scene clip...");
+          await startNativeDownload(
+            videoUrl,
+            "MP4",
+            title,
+            null,
+            videoUrl,
+            true,
+            {
+              thumbnail: item.imageUrl || null,
+              type: "VIDEO",
+              title: `${item.mainTitle} (Ep ${item.episode})`,
+            },
+          );
+          btn.style.opacity = "";
+          btn.style.pointerEvents = "";
+        });
 
       list.appendChild(card);
     });
@@ -1059,7 +1099,9 @@ function initAnimeSearchController() {
       pauseAllMedia(resultsContainer);
       resultsContainer.querySelectorAll("video, audio, img").forEach((el) => {
         if (el.src && el.src.startsWith("blob:")) {
-          try { URL.revokeObjectURL(el.src); } catch (_) {}
+          try {
+            URL.revokeObjectURL(el.src);
+          } catch (_) {}
         }
       });
     }
@@ -1088,11 +1130,15 @@ function initConverterController() {
   const previewImg = document.getElementById("converterPreviewImg");
   const origName = document.getElementById("converterOrigName");
   const origDetails = document.getElementById("converterOrigDetails");
-  const formatChips = document.querySelectorAll("#converterFormatChips .tool-chip");
+  const formatChips = document.querySelectorAll(
+    "#converterFormatChips .tool-chip",
+  );
   const qualityGroup = document.getElementById("converterQualityGroup");
   const qualitySlider = document.getElementById("converterQualitySlider");
   const qualityVal = document.getElementById("converterQualityVal");
-  const scaleChips = document.querySelectorAll("#converterScaleChips .tool-chip");
+  const scaleChips = document.querySelectorAll(
+    "#converterScaleChips .tool-chip",
+  );
   const runBtn = document.getElementById("converterRunBtn");
   const resultCard = document.getElementById("converterResultCard");
   const resultImg = document.getElementById("converterResultImg");
@@ -1140,7 +1186,8 @@ function initConverterController() {
       img.onload = () => {
         if (origName) origName.textContent = file.name;
         if (origDetails) {
-          const typeName = file.type.replace("image/", "").toUpperCase() || "IMAGE";
+          const typeName =
+            file.type.replace("image/", "").toUpperCase() || "IMAGE";
           origDetails.textContent = `${img.naturalWidth} × ${img.naturalHeight} · ${formatBytes(file.size)} · ${typeName}`;
         }
         optionsCard?.classList.remove("hidden");
@@ -1203,8 +1250,12 @@ function initConverterController() {
         resultSize.textContent = `${res.width} × ${res.height} · ${formatBytes(res.convertedSize)}`;
       }
       if (resultDiff) {
-        const diff = ((res.convertedSize - res.originalSize) / res.originalSize) * 100;
-        const diffText = diff <= 0 ? `${Math.abs(diff).toFixed(1)}% smaller` : `+${diff.toFixed(1)}%`;
+        const diff =
+          ((res.convertedSize - res.originalSize) / res.originalSize) * 100;
+        const diffText =
+          diff <= 0
+            ? `${Math.abs(diff).toFixed(1)}% smaller`
+            : `+${diff.toFixed(1)}%`;
         resultDiff.textContent = diffText;
       }
 
@@ -1239,7 +1290,9 @@ function initConverterController() {
     if (fileInput) fileInput.value = "";
     if (resultImg) {
       if (resultImg.src && resultImg.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(resultImg.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(resultImg.src);
+        } catch (_) {}
       }
       resultImg.src = "";
     }
@@ -1258,7 +1311,9 @@ function initExtractorController() {
   const previewVideo = document.getElementById("extractorPreviewVideo");
   const videoName = document.getElementById("extractorVideoName");
   const videoDetails = document.getElementById("extractorVideoDetails");
-  const channelChips = document.querySelectorAll("#extractorChannelChips .tool-chip");
+  const channelChips = document.querySelectorAll(
+    "#extractorChannelChips .tool-chip",
+  );
   const runBtn = document.getElementById("extractorRunBtn");
   const loader = document.getElementById("extractorLoader");
   const resultCard = document.getElementById("extractorResultCard");
@@ -1352,7 +1407,10 @@ function initExtractorController() {
   saveBtn?.addEventListener("click", async () => {
     if (!extractedAudioBlob) return;
     triggerHaptic("medium");
-    const baseName = (selectedVideoFile?.name || "video_audio").replace(/\.[^/.]+$/, "");
+    const baseName = (selectedVideoFile?.name || "video_audio").replace(
+      /\.[^/.]+$/,
+      "",
+    );
     const fileName = `${baseName}.wav`;
     saveBtn.disabled = true;
     await saveBlobToMori(extractedAudioBlob, fileName, "Download/Mori/Music", {
@@ -1370,14 +1428,18 @@ function initExtractorController() {
     if (previewVideo) {
       previewVideo.pause();
       if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(previewVideo.src);
+        } catch (_) {}
       }
       previewVideo.src = "";
     }
     if (resultAudio) {
       resultAudio.pause();
       if (resultAudio.src && resultAudio.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(resultAudio.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(resultAudio.src);
+        } catch (_) {}
       }
       resultAudio.src = "";
     }
@@ -1420,7 +1482,10 @@ function initPdfCompressorController() {
   dropzone?.addEventListener("drop", (e) => {
     e.preventDefault();
     const file = e.dataTransfer?.files?.[0];
-    if (file && (file.type === "application/pdf" || file.name.endsWith(".pdf"))) {
+    if (
+      file &&
+      (file.type === "application/pdf" || file.name.endsWith(".pdf"))
+    ) {
       handlePdfSelected(file);
     }
   });
@@ -1473,8 +1538,12 @@ function initPdfCompressorController() {
         resultSizeEl.textContent = `${res.numPages} pages · ${formatBytes(res.compressedSize)}`;
       }
       if (resultDiffEl) {
-        const diff = ((res.compressedSize - res.originalSize) / res.originalSize) * 100;
-        const diffText = diff <= 0 ? `${Math.abs(diff).toFixed(1)}% smaller` : `+${diff.toFixed(1)}%`;
+        const diff =
+          ((res.compressedSize - res.originalSize) / res.originalSize) * 100;
+        const diffText =
+          diff <= 0
+            ? `${Math.abs(diff).toFixed(1)}% smaller`
+            : `+${diff.toFixed(1)}%`;
         resultDiffEl.textContent = diffText;
       }
 
@@ -1491,7 +1560,10 @@ function initPdfCompressorController() {
   saveBtn?.addEventListener("click", async () => {
     if (!compressedPdfBlob) return;
     triggerHaptic("medium");
-    const baseName = (selectedPdfFile?.name || "document").replace(/\.[^/.]+$/, "");
+    const baseName = (selectedPdfFile?.name || "document").replace(
+      /\.[^/.]+$/,
+      "",
+    );
     const fileName = `${baseName}_compressed.pdf`;
     saveBtn.disabled = true;
     await saveBlobToMori(compressedPdfBlob, fileName, "Download/Mori", {
@@ -1521,7 +1593,9 @@ function initUsernameCheckerController() {
   const summaryCard = document.getElementById("usernameCheckerSummary");
   const targetLabel = document.getElementById("usernameCheckerTarget");
   const takenBadge = document.getElementById("usernameCheckerTakenBadge");
-  const availableBadge = document.getElementById("usernameCheckerAvailableBadge");
+  const availableBadge = document.getElementById(
+    "usernameCheckerAvailableBadge",
+  );
   const grid = document.getElementById("usernameCheckerGrid");
 
   pasteBtn?.addEventListener("click", async () => {
@@ -1560,9 +1634,12 @@ function initUsernameCheckerController() {
         const card = document.createElement("div");
         card.className = "username-card";
         card.id = `userCheck_${p.id}`;
+        const displayName = p.isDomain
+          ? `${toDomainLabel(cleanUser) || cleanUser}.${p.tld}`
+          : p.name;
         card.innerHTML = `
           <div class="username-card-left">
-            <span class="username-card-platform">${esc(p.name)}</span>
+            <span class="username-card-platform">${esc(displayName)}</span>
             <span class="username-card-category">${esc(p.category)}</span>
           </div>
           <div class="username-card-right">
@@ -1604,10 +1681,13 @@ function initUsernameCheckerController() {
         }
 
         if (takenBadge) takenBadge.textContent = `${takenCount} Taken`;
-        if (availableBadge) availableBadge.textContent = `${availableCount} Available`;
+        if (availableBadge)
+          availableBadge.textContent = `${availableCount} Available`;
       });
 
-      showToast(`Checked: ${summary.takenCount} taken, ${summary.availableCount} available`);
+      showToast(
+        `Checked: ${summary.takenCount} taken, ${summary.availableCount} available`,
+      );
     } catch (err) {
       showToast(err.message || "Failed to check username");
     } finally {

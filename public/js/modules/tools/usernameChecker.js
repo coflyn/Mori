@@ -1,7 +1,56 @@
-// usernameChecker.js — Multi-Platform Social Media Username Availability & Profile Checker
+// usernameChecker.js — Multi-Platform Social Media & Domain Availability Checker
 import { scraperFetch } from "../../scrapers/httpHelper.js";
 import { getUserAgent } from "../../utils/index.js";
 import { findTikTokUser } from "./tiktokFinder.js";
+
+export function toDomainLabel(u) {
+  if (!u || typeof u !== "string") return "";
+  return u
+    .toLowerCase()
+    .replace(/[_.]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function checkDomainAvailability(u, tld) {
+  const label = toDomainLabel(u);
+  if (!label || label.length > 63) {
+    throw new Error("Invalid domain label");
+  }
+  const domain = `${label}.${tld}`;
+  const res = await scraperFetch(
+    {
+      url: `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=NS`,
+      headers: { Accept: "application/dns-json" },
+      rawResponse: true,
+      parseJson: false,
+    },
+    "DomainCheck",
+  );
+  const json = typeof res.data === "object" ? res.data : JSON.parse(res.data);
+  if (json.Status === 0) {
+    return (
+      (Array.isArray(json.Answer) && json.Answer.length > 0) ||
+      (Array.isArray(json.Authority) && json.Authority.length > 0)
+    );
+  }
+  if (json.Status === 3) {
+    return false;
+  }
+  throw new Error(`DNS status ${json.Status}`);
+}
+
+const DOMAIN_TLDS = ["com", "id", "net", "org", "io", "dev", "me", "xyz", "app"];
+
+const DOMAIN_CHECKS = DOMAIN_TLDS.map((tld) => ({
+  id: `domain_${tld}`,
+  name: `.${tld}`,
+  category: "Domain",
+  isDomain: true,
+  tld,
+  profileUrl: (u) => `https://${toDomainLabel(u) || u}.${tld}`,
+  check: (u) => checkDomainAvailability(u, tld),
+}));
 
 export const CHECKER_PLATFORMS = [
   {
@@ -37,62 +86,6 @@ export const CHECKER_PLATFORMS = [
     },
   },
   {
-    id: "twitch",
-    name: "Twitch",
-    category: "Livestream",
-    profileUrl: (u) => `https://www.twitch.tv/${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://decapi.me/twitch/id/${encodeURIComponent(u)}`,
-          headers: { "User-Agent": getUserAgent() },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "TwitchCheck",
-      );
-      const text = String(res.data || "").trim();
-      return /^\d+$/.test(text);
-    },
-  },
-  {
-    id: "github",
-    name: "GitHub",
-    category: "Developer",
-    profileUrl: (u) => `https://github.com/${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://api.github.com/users/${encodeURIComponent(u)}`,
-          headers: { "User-Agent": "MoriApp" },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "GitHubCheck",
-      );
-      return res.status === 200;
-    },
-  },
-  {
-    id: "gitlab",
-    name: "GitLab",
-    category: "Developer",
-    profileUrl: (u) => `https://gitlab.com/${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://gitlab.com/${encodeURIComponent(u)}`,
-          method: "GET",
-          headers: { "User-Agent": getUserAgent() },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "GitLabCheck",
-      );
-      return res.status === 200;
-    },
-  },
-  {
     id: "telegram",
     name: "Telegram",
     category: "Messaging",
@@ -109,6 +102,24 @@ export const CHECKER_PLATFORMS = [
       );
       const text = typeof res.data === "string" ? res.data : "";
       return text.includes("tgme_page_extra") || text.includes("tgme_page_title");
+    },
+  },
+  {
+    id: "snapchat",
+    name: "Snapchat",
+    category: "Social",
+    profileUrl: (u) => `https://www.snapchat.com/add/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://www.snapchat.com/add/${encodeURIComponent(u)}`,
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "SnapchatCheck",
+      );
+      return res.status === 200;
     },
   },
   {
@@ -148,22 +159,22 @@ export const CHECKER_PLATFORMS = [
     },
   },
   {
-    id: "steam",
-    name: "Steam",
-    category: "Gaming",
-    profileUrl: (u) => `https://steamcommunity.com/id/${u}`,
+    id: "twitch",
+    name: "Twitch",
+    category: "Livestream",
+    profileUrl: (u) => `https://www.twitch.tv/${u}`,
     check: async (u) => {
       const res = await scraperFetch(
         {
-          url: `https://steamcommunity.com/id/${encodeURIComponent(u)}/?xml=1`,
+          url: `https://decapi.me/twitch/id/${encodeURIComponent(u)}`,
           headers: { "User-Agent": getUserAgent() },
           rawResponse: true,
           parseJson: false,
         },
-        "SteamCheck",
+        "TwitchCheck",
       );
-      const text = typeof res.data === "string" ? res.data : "";
-      return text.includes("<steamID64>");
+      const text = String(res.data || "").trim();
+      return /^\d+$/.test(text);
     },
   },
   {
@@ -188,11 +199,74 @@ export const CHECKER_PLATFORMS = [
       );
       if (res.status === 200) {
         try {
-          const json = typeof res.data === "object" ? res.data : JSON.parse(res.data);
+          const json =
+            typeof res.data === "object" ? res.data : JSON.parse(res.data);
           return Array.isArray(json?.data) && json.data.length > 0;
         } catch (_) {}
       }
       return false;
+    },
+  },
+  {
+    id: "steam",
+    name: "Steam",
+    category: "Gaming",
+    profileUrl: (u) => `https://steamcommunity.com/id/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://steamcommunity.com/id/${encodeURIComponent(u)}/?xml=1`,
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "SteamCheck",
+      );
+      const text = typeof res.data === "string" ? res.data : "";
+      return text.includes("<steamID64>");
+    },
+  },
+  {
+    id: "duolingo",
+    name: "Duolingo",
+    category: "Education",
+    profileUrl: (u) => `https://www.duolingo.com/profile/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://www.duolingo.com/2017-06-30/users?username=${encodeURIComponent(u)}`,
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "DuolingoCheck",
+      );
+      if (res.status === 200) {
+        try {
+          const json =
+            typeof res.data === "object" ? res.data : JSON.parse(res.data);
+          return Array.isArray(json?.users) && json.users.length > 0;
+        } catch (_) {}
+      }
+      return false;
+    },
+  },
+  {
+    id: "wattpad",
+    name: "Wattpad",
+    category: "Writing",
+    profileUrl: (u) => `https://www.wattpad.com/user/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://www.wattpad.com/user/${encodeURIComponent(u)}`,
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "WattpadCheck",
+      );
+      return res.status === 200;
     },
   },
   {
@@ -227,6 +301,61 @@ export const CHECKER_PLATFORMS = [
           parseJson: false,
         },
         "LinktreeCheck",
+      );
+      return res.status === 200;
+    },
+  },
+  {
+    id: "vimeo",
+    name: "Vimeo",
+    category: "Video",
+    profileUrl: (u) => `https://vimeo.com/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://vimeo.com/${encodeURIComponent(u)}`,
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "VimeoCheck",
+      );
+      return res.status === 200;
+    },
+  },
+  {
+    id: "github",
+    name: "GitHub",
+    category: "Developer",
+    profileUrl: (u) => `https://github.com/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://api.github.com/users/${encodeURIComponent(u)}`,
+          headers: { "User-Agent": "MoriApp" },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "GitHubCheck",
+      );
+      return res.status === 200;
+    },
+  },
+  {
+    id: "gitlab",
+    name: "GitLab",
+    category: "Developer",
+    profileUrl: (u) => `https://gitlab.com/${u}`,
+    check: async (u) => {
+      const res = await scraperFetch(
+        {
+          url: `https://gitlab.com/${encodeURIComponent(u)}`,
+          method: "GET",
+          headers: { "User-Agent": getUserAgent() },
+          rawResponse: true,
+          parseJson: false,
+        },
+        "GitLabCheck",
       );
       return res.status === 200;
     },
@@ -268,75 +397,23 @@ export const CHECKER_PLATFORMS = [
     },
   },
   {
-    id: "devto",
-    name: "Dev.to",
-    category: "Developer",
-    profileUrl: (u) => `https://dev.to/${u}`,
+    id: "blogspot",
+    name: "Blogger",
+    category: "Blog",
+    profileUrl: (u) => `https://${toDomainLabel(u) || u}.blogspot.com`,
     check: async (u) => {
+      const label = toDomainLabel(u);
+      if (!label) throw new Error("Invalid blog subdomain");
       const res = await scraperFetch(
         {
-          url: `https://dev.to/api/users/by_username?url=${encodeURIComponent(u)}`,
-          headers: { "User-Agent": "MoriApp" },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "DevtoCheck",
-      );
-      if (res.status === 200) {
-        try {
-          const json = typeof res.data === "object" ? res.data : JSON.parse(res.data);
-          return !!json?.id;
-        } catch (_) {}
-      }
-      return false;
-    },
-  },
-  {
-    id: "hackernews",
-    name: "Hacker News",
-    category: "Developer",
-    profileUrl: (u) => `https://news.ycombinator.com/user?id=${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://hacker-news.firebaseio.com/v0/user/${encodeURIComponent(u)}.json`,
-          headers: { "User-Agent": "MoriApp" },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "HNCheck",
-      );
-      if (res.status === 200) {
-        try {
-          const json = typeof res.data === "object" ? res.data : JSON.parse(res.data);
-          return json !== null && typeof json === "object";
-        } catch (_) {}
-      }
-      return false;
-    },
-  },
-  {
-    id: "codeforces",
-    name: "Codeforces",
-    category: "Developer",
-    profileUrl: (u) => `https://codeforces.com/profile/${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://codeforces.com/api/user.info?handles=${encodeURIComponent(u)}`,
+          url: `https://${label}.blogspot.com/`,
           headers: { "User-Agent": getUserAgent() },
           rawResponse: true,
           parseJson: false,
         },
-        "CodeforcesCheck",
+        "BloggerCheck",
       );
-      if (res.status === 200) {
-        try {
-          const json = typeof res.data === "object" ? res.data : JSON.parse(res.data);
-          return json?.status === "OK";
-        } catch (_) {}
-      }
-      return false;
+      return res.status === 200;
     },
   },
   {
@@ -357,42 +434,7 @@ export const CHECKER_PLATFORMS = [
       return res.status === 200;
     },
   },
-  {
-    id: "mastodon",
-    name: "Mastodon",
-    category: "Social",
-    profileUrl: (u) => `https://mastodon.social/@${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://mastodon.social/api/v1/accounts/lookup?acct=${encodeURIComponent(u)}`,
-          headers: { "User-Agent": getUserAgent() },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "MastodonCheck",
-      );
-      return res.status === 200;
-    },
-  },
-  {
-    id: "gravatar",
-    name: "Gravatar",
-    category: "Profiles",
-    profileUrl: (u) => `https://gravatar.com/${u}`,
-    check: async (u) => {
-      const res = await scraperFetch(
-        {
-          url: `https://en.gravatar.com/${encodeURIComponent(u)}.json`,
-          headers: { "User-Agent": getUserAgent() },
-          rawResponse: true,
-          parseJson: false,
-        },
-        "GravatarCheck",
-      );
-      return res.status === 200;
-    },
-  },
+  ...DOMAIN_CHECKS,
 ];
 
 export async function checkSinglePlatform(platform, username) {
@@ -402,6 +444,7 @@ export async function checkSinglePlatform(platform, username) {
       id: platform.id,
       name: platform.name,
       category: platform.category,
+      isDomain: !!platform.isDomain,
       profileUrl: platform.profileUrl(username),
       status: isTaken ? "taken" : "available",
     };
@@ -410,6 +453,7 @@ export async function checkSinglePlatform(platform, username) {
       id: platform.id,
       name: platform.name,
       category: platform.category,
+      isDomain: !!platform.isDomain,
       profileUrl: platform.profileUrl(username),
       status: "error",
     };
