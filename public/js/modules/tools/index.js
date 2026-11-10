@@ -1,6 +1,6 @@
 // index.js — Tools Page Manager: Navigation and Tool Controllers
 import { t } from "../../i18n/index.js";
-import { showToast, triggerHaptic, Clipboard, pauseAllMedia } from "../../utils/index.js";
+import { showToast, triggerHaptic, Clipboard, pauseAllMedia, Filesystem } from "../../utils/index.js";
 import { startNativeDownload } from "../../ui/nativeDownload.js";
 import { sniffWebMedia } from "./sniffer.js";
 import { skipSflgl } from "./sflgl.js";
@@ -13,6 +13,44 @@ import { checkAllUsernames, CHECKER_PLATFORMS } from "./usernameChecker.js";
 import { saveBlobToMori } from "./storageHelper.js";
 
 let activeToolSubView = null;
+const toolCleanups = [];
+const activeObjectUrls = new Set();
+
+export function trackObjectUrl(url) {
+  if (url && typeof url === "string" && url.startsWith("blob:")) {
+    activeObjectUrls.add(url);
+  }
+  return url;
+}
+
+export function revokeAllTrackedUrls() {
+  for (const u of activeObjectUrls) {
+    try {
+      URL.revokeObjectURL(u);
+    } catch (_) {}
+  }
+  activeObjectUrls.clear();
+}
+
+export async function clearToolsTempCache() {
+  for (const cleanup of toolCleanups) {
+    try {
+      cleanup();
+    } catch (_) {}
+  }
+  revokeAllTrackedUrls();
+
+  if (typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() && Filesystem) {
+    try {
+      const res = await Filesystem.readdir({ path: "", directory: "CACHE" });
+      for (const file of res.files || []) {
+        if (file.name && (file.name.startsWith("mori_tool_") || file.name.endsWith(".tmp"))) {
+          await Filesystem.deleteFile({ path: file.name, directory: "CACHE" }).catch(() => {});
+        }
+      }
+    } catch (_) {}
+  }
+}
 
 export function isInsideToolSubView() {
   return !!activeToolSubView;
@@ -26,6 +64,10 @@ export function closeCurrentToolSubView() {
   }
   const mainMenu = document.getElementById("toolsMainMenu");
   if (mainMenu) mainMenu.classList.remove("hidden");
+
+  if (localStorage.getItem("mori_tools_auto_clean") !== "false") {
+    clearToolsTempCache();
+  }
 }
 
 async function readTextFromClipboard() {
@@ -433,6 +475,19 @@ function initSnifferController() {
 
     resultsContainer.appendChild(list);
   }
+
+  // Sniffer cleanup
+  toolCleanups.push(() => {
+    lastSniffData = null;
+    if (resultsContainer) {
+      pauseAllMedia(resultsContainer);
+      resultsContainer.querySelectorAll("video, audio, img").forEach((el) => {
+        if (el.src && el.src.startsWith("blob:")) {
+          try { URL.revokeObjectURL(el.src); } catch (_) {}
+        }
+      });
+    }
+  });
 }
 
 // -------------------------------------------------------------
@@ -996,6 +1051,19 @@ function initAnimeSearchController() {
 
     resultsContainer.appendChild(list);
   }
+
+  toolCleanups.push(() => {
+    selectedFile = null;
+    if (fileInput) fileInput.value = "";
+    if (resultsContainer) {
+      pauseAllMedia(resultsContainer);
+      resultsContainer.querySelectorAll("video, audio, img").forEach((el) => {
+        if (el.src && el.src.startsWith("blob:")) {
+          try { URL.revokeObjectURL(el.src); } catch (_) {}
+        }
+      });
+    }
+  });
 }
 
 function formatBytes(bytes) {
@@ -1129,7 +1197,7 @@ function initConverterController() {
       convertedExt = res.ext;
 
       if (resultImg) {
-        resultImg.src = URL.createObjectURL(res.blob);
+        resultImg.src = trackObjectUrl(URL.createObjectURL(res.blob));
       }
       if (resultSize) {
         resultSize.textContent = `${res.width} × ${res.height} · ${formatBytes(res.convertedSize)}`;
@@ -1163,6 +1231,20 @@ function initConverterController() {
       thumbnail: resultImg?.src || null,
     });
     saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedFile = null;
+    convertedBlob = null;
+    if (fileInput) fileInput.value = "";
+    if (resultImg) {
+      if (resultImg.src && resultImg.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(resultImg.src); } catch (_) {}
+      }
+      resultImg.src = "";
+    }
+    resultCard?.classList.add("hidden");
+    optionsCard?.classList.add("hidden");
   });
 }
 
@@ -1214,7 +1296,7 @@ function initExtractorController() {
 
   function handleVideoSelected(file) {
     selectedVideoFile = file;
-    const url = URL.createObjectURL(file);
+    const url = trackObjectUrl(URL.createObjectURL(file));
     if (previewVideo) {
       previewVideo.src = url;
     }
@@ -1251,7 +1333,7 @@ function initExtractorController() {
 
       extractedAudioBlob = res.blob;
       if (resultAudio) {
-        resultAudio.src = URL.createObjectURL(res.blob);
+        resultAudio.src = trackObjectUrl(URL.createObjectURL(res.blob));
       }
       if (resultDetails) {
         resultDetails.textContent = `${formatTimestamp(res.duration)} · ${formatBytes(res.audioSize)} · ${(res.sampleRate / 1000).toFixed(1)} kHz WAV`;
@@ -1279,6 +1361,28 @@ function initExtractorController() {
       tool: "audio-extractor",
     });
     saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedVideoFile = null;
+    extractedAudioBlob = null;
+    if (fileInput) fileInput.value = "";
+    if (previewVideo) {
+      previewVideo.pause();
+      if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+      }
+      previewVideo.src = "";
+    }
+    if (resultAudio) {
+      resultAudio.pause();
+      if (resultAudio.src && resultAudio.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(resultAudio.src); } catch (_) {}
+      }
+      resultAudio.src = "";
+    }
+    resultCard?.classList.add("hidden");
+    optionsCard?.classList.add("hidden");
   });
 }
 
@@ -1396,6 +1500,14 @@ function initPdfCompressorController() {
       tool: "pdf-compressor",
     });
     saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedPdfFile = null;
+    compressedPdfBlob = null;
+    if (fileInput) fileInput.value = "";
+    resultCard?.classList.add("hidden");
+    optionsCard?.classList.add("hidden");
   });
 }
 

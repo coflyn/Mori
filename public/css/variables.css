@@ -11,7 +11,11 @@
   --text-main: #1a1917;
   --text-secondary: #6e6a64;
   --border-color: rgba(26, 25, 23, 0.12);
+  --radius-xs: 2px;
+  --radius-s: 3px;
+  --radius-m: 4px;
   --radius-l: 4px;
+  --radius-lg: 4px;
   --radius-xl: 4px;
   --transition: all 0.2s ease;
   /* Animation Speed */
@@ -197,40 +201,112 @@ body.glass-deep .settings-item {
 }
 
 /* UI Corner Radius Presets */
+
+/* corner-sharp = Sharp (4px) */
 body.corner-sharp {
-  --radius-l: 3px;
+  --radius-xs: 2px;
+  --radius-s: 2px;
+  --radius-m: 4px;
+  --radius-l: 4px;
+  --radius-lg: 4px;
   --radius-xl: 4px;
 }
 body.corner-sharp input[type="text"],
+body.corner-sharp textarea,
 body.corner-sharp .custom-select,
+body.corner-sharp .dropdown-menu,
 body.corner-sharp .action-btn,
+body.corner-sharp .btn,
 body.corner-sharp .modal-content,
 body.corner-sharp .confirm-modal,
 body.corner-sharp .path-display-pill,
 body.corner-sharp .mori-input-with-icon,
 body.corner-sharp .bg-shape-card,
 body.corner-sharp .result-card,
-body.corner-sharp .history-item {
+body.corner-sharp .history-item,
+body.corner-sharp .settings-list,
+body.corner-sharp .settings-menu-item,
+body.corner-sharp .menu-icon,
+body.corner-sharp .path-setting-item,
+body.corner-sharp .bg-anim-card,
+body.corner-sharp .stat-card,
+body.corner-sharp .info-val.selectable,
+body.corner-sharp .settings-item.stacked-item .info-val,
+body.corner-sharp .back-btn-settings,
+body.corner-sharp .media-card {
   border-radius: 4px !important;
 }
+body.corner-sharp .platform-chips .chip,
+body.corner-sharp .chip,
 body.corner-sharp .path-preset-chip,
 body.corner-sharp .platform-chip,
+body.corner-sharp .filter-chip,
+body.corner-sharp .gallery-chip,
+body.corner-sharp .sniffer-filter-chip,
+body.corner-sharp .tool-chip,
 body.corner-sharp .badge {
   border-radius: 4px !important;
 }
 
-/* corner-modern = default (6px - 12px) */
+/* corner-modern = Modern (10px) */
 body.corner-modern {
-  --radius-l: 6px;
-  --radius-xl: 10px;
+  --radius-xs: 3px;
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+}
+body.corner-modern input[type="text"],
+body.corner-modern textarea,
+body.corner-modern .custom-select,
+body.corner-modern .dropdown-menu,
+body.corner-modern .action-btn,
+body.corner-modern .btn,
+body.corner-modern .modal-content,
+body.corner-modern .confirm-modal,
+body.corner-modern .path-display-pill,
+body.corner-modern .mori-input-with-icon,
+body.corner-modern .bg-shape-card,
+body.corner-modern .result-card,
+body.corner-modern .history-item,
+body.corner-modern .settings-list,
+body.corner-modern .settings-menu-item,
+body.corner-modern .path-setting-item,
+body.corner-modern .bg-anim-card,
+body.corner-modern .stat-card,
+body.corner-modern .info-val.selectable,
+body.corner-modern .settings-item.stacked-item .info-val,
+body.corner-modern .media-card {
+  border-radius: 10px !important;
+}
+body.corner-modern .menu-icon,
+body.corner-modern .back-btn-settings {
+  border-radius: 8px !important;
+}
+body.corner-modern .platform-chips .chip,
+body.corner-modern .chip,
+body.corner-modern .path-preset-chip,
+body.corner-modern .platform-chip,
+body.corner-modern .filter-chip,
+body.corner-modern .gallery-chip,
+body.corner-modern .sniffer-filter-chip,
+body.corner-modern .tool-chip,
+body.corner-modern .badge {
+  border-radius: 8px !important;
 }
 
-/* corner-round = Pill / Soft Round (18px - 26px) */
+/* corner-round = Pill / Soft Round (20px) */
 body.corner-round {
-  --radius-l: 16px;
+  --radius-xs: 6px;
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 18px;
+  --radius-lg: 20px;
   --radius-xl: 24px;
 }
-body.corner-round input[type="text"] {
+body.corner-round input[type="text"],
+body.corner-round textarea {
   border-radius: 28px !important;
 }
 body.corner-round .custom-select {
@@ -247,12 +323,30 @@ body.corner-round .path-display-pill,
 body.corner-round .mori-input-with-icon,
 body.corner-round .bg-shape-card,
 body.corner-round .result-card,
-body.corner-round .history-item {
-  border-radius: 18px !important;
+body.corner-round .history-item,
+body.corner-round .settings-list,
+body.corner-round .settings-menu-item,
+body.corner-round .path-setting-item,
+body.corner-round .bg-anim-card,
+body.corner-round .stat-card,
+body.corner-round .media-card {
+  border-radius: 20px !important;
 }
+body.corner-round .menu-icon,
+body.corner-round .back-btn-settings {
+  border-radius: 14px !important;
+}
+body.corner-round .action-btn,
+body.corner-round .btn,
+body.corner-round .platform-chips .chip,
+body.corner-round .chip,
 body.corner-round .path-preset-chip,
 body.corner-round .platform-chip,
-body.corner-round .filter-chip {
+body.corner-round .filter-chip,
+body.corner-round .gallery-chip,
+body.corner-round .sniffer-filter-chip,
+body.corner-round .tool-chip,
+body.corner-round .badge {
   border-radius: 24px !important;
 }
 

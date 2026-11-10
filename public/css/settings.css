@@ -24,7 +24,7 @@
   padding: 16px;
   background: var(--surface);
   border: 1px solid var(--primary);
-  border-radius: 8px; /* Matching radius in style.css */
+  border-radius: var(--radius-lg, 10px);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
@@ -49,7 +49,7 @@
   height: 44px;
   background: var(--bg-color);
   border: 1px solid var(--primary);
-  border-radius: 8px;
+  border-radius: var(--radius-m, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -423,12 +423,15 @@ body.dark-theme .action-item:active,
   background-color: rgba(255, 255, 255, 0.08);
 }
 
-.settings-list .settings-item:first-child {
+.settings-list > .settings-item:first-child,
+.settings-list > .settings-item:first-of-type,
+.settings-list > #allFilesAccessItem[style*="none"] + .settings-item {
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
 }
 
-.settings-list .settings-item:last-child {
+.settings-list > .settings-item:last-child,
+.settings-list > .settings-item:last-of-type {
   border-bottom: none;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;

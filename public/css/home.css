@@ -1007,7 +1007,7 @@ body.mori-has-fullscreen {
   padding: 12px 16px;
   background-color: var(--surface);
   border: 1px solid var(--primary);
-  border-radius: 0;
+  border-radius: var(--radius-m, 4px);
   transition: all 0.2s ease;
   width: 100%;
   justify-content: flex-start;

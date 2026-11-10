@@ -11,6 +11,7 @@ import { showConfirm } from "../modals.js";
 import { renderHistory } from "../../ui.js";
 import { onHistoryItemClick, onHistoryDeleteClick, safeSetHistory } from "../history.js";
 import { invalidateGalleryCache } from "../gallery.js";
+import { clearToolsTempCache } from "../tools/index.js";
 import {
   currentLang,
   pathVal,
@@ -555,6 +556,7 @@ export function initStorageSettings() {
               }
             } catch (_) {}
           }
+          await clearToolsTempCache();
           invalidateGalleryCache();
           await updateStorageInfo();
           showToast(lang["label-cache-cleared"] || "Cache cleared");
@@ -564,6 +566,23 @@ export function initStorageSettings() {
       },
     );
   });
+
+  // 6. Tools Auto-Clean Toggle
+  const toolsAutoCleanToggle = document.getElementById("toolsAutoCleanToggle");
+  if (toolsAutoCleanToggle) {
+    toolsAutoCleanToggle.checked =
+      localStorage.getItem("mori_tools_auto_clean") !== "false";
+    toolsAutoCleanToggle.addEventListener("change", (e) => {
+      const isEnabled = e.target.checked;
+      localStorage.setItem("mori_tools_auto_clean", isEnabled);
+      const lang = translations[currentLang] || translations.en;
+      showToast(
+        isEnabled
+          ? lang["toast-tools-autoclean-on"] || "Tools auto-clean enabled"
+          : lang["toast-tools-autoclean-off"] || "Tools auto-clean disabled",
+      );
+    });
+  }
 
   // 7. Wipe All Data Button
   wipeDataBtn?.addEventListener("click", () => {

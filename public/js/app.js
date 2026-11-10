@@ -72,6 +72,7 @@ import {
   initTools,
   isInsideToolSubView,
   closeCurrentToolSubView,
+  clearToolsTempCache,
 } from "./modules/tools/index.js";
 
 initBgAnimation();
@@ -317,8 +318,18 @@ async function switchPage(pageId) {
     if (!isInsideToolSubView()) {
       closeCurrentToolSubView();
     }
+  } else if (localStorage.getItem("mori_tools_auto_clean") !== "false") {
+    clearToolsTempCache();
   }
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    if (localStorage.getItem("mori_tools_auto_clean") !== "false") {
+      clearToolsTempCache();
+    }
+  }
+});
 
 setTimeout(refreshAllVideoThumbnails, 5000);
 
