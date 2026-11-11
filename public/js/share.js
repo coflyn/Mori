@@ -891,12 +891,16 @@ function saveHistory(result, url) {
       localFiles: existing ? existing.localFiles || [] : [],
       localUri: existing ? existing.localUri : null,
       localThumbnail: existing ? existing.localThumbnail : null,
+      favorite: existing ? existing.favorite || false : false,
+      favTimestamp: existing ? existing.favTimestamp || 0 : 0,
     };
 
     if (existingIdx !== -1) history.splice(existingIdx, 1);
     history.unshift(newItem);
 
-    const updated = history.slice(0, 100);
+    const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
+    const parsed = parseInt(limitVal, 10);
+    const updated = limitVal === "unlimited" ? history : history.slice(0, !isNaN(parsed) && parsed > 0 ? parsed : 100);
     safeSetHistory(updated);
     if (window.MoriShareBridge?.savePendingHistory) {
       window.MoriShareBridge.savePendingHistory(JSON.stringify(newItem));
