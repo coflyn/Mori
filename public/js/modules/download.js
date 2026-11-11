@@ -414,6 +414,7 @@ downloadBtn.addEventListener("click", async () => {
                           .trim()
                           .substring(0, 60) || "Mori_Batch_Album";
                       const pdfFileName = `${sanitizedTitle}.pdf`;
+                      let savedPdfPath = `Download/Mori/${pdfFileName}`;
                       if (
                         window.Capacitor?.isNativePlatform?.() &&
                         Filesystem
@@ -425,18 +426,23 @@ downloadBtn.addEventListener("click", async () => {
                           ),
                         );
                         await Filesystem.writeFile({
-                          path: `Download/Mori/${pdfFileName}`,
+                          path: savedPdfPath,
                           directory: "EXTERNAL_STORAGE",
                           data: base64Pdf,
                           recursive: true,
                         }).catch(() =>
                           Filesystem.writeFile({
-                            path: `Download/Mori/${pdfFileName}`,
+                            path: savedPdfPath,
                             directory: "DOCUMENTS",
                             data: base64Pdf,
                             recursive: true,
                           }),
                         );
+                        if (window.MoriMainBridge?.scanMediaFile) {
+                          try {
+                            window.MoriMainBridge.scanMediaFile(savedPdfPath);
+                          } catch (_) {}
+                        }
                       } else {
                         const blob = new Blob([pdfBuffer], {
                           type: "application/pdf",
@@ -445,8 +451,23 @@ downloadBtn.addEventListener("click", async () => {
                         a.href = URL.createObjectURL(blob);
                         a.download = pdfFileName;
                         a.click();
+                        savedPdfPath = pdfFileName;
                         URL.revokeObjectURL(a.href);
                       }
+
+                      window.dispatchEvent(
+                        new CustomEvent("mori_file_saved", {
+                          detail: {
+                            url: item.url,
+                            sourceUrl: item.url,
+                            path: savedPdfPath,
+                            uri: savedPdfPath,
+                            title: `${sanitizedTitle} (PDF)`,
+                            thumbnail: item.data?.result?.thumbnail || null,
+                            type: "PDF",
+                          },
+                        }),
+                      );
                     } catch (pdfErr) {
                       console.warn("PDF generation failed, fallback:", pdfErr);
                       for (let dIdx = 0; dIdx < downloadsList.length; dIdx++) {
