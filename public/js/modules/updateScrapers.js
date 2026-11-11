@@ -17,7 +17,7 @@ export function getActiveScraperVersion() {
     localStorage.getItem(ACTIVE_SCRAPER_VERSION_KEY),
     10,
   );
-  if (!isNaN(localVer) && localVer > 0) return localVer;
+  if (!isNaN(localVer) && localVer > 0) return Math.max(localVer, BUNDLED_SCRAPER_VERSION || 0);
   if (typeof BUNDLED_SCRAPER_VERSION === "number") {
     return BUNDLED_SCRAPER_VERSION;
   }
