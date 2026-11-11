@@ -7,6 +7,7 @@ import {
   triggerHaptic,
   showToast,
   stopAllMedia,
+  pauseAllMedia,
   checkWifiOnlyGuard,
 } from "../utils/index.js";
 import {
@@ -302,12 +303,18 @@ export function mergePendingHistorySync() {
         if (!newItem.localUri && existing.localUri) {
           newItem.localUri = existing.localUri;
         }
+        if (existing.favorite) { newItem.favorite = true; newItem.favTimestamp = existing.favTimestamp || 0; }
         history.splice(existingIdx, 1);
       }
       history.unshift(newItem);
     });
 
-    safeSetHistory(history.slice(0, 100));
+    const limitVal = localStorage.getItem("mori_history_limit") || "unlimited";
+    if (limitVal !== "unlimited") {
+      const parsed = parseInt(limitVal, 10);
+      history = history.slice(0, !isNaN(parsed) && parsed > 0 ? parsed : 100);
+    }
+    safeSetHistory(history);
 
     if (window.MoriMainBridge?.clearPendingHistoryList) {
       window.MoriMainBridge.clearPendingHistoryList();

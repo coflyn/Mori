@@ -59,6 +59,9 @@ async function loadCoreScrapers() {
         scriptText = patchedText;
         isFromOtaPatch = true;
         console.log(`[Mori] Loaded OTA patched scraper core v${activeVer}`);
+      } else if (patchedText) {
+        localStorage.removeItem("mori_patched_scraper_bin");
+        localStorage.removeItem("mori_active_scraper_version");
       }
     } catch (otaErr) {
       console.warn("[Mori] OTA patch load warning:", otaErr);

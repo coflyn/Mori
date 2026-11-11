@@ -197,6 +197,8 @@ export async function startNativeDownload(
   let effectiveTitle = title || "Mori Media";
   const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   let itemCancelled = false;
+  let progressListener = null;
+  let progressUrl = url;
 
   downloadBubble.addDownload({
     id: dlId,
@@ -274,18 +276,11 @@ export async function startNativeDownload(
     let currentSpeedBps = 0;
     let realProgressReceived = false;
 
-    // Remove any existing listeners first to avoid double-firing
-    if (window._moriProgressListener) {
-      try {
-        await window._moriProgressListener.remove?.();
-      } catch (_) {}
-      window._moriProgressListener = null;
-    }
-
     let lastDataTime = Date.now();
 
     const onRealProgress = (progress) => {
       if (!progress) return;
+      if (progress.url && progress.url !== progressUrl) return;
       const bytes = Number(progress.bytes ?? progress.bytesWritten ?? 0);
       const contentLength = Number(progress.contentLength ?? 0);
 
@@ -334,7 +329,7 @@ export async function startNativeDownload(
     // Listen for real progress if Filesystem exists
     if (Filesystem?.addListener) {
       try {
-        window._moriProgressListener = await Filesystem.addListener(
+        progressListener = await Filesystem.addListener(
           "progress",
           onRealProgress,
         );
@@ -461,6 +456,7 @@ export async function startNativeDownload(
     }
 
     actualDownloadUrl = cleanDownloadUrl(actualDownloadUrl);
+    progressUrl = actualDownloadUrl;
     const downloadHeaders = buildDownloadHeaders(
       actualDownloadUrl,
       sourceUrl,
@@ -585,7 +581,7 @@ export async function startNativeDownload(
     );
     window._moriActiveDownloadUrl = null;
     window.dispatchEvent(new CustomEvent("mori_download_ended"));
-    if (!window._moriPlaylistDownloading) {
+    if (!window._moriPlaylistDownloading && window._moriActiveDownloadsCount === 0) {
       releaseWakeLock();
       if (window.MoriMainBridge?.stopDownloadService) {
         try {
@@ -597,11 +593,10 @@ export async function startNativeDownload(
       clearInterval(window._moriActiveSimInterval);
       window._moriActiveSimInterval = null;
     }
-    if (window._moriProgressListener) {
+    if (progressListener) {
       try {
-        await window._moriProgressListener.remove?.();
+        await progressListener.remove?.();
       } catch (_) {}
-      window._moriProgressListener = null;
     }
   }
 }
