@@ -7,6 +7,7 @@ import {
   triggerHaptic,
   showToast,
   stopAllMedia,
+  pauseAllMedia,
   checkWifiOnlyGuard,
 } from "../utils/index.js";
 import {
