@@ -292,6 +292,12 @@ downloadBtn.addEventListener("click", async () => {
               statusEl.textContent = t("status-downloading");
             }
 
+            let itemFailed = false;
+            const batchDl = async (...args) => {
+              const res = await startNativeDownload(...args);
+              if (!res?.success) itemFailed = true;
+            };
+
             const downloadsList = item.data.result?.downloads || [];
             const itemTitle = decodeHtmlEntities(
               item.data.result?.title || "Media",
@@ -329,7 +335,7 @@ downloadBtn.addEventListener("click", async () => {
                     downloadsList.length > 1
                       ? `${itemTitle}_${dIdx + 1}`
                       : itemTitle;
-                  await startNativeDownload(
+                  await batchDl(
                     audioItem.url,
                     audioItem.type,
                     audioTitle,
@@ -356,7 +362,7 @@ downloadBtn.addEventListener("click", async () => {
                       ) || downloadsList[0])
                     : downloadsList[0];
 
-                await startNativeDownload(
+                await batchDl(
                   targetMedia.url,
                   targetMedia.type,
                   itemTitle,
@@ -374,7 +380,7 @@ downloadBtn.addEventListener("click", async () => {
                     return;
                   }
                   const dlObj = downloadsList[0];
-                  await startNativeDownload(
+                  await batchDl(
                     dlObj.url,
                     dlObj.type,
                     itemTitle,
@@ -456,7 +462,7 @@ downloadBtn.addEventListener("click", async () => {
                           downloadsList.length > 1
                             ? `${itemTitle}_${dIdx + 1}`
                             : itemTitle;
-                        await startNativeDownload(
+                        await batchDl(
                           dlObj.url,
                           dlObj.type,
                           titleWithIdx,
@@ -475,7 +481,7 @@ downloadBtn.addEventListener("click", async () => {
                       return;
                     }
                     const dlObj = downloadsList[0];
-                    await startNativeDownload(
+                    await batchDl(
                       dlObj.url,
                       dlObj.type,
                       itemTitle,
@@ -499,7 +505,7 @@ downloadBtn.addEventListener("click", async () => {
                       downloadsList.length > 1
                         ? `${itemTitle}_${dIdx + 1}`
                         : itemTitle;
-                    await startNativeDownload(
+                    await batchDl(
                       dlObj.url,
                       dlObj.type,
                       titleWithIdx,
@@ -517,6 +523,9 @@ downloadBtn.addEventListener("click", async () => {
                 statusEl.className = "batch-item-status cancelled";
                 statusEl.textContent = t("status-cancelled");
               }
+            } else if (statusEl && itemFailed) {
+              statusEl.className = "batch-item-status error";
+              statusEl.textContent = t("status-failed");
             } else if (statusEl) {
               statusEl.className = "batch-item-status completed";
               statusEl.textContent = t("status-saved");
