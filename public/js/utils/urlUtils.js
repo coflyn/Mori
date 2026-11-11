@@ -78,7 +78,7 @@ export function cleanUrl(url) {
     ) {
       // Keep xsec_token for Xiaohongshu / RedNote security validation
     } else if (u.hostname.includes("bilibili.com") || u.hostname.includes("bilibili.tv")) {
-      // Keep ?p= so multi-part videos don't fall back to part 1
+      // biar multi video ga fallback mulu ke 1 download
       const part = u.searchParams.get("p");
       u.search = "";
       if (part) u.searchParams.set("p", part);
