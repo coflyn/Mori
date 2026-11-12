@@ -516,20 +516,29 @@ public class MainActivity extends BridgeActivity {
                 }
                 cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
                 File f = new File(cleanPath);
-                if (!f.isAbsolute()) {
-                    f = new File(Environment.getExternalStorageDirectory(), cleanPath.replaceFirst("^/+", ""));
-                }
-                if (!f.exists()) {
-                    File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), cleanPath.replaceFirst("^/+", ""));
-                    if (d1.exists()) f = d1;
-                }
-                if (!f.exists()) {
-                    File d2 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), cleanPath.replaceFirst("^/+", ""));
-                    if (d2.exists()) f = d2;
-                }
-                if (!f.exists()) {
-                    File d3 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), cleanPath.replaceFirst("^/+", ""));
-                    if (d3.exists()) f = d3;
+                if (!f.isAbsolute() || !f.exists()) {
+                    String rel = cleanPath.replaceFirst("^/+", "");
+                    File test = new File(Environment.getExternalStorageDirectory(), rel);
+                    if (test.exists()) {
+                        f = test;
+                    } else {
+                        String strippedRel = rel.replaceFirst("^(?i)(download|documents|pictures|movies|music)/+", "");
+                        File[] baseDirs = new File[] {
+                            Environment.getExternalStorageDirectory(),
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+                        };
+                        for (File baseDir : baseDirs) {
+                            if (baseDir == null) continue;
+                            File cand1 = new File(baseDir, rel);
+                            if (cand1.exists()) { f = cand1; break; }
+                            File cand2 = new File(baseDir, strippedRel);
+                            if (cand2.exists()) { f = cand2; break; }
+                        }
+                    }
                 }
                 if (f.exists()) {
                     f.setLastModified(System.currentTimeMillis());
@@ -541,18 +550,41 @@ public class MainActivity extends BridgeActivity {
                     }
                     if (mimeType == null) {
                         if (name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".webm") || name.endsWith(".mkv")) mimeType = "video/mp4";
-                        else if (name.endsWith(".mp3") || name.endsWith(".m4a")) mimeType = "audio/mpeg";
+                        else if (name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".wav") || name.endsWith(".flac")) mimeType = "audio/mpeg";
                         else if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp")) mimeType = "image/jpeg";
+                        else if (name.endsWith(".pdf")) mimeType = "application/pdf";
                     }
                     final String finalMime = mimeType;
                     MediaScannerConnection.scanFile(
-                        getApplicationContext(),
+                        MainActivity.this.getApplicationContext(),
                         new String[]{ f.getAbsolutePath() },
                         finalMime != null ? new String[]{ finalMime } : null,
                         (scannedPath, uri) -> {
                             Log.d("MoriMainBridge", "MediaScanner indexed: " + scannedPath + " -> " + uri);
+                            if (uri != null) {
+                                try {
+                                    android.content.ContentValues values = new android.content.ContentValues();
+                                    long nowSec = System.currentTimeMillis() / 1000;
+                                    long nowMs = System.currentTimeMillis();
+                                    values.put(MediaStore.MediaColumns.DATE_MODIFIED, nowSec);
+                                    values.put(MediaStore.MediaColumns.DATE_ADDED, nowSec);
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                        values.put(MediaStore.MediaColumns.DATE_TAKEN, nowMs);
+                                    }
+                                    values.put(MediaStore.Video.VideoColumns.DATE_TAKEN, nowMs);
+                                    values.put(MediaStore.Images.ImageColumns.DATE_TAKEN, nowMs);
+                                    MainActivity.this.getContentResolver().update(uri, values, null, null);
+                                } catch (Exception e) {
+                                    Log.e("MoriMainBridge", "Failed to update MediaStore timestamp: " + e.getMessage());
+                                }
+                            }
                         }
                     );
+                    try {
+                        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        mediaScanIntent.setData(Uri.fromFile(f));
+                        MainActivity.this.sendBroadcast(mediaScanIntent);
+                    } catch (Exception ignored) {}
                 }
             } catch (Exception e) {
                 e.printStackTrace();

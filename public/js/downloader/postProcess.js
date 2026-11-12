@@ -68,7 +68,7 @@ export async function handlePostDownload({
 
   if (window.MoriMainBridge?.scanMediaFile) {
     try {
-      window.MoriMainBridge.scanMediaFile(savedFile.path || savedUri);
+      window.MoriMainBridge.scanMediaFile(savedUri || savedFile.path);
     } catch (_) {}
   }
 

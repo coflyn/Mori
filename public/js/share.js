@@ -573,19 +573,19 @@ async function triggerDownload(dlItem, title, idx) {
       let downloadUrl = null;
 
       try {
+        const DEFAULT_API_KEY =
+          "ytmp3_572dd96834f5c4a575b198d63e1df13e0caf73667c6fdfe39dc6160fb4246b55";
+        const mobiHeaders = {
+          Origin: "https://ytmp3.gl",
+          Referer: "https://ytmp3.gl/",
+          "User-Agent": getUserAgent(),
+          Accept: "application/json, text/plain, */*",
+        };
         const initRaw = window.MoriShareBridge.httpRequest(
           JSON.stringify({
-            url: `https://a.ymcdn.org/api/v1/init?p=y&23=1llum1n471&_=${Math.random()}`,
+            url: `https://fancy-sea-5d3d.holy-breeze-fec5.workers.dev/?m=i&k=${DEFAULT_API_KEY}&v=${ytId}&f=${format}&_=${Date.now()}`,
             method: "GET",
-            headers: {
-              Origin: "https://ytmp3.mobi",
-              Referer: "https://ytmp3.mobi/en8/",
-              "User-Agent": getUserAgent(),
-              "Sec-Fetch-Dest": "empty",
-              "Sec-Fetch-Mode": "cors",
-              "Sec-Fetch-Site": "cross-site",
-              Accept: "*/*",
-            },
+            headers: mobiHeaders,
           }),
         );
         const initRes = JSON.parse(initRaw);
@@ -594,60 +594,22 @@ async function triggerDownload(dlItem, title, idx) {
             ? JSON.parse(initRes.data)
             : initRes.data;
 
-        if (initData && !initData.error && initData.convertURL) {
-          const convHeaders = {
-            Origin: "https://ytmp3.mobi",
-            Referer: "https://ytmp3.mobi/en8/",
-            "User-Agent": getUserAgent(),
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "cross-site",
-            Accept: "*/*",
-          };
-          let convRaw = window.MoriShareBridge.httpRequest(
-            JSON.stringify({
-              url: `${initData.convertURL}&v=${ytId}&f=${format}&_=${Math.random()}`,
-              method: "GET",
-              headers: convHeaders,
-            }),
-          );
-          let convRes = JSON.parse(convRaw);
-          let convData =
-            typeof convRes.data === "string"
-              ? JSON.parse(convRes.data)
-              : convRes.data;
+        if (initData && !initData.error) {
+          let dlUrl = initData.downloadURL;
+          let progUrl = initData.progressURL;
+          let progress = 0;
+          let attempts = 0;
+          const maxAttempts = 30;
 
-          while (convData && convData.redirect > 0 && convData.redirectURL) {
-            convRaw = window.MoriShareBridge.httpRequest(
-              JSON.stringify({
-                url: `${convData.redirectURL}&v=${ytId}&f=${format}&_=${Math.random()}`,
-                method: "GET",
-                headers: convHeaders,
-              }),
-            );
-            convRes = JSON.parse(convRaw);
-            convData =
-              typeof convRes.data === "string"
-                ? JSON.parse(convRes.data)
-                : convRes.data;
-          }
-
-          if (convData && !convData.error) {
-            let dlUrl = convData.downloadURL;
-            let progUrl = convData.progressURL;
-            let progress = 0;
-            let attempts = 0;
-            const maxAttempts = 30;
-
+          if (initData.status === "progress" && progUrl) {
             while (progress < 3 && attempts < maxAttempts) {
               await new Promise((r) => setTimeout(r, 1500));
-              if (!progUrl) break;
 
               const progRaw = window.MoriShareBridge.httpRequest(
                 JSON.stringify({
-                  url: `${progUrl}&_=${Math.random()}`,
+                  url: `${progUrl}&_=${Date.now()}`,
                   method: "GET",
-                  headers: convHeaders,
+                  headers: mobiHeaders,
                 }),
               );
               try {
@@ -657,7 +619,11 @@ async function triggerDownload(dlItem, title, idx) {
                     ? JSON.parse(progRes.data)
                     : progRes.data || progRes;
                 if (!progData || progData.error) break;
-                progress = progData.progress;
+                if (progData.status === "download" && progData.downloadURL) {
+                  dlUrl = progData.downloadURL;
+                  break;
+                }
+                progress = progData.progress || 0;
                 if (progData.downloadURL) dlUrl = progData.downloadURL;
                 if (progress >= 3) break;
               } catch (_) {
@@ -665,12 +631,15 @@ async function triggerDownload(dlItem, title, idx) {
               }
               attempts++;
             }
+          }
 
-            if (dlUrl && progress >= 3) {
-              if (dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
-              if (dlUrl.startsWith("/")) dlUrl = "https://ytmp3.mobi" + dlUrl;
-              downloadUrl = dlUrl;
+          if (dlUrl) {
+            if (dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
+            if (dlUrl.startsWith("/")) {
+              dlUrl =
+                "https://fancy-sea-5d3d.holy-breeze-fec5.workers.dev" + dlUrl;
             }
+            downloadUrl = dlUrl;
           }
         }
       } catch (e) {}
@@ -773,6 +742,13 @@ async function triggerDownload(dlItem, title, idx) {
     ) {
       dlHeaders.Referer = "https://media.ytmp3.gg/";
       dlHeaders.Origin = "https://media.ytmp3.gg";
+    } else if (
+      finalUrl.includes("holy-breeze-fec5.workers.dev") ||
+      finalUrl.includes("ytmp3.gl") ||
+      finalUrl.includes("gammacloud.net")
+    ) {
+      dlHeaders.Referer = "https://ytmp3.gl/";
+      dlHeaders.Origin = "https://ytmp3.gl";
     } else if (
       finalUrl.includes("ymcdn.org") ||
       finalUrl.includes("ytmp3.mobi")

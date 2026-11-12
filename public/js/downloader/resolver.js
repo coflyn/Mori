@@ -488,62 +488,46 @@ export async function resolveDownloadUrl({
       }
       updateProgress(10, "Converting with ytmp3.mobi...");
 
+      const DEFAULT_API_KEY =
+        "ytmp3_572dd96834f5c4a575b198d63e1df13e0caf73667c6fdfe39dc6160fb4246b55";
       const mobiHeaders = {
-        Origin: "https://ytmp3.mobi",
-        Referer: "https://ytmp3.mobi/en8/",
+        Origin: "https://ytmp3.gl",
+        Referer: "https://ytmp3.gl/",
         "User-Agent": getUserAgent(),
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "cross-site",
-        Accept: "*/*",
+        Accept: "application/json, text/plain, */*",
       };
 
       const initData = await scraperFetch(
         {
-          url: `https://a.ymcdn.org/api/v1/init?p=y&23=1llum1n471&_=${Math.random()}`,
+          url: `https://fancy-sea-5d3d.holy-breeze-fec5.workers.dev/?m=i&k=${DEFAULT_API_KEY}&v=${ytId}&f=${format}&_=${Date.now()}`,
           headers: mobiHeaders,
         },
         "ytmp3.mobi Init",
       );
 
-      if (initData && !initData.error && initData.convertURL) {
-        let convData = await scraperFetch(
-          {
-            url: `${initData.convertURL}&v=${ytId}&f=${format}&_=${Math.random()}`,
-            headers: mobiHeaders,
-          },
-          "ytmp3.mobi Convert",
-        );
+      if (initData && !initData.error) {
+        let dlUrl = initData.downloadURL;
+        let progUrl = initData.progressURL;
+        let progress = 0;
+        let attempts = 0;
+        const maxAttempts = 30;
 
-        while (convData && convData.redirect > 0 && convData.redirectURL) {
-          convData = await scraperFetch(
-            {
-              url: `${convData.redirectURL}&v=${ytId}&f=${format}&_=${Math.random()}`,
-              headers: mobiHeaders,
-            },
-            "ytmp3.mobi Redirect",
-          );
-        }
-
-        if (convData && !convData.error) {
-          let dlUrl = convData.downloadURL;
-          let progUrl = convData.progressURL;
-          let progress = 0;
-          let attempts = 0;
-          const maxAttempts = 30;
-
+        if (initData.status === "progress" && progUrl) {
           while (progress < 3 && attempts < maxAttempts) {
             if (checkCancelled()) return { cancelled: true };
 
             await new Promise((r) => setTimeout(r, 1500));
-            if (!progUrl) break;
 
             const progData = await scraperFetch(
-              { url: `${progUrl}&_=${Math.random()}`, headers: mobiHeaders },
+              { url: `${progUrl}&_=${Date.now()}`, headers: mobiHeaders },
               "ytmp3.mobi Progress",
             );
             if (!progData || progData.error) break;
-            progress = progData.progress;
+            if (progData.status === "download" && progData.downloadURL) {
+              dlUrl = progData.downloadURL;
+              break;
+            }
+            progress = progData.progress || 0;
             if (progData.downloadURL) dlUrl = progData.downloadURL;
 
             if (btn) {
@@ -560,12 +544,15 @@ export async function resolveDownloadUrl({
             if (progress >= 3) break;
             attempts++;
           }
+        }
 
-          if (dlUrl && progress >= 3) {
-            if (dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
-            if (dlUrl.startsWith("/")) dlUrl = "https://ytmp3.mobi" + dlUrl;
-            downloadUrl = dlUrl;
+        if (dlUrl) {
+          if (dlUrl.startsWith("//")) dlUrl = "https:" + dlUrl;
+          if (dlUrl.startsWith("/")) {
+            dlUrl =
+              "https://fancy-sea-5d3d.holy-breeze-fec5.workers.dev" + dlUrl;
           }
+          downloadUrl = dlUrl;
         }
       }
     } catch (mobiErr) {

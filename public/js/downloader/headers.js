@@ -31,8 +31,14 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
     actualDownloadUrl.includes(".shop/") ||
     actualDownloadUrl.includes("lilillliiillliillii.shop");
 
+  const isYtmp3Worker =
+    actualDownloadUrl.includes("holy-breeze-fec5.workers.dev") ||
+    actualDownloadUrl.includes("ytmp3.gl") ||
+    actualDownloadUrl.includes("gammacloud.net");
+
   const isYoutube =
     isYtmp3GG ||
+    isYtmp3Worker ||
     actualDownloadUrl.includes("ytmp3.mobi") ||
     actualDownloadUrl.includes("ytdown") ||
     actualDownloadUrl.includes("ymcdn.org") ||
@@ -78,6 +84,9 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
   if (isYtmp3GG) {
     downloadHeaders["Referer"] = "https://media.ytmp3.gg/";
     downloadHeaders["Origin"] = "https://media.ytmp3.gg";
+  } else if (isYtmp3Worker) {
+    downloadHeaders["Referer"] = "https://ytmp3.gl/";
+    downloadHeaders["Origin"] = "https://ytmp3.gl";
   } else if (isYoutube) {
     downloadHeaders["Referer"] = "https://ytmp3.mobi/";
     if (
