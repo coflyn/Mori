@@ -226,12 +226,28 @@ async function downloadAndInstallApk(apkAsset, latest, btn) {
 function showUpdateModal(data, latest, isManual = false) {
   const lang = translations[currentLang] || {};
   const title = lang["label-update-available"] || "Update Available";
+
+  const isAndroid =
+    window.Capacitor?.isNativePlatform?.() &&
+    window.Capacitor?.getPlatform?.() === "android";
+  const isIos =
+    window.Capacitor?.isNativePlatform?.() &&
+    window.Capacitor?.getPlatform?.() === "ios";
+
   const apkAsset = data?.assets?.find(
     (a) => a.name && a.name.toLowerCase().endsWith(".apk"),
   );
+  const ipaAsset = data?.assets?.find(
+    (a) => a.name && a.name.toLowerCase().endsWith(".ipa"),
+  );
+
   const apkSize = apkAsset?.size
     ? `(${(apkAsset.size / (1024 * 1024)).toFixed(1)} MB)`
     : "";
+  const ipaSize = ipaAsset?.size
+    ? `(${(ipaAsset.size / (1024 * 1024)).toFixed(1)} MB)`
+    : "";
+
   const changelogHtml = formatChangelog(
     data?.body,
     latest,
@@ -239,12 +255,12 @@ function showUpdateModal(data, latest, isManual = false) {
     lang,
   );
 
-  const isAndroid =
-    window.Capacitor?.isNativePlatform?.() &&
-    window.Capacitor?.getPlatform?.() === "android";
-  const btnLabel = isAndroid
-    ? `${lang["btn-download-install"] || "DOWNLOAD & INSTALL"}${apkSize ? ` ${apkSize}` : ""}`
-    : (lang["btn-update"] || "UPDATE");
+  let btnLabel = lang["btn-update"] || "UPDATE";
+  if (isAndroid) {
+    btnLabel = `${lang["btn-download-install"] || "DOWNLOAD & INSTALL"}${apkSize ? ` ${apkSize}` : ""}`;
+  } else if (isIos) {
+    btnLabel = `${lang["btn-update"] || "UPDATE"} .IPA${ipaSize ? ` ${ipaSize}` : ""}`;
+  }
   const openGithubLabel = lang["label-open-github"] || "Open in GitHub";
 
   const msg = `
@@ -274,8 +290,10 @@ function showUpdateModal(data, latest, isManual = false) {
 
     if (updateBtn) {
       updateBtn.onclick = () => {
-        if (apkAsset) {
+        if (isAndroid && apkAsset) {
           downloadAndInstallApk(apkAsset, latest, updateBtn);
+        } else if (isIos) {
+          openExternalUrl(ipaAsset?.browser_download_url || data?.html_url || REPO_URL);
         } else {
           openExternalUrl(data?.html_url || REPO_URL);
         }
