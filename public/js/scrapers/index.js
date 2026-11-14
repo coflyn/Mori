@@ -8,9 +8,6 @@ import { scraperFetch } from "./httpHelper.js";
 
 export * from "./httpHelper.js";
 
-export const BUNDLED_SCRAPER_VERSION = 6;
-window.__MORI_BUNDLED_SCRAPER_VERSION__ = BUNDLED_SCRAPER_VERSION;
-
 // Expose deps to the bundled IIFE core
 window.__moriDeps = { utils, urlUtils, core };
 
@@ -48,31 +45,8 @@ async function fetchBundleText() {
 async function loadCoreScrapers() {
   if (_corePromise) return _corePromise;
   _corePromise = (async () => {
-    let scriptText = null;
-    let isFromOtaPatch = false;
-
-    // A. OTA patch from localStorage (plain JS text)
     try {
-      const patchedText = localStorage.getItem("mori_patched_scraper_bin");
-      const activeVer = parseInt(localStorage.getItem("mori_active_scraper_version") || "0", 10);
-      if (patchedText && activeVer >= BUNDLED_SCRAPER_VERSION) {
-        scriptText = patchedText;
-        isFromOtaPatch = true;
-        console.log(`[Mori] Loaded OTA patched scraper core v${activeVer}`);
-      } else if (patchedText) {
-        localStorage.removeItem("mori_patched_scraper_bin");
-        localStorage.removeItem("mori_active_scraper_version");
-      }
-    } catch (otaErr) {
-      console.warn("[Mori] OTA patch load warning:", otaErr);
-    }
-
-    try {
-      // B. Fallback to bundled bundle.js
-      if (!scriptText) {
-        scriptText = await fetchBundleText();
-      }
-
+      const scriptText = await fetchBundleText();
       const fn = new Function(
         scriptText +
           "\nreturn typeof __MoriCoreScrapers !== 'undefined' ? __MoriCoreScrapers : (typeof window !== 'undefined' ? window.__MoriCoreScrapers : null);"
@@ -82,17 +56,8 @@ async function loadCoreScrapers() {
       if (!mod) throw new Error("[Mori] Failed to instantiate core scraper modules.");
 
       window.__MoriCoreScrapers = mod;
-      console.log(`[Mori] Core scrapers ready (${isFromOtaPatch ? "OTA Patch" : "Bundled"} v${BUNDLED_SCRAPER_VERSION}).`);
       return mod;
     } catch (e) {
-      // Safe-mode: corrupted OTA patch → clear and retry with bundled
-      if (isFromOtaPatch) {
-        console.warn("[Mori] Corrupted OTA patch — resetting to bundled core.", e);
-        localStorage.removeItem("mori_patched_scraper_bin");
-        localStorage.removeItem("mori_active_scraper_version");
-        _corePromise = null;
-        return loadCoreScrapers();
-      }
       console.error("[Mori] Fatal init error:", e);
       if (typeof window.showFatalErrorModal === "function") {
         window.showFatalErrorModal(e.message || String(e));

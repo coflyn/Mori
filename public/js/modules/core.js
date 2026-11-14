@@ -121,7 +121,6 @@ export const clearCacheBtn = document.getElementById("clearCacheBtn");
 export const wipeDataBtn = document.getElementById("wipeDataBtn");
 export const reportBugBtn = document.getElementById("reportBugBtn");
 export const checkUpdateBtn = document.getElementById("checkUpdateBtn");
-export const checkScraperUpdateBtn = document.getElementById("checkScraperUpdateBtn");
 export const platformVal = document.getElementById("platformVal");
 export const currentLangDisplay = document.getElementById("currentLangDisplay");
 export const darkModeToggle = document.getElementById("darkModeToggle");

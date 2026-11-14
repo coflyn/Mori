@@ -591,6 +591,47 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
+        @JavascriptInterface
+        public void installApk(String rawPath) {
+            try {
+                if (rawPath == null || rawPath.isEmpty()) return;
+                String cleanPath = rawPath;
+                if (cleanPath.startsWith("file://")) {
+                    cleanPath = cleanPath.substring(7);
+                }
+                cleanPath = URLDecoder.decode(cleanPath, "UTF-8");
+                File file = new File(cleanPath);
+                if (!file.isAbsolute() || !file.exists()) {
+                    String rel = cleanPath.replaceFirst("^/+", "");
+                    File test = new File(Environment.getExternalStorageDirectory(), rel);
+                    if (test.exists()) {
+                        file = test;
+                    } else {
+                        String strippedRel = rel.replaceFirst("^(?i)(download|documents)/+", "");
+                        File d1 = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), strippedRel);
+                        if (d1.exists()) file = d1;
+                    }
+                }
+                if (!file.exists()) {
+                    Log.e("MoriMainBridge", "APK file not found for install: " + cleanPath);
+                    return;
+                }
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                Uri apkUri = FileProvider.getUriForFile(
+                    MainActivity.this,
+                    getPackageName() + ".fileprovider",
+                    file
+                );
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                MainActivity.this.startActivity(intent);
+            } catch (Exception e) {
+                Log.e("MoriMainBridge", "Failed to launch package installer", e);
+            }
+        }
+
         private Bitmap extractBestFrame(MediaMetadataRetriever retriever) {
             Bitmap bitmap = null;
             long timeUs = 2000000;

@@ -285,12 +285,11 @@ Mori/
 │   │   │   │   ├── tiktokFinder.js    # TikTok profile & user metadata lookup
 │   │   │   │   ├── usernameChecker.js # Real-time username availability checker across 20+ platforms
 │   │   │   │   └── index.js           # Tools tab navigation, tab router & event listeners
-│   │   │   ├── update.js       # Automatic GitHub release update checker
-│   │   │   └── updateScrapers.js # OTA scraper hot-patch downloader & validator
+│   │   │   └── update.js       # GitHub release update checker & in-app APK updater
 │   │   ├── scrapers/           # Scraper runtime loader & HTTP helper
 │   │   │   ├── bundle.js       # Bundled scraper core (esbuild IIFE, all 16 platforms)
 │   │   │   ├── httpHelper.js   # Unified HTTP engine (native OkHttp/Capacitor bridge + UA rotation)
-│   │   │   └── index.js        # Runtime loader with OTA hot-patch support
+│   │   │   └── index.js        # Runtime bundle loader
 │   │   ├── ui/                 # UI rendering & presentation layer
 │   │   │   ├── downloadBubble.js # Persistent floating download bubble & dropup task manager
 │   │   │   ├── nativeDownload.js # Native download flow orchestrator & progress tracking
