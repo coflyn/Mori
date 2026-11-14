@@ -1,7 +1,7 @@
 {
-  "scraperVersion": 6,
-  "updatedAt": 1793915612106,
+  "scraperVersion": 7,
+  "updatedAt": 1794619079778,
   "minAppVersion": "4.3.0",
-  "sourceHash": "40271377c649548886da29d2186e19be31602a483cdc0a1ebf4179c1a3cd12a2",
-  "changelog": "Fix multiple scrapers and engine optimizations"
+  "sourceHash": "4ebfc267d28c7b4167ea070d6dfe21fe54a983c87060fa7133a2dade1efdfc37",
+  "changelog": "Migrate YouTube Server 2 to ytmp3.gl and preserve Bilibili part parameter"
 }

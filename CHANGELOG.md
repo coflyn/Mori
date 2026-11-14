@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.0] - 2026-11-14
+
+### Added
+
+- **Built-in Offline & Online Tools Suite**:
+  - Live in-app browser media sniffer with dynamic network stream interception (`shouldInterceptRequest`) and ad/tracker filtering.
+  - Video-to-audio soundtrack extractor running 100% offline via Web Audio API (WAV/MP3 export with stereo/mono modes).
+  - Client-side image converter and scaler supporting WebP, JPG, and PNG with quality presets.
+  - Client-side PDF document compressor with three compression presets.
+  - Multi-platform username availability checker querying 20+ social platforms simultaneously.
+  - Anime scene reverse search via screenshot powered by trace.moe.
+  - TikTok public profile lookup with follower counts, total likes, and bio details.
+  - Shortlink resolver for supported gateway domains.
+- **In-App APK Updater & Direct GitHub Installs**:
+  - In-app update flow detecting new releases, displaying localized changelog popups in 9 languages, and downloading APKs with in-app progress ring and package installer handoff.
+  - Added dedicated iOS update routing to directly download `.ipa` releases or open GitHub Release page.
+- **Custom Filename Templates & Persistent Sequential Counters (#21)**:
+  - Custom filename patterns (`{platform}`, `{date}`, `{time}`, `{quality}`, `{num}`, `{title}`) with monotonic sequential numbering per platform.
+- **Real-Time Download Progress Tracking (#22)**:
+  - Byte-level stream tracking, transfer speed, connection stall detection, and storage write status.
+- **YouTube Server 2 Migration**:
+  - Migrated YouTube Server 2 to `ytmp3.gl` (`api.ytmp3.gl`).
+
+### Fixed
+
+- **Bilibili Multi-Part Parameter Preservation (#23)**:
+  - Preserved `?p=` episode parameter when sanitizing Bilibili URLs so multi-part video links aren't deduped into part 1 during batch downloads.
+- **Concurrent Downloads & Share History (#24)**:
+  - Fixed Android foreground service and wake-lock terminating prematurely when multiple downloads run concurrently.
+  - Aligned ShareActivity history truncation with user-configured `mori_history_limit` so favorited items are preserved.
+  - Fixed missing `pauseAllMedia` import throwing ReferenceError when app enters background.
+  - Automatically purged stale OTA patches on newer app versions.
+- **Preview Modal Missing File Status**:
+  - Fixed false `(File missing)` status on audio and music cards by mapping audio MIME types dynamically, rendering proper music placeholders, and detecting media readiness via HTML5 audio events.
+- **Upstream Security (#25)**:
+  - Upgraded `proxy-addr` to 2.0.8 resolving CVE vulnerability.
+
+---
+
 ## [4.5.2] - 2026-11-06
 
 ### Added

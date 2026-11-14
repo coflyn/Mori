@@ -1,6 +1,6 @@
 {
   "name": "mori",
-  "version": "4.5.2",
+  "version": "4.6.0",
   "description": "",
   "main": "index.js",
   "workspaces": [
@@ -14,7 +14,7 @@
     "cli:publish": "npm run compile:scrapers && npm publish ./cli",
     "build:android": "npx cap sync android && cd android && ./gradlew assembleDebug",
     "build:android:release": "npx cap sync android && cd android && ./gradlew assembleRelease",
-    "build:ios:ipa": "export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 && npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=\"\" && mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r \"Mori v4.5.2.ipa\" Payload && rm -rf Payload build"
+    "build:ios:ipa": "export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 && npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath build/Mori.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=\"\" && mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/ && zip -r \"Mori v4.6.0.ipa\" Payload && rm -rf Payload build"
   },
   "keywords": [],
   "author": "",
