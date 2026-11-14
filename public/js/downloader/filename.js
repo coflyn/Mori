@@ -1,4 +1,5 @@
 // Filename, extension, and subfolder resolution utilities
+import { t } from "../i18n/index.js";
 
 export function resolveExtension(type, url) {
   const isAudio = /mp3|audio|128k|48k|m4a|wav|flac/i.test(type);
@@ -244,7 +245,7 @@ export async function resolveUniqueFileName(
       if (overwriteMode === "skip") {
         if (btn) {
           const b = btn.querySelector(".dl-badge");
-          if (b) b.textContent = "SAVED";
+          if (b) b.textContent = t("status-saved");
         }
         return {
           skipped: true,

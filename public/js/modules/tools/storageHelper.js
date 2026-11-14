@@ -1,9 +1,10 @@
 // storageHelper.js — Helper to save generated/converted blobs to Mori folders or trigger download
 import { Filesystem, showToast, triggerHaptic } from "../../utils/index.js";
+import { t } from "../../i18n/index.js";
 
 export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", meta = {}) {
   if (!blob) {
-    showToast("No data to save");
+    showToast(t("toast-no-data"));
     return { success: false, error: "No blob data" };
   }
 
@@ -46,7 +47,7 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", m
       reader.readAsDataURL(blob);
     });
   } catch (err) {
-    showToast("Failed to process file data");
+    showToast(t("toast-process-failed"));
     return { success: false, error: err.message };
   }
 
@@ -56,7 +57,7 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", m
       const ok = window.MoriMainBridge.saveBase64File(base64Data, folder, fileName);
       if (ok) {
         triggerHaptic("success");
-        showToast(`Saved: ${fileName}`);
+        showToast(t("toast-saved-file", { name: fileName }));
         const fullSavedPath = `${folder}/${fileName}`;
         notifyFileSaved(fullSavedPath, fullSavedPath);
         return { success: true, path: fullSavedPath, uri: fullSavedPath };
@@ -101,7 +102,7 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", m
           } catch (_) {}
 
           triggerHaptic("success");
-          showToast(`Saved: ${fileName}`);
+          showToast(t("toast-saved-file", { name: fileName }));
           notifyFileSaved(fullSavedPath, savedUri);
           return { success: true, path: fullSavedPath, uri: savedUri };
         } catch (_) {}
@@ -119,12 +120,12 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", m
     a.click();
     document.body.removeChild(a);
     triggerHaptic("success");
-    showToast(`Downloaded: ${fileName}`);
+    showToast(t("toast-downloaded-file", { name: fileName }));
     notifyFileSaved(fileName, url);
     setTimeout(() => URL.revokeObjectURL(url), 10000);
     return { success: true, path: fileName, uri: url };
   } catch (err) {
-    showToast("Failed to save file");
+    showToast(t("toast-save-failed"));
     return { success: false, error: err.message };
   }
 }

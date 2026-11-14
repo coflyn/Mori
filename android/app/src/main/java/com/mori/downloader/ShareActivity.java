@@ -229,8 +229,8 @@ public class ShareActivity extends AppCompatActivity {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
-                    CHANNEL_ID, "Mori Downloads", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("Mori download notifications");
+                    CHANNEL_ID, getString(R.string.notif_channel_complete), NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription(getString(R.string.notif_channel_complete_desc));
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm != null) nm.createNotificationChannel(ch);
         }
@@ -241,7 +241,7 @@ public class ShareActivity extends AppCompatActivity {
         if (nm == null) return;
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                .setContentTitle("Download Complete ✓")
+                .setContentTitle(getString(R.string.notif_complete))
                 .setContentText(title)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true);
@@ -253,7 +253,7 @@ public class ShareActivity extends AppCompatActivity {
         if (nm == null) return;
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.stat_notify_error)
-                .setContentTitle("Download Failed")
+                .setContentTitle(getString(R.string.notif_failed))
                 .setContentText(title + ": " + reason)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true);
@@ -432,7 +432,7 @@ public class ShareActivity extends AppCompatActivity {
                 // Start Foreground Service for background protection
                 try {
                     Intent sIntent = new Intent(ShareActivity.this, DownloadForegroundService.class);
-                    sIntent.putExtra("title", title != null ? title : "Downloading Media...");
+                    sIntent.putExtra("title", title != null ? title : getString(R.string.notif_downloading));
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(sIntent);
                     } else {

@@ -38,6 +38,8 @@ Thank you for your interest in contributing to **Mori**! Whether you want to fix
 ### 2. Translating & Localization (`public/js/i18n/`)
 Mori supports 9 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL, Russian, Tagalog, and Hindi). If you want to refine translations or add a new locale, edit the dictionary files in `public/js/i18n/`.
 
+Simplified Chinese documentation: [README.zh-CN.md](README.zh-CN.md) and [GUIDE.zh-CN.md](GUIDE.zh-CN.md). Missing keys fall back to English.
+
 ### 3. Frontend & UI Enhancements
 Feel free to refine the CSS design system, optimize MoriPlayer controls, enhance glassmorphism effects, or add responsive styling.
 

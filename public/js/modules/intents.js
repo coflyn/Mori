@@ -1,6 +1,7 @@
 // intents.js — clipboard paste, share intent, app url open, app state
-import { translations } from "../i18n/index.js";
+import { translations, t } from "../i18n/index.js";
 import { cleanUrl } from "../utils/urlUtils.js";
+import { normalizeLooseUrl, parseShareText } from "../utils/shareLink.js";
 import {
   Clipboard,
   App,
@@ -48,7 +49,9 @@ export async function handlePasteFromClipboard(isSilent = false) {
 
     if (text && text.trim()) {
       const trimmed = text.trim();
+      const normalized = normalizeLooseUrl(trimmed);
       const isUrl =
+        Boolean(normalized) ||
         trimmed.startsWith("http") ||
         trimmed.includes(".com") ||
         trimmed.includes(".net") ||
@@ -68,8 +71,9 @@ export async function handlePasteFromClipboard(isSilent = false) {
           triggerHaptic("light");
           return;
         } else {
-          if (urlInput.value.trim() === trimmed) return;
-          urlInput.value = trimmed;
+          const valueToSet = normalized || trimmed;
+          if (urlInput.value.trim() === valueToSet) return;
+          urlInput.value = valueToSet;
           urlInput.dispatchEvent(new Event("input"));
           triggerHaptic("light");
         }
@@ -168,15 +172,27 @@ function processSharedText(text) {
   if (!text) return;
   setIntentPending(false);
   setLastHandledLinkTime(Date.now());
-  // Find a URL in the text
-  const urlMatch = text.match(/https?:\/\/[^\s]+/);
-  const finalUrl = urlMatch ? urlMatch[0] : text;
+  const share = parseShareText(text);
+  const finalUrl = share?.url || normalizeLooseUrl(text) || text;
 
   urlInput.value = finalUrl;
   urlInput.dispatchEvent(new Event("input"));
 
   // Highlight the input
   urlInput.focus();
+  if (share) {
+    const code = share.password
+      ? t("toast-share-code", { code: share.password })
+      : "";
+    showToast(
+      t("toast-share-kept", {
+        platform: t(`share-platform-${share.platform}`),
+        code,
+      }),
+    );
+    return;
+  }
+
   showToast(translations[currentLang]["toast-pasted-share"]);
 
   // Auto-download after a short delay
