@@ -24,7 +24,7 @@ import {
 } from "./scrapers/index.js";
 import { cleanUrl } from "./utils/urlUtils.js";
 import { getUserAgent } from "./utils/index.js";
-import { translations, getInitialLanguage } from "./i18n/index.js";
+import { translations, getInitialLanguage, t } from "./i18n/index.js";
 import { safeSetHistory } from "./modules/history.js";
 import { generateFileName, sanitizeTitle } from "./downloader/filename.js";
 
@@ -473,7 +473,7 @@ async function triggerDownload(dlItem, title, idx) {
         }
       });
       if (foundLink) finalUrl = foundLink;
-      else throw new Error("Could not resolve Apple Music download link");
+      else throw new Error(t("err-resolve-download"));
     } else if (finalUrl.startsWith("spotidown_resolve:")) {
       const parts = finalUrl.replace("spotidown_resolve:", "").split("|||");
       const payloadStr = parts[0];
@@ -512,7 +512,7 @@ async function triggerDownload(dlItem, title, idx) {
         }
       });
       if (foundLink) finalUrl = foundLink;
-      else throw new Error("Could not resolve SpotiDown download link");
+      else throw new Error(t("err-resolve-download"));
     } else if (finalUrl.startsWith("soundloaders_resolve:")) {
       const parts = finalUrl.replace("soundloaders_resolve:", "").split("|||");
       const dataVal = parts[0];
@@ -559,7 +559,7 @@ async function triggerDownload(dlItem, title, idx) {
           /href=["'](https:\/\/[^"']*(?:cdnv1|\/v1\?token=)[^"']+)["']/,
         );
       if (match && match[1]) finalUrl = match[1];
-      else throw new Error("Could not resolve Soundloaders download link");
+      else throw new Error(t("err-resolve-download"));
     } else if (
       finalUrl.startsWith("youtube_resolve:") ||
       finalUrl.startsWith("ytmp3gg_resolve:")
@@ -713,13 +713,13 @@ async function triggerDownload(dlItem, title, idx) {
       }
 
       if (downloadUrl) finalUrl = downloadUrl;
-      else throw new Error("Could not resolve YouTube download link");
+      else throw new Error(t("err-resolve-download"));
     }
   } catch (err) {
     if (window.onDownloadFailed) {
       window.onDownloadFailed(
         filename,
-        err.message || "Failed to resolve link",
+        err.message || t("err-resolve-download"),
       );
     }
     return;

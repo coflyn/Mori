@@ -4,4 +4,17 @@
     <string name="title_activity_main">Mori</string>
     <string name="package_name">com.mori.downloader</string>
     <string name="custom_url_scheme">com.mori.downloader</string>
+    <string name="notif_channel_download">Mori Background Download</string>
+    <string name="notif_channel_download_desc">Keeps Mori active during media download</string>
+    <string name="notif_channel_complete">Mori Downloads</string>
+    <string name="notif_channel_complete_desc">Mori download notifications</string>
+    <string name="notif_downloading">Downloading media…</string>
+    <string name="notif_downloader_title">Mori Downloader</string>
+    <string name="notif_complete">Download complete ✓</string>
+    <string name="notif_failed">Download failed</string>
+    <string name="notif_media">Media</string>
+    <string name="notif_failed_reason">Failed</string>
+    <string name="sniff_hint">Enter URL…</string>
+    <string name="sniff_count">Sniff (%1$d)</string>
+    <string name="sniff_page_title">Live sniffed page</string>
 </resources>

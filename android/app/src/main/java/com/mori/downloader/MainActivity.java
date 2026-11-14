@@ -441,7 +441,7 @@ public class MainActivity extends BridgeActivity {
         public void startDownloadService(String title) {
             try {
                 Intent intent = new Intent(MainActivity.this, DownloadForegroundService.class);
-                intent.putExtra("title", title != null ? title : "Downloading Media...");
+                intent.putExtra("title", title != null ? title : getString(R.string.notif_downloading));
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     startForegroundService(intent);
                 } else {
@@ -469,13 +469,14 @@ public class MainActivity extends BridgeActivity {
                 if (nm == null) return;
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     android.app.NotificationChannel ch = new android.app.NotificationChannel(
-                            "mori_download_complete", "Mori Downloads", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                            "mori_download_complete", getString(R.string.notif_channel_complete), android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                    ch.setDescription(getString(R.string.notif_channel_complete_desc));
                     nm.createNotificationChannel(ch);
                 }
                 androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(MainActivity.this, "mori_download_complete")
                         .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                        .setContentTitle("Download Complete ✓")
-                        .setContentText((title != null ? title : "Media") + (path != null ? " · " + path : ""))
+                        .setContentTitle(getString(R.string.notif_complete))
+                        .setContentText((title != null ? title : getString(R.string.notif_media)) + (path != null ? " · " + path : ""))
                         .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
                         .setAutoCancel(true);
                 nm.notify((int) System.currentTimeMillis(), b.build());
@@ -491,13 +492,14 @@ public class MainActivity extends BridgeActivity {
                 if (nm == null) return;
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     android.app.NotificationChannel ch = new android.app.NotificationChannel(
-                            "mori_download_complete", "Mori Downloads", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                            "mori_download_complete", getString(R.string.notif_channel_complete), android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                    ch.setDescription(getString(R.string.notif_channel_complete_desc));
                     nm.createNotificationChannel(ch);
                 }
                 androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(MainActivity.this, "mori_download_complete")
                         .setSmallIcon(android.R.drawable.stat_notify_error)
-                        .setContentTitle("Download Failed")
-                        .setContentText((title != null ? title : "Media") + ": " + (error != null ? error : "Failed"))
+                        .setContentTitle(getString(R.string.notif_failed))
+                        .setContentText((title != null ? title : getString(R.string.notif_media)) + ": " + (error != null ? error : getString(R.string.notif_failed_reason)))
                         .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
                         .setAutoCancel(true);
                 nm.notify((int) System.currentTimeMillis(), b.build());
@@ -1151,7 +1153,7 @@ public class MainActivity extends BridgeActivity {
         urlInput.setBackgroundColor(Color.parseColor("#262626"));
         urlInput.setTextColor(Color.WHITE);
         urlInput.setHintTextColor(Color.parseColor("#888888"));
-        urlInput.setHint("Enter URL...");
+        urlInput.setHint(getString(R.string.sniff_hint));
         urlInput.setTextSize(13);
         urlInput.setSingleLine(true);
         urlInput.setPadding(pad12, 0, pad12, 0);
@@ -1159,7 +1161,7 @@ public class MainActivity extends BridgeActivity {
 
         // Sniff counter badge button
         Button btnSniff = new Button(this);
-        btnSniff.setText("Sniff (0)");
+        btnSniff.setText(getString(R.string.sniff_count, 0));
         btnSniff.setTextSize(12);
         btnSniff.setTextColor(Color.WHITE);
         btnSniff.setBackgroundColor(Color.parseColor("#333333"));
@@ -1227,7 +1229,7 @@ public class MainActivity extends BridgeActivity {
                 super.onPageStarted(view, url, favicon);
                 detectedUrls.clear();
                 mainHandler.post(() -> {
-                    btnSniff.setText("Sniff (0)");
+                    btnSniff.setText(getString(R.string.sniff_count, 0));
                     btnSniff.setBackgroundColor(Color.parseColor("#333333"));
                 });
             }
@@ -1239,7 +1241,7 @@ public class MainActivity extends BridgeActivity {
                     if (isSnifferMedia(reqUrl)) {
                         detectedUrls.add(reqUrl);
                         mainHandler.post(() -> {
-                            btnSniff.setText("Sniff (" + detectedUrls.size() + ")");
+                            btnSniff.setText(getString(R.string.sniff_count, detectedUrls.size()));
                             btnSniff.setBackgroundColor(Color.parseColor("#2E7D32"));
                         });
                     }
@@ -1312,7 +1314,7 @@ public class MainActivity extends BridgeActivity {
                                         }
                                     }
                                     mainHandler.post(() -> {
-                                        btnSniff.setText("Sniff (" + detectedUrls.size() + ")");
+                                        btnSniff.setText(getString(R.string.sniff_count, detectedUrls.size()));
                                         if (detectedUrls.size() > 0) {
                                             btnSniff.setBackgroundColor(Color.parseColor("#2E7D32"));
                                         }
@@ -1353,7 +1355,7 @@ public class MainActivity extends BridgeActivity {
         btnSniff.setOnClickListener(v -> {
             try {
                 JSONObject payload = new JSONObject();
-                payload.put("pageTitle", sniffWebView.getTitle() != null ? sniffWebView.getTitle() : "Live Sniffed Page");
+                payload.put("pageTitle", sniffWebView.getTitle() != null ? sniffWebView.getTitle() : getString(R.string.sniff_page_title));
                 payload.put("pageUrl", sniffWebView.getUrl() != null ? sniffWebView.getUrl() : "");
                 JSONArray urlArray = new JSONArray();
                 synchronized (detectedUrls) {

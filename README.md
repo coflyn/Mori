@@ -4,6 +4,7 @@
 
 <h1 align="center">Mori</h1>
 <p align="center"><em>Save anything, from anywhere.</em></p>
+<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-v4.6.0-brown?style=flat-square" alt="Version">
