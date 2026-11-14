@@ -628,5 +628,18 @@ export default {
   "cat-blog": "Blog",
   "cat-design": "Design",
   "sniff-capture-title": "Live browser capture",
-  "err-resolve-download": "Could not resolve the download link"
+  "err-resolve-download": "Could not resolve the download link",
+  "toast-share-code": " (code ${code})",
+  "toast-share-kept": "Kept the ${platform} link${code}. Direct download is not available yet.",
+  "share-platform-quark": "Quark",
+  "share-platform-uc": "UC Drive",
+  "share-platform-xunlei": "Xunlei",
+  "share-platform-baidu": "Baidu Netdisk",
+  "share-platform-139": "139 Cloud",
+  "share-platform-123": "123 Pan",
+  "share-platform-115": "115",
+  "share-platform-guangya": "Guangya",
+  "share-platform-ilanzou": "iLanzou",
+  "share-platform-lanzou": "Lanzou",
+  "share-platform-aliyun": "Aliyun Drive"
 };

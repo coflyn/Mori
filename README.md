@@ -120,6 +120,7 @@ CLI features:
 ## Features
 
 - Downloads watermark-free videos, photos, and audio from 16 platforms (TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Bandcamp, Pixiv, Bilibili, Douyin, RedNote, Reddit, TeraBox).
+- Pasted Chinese cloud-drive captions (Quark, UC, Baidu, Xunlei, 115, 123, Lanzou, Aliyun, and similar) keep the link and extraction code. Mori does not download those drives yet.
 - Built-in media tools including a browser stream sniffer, offline audio extractor, image converter, PDF compressor, username availability checker, and anime scene search.
 - In-app APK updates directly through GitHub Releases with localized changelogs.
 - Customizable filename templates using `{platform}`, `{date}`, `{time}`, `{quality}`, `{num}`, and `{title}`, with persistent sequential counters per platform.

@@ -628,5 +628,18 @@ export default {
   "cat-blog": "博客",
   "cat-design": "设计",
   "sniff-capture-title": "实时浏览器捕获",
-  "err-resolve-download": "无法解析下载链接"
+  "err-resolve-download": "无法解析下载链接",
+  "toast-share-code": "（提取码 ${code}）",
+  "toast-share-kept": "已保留${platform}链接${code}，暂时还不能直接下载",
+  "share-platform-quark": "夸克网盘",
+  "share-platform-uc": "UC 网盘",
+  "share-platform-xunlei": "迅雷网盘",
+  "share-platform-baidu": "百度网盘",
+  "share-platform-139": "移动云盘",
+  "share-platform-123": "123 云盘",
+  "share-platform-115": "115 网盘",
+  "share-platform-guangya": "光鸭网盘",
+  "share-platform-ilanzou": "蓝奏优享",
+  "share-platform-lanzou": "蓝奏云",
+  "share-platform-aliyun": "阿里云盘"
 };

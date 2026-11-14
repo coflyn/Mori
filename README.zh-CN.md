@@ -121,6 +121,7 @@ CLI 功能：
 ## 功能
 
 - 从 16 个平台下载无水印视频、图片和音频（TikTok、Instagram、YouTube、Twitter/X、Spotify、Apple Music、Pinterest、Facebook、Threads、Bandcamp、Pixiv、Bilibili、抖音、小红书、Reddit、TeraBox）。
+- 粘贴夸克、UC、百度、迅雷、115、123、蓝奏、阿里云盘等中文分享文案时，会抽出链接并保留提取码。这些网盘暂时还不能直接下载。
 - 内置媒体工具：浏览器流嗅探、离线音频提取、图片转换、PDF 压缩、用户名可用性检查、动画场景搜索。
 - 应用内通过 GitHub Releases 直接更新 APK，更新日志随界面语言显示。
 - 自定义文件名模板，可用 `{platform}`、`{date}`、`{time}`、`{quality}`、`{num}`、`{title}`，每个平台单独记住连续编号。

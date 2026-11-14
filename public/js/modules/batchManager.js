@@ -22,7 +22,9 @@ import {
   scrapeTeraBox,
 } from "../scrapers/index.js";
 
+import { t } from "../i18n/index.js";
 import { cleanUrl } from "../utils/index.js";
+import { firstHttpUrl, parseShareText } from "../utils/shareLink.js";
 
 /**
  * Extracts and sanitizes valid HTTP/HTTPS URLs from raw batch text input.
@@ -30,18 +32,39 @@ import { cleanUrl } from "../utils/index.js";
  * @param {string} rawText
  * @returns {string[]} Array of unique, valid URLs
  */
+function shareKeptMessage(share) {
+  const code = share.password
+    ? t("toast-share-code", { code: share.password })
+    : "";
+  return t("toast-share-kept", {
+    platform: t(`share-platform-${share.platform}`),
+    code,
+  });
+}
+
 export function extractBatchUrls(rawText) {
   if (!rawText || typeof rawText !== "string") return [];
 
-  const urlRegex = /(https?:\/\/[^\s,]+)/gi;
-  const matches = rawText.match(urlRegex) || [];
-  const validUrls = [];
+  const urlRegex = /https?:\/\/[^\s,]+/gi;
+  const found = [];
+  let match;
+  while ((match = urlRegex.exec(rawText))) {
+    found.push({ index: match.index, length: match[0].length });
+  }
 
-  for (let rawUrl of matches) {
+  const validUrls = [];
+  for (let i = 0; i < found.length; i++) {
+    const previousEnd =
+      i === 0 ? 0 : found[i - 1].index + found[i - 1].length;
+    const start = Math.max(previousEnd, found[i].index - 60);
+    const end = i + 1 < found.length ? found[i + 1].index : rawText.length;
+    const slice = rawText.slice(start, end);
     try {
-      let cleaned = cleanUrl(rawUrl.trim());
+      const share = parseShareText(slice);
+      let cleaned = share ? share.url : cleanUrl(firstHttpUrl(slice));
+      if (!cleaned) continue;
       if (cleaned.startsWith("http://")) {
-        cleaned = cleaned.replace("http://", "https://");
+        cleaned = "https://" + cleaned.slice("http://".length);
       }
       if (!validUrls.includes(cleaned)) {
         validUrls.push(cleaned);
@@ -89,6 +112,10 @@ export async function analyzeUrlSilent(url, preferServer = "auto") {
 
   try {
     let data = null;
+    const share = parseShareText(url);
+    if (share) {
+      return { status: false, message: shareKeptMessage(share) };
+    }
 
     if (
       url.includes("tiktok.com") ||
