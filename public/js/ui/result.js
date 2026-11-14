@@ -116,14 +116,34 @@ export function renderMediaSlides(container, items, resultThumbnail) {
         slide.appendChild(playerContainer);
       }
     } else if (isAudio) {
-      if (isDataSaver && !isLocal) {
-        const placeholder = document.createElement("div");
-        placeholder.className = "data-saver-placeholder";
-        placeholder.style.cursor = "pointer";
-        placeholder.innerHTML = `<p>${translations[currentLang]["label-datasaver"]}</p>`;
-        placeholder.onclick = () => {
-          slide.removeChild(placeholder);
+      const thumbSrc = dl.thumbnail || resultThumbnail || "";
+      if (thumbSrc) {
+        if (isDataSaver && !isLocal) {
+          const placeholder = document.createElement("div");
+          placeholder.className = "data-saver-placeholder";
+          placeholder.style.cursor = "pointer";
+          placeholder.innerHTML = `<p>${translations[currentLang]["label-datasaver"]}</p>`;
+          placeholder.onclick = () => {
+            slide.removeChild(placeholder);
+            const img = document.createElement("img");
+            img.className = "audio-artwork-img";
+            img.style.width = "100%";
+            img.style.maxHeight = "300px";
+            img.style.objectFit = "cover";
+            img.style.borderRadius = "8px";
+            img.style.marginBottom = "15px";
+
+            setupImageLoading(
+              img,
+              thumbSrc,
+              resultThumbnail,
+            );
+            slide.appendChild(img);
+          };
+          slide.appendChild(placeholder);
+        } else {
           const img = document.createElement("img");
+          img.className = "audio-artwork-img";
           img.style.width = "100%";
           img.style.maxHeight = "300px";
           img.style.objectFit = "cover";
@@ -132,26 +152,30 @@ export function renderMediaSlides(container, items, resultThumbnail) {
 
           setupImageLoading(
             img,
-            dl.thumbnail || resultThumbnail || "",
+            thumbSrc,
             resultThumbnail,
           );
           slide.appendChild(img);
-        };
-        slide.appendChild(placeholder);
+        }
       } else {
-        const img = document.createElement("img");
-        img.style.width = "100%";
-        img.style.maxHeight = "300px";
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "8px";
-        img.style.marginBottom = "15px";
-
-        setupImageLoading(
-          img,
-          dl.thumbnail || resultThumbnail || "",
-          resultThumbnail,
-        );
-        slide.appendChild(img);
+        const audioPlaceholder = document.createElement("div");
+        audioPlaceholder.className = "mori-player-audio-placeholder";
+        audioPlaceholder.style.width = "100%";
+        audioPlaceholder.style.height = "160px";
+        audioPlaceholder.style.display = "flex";
+        audioPlaceholder.style.justifyContent = "center";
+        audioPlaceholder.style.alignItems = "center";
+        audioPlaceholder.style.background = "var(--surface, rgba(0,0,0,0.03))";
+        audioPlaceholder.style.borderRadius = "12px";
+        audioPlaceholder.style.marginBottom = "14px";
+        audioPlaceholder.innerHTML = `
+          <div style="width:64px;height:64px;border-radius:50%;background:rgba(217,119,138,0.12);display:flex;align-items:center;justify-content:center;color:#d9778a;">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+          </div>
+        `;
+        slide.appendChild(audioPlaceholder);
       }
 
       const audio = document.createElement("audio");
@@ -250,9 +274,25 @@ export function renderMediaSlides(container, items, resultThumbnail) {
               for (let i = 0; i < byteChars.length; i++) {
                 byteArr[i] = byteChars.charCodeAt(i);
               }
-              const blob = new Blob([byteArr], { type: "audio/mp3" });
+              const rawTarget = dl.rawPath || cleanPath || "";
+              const ext = rawTarget.split(".").pop().toLowerCase();
+              const mimeMap = {
+                wav: "audio/wav",
+                mp3: "audio/mpeg",
+                m4a: "audio/mp4",
+                aac: "audio/aac",
+                flac: "audio/flac",
+                ogg: "audio/ogg",
+                opus: "audio/opus",
+                weba: "audio/webm",
+              };
+              const audioMime = mimeMap[ext] || "audio/mpeg";
+              const blob = new Blob([byteArr], { type: audioMime });
               audio.src = URL.createObjectURL(blob);
               audio.load();
+              slide.dispatchEvent(
+                new CustomEvent("mori_media_loaded", { bubbles: true }),
+              );
               if (
                 autoPlaySetting &&
                 (index === 0 || slide.classList.contains("active"))
@@ -281,6 +321,9 @@ export function renderMediaSlides(container, items, resultThumbnail) {
         }
 
         audio.style.display = "none";
+        slide.dispatchEvent(
+          new CustomEvent("mori_media_load_error", { bubbles: true }),
+        );
       };
 
       slide.appendChild(audio);

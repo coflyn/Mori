@@ -11,6 +11,30 @@ import {
 import { currentLang } from "../modules/core.js";
 import { renderMediaSlides } from "./result.js";
 
+export function detectMediaType(pathOrUrl, explicitType) {
+  const upper = (explicitType || "").toUpperCase();
+  if (upper.includes("PDF")) return "PDF";
+  if (upper.includes("VIDEO") || upper.includes("MP4")) return "VIDEO";
+  if (
+    upper.includes("AUDIO") ||
+    upper.includes("MP3") ||
+    upper.includes("WAV") ||
+    upper.includes("M4A")
+  )
+    return "MP3";
+  if (upper.includes("IMAGE") || upper.includes("PHOTO")) return "IMAGE";
+
+  const clean = String(pathOrUrl || "")
+    .toLowerCase()
+    .split("?")[0]
+    .split("#")[0];
+  if (/\.pdf$/i.test(clean)) return "PDF";
+  if (/\.(mp4|webm|mov|mkv|m4v|3gp|flv)$/i.test(clean)) return "VIDEO";
+  if (/\.(mp3|wav|m4a|aac|flac|ogg|opus|weba)$/i.test(clean)) return "MP3";
+  if (/\.(jpe?g|png|webp|gif|svg|avif|bmp)$/i.test(clean)) return "IMAGE";
+  return "IMAGE";
+}
+
 export function getCleanDirectoryPath(item, rawFile, itemType) {
   let p = rawFile || "";
   if (!p) {
@@ -206,13 +230,7 @@ export async function showModal(item, onRedownload) {
         localFiles.forEach((file) => {
           if (file && (file.path || file.uri)) {
             const fileSrc = file.uri || file.path;
-            const mediaType =
-              file.type ||
-              (fileSrc.toLowerCase().endsWith(".mp4")
-                ? "VIDEO"
-                : fileSrc.toLowerCase().endsWith(".mp3")
-                  ? "MP3"
-                  : "IMAGE");
+            const mediaType = detectMediaType(fileSrc, file.type);
 
             const isImg = mediaType === "IMAGE";
             const thumb = isImg
@@ -234,11 +252,7 @@ export async function showModal(item, onRedownload) {
         });
       } else if (item.localUri) {
         const fileSrc = item.localUri;
-        const mediaType = fileSrc.toLowerCase().endsWith(".mp4")
-          ? "VIDEO"
-          : fileSrc.toLowerCase().endsWith(".mp3")
-            ? "MP3"
-            : "IMAGE";
+        const mediaType = detectMediaType(fileSrc, item.type);
         const isImg = mediaType === "IMAGE";
         displayItems.push({
           url: toCapacitorUrl(fileSrc),
@@ -253,13 +267,7 @@ export async function showModal(item, onRedownload) {
         item.downloads.forEach((dl) => {
           if (dl && (dl.localUrl || dl.localSrc)) {
             const localUrl = dl.localUrl || dl.localSrc;
-            const mediaType =
-              dl.type ||
-              (localUrl.toLowerCase().includes(".mp4")
-                ? "VIDEO"
-                : localUrl.toLowerCase().includes(".mp3")
-                  ? "MP3"
-                  : "IMAGE");
+            const mediaType = detectMediaType(localUrl, dl.type);
             const isImg = mediaType === "IMAGE";
             displayItems.push({
               url: localUrl,
@@ -295,23 +303,10 @@ export async function showModal(item, onRedownload) {
         });
       } else {
         const firstDl = item.downloads?.[0];
-        const dlType = (firstDl?.type || item.type || "").toUpperCase();
-        const dlUrl = (firstDl?.url || item.url || "").toLowerCase();
-        const isVid =
-          dlType.includes("VIDEO") ||
-          dlType.includes("MP4") ||
-          dlUrl.includes(".mp4") ||
-          dlUrl.includes(".m3u8") ||
-          dlUrl.includes("video") ||
-          item.type === "video";
-        const isAud =
-          dlType.includes("AUDIO") ||
-          dlType.includes("MP3") ||
-          dlUrl.includes(".mp3") ||
-          dlUrl.includes(".m4a") ||
-          item.type === "audio";
-
-        const mediaType = isVid ? "VIDEO" : isAud ? "MP3" : "IMAGE";
+        const mediaType = detectMediaType(
+          firstDl?.url || item.url,
+          firstDl?.type || item.type,
+        );
 
         displayItems.push({
           url:
@@ -546,9 +541,18 @@ export async function showModal(item, onRedownload) {
               target.tagName === "AUDIO" ||
               target.tagName === "IMG") &&
             !target.classList.contains("fallback-img") &&
-            !target.classList.contains("poster-img")
+            !target.classList.contains("poster-img") &&
+            !target.classList.contains("audio-artwork-img")
           ) {
             const activeSlide = displayItems[modalCurrentSlide];
+            // Artwork image in audio slide must never mark audio file as missing
+            if (activeSlide?.type === "MP3" && target.tagName === "IMG") {
+              return;
+            }
+            // For audio/video, dedicated fallback handles playback; only mori_media_load_error marks missing
+            if (target.tagName === "AUDIO" || target.tagName === "VIDEO") {
+              return;
+            }
             if (activeSlide?.isLocal) {
               showMissingStatus();
             }
@@ -556,11 +560,13 @@ export async function showModal(item, onRedownload) {
         },
         true,
       );
-      slidesWrapper.addEventListener(
-        "mori_media_load_error",
-        showMissingStatus,
-      );
+      slidesWrapper.addEventListener("mori_media_load_error", showMissingStatus);
+      slidesWrapper.addEventListener("mori_media_loaded", clearMissingStatus);
       slidesWrapper.addEventListener("loadeddata", clearMissingStatus, true);
+      slidesWrapper.addEventListener("loadedmetadata", clearMissingStatus, true);
+      slidesWrapper.addEventListener("canplay", clearMissingStatus, true);
+      slidesWrapper.addEventListener("canplaythrough", clearMissingStatus, true);
+      slidesWrapper.addEventListener("playing", clearMissingStatus, true);
       slidesWrapper.addEventListener("load", clearMissingStatus, true);
     }
 
