@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_channel_download">Download Latar Belakang Mori</string>
+    <string name="notif_channel_download_desc">Menjaga Mori tetap aktif selama proses unduh media</string>
+    <string name="notif_channel_complete">Unduhan Mori</string>
+    <string name="notif_channel_complete_desc">Notifikasi unduhan Mori</string>
+    <string name="notif_downloading">Mengunduh media…</string>
+    <string name="notif_downloader_title">Pengunduh Mori</string>
+    <string name="notif_complete">Unduhan Selesai ✓</string>
+    <string name="notif_failed">Unduhan Gagal</string>
+    <string name="notif_media">Media</string>
+    <string name="notif_failed_reason">Gagal</string>
+    <string name="sniff_hint">Masukkan URL…</string>
+    <string name="sniff_count">Deteksi (%1$d)</string>
+    <string name="sniff_page_title">Halaman Deteksi Langsung</string>
+</resources>
