@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/icon.png" width="128" alt="Logo Mori">
+  <img src="../assets/icon.png" width="128" alt="Logo Mori">
 </p>
 
 <h1 align="center">Mori</h1>
 <p align="center"><em>Download media apa saja, dari mana saja.</em></p>
-<p align="center"><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>Bahasa Indonesia</strong></p>
+<p align="center"><a href="../README.md">English</a> · <a href="README-zh-CN.md">简体中文</a> · <strong>Bahasa Indonesia</strong></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-v4.6.0-brown?style=flat-square" alt="Version">
@@ -30,14 +30,14 @@ Download video, foto, dan audio dari 16 platform tanpa watermark, tanpa login ak
 ## Tangkapan Layar
 
 <p align="center">
-  <img src="assets/1.webp" width="30%">
-  <img src="assets/2.webp" width="30%">
-  <img src="assets/3.webp" width="30%">
+  <img src="../assets/1.webp" width="30%">
+  <img src="../assets/2.webp" width="30%">
+  <img src="../assets/3.webp" width="30%">
 </p>
 <p align="center">
-  <img src="assets/4.webp" width="30%">
-  <img src="assets/5.webp" width="30%">
-  <img src="assets/6.webp" width="30%">
+  <img src="../assets/4.webp" width="30%">
+  <img src="../assets/5.webp" width="30%">
+  <img src="../assets/6.webp" width="30%">
 </p>
 
 ---
@@ -71,11 +71,11 @@ File instalasi resmi tersedia di [GitHub Releases](https://github.com/coflyn/Mor
 
 | Platform | File / Perintah | Panduan |
 | :--- | :--- | :--- |
-| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> Android | `Mori v...apk` | [Panduan Instalasi & Play Protect](GUIDE.id.md#instalasi-android--troubleshooting) |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> iOS | `Mori v...ipa` | [Sideload via AltStore / TrollStore](GUIDE.id.md#panduan-sideload-ios) |
+| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> Android | `Mori v...apk` | [Panduan Instalasi & Play Protect](GUIDE-id.md#instalasi-android--troubleshooting) |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> iOS | `Mori v...ipa` | [Sideload via AltStore / TrollStore](GUIDE-id.md#panduan-sideload-ios) |
 | <img src="https://cdn.simpleicons.org/npm/CB3837" width="16" /> CLI (Desktop & Server) | `npx @coflyn/mori`<br>`npm install -g @coflyn/mori` | [Panduan Mori CLI](#mori-cli-terminal) |
 
-> Buat langkah instalasi detail dan solusi kendala, cek [Buku Panduan (GUIDE.id.md)](GUIDE.id.md).
+> Buat langkah instalasi detail dan solusi kendala, cek [Buku Panduan (GUIDE-id.md)](GUIDE-id.md).
 
 > Catatan: Aplikasi desktop GUI digantikan oleh Mori CLI (`@coflyn/mori`) agar bisa langsung dipanggil lewat terminal dan update lebih gampang tanpa terhambat peringatan keamanan OS.
 
@@ -86,7 +86,7 @@ File instalasi resmi tersedia di [GitHub Releases](https://github.com/coflyn/Mor
 Mori juga bisa dijalankan langsung dari terminal desktop:
 
 <p align="center">
-  <img src="assets/cli.webp" width="85%" alt="Pratinjau Mori CLI">
+  <img src="../assets/cli.webp" width="85%" alt="Pratinjau Mori CLI">
 </p>
 
 ```bash
@@ -115,7 +115,7 @@ Fitur CLI:
 - Otomatis cek update versi baru dari npm tiap kali dijalankan.
 - Download paralel untuk album foto/carousel lengkap dengan progress bar.
 - Update versi CLI langsung lewat `mori --update` atau `/update`.
-- Perintah dan opsi lengkapnya bisa dilihat di [Dokumentasi CLI (cli/README.md)](cli/README.md).
+- Perintah dan opsi lengkapnya bisa dilihat di [Dokumentasi CLI (cli/README.md)](../cli/README.md).
 
 ## Fitur
 
@@ -186,8 +186,8 @@ Tab Tools menyediakan berbagai alat praktis yang berjalan langsung di perangkat 
 
 Kalau kamu mau setup environment koding, bantu terjemahan bahasa, atau build aplikasinya sendiri:
 
-- Baca [CONTRIBUTING.md](CONTRIBUTING.md) buat panduan setup dan langkah kompilasi untuk Android dan iOS.
-- Baca [CHANGELOG.md](CHANGELOG.md) buat catatan riwayat rilis.
+- Baca [CONTRIBUTING.md](../CONTRIBUTING.md) buat panduan setup dan langkah kompilasi untuk Android dan iOS.
+- Baca [CHANGELOG.md](../CHANGELOG.md) buat catatan riwayat rilis.
 
 ---
 
@@ -197,7 +197,7 @@ Semua scraper dibundel ke file `public/js/scrapers/bundle.js` memakai esbuild da
 
 - Bundle scraper otomatis diperbarui lewat rilis reguler di GitHub Releases.
 - Tampilan UI, bridge native, dan wrapper scraper bersifat open source di bawah lisensi GPL-3.0.
-- Perbaikan atau penambahan scraper platform baru bisa diajukan dengan mengikuti panduan di [CONTRIBUTING.md](CONTRIBUTING.md).
+- Perbaikan atau penambahan scraper platform baru bisa diajukan dengan mengikuti panduan di [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ---
 
@@ -211,7 +211,7 @@ Semua scraper dibundel ke file `public/js/scrapers/bundle.js` memakai esbuild da
 
 ## Lisensi
 
-Mori dilisensikan di bawah [GNU General Public License v3.0 (GPL-3.0)](LICENSE).
+Mori dilisensikan di bawah [GNU General Public License v3.0 (GPL-3.0)](../LICENSE).
 
 - Siapa pun yang memodifikasi atau mendistribusikan ulang software ini wajib menyertakan kode sumber lengkap di bawah lisensi GPL-3.0.
 - Dilarang menjual ulang secara komersial, mengganti branding tanpa izin, atau mendistribusikan build tertutup (closed-source) tanpa mematuhi ketentuan GPL-3.0.

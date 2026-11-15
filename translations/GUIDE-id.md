@@ -1,6 +1,6 @@
 # Panduan Instalasi & Penggunaan Mori
 
-English: [GUIDE.md](GUIDE.md) · 简体中文：[GUIDE.zh-CN.md](GUIDE.zh-CN.md)
+English: [GUIDE.md](../GUIDE.md) · 简体中文：[GUIDE-zh-CN.md](GUIDE-zh-CN.md)
 
 Panduan lengkap instalasi, sideload, cara pakai, dan troubleshooting Mori di Android, iOS, dan Desktop (CLI).
 
@@ -48,7 +48,7 @@ npm install -g @coflyn/mori
 mori
 ```
 
-Cek [Dokumentasi CLI](cli/README.md) buat daftar perintah dan opsi lengkapnya.
+Cek [Dokumentasi CLI](../cli/README.md) buat daftar perintah dan opsi lengkapnya.
 
 ---
 

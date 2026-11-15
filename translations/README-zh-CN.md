@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/icon.png" width="128" alt="Mori Logo">
+  <img src="../assets/icon.png" width="128" alt="Mori Logo">
 </p>
 
 <h1 align="center">Mori</h1>
 <p align="center"><em>随处保存，想下就下。</em></p>
-<p align="center"><a href="README.md">English</a> · <strong>简体中文</strong> · <a href="README.id.md">Bahasa Indonesia</a></p>
+<p align="center"><a href="../README.md">English</a> · <strong>简体中文</strong> · <a href="README-id.md">Bahasa Indonesia</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-v4.6.0-brown?style=flat-square" alt="Version">
@@ -30,14 +30,14 @@
 ## 截图
 
 <p align="center">
-  <img src="assets/1.webp" width="30%">
-  <img src="assets/2.webp" width="30%">
-  <img src="assets/3.webp" width="30%">
+  <img src="../assets/1.webp" width="30%">
+  <img src="../assets/2.webp" width="30%">
+  <img src="../assets/3.webp" width="30%">
 </p>
 <p align="center">
-  <img src="assets/4.webp" width="30%">
-  <img src="assets/5.webp" width="30%">
-  <img src="assets/6.webp" width="30%">
+  <img src="../assets/4.webp" width="30%">
+  <img src="../assets/5.webp" width="30%">
+  <img src="../assets/6.webp" width="30%">
 </p>
 
 ---
@@ -71,11 +71,11 @@
 
 | 平台 | 安装包 | 说明 |
 | :--- | :--- | :--- |
-| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> Android | `Mori v...apk` | [安装与 Play 保护排查](GUIDE.zh-CN.md#android) |
-| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> iOS | `Mori v...ipa` | [AltStore / TrollStore 侧载](GUIDE.zh-CN.md#ios) |
+| <img src="https://cdn.simpleicons.org/android/3DDC84" width="16" /> Android | `Mori v...apk` | [安装与 Play 保护排查](GUIDE-zh-CN.md#android) |
+| <img src="https://cdn.simpleicons.org/apple/000000" width="16" /> iOS | `Mori v...ipa` | [AltStore / TrollStore 侧载](GUIDE-zh-CN.md#ios) |
 | <img src="https://cdn.simpleicons.org/npm/CB3837" width="16" /> CLI（桌面与服务器） | `npx @coflyn/mori`<br>`npm install -g @coflyn/mori` | [Mori CLI](#mori-cli终端) |
 
-安装步骤和排查见 [使用指南（GUIDE.zh-CN.md）](GUIDE.zh-CN.md)。
+安装步骤和排查见 [使用指南（GUIDE-zh-CN.md）](GUIDE-zh-CN.md)。
 
 独立桌面图形界面已改为 Mori CLI（`@coflyn/mori`），可直接在终端使用，更新时也不再弹出系统安全提示。
 
@@ -86,7 +86,7 @@
 Mori 也可以直接在终端里运行：
 
 <p align="center">
-  <img src="assets/cli.webp" width="85%" alt="Mori CLI Preview">
+  <img src="../assets/cli.webp" width="85%" alt="Mori CLI Preview">
 </p>
 
 ```bash
@@ -116,7 +116,7 @@ CLI 功能：
 - 启动时自动检查版本，npm 上有新版本时会提示。
 - 相册和图集支持并发下载，并在原地显示进度条。
 - 在 CLI 内更新：`mori --update` 或 `/update`。
-- 完整命令和参数见 [CLI 文档（cli/README.md）](cli/README.md)。
+- 完整命令和参数见 [CLI 文档（cli/README.md）](../cli/README.md)。
 
 ## 功能
 
@@ -187,9 +187,9 @@ CLI 功能：
 
 搭建开发环境、补充翻译或本地构建：
 
-- 构建要求和 Android、iOS 编译说明见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-- 版本记录见 [CHANGELOG.md](CHANGELOG.md)。
-- 英文目录树和技术栈见 [README.md](README.md) 的 Tech Stack & Project Structure。
+- 构建要求和 Android、iOS 编译说明见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+- 版本记录见 [CHANGELOG.md](../CHANGELOG.md)。
+- 英文目录树和技术栈见 [README.md](../README.md) 的 Tech Stack & Project Structure。
 
 界面文案在 `public/js/i18n/locales/`。简体中文是 `zh.js`。缺键时自动回退到英文。
 
@@ -201,7 +201,7 @@ CLI 功能：
 
 - 打包后的解析器随 GitHub Releases 的常规更新一起发布。
 - 界面、桥接层和解析器封装以 GPL-3.0 开源。
-- 平台解析修复可按 [CONTRIBUTING.md](CONTRIBUTING.md) 提交。
+- 平台解析修复可按 [CONTRIBUTING.md](../CONTRIBUTING.md) 提交。
 
 ---
 
@@ -215,7 +215,7 @@ CLI 功能：
 
 ## 许可证
 
-Mori 使用 [GNU 通用公共许可证 v3.0（GPL-3.0）](LICENSE)。
+Mori 使用 [GNU 通用公共许可证 v3.0（GPL-3.0）](../LICENSE)。
 
 - 修改或再分发本软件时，必须以 GPL-3.0 公开完整对应源代码。
 - 未经遵守 GPL-3.0，不得商业再分发、换皮，或分发闭源构建。
