@@ -47,16 +47,16 @@ export async function getVideoThumbnail(videoUri) {
     video.onseeked = async () => {
       try {
         const canvas = document.createElement("canvas");
-        const maxDim = 640;
-        const vw = video.videoWidth || 640;
-        const vh = video.videoHeight || 360;
+        const maxDim = 320;
+        const vw = video.videoWidth || 320;
+        const vh = video.videoHeight || 180;
         const scale = Math.min(maxDim / vw, maxDim / vh, 1.0);
         canvas.width = Math.max(1, Math.round(vw * scale));
         canvas.height = Math.max(1, Math.round(vh * scale));
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.65);
 
         // Free canvas context references
         canvas.width = 0;

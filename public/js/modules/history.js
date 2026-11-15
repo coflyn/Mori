@@ -21,10 +21,108 @@ import {
   switchToSingleMode,
 } from "./core.js";
 
+export function sanitizeHistoryStorage() {
+  try {
+    const raw = localStorage.getItem("mori_history");
+    if (raw && (raw.includes("data:image/") || raw.length > 300000)) {
+      const history = JSON.parse(raw);
+      let changed = false;
+      const cleaned = history.map((item) => {
+        const copy = { ...item };
+        if (
+          typeof copy.thumbnail === "string" &&
+          copy.thumbnail.startsWith("data:") &&
+          copy.thumbnail.length > 10000
+        ) {
+          copy.thumbnail = null;
+          changed = true;
+        }
+        if (
+          typeof copy.localThumbnail === "string" &&
+          copy.localThumbnail.startsWith("data:") &&
+          copy.localThumbnail.length > 10000
+        ) {
+          copy.localThumbnail = null;
+          changed = true;
+        }
+        if (Array.isArray(copy.localFiles)) {
+          copy.localFiles = copy.localFiles.map((f) => {
+            if (
+              typeof f.thumbnail === "string" &&
+              f.thumbnail.startsWith("data:") &&
+              f.thumbnail.length > 10000
+            ) {
+              changed = true;
+              return { ...f, thumbnail: null };
+            }
+            return f;
+          });
+        }
+        return copy;
+      });
+      if (changed) {
+        localStorage.setItem("mori_history", JSON.stringify(cleaned));
+      }
+    }
+  } catch (e) {
+    console.warn("[Mori History] sanitizeHistoryStorage failed:", e);
+  }
+}
+sanitizeHistoryStorage();
+
 export function safeSetHistory(history) {
   if (!Array.isArray(history)) return false;
+  const sanitized = history.map((item) => {
+    let copy = item;
+    const hasBigThumb =
+      (typeof copy.thumbnail === "string" &&
+        copy.thumbnail.startsWith("data:") &&
+        copy.thumbnail.length > 10000) ||
+      (typeof copy.localThumbnail === "string" &&
+        copy.localThumbnail.startsWith("data:") &&
+        copy.localThumbnail.length > 10000);
+    const hasBigFileThumb =
+      Array.isArray(copy.localFiles) &&
+      copy.localFiles.some(
+        (f) =>
+          typeof f.thumbnail === "string" &&
+          f.thumbnail.startsWith("data:") &&
+          f.thumbnail.length > 10000,
+      );
+
+    if (hasBigThumb || hasBigFileThumb) {
+      copy = { ...copy };
+      if (
+        typeof copy.thumbnail === "string" &&
+        copy.thumbnail.startsWith("data:") &&
+        copy.thumbnail.length > 10000
+      ) {
+        copy.thumbnail = null;
+      }
+      if (
+        typeof copy.localThumbnail === "string" &&
+        copy.localThumbnail.startsWith("data:") &&
+        copy.localThumbnail.length > 10000
+      ) {
+        copy.localThumbnail = null;
+      }
+      if (Array.isArray(copy.localFiles)) {
+        copy.localFiles = copy.localFiles.map((f) => ({
+          ...f,
+          thumbnail:
+            typeof f.thumbnail === "string" &&
+            f.thumbnail.startsWith("data:") &&
+            f.thumbnail.length > 10000
+              ? null
+              : f.thumbnail,
+        }));
+      }
+    }
+    return copy;
+  });
+
   try {
-    localStorage.setItem("mori_history", JSON.stringify(history));
+    localStorage.setItem("mori_history", JSON.stringify(sanitized));
     return true;
   } catch (quotaErr) {
     console.warn(
@@ -433,7 +531,7 @@ window.addEventListener("mori_file_saved", async (e) => {
               localFiles,
               localThumbnail: localThumbnail,
               thumbnail: keepOriginalThumb,
-              thumbVersion: 3,
+              thumbVersion: 5,
               versionCode: 24,
               versionName: "4.6.0",
               thumbRepaired: true,
@@ -622,9 +720,27 @@ export function refreshAllVideoThumbnails() {
     const pendingIndices = [];
     for (let i = 0; i < history.length; i++) {
       const item = history[i];
-      const hasBadThumb = !item.localThumbnail || item.localThumbnail.startsWith("thumb_") || item.thumbnail?.startsWith("thumb_");
-      if (item.thumbVersion !== 4 || hasBadThumb) {
+      const hasVideo =
+        (item.localFiles &&
+          item.localFiles.some(
+            (f) =>
+              f.type === "VIDEO" ||
+              /\.(mp4|mov|mkv|webm)/i.test(f.path || f.name || ""),
+          )) ||
+        (item.localUri && /\.(mp4|mov|mkv|webm)/i.test(item.localUri));
+      if (!hasVideo) {
+        if (item.thumbVersion !== 5) item.thumbVersion = 5;
+        continue;
+      }
+      const hasBadThumb =
+        !item.localThumbnail ||
+        (item.localThumbnail.startsWith("thumb_") &&
+          !item.localThumbnail.includes("/")) ||
+        (item.thumbnail?.startsWith("thumb_") &&
+          !item.thumbnail.includes("/"));
+      if (item.thumbVersion !== 5 && hasBadThumb) {
         pendingIndices.push(i);
+        if (pendingIndices.length >= 6) break;
       }
     }
 
@@ -702,7 +818,7 @@ export function refreshAllVideoThumbnails() {
           }
         } catch (_) {}
       }
-      item.thumbVersion = 4;
+      item.thumbVersion = 5;
       safeSetHistory(currentHistory);
 
       const historyList = document.querySelector(".history-list");

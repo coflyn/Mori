@@ -395,9 +395,14 @@ function persistThumb(path, dataUrl) {
   saveThumbTimeout = setTimeout(() => {
     try {
       const obj = {};
-      const entries = Array.from(memoryThumbCache.entries()).slice(-250);
+      const entries = Array.from(memoryThumbCache.entries()).slice(-200);
       for (const [k, v] of entries) {
-        obj[k] = v;
+        if (
+          typeof v === "string" &&
+          (!v.startsWith("data:") || v.length < 5000)
+        ) {
+          obj[k] = v;
+        }
       }
       localStorage.setItem(GALLERY_THUMB_KEY, JSON.stringify(obj));
     } catch (_) {}
@@ -405,7 +410,11 @@ function persistThumb(path, dataUrl) {
 }
 
 function isValidThumb(t) {
-  return typeof t === "string" && t.length > 0 && !t.startsWith("thumb_");
+  return (
+    typeof t === "string" &&
+    t.length > 0 &&
+    (!t.startsWith("thumb_") || t.includes("/"))
+  );
 }
 
 function getThumbFromHistory(item) {
@@ -621,7 +630,7 @@ function extractCanvasThumb(mediaUrl, onData) {
       if (timer) clearTimeout(timer);
       try {
         const canvas = document.createElement("canvas");
-        const maxDim = 640;
+        const maxDim = 320;
         const scale = Math.min(
           maxDim / video.videoWidth,
           maxDim / video.videoHeight,
@@ -631,7 +640,7 @@ function extractCanvasThumb(mediaUrl, onData) {
         canvas.height = Math.round(video.videoHeight * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.65);
         onData(dataUrl);
       } catch (_) {}
       cleanup();

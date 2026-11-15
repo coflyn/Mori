@@ -30,6 +30,211 @@ export function setUIState(state) {
   if (state.slideData !== undefined) setSlideData(state.slideData);
 }
 
+let historyObserver = null;
+const BATCH_SIZE = 25;
+
+function createHistoryCard(
+  item,
+  activeUrl,
+  isEditingHistory,
+  onItemClick,
+  onDeleteClick,
+) {
+  const card = document.createElement("div");
+  card.className = `history-item ${item.favorite ? "is-favorite" : ""}`;
+
+  // Check if this item is currently being downloaded
+  const isDownloading =
+    activeUrl &&
+    (item.url === activeUrl ||
+      (item.sourceUrl && item.sourceUrl === activeUrl) ||
+      activeUrl.includes(item.url) ||
+      (item.url && activeUrl && item.url.includes(activeUrl)));
+
+  const defaultPlaceholder =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E";
+  const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
+  let thumbSrc = isDataSaver ? defaultPlaceholder : null;
+
+  if (!isDataSaver) {
+    const isValidThumb = (t) =>
+      typeof t === "string" &&
+      t.length > 0 &&
+      (!t.startsWith("thumb_") || t.includes("/"));
+
+    if (isValidThumb(item.localThumbnail)) {
+      thumbSrc = item.localThumbnail;
+    } else if (item.localFiles && item.localFiles.length > 0) {
+      const first = item.localFiles[0];
+      const isImg =
+        first.type === "IMAGE" ||
+        /\.(jpe?g|png|webp|gif|bmp)$/i.test(first.path || first.uri || "");
+      if (isValidThumb(first.thumbnail)) {
+        thumbSrc = first.thumbnail;
+      } else if (isImg) {
+        thumbSrc = first.uri || first.path;
+      } else if (isValidThumb(item.thumbnail) && navigator.onLine) {
+        thumbSrc = item.thumbnail;
+      }
+    } else if (item.localUri) {
+      if (/\.(jpe?g|png|webp|gif|bmp)$/i.test(item.localUri)) {
+        thumbSrc = item.localUri;
+      } else if (isValidThumb(item.thumbnail) && navigator.onLine) {
+        thumbSrc = item.thumbnail;
+      }
+    } else if (isValidThumb(item.thumbnail)) {
+      thumbSrc = item.thumbnail;
+    }
+
+    if (
+      thumbSrc &&
+      !thumbSrc.startsWith("http") &&
+      !thumbSrc.startsWith("data:") &&
+      !thumbSrc.startsWith("blob:") &&
+      !thumbSrc.startsWith("capacitor:")
+    ) {
+      if (window.Capacitor?.convertFileSrc) {
+        let raw = thumbSrc;
+        if (raw.includes("_capacitor_file_")) {
+          raw = raw.substring(raw.indexOf("_capacitor_file_") + 16);
+        }
+        if (!raw.startsWith("file://")) {
+          if (
+            !raw.startsWith("/") &&
+            window.Capacitor.getPlatform?.() === "android"
+          ) {
+            raw = "/storage/emulated/0/" + raw;
+          }
+          raw = "file://" + (raw.startsWith("/") ? raw : "/" + raw);
+        }
+        thumbSrc = window.Capacitor.convertFileSrc(raw);
+      }
+    }
+  }
+
+  if (!thumbSrc) thumbSrc = defaultPlaceholder;
+
+  const fallbackUrl = item.thumbnail || defaultPlaceholder;
+
+  card.innerHTML = `
+    <div class="history-thumb-container">
+        <img src="${escapeHtml(thumbSrc)}" alt="" class="hist-img" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${escapeHtml(fallbackUrl)}';">
+        ${item.localFiles && item.localFiles.length > 1 ? `<div class="multi-indicator">${item.localFiles.length}</div>` : ""}
+        ${isDownloading ? `<div class="hist-downloading-overlay"><div class="hist-dl-spinner"></div></div>` : ""}
+    </div>
+    <div class="history-info">
+        <h3>${truncate(escapeHtml(item.title), 60)}</h3>
+        <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
+    </div>
+    ${
+      isEditingHistory
+        ? `<button class="delete-item-btn" data-url="${escapeHtml(item.url)}">×</button>`
+        : `<button class="hist-fav-btn ${item.favorite ? "active" : ""}" data-url="${escapeHtml(item.url)}" aria-label="Favorite" title="${item.favorite ? "Favorited" : "Favorite"}">
+            <svg class="heart-icon" viewBox="0 0 24 24" width="18" height="18" fill="${item.favorite ? "#ff3b5c" : "none"}" stroke="${item.favorite ? "#ff3b5c" : "currentColor"}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>`
+    }
+  `;
+
+  const favBtn = card.querySelector(".hist-fav-btn");
+  if (favBtn) {
+    favBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (typeof window.toggleMoriFavorite === "function") {
+        window.toggleMoriFavorite(item.url);
+      }
+    });
+  }
+
+  if (!isEditingHistory) {
+    let pressTimer = null;
+    let isLongPress = false;
+    let startX = 0;
+    let startY = 0;
+
+    const startPress = (e) => {
+      if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
+      isLongPress = false;
+      try {
+        window.getSelection()?.removeAllRanges();
+      } catch (_) {}
+      if (e.touches && e.touches[0]) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        try {
+          window.getSelection()?.removeAllRanges();
+        } catch (_) {}
+        triggerHaptic();
+        onDeleteClick(item.url);
+      }, 500);
+    };
+
+    const cancelPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    };
+
+    const movePress = (e) => {
+      if (e.touches && e.touches[0]) {
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        if (dx > 10 || dy > 10) {
+          cancelPress();
+        }
+      }
+    };
+
+    card.addEventListener("touchstart", startPress, { passive: true });
+    card.addEventListener("touchend", cancelPress);
+    card.addEventListener("touchmove", movePress, { passive: true });
+    card.addEventListener("touchcancel", cancelPress);
+
+    card.addEventListener("mousedown", (e) => {
+      if (e.button === 0) startPress(e);
+    });
+    card.addEventListener("mouseup", cancelPress);
+    card.addEventListener("mouseleave", cancelPress);
+    card.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
+      if (isLongPress) {
+        e.preventDefault();
+        e.stopPropagation();
+        isLongPress = false;
+        return;
+      }
+      onItemClick(item);
+    });
+  } else {
+    card.style.cursor = "pointer";
+    card.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onDeleteClick(item.url);
+    });
+    const delBtn = card.querySelector(".delete-item-btn");
+    if (delBtn) {
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onDeleteClick(item.url);
+      });
+    }
+  }
+
+  return card;
+}
+
 export function renderHistory(onItemClick, onDeleteClick) {
   if (typeof window.checkAndMergePendingHistorySync === "function") {
     window.checkAndMergePendingHistorySync();
@@ -72,6 +277,11 @@ export function renderHistory(onItemClick, onDeleteClick) {
   let list = historyPage.querySelector(".history-list");
   if (list) list.remove();
 
+  if (historyObserver) {
+    historyObserver.disconnect();
+    historyObserver = null;
+  }
+
   if (history.length === 0) {
     setIsEditingHistory(false);
     emptyState?.classList.remove("hidden");
@@ -92,201 +302,52 @@ export function renderHistory(onItemClick, onDeleteClick) {
   list = document.createElement("div");
   list.className = "history-list";
 
-  history.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = `history-item ${item.favorite ? "is-favorite" : ""}`;
+  let renderedIndex = 0;
+  let sentinel = null;
 
-    // Check if this item is currently being downloaded
-    const isDownloading =
-      activeUrl &&
-      (item.url === activeUrl ||
-        (item.sourceUrl && item.sourceUrl === activeUrl) ||
-        activeUrl.includes(item.url) ||
-        (item.url && activeUrl && item.url.includes(activeUrl)));
+  const renderBatch = () => {
+    const end = Math.min(renderedIndex + BATCH_SIZE, history.length);
+    for (let i = renderedIndex; i < end; i++) {
+      list.appendChild(
+        createHistoryCard(
+          history[i],
+          activeUrl,
+          isEditingHistory,
+          onItemClick,
+          onDeleteClick,
+        ),
+      );
+    }
+    renderedIndex = end;
 
-    const defaultPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E";
-    const isDataSaver = localStorage.getItem("mori_data_saver") === "true";
-    let thumbSrc = isDataSaver ? defaultPlaceholder : null;
-
-    if (!isDataSaver) {
-      const isValidThumb = (t) =>
-        typeof t === "string" &&
-        t.length > 0 &&
-        !t.startsWith("thumb_") &&
-        !t.startsWith("/") &&
-        !t.startsWith("file://");
-
-      const hasLocalFiles =
-        (item.localFiles && item.localFiles.length > 0) || !!item.localUri;
-
-      if (isValidThumb(item.localThumbnail)) {
-        thumbSrc = item.localThumbnail;
-      } else if (item.localFiles && item.localFiles.length > 0) {
-        const first = item.localFiles[0];
-        const isImg =
-          first.type === "IMAGE" ||
-          /\.(jpe?g|png|webp|gif|bmp)$/i.test(first.path || first.uri || "");
-        if (isValidThumb(first.thumbnail)) {
-          thumbSrc = first.thumbnail;
-        } else if (isImg) {
-          thumbSrc = first.uri || first.path;
-        } else if (isValidThumb(item.thumbnail) && navigator.onLine) {
-          thumbSrc = item.thumbnail;
+    if (renderedIndex < history.length) {
+      if (!sentinel) {
+        sentinel = document.createElement("div");
+        sentinel.className = "history-sentinel";
+        sentinel.style.height = "20px";
+        if (typeof IntersectionObserver !== "undefined") {
+          historyObserver = new IntersectionObserver(
+            (entries) => {
+              if (entries[0]?.isIntersecting) {
+                renderBatch();
+              }
+            },
+            { rootMargin: "300px" },
+          );
+          historyObserver.observe(sentinel);
         }
-      } else if (item.localUri) {
-        if (/\.(jpe?g|png|webp|gif|bmp)$/i.test(item.localUri)) {
-          thumbSrc = item.localUri;
-        } else if (isValidThumb(item.thumbnail) && navigator.onLine) {
-          thumbSrc = item.thumbnail;
-        }
-      } else if (isValidThumb(item.thumbnail)) {
-        thumbSrc = item.thumbnail;
       }
-
-      if (
-        thumbSrc &&
-        !thumbSrc.startsWith("http") &&
-        !thumbSrc.startsWith("data:") &&
-        !thumbSrc.startsWith("blob:") &&
-        !thumbSrc.startsWith("capacitor:")
-      ) {
-        if (window.Capacitor?.convertFileSrc) {
-          let raw = thumbSrc;
-          if (raw.includes("_capacitor_file_")) {
-            raw = raw.substring(raw.indexOf("_capacitor_file_") + 16);
-          }
-          if (!raw.startsWith("file://")) {
-            if (!raw.startsWith("/") && window.Capacitor.getPlatform?.() === "android") {
-              raw = "/storage/emulated/0/" + raw;
-            }
-            raw = "file://" + (raw.startsWith("/") ? raw : "/" + raw);
-          }
-          thumbSrc = window.Capacitor.convertFileSrc(raw);
-        }
+      list.appendChild(sentinel);
+    } else if (sentinel) {
+      sentinel.remove();
+      if (historyObserver) {
+        historyObserver.disconnect();
+        historyObserver = null;
       }
     }
+  };
 
-    if (!thumbSrc) thumbSrc = defaultPlaceholder;
-
-    const fallbackUrl = item.thumbnail || defaultPlaceholder;
-
-    card.innerHTML = `
-      <div class="history-thumb-container">
-          <img src="${escapeHtml(thumbSrc)}" alt="" class="hist-img" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${escapeHtml(fallbackUrl)}';">
-          ${item.localFiles && item.localFiles.length > 1 ? `<div class="multi-indicator">${item.localFiles.length}</div>` : ""}
-          ${isDownloading ? `<div class="hist-downloading-overlay"><div class="hist-dl-spinner"></div></div>` : ""}
-      </div>
-      <div class="history-info">
-          <h3>${truncate(escapeHtml(item.title), 60)}</h3>
-          <p>${new Date(item.timestamp).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</p>
-      </div>
-      ${
-        isEditingHistory
-          ? `<button class="delete-item-btn" data-url="${escapeHtml(item.url)}">×</button>`
-          : `<button class="hist-fav-btn ${item.favorite ? "active" : ""}" data-url="${escapeHtml(item.url)}" aria-label="Favorite" title="${item.favorite ? "Favorited" : "Favorite"}">
-              <svg class="heart-icon" viewBox="0 0 24 24" width="18" height="18" fill="${item.favorite ? "#ff3b5c" : "none"}" stroke="${item.favorite ? "#ff3b5c" : "currentColor"}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>`
-      }
-    `;
-
-    const favBtn = card.querySelector(".hist-fav-btn");
-    if (favBtn) {
-      favBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (typeof window.toggleMoriFavorite === "function") {
-          window.toggleMoriFavorite(item.url);
-        }
-      });
-    }
-
-    if (!isEditingHistory) {
-      let pressTimer = null;
-      let isLongPress = false;
-      let startX = 0;
-      let startY = 0;
-
-      const startPress = (e) => {
-        if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
-        isLongPress = false;
-        try {
-          window.getSelection()?.removeAllRanges();
-        } catch (_) {}
-        if (e.touches && e.touches[0]) {
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        }
-        pressTimer = setTimeout(() => {
-          isLongPress = true;
-          try {
-            window.getSelection()?.removeAllRanges();
-          } catch (_) {}
-          triggerHaptic();
-          onDeleteClick(item.url);
-        }, 500);
-      };
-
-      const cancelPress = () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-      };
-
-      const movePress = (e) => {
-        if (e.touches && e.touches[0]) {
-          const dx = Math.abs(e.touches[0].clientX - startX);
-          const dy = Math.abs(e.touches[0].clientY - startY);
-          if (dx > 10 || dy > 10) {
-            cancelPress();
-          }
-        }
-      };
-
-      card.addEventListener("touchstart", startPress, { passive: true });
-      card.addEventListener("touchend", cancelPress);
-      card.addEventListener("touchmove", movePress, { passive: true });
-      card.addEventListener("touchcancel", cancelPress);
-
-      card.addEventListener("mousedown", (e) => {
-        if (e.button === 0) startPress(e);
-      });
-      card.addEventListener("mouseup", cancelPress);
-      card.addEventListener("mouseleave", cancelPress);
-      card.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      card.addEventListener("click", (e) => {
-        if (e.target.closest(".hist-fav-btn, .delete-item-btn")) return;
-        if (isLongPress) {
-          e.preventDefault();
-          e.stopPropagation();
-          isLongPress = false;
-          return;
-        }
-        onItemClick(item);
-      });
-    } else {
-      card.style.cursor = "pointer";
-      card.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onDeleteClick(item.url);
-      });
-      const delBtn = card.querySelector(".delete-item-btn");
-      if (delBtn) {
-        delBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onDeleteClick(item.url);
-        });
-      }
-    }
-    list.appendChild(card);
-  });
+  renderBatch();
   historyPage.appendChild(list);
 }
 

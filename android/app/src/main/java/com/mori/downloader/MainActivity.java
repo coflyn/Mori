@@ -748,6 +748,15 @@ public class MainActivity extends BridgeActivity {
         public String getVideoThumbnail(String rawPath) {
             try {
                 if (rawPath == null || rawPath.isEmpty()) return null;
+
+                File cacheDir = new File(getCacheDir(), "mori_thumbs");
+                if (!cacheDir.exists()) cacheDir.mkdirs();
+                String hashName = "thumb_" + Integer.toHexString(rawPath.hashCode()) + ".jpg";
+                File thumbFile = new File(cacheDir, hashName);
+                if (thumbFile.exists() && thumbFile.length() > 0) {
+                    return thumbFile.getAbsolutePath();
+                }
+
                 Bitmap bitmap = null;
 
                 if (rawPath.startsWith("content://")) {
@@ -817,8 +826,8 @@ public class MainActivity extends BridgeActivity {
                 }
 
                 if (bitmap != null) {
-                    if (bitmap.getWidth() > 640 || bitmap.getHeight() > 640) {
-                        float scale = 640.0f / Math.max(bitmap.getWidth(), bitmap.getHeight());
+                    if (bitmap.getWidth() > 360 || bitmap.getHeight() > 360) {
+                        float scale = 360.0f / Math.max(bitmap.getWidth(), bitmap.getHeight());
                         int sw = Math.max(1, Math.round(bitmap.getWidth() * scale));
                         int sh = Math.max(1, Math.round(bitmap.getHeight() * scale));
                         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, sw, sh, true);
@@ -827,11 +836,20 @@ public class MainActivity extends BridgeActivity {
                             bitmap = scaled;
                         }
                     }
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos);
-                    byte[] bytes = baos.toByteArray();
-                    bitmap.recycle();
-                    return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                    try {
+                        FileOutputStream fos = new FileOutputStream(thumbFile);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, fos);
+                        fos.flush();
+                        fos.close();
+                        bitmap.recycle();
+                        return thumbFile.getAbsolutePath();
+                    } catch (Throwable t) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+                        byte[] bytes = baos.toByteArray();
+                        bitmap.recycle();
+                        return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

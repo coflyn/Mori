@@ -307,7 +307,6 @@ async function switchPage(pageId) {
     } else {
       renderHistory(onHistoryItemClick, onHistoryDeleteClick);
     }
-    setTimeout(refreshAllVideoThumbnails, 3000);
   }
 
   if (pageId === "gallery") {
