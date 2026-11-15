@@ -1,6 +1,6 @@
 # Mori Installation & User Guide
 
-简体中文：[GUIDE.zh-CN.md](GUIDE.zh-CN.md)
+简体中文：[GUIDE.zh-CN.md](GUIDE.zh-CN.md) · Bahasa Indonesia: [GUIDE.id.md](GUIDE.id.md)
 
 This guide covers everything you need to know about installing, sideloading, troubleshooting, and getting the most out of Mori on Android, iOS, and Desktop (CLI).
 
