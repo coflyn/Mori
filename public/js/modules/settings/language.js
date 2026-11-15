@@ -321,6 +321,16 @@ export function updateLanguageUI() {
     const val = lang?.[key] ?? fallback[key];
     if (val !== undefined) el.placeholder = val;
   });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-aria");
+    const val = lang?.[key] ?? fallback[key];
+    if (val !== undefined) el.setAttribute("aria-label", val);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    const val = lang?.[key] ?? fallback[key];
+    if (val !== undefined) el.setAttribute("title", val);
+  });
 
   if (currentLangDisplay) {
     const langNames = {

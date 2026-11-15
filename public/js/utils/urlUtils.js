@@ -3,16 +3,21 @@
  * Handles URL extraction, protocol normalization, and tracker parameter stripping.
  */
 
+import { firstHttpUrl, parseShareText } from "./shareLink.js";
+
 /**
  * Extracts a clean URL from an input string (which may contain share text, comments, etc.)
- * and normalizes the protocol.
+ * and normalizes the protocol. Cloud-drive captions keep their extraction code.
  * @param {string} text - Raw input text or URL
  * @returns {string} Clean normalized URL
  */
 export function extractCleanUrl(text) {
   if (!text || typeof text !== "string") return "";
-  const match = text.match(/https?:\/\/[^\s]+/);
-  let clean = match ? match[0] : text.trim();
+  const share = parseShareText(text);
+  if (share) return share.url;
+
+  const first = firstHttpUrl(text);
+  let clean = first || text.trim();
 
   if (!clean) return "";
 

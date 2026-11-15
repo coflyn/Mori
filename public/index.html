@@ -762,7 +762,7 @@
           <!-- Sub-View 1: Sniffer View -->
           <div id="toolSnifferView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -777,7 +777,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
                 </span>
                 <input type="text" id="snifferUrlInput" placeholder="Paste website link..." data-i18n-placeholder="placeholder-sniffer" autocomplete="off" />
-                <button type="button" id="snifferPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                <button type="button" id="snifferPasteBtn" class="tool-input-action-btn" title="Paste" data-i18n-title="aria-paste" aria-label="Paste" data-i18n-aria="aria-paste">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
               </div>
@@ -785,23 +785,23 @@
                 <button type="button" id="snifferRunBtn" class="tool-execute-btn" data-i18n="btn-sniff">
                   <span>Fast Sniff</span>
                 </button>
-                <button type="button" id="snifferLiveBtn" class="tool-execute-btn secondary" title="Open In-App Live Browser">
+                <button type="button" id="snifferLiveBtn" class="tool-execute-btn secondary" title="Open In-App Live Browser" data-i18n-title="btn-live-browser">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                  <span>Live Browser</span>
+                  <span data-i18n="btn-live-browser">Live Browser</span>
                 </button>
               </div>
             </div>
 
             <div class="sniffer-filter-chips hidden" id="snifferFilterChips">
-              <button class="sniffer-filter-chip active" data-filter="all">All <span class="chip-count"></span></button>
-              <button class="sniffer-filter-chip" data-filter="video">Videos <span class="chip-count"></span></button>
-              <button class="sniffer-filter-chip" data-filter="audio">Audio <span class="chip-count"></span></button>
-              <button class="sniffer-filter-chip" data-filter="image">Images <span class="chip-count"></span></button>
+              <button class="sniffer-filter-chip active" data-filter="all"><span data-i18n="sniffer-filter-all">All</span> <span class="chip-count"></span></button>
+              <button class="sniffer-filter-chip" data-filter="video"><span data-i18n="sniffer-filter-video">Videos</span> <span class="chip-count"></span></button>
+              <button class="sniffer-filter-chip" data-filter="audio"><span data-i18n="sniffer-filter-audio">Audio</span> <span class="chip-count"></span></button>
+              <button class="sniffer-filter-chip" data-filter="image"><span data-i18n="sniffer-filter-image">Images</span> <span class="chip-count"></span></button>
             </div>
 
             <div id="snifferLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span>Scanning webpage for media resources...</span>
+              <span data-i18n="loader-sniffer">Scanning webpage for media resources...</span>
             </div>
 
             <div id="snifferResults"></div>
@@ -810,7 +810,7 @@
           <!-- Sub-View 2: SFLGL View -->
           <div id="toolSflglView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -825,7 +825,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
                 </span>
                 <input type="text" id="sflglUrlInput" placeholder="Paste sfl.gl link..." data-i18n-placeholder="placeholder-sflgl" autocomplete="off" />
-                <button type="button" id="sflglPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                <button type="button" id="sflglPasteBtn" class="tool-input-action-btn" title="Paste" data-i18n-title="aria-paste" aria-label="Paste" data-i18n-aria="aria-paste">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
               </div>
@@ -836,7 +836,7 @@
 
             <div id="sflglLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span>Bypassing gateway steps and tokens...</span>
+              <span data-i18n="loader-sflgl">Bypassing gateway steps and tokens...</span>
             </div>
 
             <div id="sflglResult"></div>
@@ -845,7 +845,7 @@
           <!-- Sub-View 3: TikTok Finder View -->
           <div id="toolTiktokView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -860,7 +860,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
                 </span>
                 <input type="text" id="tiktokFinderInput" placeholder="@username or link..." data-i18n-placeholder="placeholder-tiktok-finder" autocomplete="off" />
-                <button type="button" id="tiktokFinderPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                <button type="button" id="tiktokFinderPasteBtn" class="tool-input-action-btn" title="Paste" data-i18n-title="aria-paste" aria-label="Paste" data-i18n-aria="aria-paste">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
               </div>
@@ -871,7 +871,7 @@
 
             <div id="tiktokFinderLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span>Querying TikTok account intelligence...</span>
+              <span data-i18n="loader-tiktok">Querying TikTok account...</span>
             </div>
 
             <div id="tiktokFinderResult"></div>
@@ -880,7 +880,7 @@
           <!-- Sub-View 4: Anime Scene Search View -->
           <div id="toolAnimeView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -895,7 +895,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                 </span>
                 <input type="text" id="animeUrlInput" placeholder="Paste image link..." data-i18n-placeholder="placeholder-anime-url" autocomplete="off" />
-                <button type="button" id="animePasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                <button type="button" id="animePasteBtn" class="tool-input-action-btn" title="Paste" data-i18n-title="aria-paste" aria-label="Paste" data-i18n-aria="aria-paste">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
               </div>
@@ -915,7 +915,7 @@
 
             <div id="animeLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span>Searching across 1.7 billion anime frames...</span>
+              <span data-i18n="loader-anime">Searching across 1.7 billion anime frames...</span>
             </div>
 
             <div id="animeResults"></div>
@@ -924,7 +924,7 @@
           <!-- Sub-View 5: Image Converter View -->
           <div id="toolConverterView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -1007,7 +1007,7 @@
           <!-- Sub-View 6: Video to Audio Extractor View -->
           <div id="toolExtractorView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -1036,8 +1036,8 @@
               <div class="tool-config-group">
                 <span class="tool-config-label" data-i18n="label-audio-channels">Audio Channels</span>
                 <div class="tool-chip-group" id="extractorChannelChips">
-                  <button type="button" class="tool-chip active" data-channel="stereo">Stereo (2-ch)</button>
-                  <button type="button" class="tool-chip" data-channel="mono">Mono (1-ch)</button>
+                  <button type="button" class="tool-chip active" data-channel="stereo" data-i18n="channel-stereo">Stereo (2-ch)</button>
+                  <button type="button" class="tool-chip" data-channel="mono" data-i18n="channel-mono">Mono (1-ch)</button>
                 </div>
               </div>
 
@@ -1048,7 +1048,7 @@
 
             <div id="extractorLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span>Decoding video audio track...</span>
+              <span data-i18n="loader-extractor">Decoding video audio track...</span>
             </div>
 
             <!-- Extractor Result Card -->
@@ -1077,7 +1077,7 @@
           <!-- Sub-View 7: PDF Compressor View -->
           <div id="toolPdfView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -1089,7 +1089,7 @@
             <div class="tool-file-dropzone" id="pdfDropzone">
               <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
               <p class="dropzone-text" data-i18n="dropzone-pdf">Tap to choose PDF</p>
-              <span class="dropzone-hint">Standard PDF Documents</span>
+              <span class="dropzone-hint" data-i18n="hint-pdf">Standard PDF documents</span>
             </div>
             <input type="file" id="pdfFileInput" accept="application/pdf" class="hidden" />
 
@@ -1116,7 +1116,7 @@
 
             <div id="pdfLoader" class="tool-loader-card hidden">
               <div class="tool-spinner"></div>
-              <span id="pdfLoaderText">Optimizing document pages...</span>
+              <span id="pdfLoaderText" data-i18n="loader-pdf">Optimizing document pages...</span>
             </div>
 
             <!-- PDF Result Card -->
@@ -1143,7 +1143,7 @@
           <!-- Sub-View 8: Username Checker View -->
           <div id="toolUsernameView" class="tool-sub-view hidden">
             <div class="tool-view-header">
-              <button class="tool-view-back-btn" aria-label="Back">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
               </button>
               <div class="tool-view-titles">
@@ -1158,7 +1158,7 @@
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10h5v-2h-5c-4.34 0-8-3.66-8-8s3.66-8 8-8 8 3.66 8 8v1.43c0 .79-.71 1.57-1.5 1.57s-1.5-.78-1.5-1.57V12c0-2.76-2.24-5-5-5s-5 2.24-5 5 2.24 5 5 5c1.38 0 2.64-.56 3.54-1.47.65.89 1.77 1.47 2.96 1.47 1.97 0 3.5-1.6 3.5-3.57V12c0-5.52-4.48-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>
                 </span>
                 <input type="text" id="usernameCheckerInput" placeholder="Enter username..." data-i18n-placeholder="placeholder-username-checker" autocomplete="off" />
-                <button type="button" id="usernameCheckerPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                <button type="button" id="usernameCheckerPasteBtn" class="tool-input-action-btn" title="Paste" data-i18n-title="aria-paste" aria-label="Paste" data-i18n-aria="aria-paste">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
               </div>
@@ -1334,7 +1334,7 @@
           <!-- Sub-page: General -->
           <div id="settingsGeneral" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"
@@ -1647,7 +1647,7 @@
           <!-- Sub-page: Appearance -->
           <div id="settingsAppearance" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"
@@ -2259,7 +2259,7 @@
               <button
                 class="back-btn-settings"
                 data-back-target="settingsAppearance"
-                aria-label="Back"
+                aria-label="Back" data-i18n-aria="aria-back"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -2678,7 +2678,7 @@
           <!-- Sub-page: Storage -->
           <div id="settingsStorage" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"
@@ -3357,7 +3357,7 @@
           <!-- Sub-page: Network & Performance -->
           <div id="settingsNetwork" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"
@@ -3757,7 +3757,7 @@
           <!-- Sub-page: Advanced -->
           <div id="settingsAdvanced" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"
@@ -4020,7 +4020,7 @@
           <!-- Sub-page: About & Help -->
           <div id="settingsAbout" class="settings-sub-page hidden">
             <div class="sub-page-header">
-              <button class="back-btn-settings" aria-label="Back">
+              <button class="back-btn-settings" aria-label="Back" data-i18n-aria="aria-back">
                 <svg
                   viewBox="0 0 24 24"
                   width="24"

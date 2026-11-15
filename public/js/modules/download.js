@@ -5,6 +5,8 @@ import {
   Filesystem,
   showToast,
   cleanUrl,
+  parseShareText,
+  normalizeLooseUrl,
   handleScrapeError,
   checkWifiOnlyGuard,
   getNetworkStatus,
@@ -651,9 +653,30 @@ downloadBtn.addEventListener("click", async () => {
     return;
   }
 
-  const url = urlInput.value.trim();
+  const rawUrl = urlInput.value.trim();
 
-  if (!url) return;
+  if (!rawUrl) return;
+
+  const share = parseShareText(rawUrl);
+  const normalized = share?.url || normalizeLooseUrl(rawUrl);
+  const url = normalized || rawUrl;
+  if (normalized && normalized !== rawUrl) {
+    urlInput.value = url;
+    urlInput.dispatchEvent(new Event("input"));
+  }
+
+  if (share) {
+    const code = share.password
+      ? t("toast-share-code", { code: share.password })
+      : "";
+    showToast(
+      t("toast-share-kept", {
+        platform: t(`share-platform-${share.platform}`),
+        code,
+      }),
+    );
+    return;
+  }
 
   if (!(await enforceNetworkGuards())) return;
 

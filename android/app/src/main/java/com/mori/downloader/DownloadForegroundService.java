@@ -33,10 +33,10 @@ public class DownloadForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String title = intent != null && intent.hasExtra("title") ? intent.getStringExtra("title") : "Downloading Media...";
+        String title = intent != null && intent.hasExtra("title") ? intent.getStringExtra("title") : getString(R.string.notif_downloading);
         
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Mori Downloader")
+                .setContentTitle(getString(R.string.notif_downloader_title))
                 .setContentText(title)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -74,10 +74,10 @@ public class DownloadForegroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Mori Background Download",
+                    getString(R.string.notif_channel_download),
                     NotificationManager.IMPORTANCE_DEFAULT
             );
-            channel.setDescription("Keeps Mori active during media download");
+            channel.setDescription(getString(R.string.notif_channel_download_desc));
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);

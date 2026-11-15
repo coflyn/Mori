@@ -232,7 +232,7 @@ export async function startNativeDownload(
       const b = btn.querySelector(".dl-badge");
       if (b) {
         if (currentProgressVal >= 100) {
-          b.textContent = "SAVED";
+          b.textContent = t("status-saved");
         } else if (badgeText) {
           b.textContent = badgeText;
         } else {
@@ -489,17 +489,17 @@ export async function startNativeDownload(
       window._moriActiveSimInterval = null;
     }
 
-    updateProgress(100, translations[currentLang]?.["status-saved"] || "Saved");
-    downloadBubble.completeDownload(dlId, "Saved");
+    updateProgress(100, t("status-saved"));
+    downloadBubble.completeDownload(dlId, t("status-saved"));
 
     if (btn) {
       const b = btn.querySelector(".dl-badge");
       if (b) {
-        b.textContent = "SAVED";
+        b.textContent = t("status-saved");
         b.style.backgroundColor = "";
         b.style.color = "";
       } else {
-        btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> SAVED`;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:8px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> ${t("status-saved")}`;
       }
     }
 

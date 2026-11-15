@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_channel_download">Mori 后台下载</string>
+    <string name="notif_channel_download_desc">下载媒体时保持 Mori 在后台运行</string>
+    <string name="notif_channel_complete">Mori 下载</string>
+    <string name="notif_channel_complete_desc">Mori 下载通知</string>
+    <string name="notif_downloading">正在下载媒体…</string>
+    <string name="notif_downloader_title">Mori 下载器</string>
+    <string name="notif_complete">下载完成 ✓</string>
+    <string name="notif_failed">下载失败</string>
+    <string name="notif_media">媒体</string>
+    <string name="notif_failed_reason">失败</string>
+    <string name="sniff_hint">输入网址…</string>
+    <string name="sniff_count">探测 (%1$d)</string>
+    <string name="sniff_page_title">实时探测页面</string>
+</resources>

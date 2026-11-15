@@ -1,5 +1,5 @@
 // index.js — Tools Page Manager: Navigation and Tool Controllers
-import { t } from "../../i18n/index.js";
+import { t, getInitialLanguage } from "../../i18n/index.js";
 import {
   showToast,
   triggerHaptic,
@@ -186,7 +186,7 @@ function initSnifferController() {
   // Live In-App Browser callback bridge
   window.__moriLiveSnifferCallback = (data) => {
     try {
-      const pageTitle = data?.pageTitle || "Live Browser Capture";
+      const pageTitle = data?.pageTitle || t("sniff-capture-title");
       const pageUrl = data?.pageUrl || "";
       const rawUrls = Array.isArray(data?.urls) ? data.urls : [];
 
@@ -298,7 +298,7 @@ function initSnifferController() {
       });
       renderSnifferResults(formattedData, activeFilter);
       showToast(
-        `${formattedData.total} media item(s) captured from live browser!`,
+        t("toast-sniff-captured", { count: formattedData.total }),
       );
     } catch (e) {
       console.warn("Live sniffer parsing error:", e);
@@ -316,7 +316,7 @@ function initSnifferController() {
         url: targetUrl,
       });
     } else {
-      showToast("Live Browser requires the Mori mobile native app.");
+      showToast(t("toast-live-native"));
     }
   });
 
@@ -350,15 +350,15 @@ function initSnifferController() {
       renderSnifferResults(data, activeFilter);
       showToast(
         data.total > 0
-          ? `${data.total} media item(s) found`
-          : "No direct media found on this page",
+          ? t("toast-sniff-found", { count: data.total })
+          : t("toast-sniff-none"),
       );
     } catch (err) {
       if (resultsContainer) {
         resultsContainer.innerHTML = `
           <div class="tool-error-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <p>${esc(err.message || "Failed to sniff media")}</p>
+            <p>${esc(err.message || t("err-sniff-failed"))}</p>
           </div>
         `;
       }
@@ -407,7 +407,7 @@ function initSnifferController() {
     if (items.length === 0) {
       resultsContainer.innerHTML = `
         <div class="tool-empty-box">
-          <p>${data.total === 0 ? "No media found on this page." : "No items matching filter."}</p>
+          <p>${data.total === 0 ? t("sniffer-empty-page") : t("sniffer-empty-filter")}</p>
         </div>
       `;
       return;
@@ -417,7 +417,7 @@ function initSnifferController() {
     header.className = "sniffer-results-header";
     header.innerHTML = `
       <h4 class="sniffer-page-title">${esc(data.pageTitle || data.pageUrl)}</h4>
-      <span class="sniffer-found-count">${items.length} items</span>
+      <span class="sniffer-found-count">${t("sniffer-item-count", { count: items.length })}</span>
     `;
     resultsContainer.appendChild(header);
 
@@ -458,9 +458,9 @@ function initSnifferController() {
           <div class="sniffer-item-actions">
             <button class="sniffer-dl-btn" data-url="${esc(item.url)}" data-type="${esc(item.type)}" data-title="${esc(item.title)}">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-              <span>Download</span>
+              <span>${t("label-download")}</span>
             </button>
-            <button class="sniffer-copy-btn" data-url="${esc(item.url)}" title="Copy Link">
+            <button class="sniffer-copy-btn" data-url="${esc(item.url)}" title="${t("aria-copy-link")}">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
             </button>
           </div>
@@ -498,7 +498,7 @@ function initSnifferController() {
       card.querySelector(".sniffer-copy-btn")?.addEventListener("click", () => {
         triggerHaptic("light");
         navigator.clipboard.writeText(item.url);
-        showToast("Media link copied to clipboard");
+        showToast(t("toast-media-copied"));
       });
 
       list.appendChild(card);
@@ -560,16 +560,16 @@ function initSflglController() {
       const res = await skipSflgl(url);
       if (res.status && res.result?.destinationUrl) {
         renderSflglResult(res.result.originalUrl, res.result.destinationUrl);
-        showToast("Link bypassed successfully!");
+        showToast(t("toast-bypass-ok"));
       } else {
-        throw new Error(res.message || "Failed to bypass link");
+        throw new Error(res.message || t("err-bypass-failed"));
       }
     } catch (err) {
       if (resultContainer) {
         resultContainer.innerHTML = `
           <div class="tool-error-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <p>${esc(err.message || "Failed to bypass link")}</p>
+            <p>${esc(err.message || t("err-bypass-failed"))}</p>
           </div>
         `;
       }
@@ -586,14 +586,14 @@ function initSflglController() {
       <div class="tool-result-card sflgl-card">
         <div class="tool-success-header">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-          <h4>Destination Unlocked</h4>
+          <h4>${t("sflgl-unlocked")}</h4>
         </div>
         <div class="sflgl-detail-row">
-          <span class="sflgl-label">Original Link</span>
+          <span class="sflgl-label">${t("sflgl-original")}</span>
           <p class="sflgl-url-subtext">${esc(originalUrl)}</p>
         </div>
         <div class="sflgl-detail-row">
-          <span class="sflgl-label">Direct Destination</span>
+          <span class="sflgl-label">${t("sflgl-destination")}</span>
           <div class="sflgl-dest-box">
             <a href="${esc(destUrl)}" target="_blank" rel="noopener noreferrer" class="sflgl-dest-link">${esc(destUrl)}</a>
           </div>
@@ -601,11 +601,11 @@ function initSflglController() {
         <div class="sflgl-action-row">
           <button id="sflglCopyBtn" class="tool-btn-primary">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-            <span>Copy Link</span>
+            <span>${t("btn-copy-link")}</span>
           </button>
           <a href="${esc(destUrl)}" target="_blank" rel="noopener noreferrer" class="tool-btn-secondary">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
-            <span>Open Link</span>
+            <span>${t("btn-open-link")}</span>
           </a>
         </div>
       </div>
@@ -614,7 +614,7 @@ function initSflglController() {
     document.getElementById("sflglCopyBtn")?.addEventListener("click", () => {
       triggerHaptic("light");
       navigator.clipboard.writeText(destUrl);
-      showToast("Destination link copied to clipboard");
+      showToast(t("toast-dest-copied"));
     });
   }
 }
@@ -658,16 +658,16 @@ function initTiktokFinderController() {
       const res = await findTikTokUser(query);
       if (res.status && res.profile) {
         renderTiktokProfile(res.profile, res.quota);
-        showToast("Profile intelligence retrieved");
+        showToast(t("toast-profile-ok"));
       } else {
-        throw new Error(res.message || "Account not found");
+        throw new Error(res.message || t("err-account-not-found"));
       }
     } catch (err) {
       if (resultContainer) {
         resultContainer.innerHTML = `
           <div class="tool-error-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <p>${esc(err.message || "Failed to lookup TikTok account")}</p>
+            <p>${esc(err.message || t("err-tiktok-lookup"))}</p>
           </div>
         `;
       }
@@ -681,7 +681,7 @@ function initTiktokFinderController() {
     if (!resultContainer) return;
 
     function formatTiktokDate(isoStr) {
-      if (!isoStr) return "Never";
+      if (!isoStr) return t("label-never");
       try {
         const d = new Date(isoStr);
         return d.toLocaleDateString(undefined, {
@@ -698,24 +698,25 @@ function initTiktokFinderController() {
     if (p.createdAt?.value) {
       createdDateStr = formatTiktokDate(p.createdAt.value);
       if (p.createdAt?.source === "derived") {
-        createdDateStr += " (Estimated)";
+        createdDateStr += t("label-estimated");
       }
     }
 
-    let langDisplay = "Unavailable";
+    const uiLocale = getInitialLanguage();
+    let langDisplay = t("label-unavailable");
     if (p.language) {
       try {
-        const dn = new Intl.DisplayNames(["en"], { type: "language" });
+        const dn = new Intl.DisplayNames([uiLocale], { type: "language" });
         langDisplay = `${p.language.toUpperCase()} (${dn.of(p.language)})`;
       } catch (_) {
         langDisplay = p.language.toUpperCase();
       }
     }
 
-    let regionDisplay = "Hidden by TikTok (Privacy)";
+    let regionDisplay = t("label-region-hidden");
     if (p.region) {
       try {
-        const rn = new Intl.DisplayNames(["en"], { type: "region" });
+        const rn = new Intl.DisplayNames([uiLocale], { type: "region" });
         regionDisplay = `${p.region.toUpperCase()} (${rn.of(p.region.toUpperCase())})`;
       } catch (_) {
         regionDisplay = p.region;
@@ -723,16 +724,16 @@ function initTiktokFinderController() {
     }
 
     const statusBadge = p.isPrivate
-      ? `<span class="tiktok-badge private" title="Private Account">Private</span>`
-      : `<span class="tiktok-badge public" title="Public Account">Public</span>`;
+      ? `<span class="tiktok-badge private" title="${t("title-private-account")}">${t("badge-private")}</span>`
+      : `<span class="tiktok-badge public" title="${t("title-public-account")}">${t("badge-public")}</span>`;
     const verifiedBadge = p.flags?.verified
-      ? `<span class="tiktok-badge verified" title="Verified Account">✓ Verified</span>`
+      ? `<span class="tiktok-badge verified" title="${t("title-verified-account")}">✓ ${t("badge-verified")}</span>`
       : "";
     const sellerBadge = p.flags?.seller
-      ? `<span class="tiktok-badge seller" title="TikTok Seller">Shop</span>`
+      ? `<span class="tiktok-badge seller" title="${t("title-seller")}">${t("badge-shop")}</span>`
       : "";
     const orgBadge = p.flags?.organization
-      ? `<span class="tiktok-badge org" title="Organization">Org</span>`
+      ? `<span class="tiktok-badge org" title="${t("title-org")}">${t("badge-org")}</span>`
       : "";
 
     const bioLinkHtml = p.bioLink
@@ -751,7 +752,7 @@ function initTiktokFinderController() {
         <div class="tiktok-header-row">
           <div class="tiktok-avatar-wrap">
             <img src="${esc(p.avatarUrl || "")}" alt="${esc(p.displayName || p.username)}" class="tiktok-avatar" referrerpolicy="no-referrer" />
-            <button id="tiktokDownloadAvatarBtn" class="tiktok-avatar-dl-btn" title="Download HD Avatar">
+            <button id="tiktokDownloadAvatarBtn" class="tiktok-avatar-dl-btn" title="${t("aria-download-avatar")}">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
             </button>
           </div>
@@ -773,52 +774,52 @@ function initTiktokFinderController() {
         <div class="tiktok-stats-grid">
           <div class="tiktok-stat-box">
             <span class="tiktok-stat-val">${formatNumber(p.counts?.followers)}</span>
-            <span class="tiktok-stat-lbl">Followers</span>
+            <span class="tiktok-stat-lbl">${t("tiktok-followers")}</span>
           </div>
           <div class="tiktok-stat-box">
             <span class="tiktok-stat-val">${formatNumber(p.counts?.following)}</span>
-            <span class="tiktok-stat-lbl">Following</span>
+            <span class="tiktok-stat-lbl">${t("tiktok-following")}</span>
           </div>
           <div class="tiktok-stat-box">
             <span class="tiktok-stat-val">${formatNumber(p.counts?.totalLikes)}</span>
-            <span class="tiktok-stat-lbl">Total Likes</span>
+            <span class="tiktok-stat-lbl">${t("tiktok-likes")}</span>
           </div>
           <div class="tiktok-stat-box">
             <span class="tiktok-stat-val">${formatNumber(p.counts?.videos)}</span>
-            <span class="tiktok-stat-lbl">Videos</span>
+            <span class="tiktok-stat-lbl">${t("tiktok-videos")}</span>
           </div>
           <div class="tiktok-stat-box">
             <span class="tiktok-stat-val">${formatNumber(p.counts?.friends)}</span>
-            <span class="tiktok-stat-lbl">Friends</span>
+            <span class="tiktok-stat-lbl">${t("tiktok-friends")}</span>
           </div>
         </div>
 
         <div class="tiktok-meta-list">
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Account Created</span>
+            <span class="tiktok-meta-key">${t("tiktok-created")}</span>
             <span class="tiktok-meta-val">${esc(createdDateStr)}</span>
           </div>
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Username Changed</span>
+            <span class="tiktok-meta-key">${t("tiktok-user-changed")}</span>
             <span class="tiktok-meta-val">${esc(formatTiktokDate(p.usernameChangedAt))}</span>
           </div>
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Nickname Changed</span>
+            <span class="tiktok-meta-key">${t("tiktok-nick-changed")}</span>
             <span class="tiktok-meta-val">${esc(formatTiktokDate(p.nicknameChangedAt))}</span>
           </div>
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Account Language</span>
+            <span class="tiktok-meta-key">${t("tiktok-language")}</span>
             <span class="tiktok-meta-val">${esc(langDisplay)}</span>
           </div>
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Account Region</span>
+            <span class="tiktok-meta-key">${t("tiktok-region")}</span>
             <span class="tiktok-meta-val">${esc(regionDisplay)}</span>
           </div>
           <div class="tiktok-meta-item">
-            <span class="tiktok-meta-key">Numeric User ID</span>
+            <span class="tiktok-meta-key">${t("tiktok-uid")}</span>
             <div class="tiktok-copyable-val">
               <span>${esc(p.userId || "-")}</span>
-              <button class="tiktok-copy-small-btn" data-copy="${esc(p.userId || "")}" title="Copy UID">
+              <button class="tiktok-copy-small-btn" data-copy="${esc(p.userId || "")}" title="${t("aria-copy-uid")}">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
               </button>
             </div>
@@ -830,7 +831,7 @@ function initTiktokFinderController() {
             <span class="tiktok-meta-key">SecUID</span>
             <div class="tiktok-copyable-val">
               <span class="truncate-secuid">${esc(p.secUid.slice(0, 16))}...</span>
-              <button class="tiktok-copy-small-btn" data-copy="${esc(p.secUid)}" title="Copy SecUID">
+              <button class="tiktok-copy-small-btn" data-copy="${esc(p.secUid)}" title="${t("aria-copy-secuid")}">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
               </button>
             </div>
@@ -843,7 +844,7 @@ function initTiktokFinderController() {
         <div class="tiktok-footer-actions">
           <a href="${esc(p.profileUrl || `https://www.tiktok.com/@${p.username}`)}" target="_blank" rel="noopener noreferrer" class="tool-btn-secondary">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
-            <span>Open Profile</span>
+            <span>${t("btn-open-profile")}</span>
           </a>
         </div>
       </div>
@@ -856,7 +857,7 @@ function initTiktokFinderController() {
         const btn = e.currentTarget;
         btn.style.opacity = "0.5";
         btn.style.pointerEvents = "none";
-        showToast("Downloading avatar...");
+        showToast(t("toast-downloading-avatar"));
         await startNativeDownload(
           p.avatarUrl,
           "JPG",
@@ -882,7 +883,7 @@ function initTiktokFinderController() {
           const val = btn.getAttribute("data-copy");
           if (val) {
             navigator.clipboard.writeText(val);
-            showToast("Copied to clipboard");
+            showToast(t("toast-copy-success"));
           }
         });
       });
@@ -934,10 +935,10 @@ function initAnimeSearchController() {
       if (uploadBtn) {
         uploadBtn.innerHTML = `
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-          <span>Selected</span>
+          <span>${t("btn-selected")}</span>
         `;
       }
-      showToast(`Selected: ${file.name}`);
+      showToast(t("toast-selected-file", { name: file.name }));
     }
   });
 
@@ -960,16 +961,16 @@ function initAnimeSearchController() {
       const data = await searchAnimeScene(payload);
       renderAnimeResults(data);
       if (data.results.length > 0) {
-        showToast(`Found ${data.results.length} scene match(es)`);
+        showToast(t("toast-anime-found", { count: data.results.length }));
       } else {
-        showToast("No anime scene matched this image");
+        showToast(t("toast-anime-none"));
       }
     } catch (err) {
       if (resultsContainer) {
         resultsContainer.innerHTML = `
           <div class="tool-error-card">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <p>${esc(err.message || "Failed to search anime scene")}</p>
+            <p>${esc(err.message || t("err-anime-search"))}</p>
           </div>
         `;
       }
@@ -985,7 +986,7 @@ function initAnimeSearchController() {
     if (!data.results || data.results.length === 0) {
       resultsContainer.innerHTML = `
         <div class="tool-empty-box">
-          <p>No matching anime scenes found. Try a clearer screenshot without heavy cropping.</p>
+          <p>${t("anime-empty")}</p>
         </div>
       `;
       return;
@@ -1026,11 +1027,11 @@ function initAnimeSearchController() {
           }
           <div class="anime-meta-grid">
             <div class="anime-meta-col">
-              <span class="lbl">Episode</span>
+              <span class="lbl">${t("label-episode")}</span>
               <span class="val">${esc(String(item.episode))}</span>
             </div>
             <div class="anime-meta-col">
-              <span class="lbl">Timestamp</span>
+              <span class="lbl">${t("label-timestamp")}</span>
               <span class="val">${esc(item.timeRange)}</span>
             </div>
           </div>
@@ -1040,7 +1041,7 @@ function initAnimeSearchController() {
                 ? `
               <button class="tool-btn-primary anime-dl-clip-btn" data-video="${esc(item.videoUrl)}" data-title="${esc(item.mainTitle)}_ep${item.episode}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-                <span>Download Clip</span>
+                <span>${t("btn-download-clip")}</span>
               </button>
             `
                 : ""
@@ -1068,7 +1069,7 @@ function initAnimeSearchController() {
           const title = btn.getAttribute("data-title") || "anime_clip";
           btn.style.opacity = "0.5";
           btn.style.pointerEvents = "none";
-          showToast("Downloading anime scene clip...");
+          showToast(t("toast-downloading-clip"));
           await startNativeDownload(
             videoUrl,
             "MP4",
@@ -1106,6 +1107,25 @@ function initAnimeSearchController() {
       });
     }
   });
+}
+
+function categoryLabel(category) {
+  const keys = {
+    Domain: "cat-domain",
+    "Social Video": "cat-social-video",
+    Video: "cat-video",
+    Messaging: "cat-messaging",
+    Social: "cat-social",
+    Music: "cat-music",
+    Livestream: "cat-livestream",
+    Gaming: "cat-gaming",
+    Education: "cat-education",
+    Writing: "cat-writing",
+    Developer: "cat-developer",
+    Blog: "cat-blog",
+    Design: "cat-design",
+  };
+  return keys[category] ? t(keys[category]) : category;
 }
 
 function formatBytes(bytes) {
@@ -1254,15 +1274,15 @@ function initConverterController() {
           ((res.convertedSize - res.originalSize) / res.originalSize) * 100;
         const diffText =
           diff <= 0
-            ? `${Math.abs(diff).toFixed(1)}% smaller`
-            : `+${diff.toFixed(1)}%`;
+            ? t("diff-smaller", { pct: Math.abs(diff).toFixed(1) })
+            : t("diff-larger", { pct: diff.toFixed(1) });
         resultDiff.textContent = diffText;
       }
 
       resultCard?.classList.remove("hidden");
-      showToast("Image converted successfully!");
+      showToast(t("toast-image-converted"));
     } catch (err) {
-      showToast(err.message || "Failed to convert image");
+      showToast(err.message || t("err-convert-image"));
     } finally {
       runBtn.disabled = false;
       runBtn.innerHTML = `<span>${t("btn-convert-image") || "Convert Image"}</span>`;
@@ -1395,9 +1415,9 @@ function initExtractorController() {
       }
 
       resultCard?.classList.remove("hidden");
-      showToast("Audio extracted successfully!");
+      showToast(t("toast-audio-extracted"));
     } catch (err) {
-      showToast(err.message || "Failed to extract audio");
+      showToast(err.message || t("err-extract-audio"));
     } finally {
       runBtn.disabled = false;
       loader?.classList.add("hidden");
@@ -1520,14 +1540,14 @@ function initPdfCompressorController() {
 
     runBtn.disabled = true;
     loader?.classList.remove("hidden");
-    if (loaderText) loaderText.textContent = "Starting PDF compression...";
+    if (loaderText) loaderText.textContent = t("loader-pdf-start");
 
     try {
       const res = await compressPdfFile(selectedPdfFile, {
         level: selectedLevel,
         onProgress: (current, total) => {
           if (loaderText) {
-            loaderText.textContent = `Optimizing page ${current} of ${total}...`;
+            loaderText.textContent = t("loader-pdf-page", { current, total });
           }
         },
       });
@@ -1535,22 +1555,25 @@ function initPdfCompressorController() {
       compressedPdfBlob = res.blob;
 
       if (resultSizeEl) {
-        resultSizeEl.textContent = `${res.numPages} pages · ${formatBytes(res.compressedSize)}`;
+        resultSizeEl.textContent = t("pdf-result-meta", {
+          pages: res.numPages,
+          size: formatBytes(res.compressedSize),
+        });
       }
       if (resultDiffEl) {
         const diff =
           ((res.compressedSize - res.originalSize) / res.originalSize) * 100;
         const diffText =
           diff <= 0
-            ? `${Math.abs(diff).toFixed(1)}% smaller`
-            : `+${diff.toFixed(1)}%`;
+            ? t("diff-smaller", { pct: Math.abs(diff).toFixed(1) })
+            : t("diff-larger", { pct: diff.toFixed(1) });
         resultDiffEl.textContent = diffText;
       }
 
       resultCard?.classList.remove("hidden");
-      showToast("PDF compressed successfully!");
+      showToast(t("toast-pdf-compressed"));
     } catch (err) {
-      showToast(err.message || "Failed to compress PDF");
+      showToast(err.message || t("err-compress-pdf"));
     } finally {
       runBtn.disabled = false;
       loader?.classList.add("hidden");
@@ -1624,8 +1647,9 @@ function initUsernameCheckerController() {
 
     if (summaryCard) summaryCard.classList.remove("hidden");
     if (targetLabel) targetLabel.textContent = `@${cleanUser}`;
-    if (takenBadge) takenBadge.textContent = "0 Taken";
-    if (availableBadge) availableBadge.textContent = "0 Available";
+    if (takenBadge) takenBadge.textContent = t("username-taken-count", { count: 0 });
+    if (availableBadge)
+      availableBadge.textContent = t("username-available-count", { count: 0 });
 
     // Pre-populate grid with checking state
     if (grid) {
@@ -1640,7 +1664,7 @@ function initUsernameCheckerController() {
         card.innerHTML = `
           <div class="username-card-left">
             <span class="username-card-platform">${esc(displayName)}</span>
-            <span class="username-card-category">${esc(p.category)}</span>
+            <span class="username-card-category">${esc(categoryLabel(p.category))}</span>
           </div>
           <div class="username-card-right">
             <span class="username-status-badge checking">${t("status-checking") || "Checking..."}</span>
@@ -1665,7 +1689,7 @@ function initUsernameCheckerController() {
           takenCount++;
           rightCol.innerHTML = `
             <span class="username-status-badge taken">${t("status-taken") || "Taken"}</span>
-            <a href="${esc(item.profileUrl)}" target="_blank" rel="noopener noreferrer" class="username-open-link" title="Open Profile">
+            <a href="${esc(item.profileUrl)}" target="_blank" rel="noopener noreferrer" class="username-open-link" title="${t("aria-open-profile")}">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             </a>
           `;
@@ -1680,16 +1704,22 @@ function initUsernameCheckerController() {
           `;
         }
 
-        if (takenBadge) takenBadge.textContent = `${takenCount} Taken`;
+        if (takenBadge)
+          takenBadge.textContent = t("username-taken-count", { count: takenCount });
         if (availableBadge)
-          availableBadge.textContent = `${availableCount} Available`;
+          availableBadge.textContent = t("username-available-count", {
+            count: availableCount,
+          });
       });
 
       showToast(
-        `Checked: ${summary.takenCount} taken, ${summary.availableCount} available`,
+        t("toast-username-summary", {
+          taken: summary.takenCount,
+          available: summary.availableCount,
+        }),
       );
     } catch (err) {
-      showToast(err.message || "Failed to check username");
+      showToast(err.message || t("err-username-check"));
     } finally {
       runBtn.disabled = false;
       runBtn.innerHTML = `<span>${t("btn-check-username") || "Check Availability"}</span>`;
