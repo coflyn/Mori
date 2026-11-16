@@ -5,6 +5,19 @@ All notable changes to the Mori CLI (`@coflyn/mori`) will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-11-17
+
+### Fixed
+- **YouTube Shorts & Query Normalization**:
+  - Convert YouTube Shorts links (`/shorts/{id}`) to standard `/watch?v={id}` URLs before resolving.
+  - Distinguish between single videos and playlists when both `v=` and `list=` parameters exist in the URL.
+  - Fix converter download headers when redirected to `.shop` mirror domains.
+- **Playlist & Multi-Track Album Downloads**:
+  - Automatically detect playlists and multi-track albums (YouTube, Spotify, Apple Music, Bandcamp).
+  - Add interactive prompt to download all tracks or select specific tracks.
+  - Save files with real track titles and index prefixes (`01. Artist - Title.mp3`) instead of generic playlist names.
+  - Support automatic full playlist download with `--yes` (`-y`).
+
 ## [1.2.0] - 2026-10-25
 
 ### Added

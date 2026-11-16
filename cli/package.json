@@ -1,6 +1,6 @@
 {
   "name": "@coflyn/mori",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Universal media downloader CLI. Save anything, from anywhere. No watermarks. No tracking.",
   "type": "module",
   "bin": {
@@ -13,7 +13,8 @@
     "engine.js",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "translations"
   ],
   "engines": {
     "node": ">=18.0.0"
