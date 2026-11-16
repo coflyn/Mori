@@ -2,6 +2,7 @@
   <h1 align="center">@coflyn/mori</h1>
   <p align="center"><strong>Universal Media Downloader CLI</strong></p>
   <p align="center"><em>Save anything, from anywhere. No watermarks. No tracking.</em></p>
+  <p align="center"><strong>English</strong> · <a href="translations/README-zh-CN.md">简体中文</a> · <a href="translations/README-id.md">Bahasa Indonesia</a></p>
 </p>
 
 <p align="center">
@@ -17,24 +18,27 @@
 
 ---
 
-Command-line interface for **[Mori](https://github.com/coflyn/Mori)**. Download watermark-free videos, high-resolution photos, music, playlists, and compile albums into PDF across 16 platforms directly from your terminal.
+Command-line interface for **[Mori](https://github.com/coflyn/Mori)**. Download watermark-free videos, photos, audio, full playlists, and compile photo galleries into PDF files across 27 platforms directly from your terminal.
 
-## ⚡ Quick Start
+## Quick Start
 
-Run instantly without global installation via `npx`:
+Run directly without global installation:
 
 ```bash
 # Interactive REPL mode
 npx @coflyn/mori
 
-# Download any link directly
-npx @coflyn/mori https://www.tiktok.com/@user/video/123456789
+# Download a link directly
+npx @coflyn/mori "https://www.tiktok.com/@user/video/123456789"
 
 # Download audio only (MP3)
-npx @coflyn/mori https://youtu.be/dQw4w9WgXcQ -a
+npx @coflyn/mori "https://youtu.be/dQw4w9WgXcQ" -a
 
-# Compile photo carousel into a single PDF album
-npx @coflyn/mori https://www.instagram.com/p/C_abc123/ -p
+# Download an entire playlist or album automatically
+npx @coflyn/mori "https://www.youtube.com/playlist?list=PLxxx" -y
+
+# Compile photo carousel into a single PDF
+npx @coflyn/mori "https://www.instagram.com/p/C_abc123/" -p
 ```
 
 Or install globally:
@@ -46,32 +50,20 @@ mori
 
 ---
 
-## 🌐 Supported Platforms & Media
+## Supported Platforms
 
-| Platform                  | Capabilities                                                |
-| :------------------------ | :---------------------------------------------------------- |
-| **TikTok**                | No-watermark video (HD/1080p), MP3 audio, slide photos      |
-| **Instagram**             | Reels, stories, posts, photos, carousels                    |
-| **YouTube**               | MP4 video, MP3 audio, full playlists & albums               |
-| **Twitter / X**           | All resolutions, GIFs, MP4 video                            |
-| **Spotify**               | Single tracks, full albums & playlists to MP3 (128–320kbps) |
-| **Apple Music**           | Tracks, albums, and playlists to high-quality MP3           |
-| **Pinterest**             | Original full-resolution images, video pins                 |
-| **Facebook**              | Public reels & HD videos                                    |
-| **Threads**               | Videos and photo carousels                                  |
-| **Reddit**                | Videos with synced audio, multi-image galleries             |
-| **Bilibili**              | High-definition DASH video & audio streams                  |
-| **Douyin**                | Watermark-free videos & photo carousels                     |
-| **RedNote (Xiaohongshu)** | High-res photos and videos                                  |
-| **Pixiv**                 | Artwork galleries and animated Ugoira                       |
-| **Bandcamp**              | Individual songs and full discographies                     |
-| **TeraBox**               | Direct stream extraction                                    |
-| **Anime**                 | Interactive search & episode stream resolution (Otakudesu Sub Indo, Gogoanime Sub Eng) |
-| **Comic / Manga**         | Interactive chapter search, image extraction, and PDF compilation (Komikindo, Komiku, Asura Scans) |
+| Category | Platforms | Supported Media |
+| :--- | :--- | :--- |
+| **Social & Video** | TikTok, Douyin, YouTube, Instagram, Facebook, Twitter/X, Threads, Reddit, Bilibili, Doodstream | Videos without watermarks, 1080p streams, photo posts, stories, audio |
+| **Music & Audio** | Spotify, YouTube, SoundCloud, Apple Music, Bandcamp | Single tracks, full albums, discographies, playlists (MP3 128–320 kbps) |
+| **Images & Art** | Pinterest, Pixiv, RedNote (Xiaohongshu) | High-resolution images, original illustration galleries, Ugoira animations |
+| **Cloud & File Hosts** | TeraBox, MediaFire, Sfile, Catbox, Pixeldrain, Krakenfiles, Google Drive | Direct stream resolution, batch links, multi-file collections |
+| **Resolvers & Shorteners** | SafeLinkU, Sub2Unlock, Rekonise, Stargon / Link bypassers | Gateway bypass to final media destinations |
+| **Anime & Manga** | Otakudesu, Gogoanime, Komikindo, Komiku, Asura Scans | In-CLI title search, episode stream extraction, comic chapter PDF compilation |
 
 ---
 
-## 🛠️ CLI Options
+## CLI Options
 
 ```text
 USAGE:
@@ -79,75 +71,63 @@ USAGE:
   npx @coflyn/mori [URL] [OPTIONS]
 
 OPTIONS:
-  -o, --output <dir>   Custom download destination (default: ~/Downloads/Mori)
-  -s, --server <1|2>   Select scraper server engine (1 = Default, 2 = Mirror)
-  -a, --audio          Extract and download audio stream only (MP3/M4A)
-  -p, --pdf            Compile multi-photo posts directly into a single PDF album
-  -c, --clip           Auto-detect and download URL from system clipboard
-  -y, --yes            Auto-confirm and download best available stream
-  -i, --info           Inspect and display media metadata only (no download)
-  -u, --update         Check and apply latest OTA scraper patches
-  -h, --help           Show help and usage documentation
-  -v, --version        Display CLI version
+  -o, --output <dir>              Download directory (default: ~/Downloads/Mori)
+  -e, --engine <auto|mori|scrapr> Scraper engine selector (default: auto)
+  -s, --server <1|2>              Select server mirror (TikTok, IG, YouTube, X, Spotify)
+  -a, --audio                     Download audio stream only (MP3/M4A)
+  -p, --pdf                       Compile photo galleries into a single PDF document
+  -c, --clip                      Download link copied to system clipboard
+  -y, --yes                       Download without prompts (auto-selects best stream or all playlist tracks)
+  -i, --info                      Inspect media details and stream list without downloading
+  -u, --update                    Check for package updates and OTA scraper patches
+  -h, --help                      Show help and usage guide
+  -v, --version                   Show version number
 ```
 
 ---
 
-## 💬 Interactive Shell & Slash Commands
+## Interactive Shell & Slash Commands
 
-Launch `mori` without arguments to enter the interactive CLI shell:
+Running `mori` with no arguments starts the interactive prompt. Type a URL or title to start, or use `/` commands:
 
-```bash
-mori
-```
-
-Inside the interactive prompt, type `/` to access built-in tools:
-
-| Command          | Aliases       | Description                                                                        |
-| :--------------- | :------------ | :--------------------------------------------------------------------------------- |
-| `/clip`          | `/paste`      | Auto-detect and download media link currently on system clipboard                  |
-| `/audio [url]`   | `/mp3`        | Extract and download audio stream only (MP3/M4A)                                   |
-| `/pdf [url]`     | —             | Compile photo carousel or gallery directly into a single PDF album                 |
-| `/batch`         | —             | Bulk-download multiple links at once (space or newline separated)                  |
-| `/play [num]`    | —             | Open and play downloaded MP4/MP3 media in your default system player               |
-| `/history [num]` | —             | View download history, re-download (`/history <num>`), or purge (`/history clear`) |
-| `/delete [num]`  | `/del`, `/rm` | Remove item from history with prompt to delete file from disk                      |
-| `/open`          | —             | Open download folder in your OS file manager (Finder / File Explorer)              |
-| `/dir [path]`    | —             | View or set default download destination folder permanently                        |
-| `/server`        | —             | Select default scraper engine (`auto`, `1`, `2`)                                   |
-| `/info [url]`    | `/inspect`    | Inspect media details and available streams without downloading                    |
-| `/retry`         | `/again`      | Re-download the last processed link                                                |
-| `/ping [host]`   | —             | Test network latency and packet loss (default: 1.1.1.1)                            |
-| `/stats`         | —             | View total files downloaded, disk space used, and platform breakdown               |
-| `/platforms`     | `/platform`   | List all 16 supported media platforms and categories                               |
-| `/config`        | —             | Display active configuration, storage paths, and versions                          |
-| `/update`        | `/u`          | Check for both CLI package updates (npm) and OTA scraper patches                   |
-| `/reset`         | —             | Factory reset Mori configuration, cached scrapers, and history                     |
-| `/clear`         | `/cls`        | Clear terminal screen and reprint header                                           |
-| `/help`          | `/?`          | Display quick command reference guide                                              |
-| `/exit`          | `/quit`, `/q` | Exit interactive CLI mode                                                          |
+| Command | Aliases | Description |
+| :--- | :--- | :--- |
+| `/clip` | `/paste` | Read and download URL from system clipboard |
+| `/audio [url]` | `/mp3` | Download audio stream only (MP3/M4A) |
+| `/pdf [url]` | — | Compile photo carousel into a single PDF album |
+| `/batch` | — | Download multiple links at once (space or newline separated) |
+| `/play [num]` | — | Open downloaded file in your default system media player |
+| `/history [num]` | — | View history, re-download an item, or clear (`/history clear`) |
+| `/delete` | `/del`, `/rm` | Interactive multiselect deletion (remove from history or delete from disk) |
+| `/open` | — | Open Mori download folder in Finder or File Explorer |
+| `/dir [path]` | — | View or change default download directory |
+| `/server` | — | Change default scraper server mirror |
+| `/engine` | — | Switch between Mori Engine, Scrapr Engine, or Auto mode |
+| `/rollback` | — | Revert scraper engine to an earlier commit or release |
+| `/info [url]` | `/inspect` | Print stream details without downloading |
+| `/retry` | `/again` | Re-run last processed download |
+| `/ping [host]` | — | Ping network host to test connection (default: 1.1.1.1) |
+| `/stats` | — | Show total downloads, storage used, and platform statistics |
+| `/platforms` | `/platform` | List all 27 supported platforms |
+| `/config` | — | Print active configuration, directory paths, and versions |
+| `/update` | `/u` | Check for npm CLI updates and OTA scraper patches from GitHub |
+| `/reset` | — | Reset Mori configuration and history to defaults |
+| `/clear` | `/cls` | Clear terminal screen |
+| `/help` | `/?` | Display commands reference |
+| `/exit` | `/quit`, `/q` | Exit CLI |
 
 ---
 
-## 🚀 Key Features
+## Technical Details
 
-- **16 Platforms Supported**: Save media from TikTok, Instagram, YouTube, Twitter/X, Spotify, Apple Music, Pinterest, Facebook, Threads, Reddit, Bilibili, Douyin, RedNote, Pixiv, Bandcamp, and TeraBox.
-- **Automatic Version Checker**: Fast, non-blocking check on launch alerts you with a notification box whenever a newer CLI release is available on npm.
-- **Dual Update System**: Run `/update` to check for both newer CLI package versions on npm and live OTA scraper engine patches from GitHub.
-- **Multi-Processing Parallel Downloads**: High-speed concurrent downloads for photo galleries and batch links with optimized worker pools.
-- **Single-Row In-Place Updates**: Dynamic in-place terminal spinner without spamming new lines for every photo.
-- **Instant Photo-to-PDF**: Combine multi-image posts and photo carousels into a single, clean PDF file (`-p` / `--pdf`).
-- **Integrated Terminal Player**: Launch and listen/watch downloaded videos and audio directly via `/play <num>`.
-- **History & Disk Sync Deletion**: Keep track of downloaded files, re-download past items, or delete files from disk and history via `/delete <num>`.
-- **Clipboard Detection**: One-command downloads from your clipboard (`-c` / `--clip` or `/clip`).
-- **Dual-Server Redundancy**: Seamlessly switch between primary and mirror servers for platforms like TikTok, Instagram, YouTube, X, and Spotify.
-- **Over-The-Air (OTA) Hot-Patching**: Scrapers update dynamically via GitHub when upstream platform APIs change, without waiting for an NPM package release.
-- **Built-in Network Diagnostics**: Check connection latency and packet loss to download servers using `/ping`.
-- **100% Local & Private**: No analytics, no accounts, and no data telemetry. Configuration and history are stored locally in `~/.mori`.
+- **Dual-Engine Architecture**: Mori uses an internal core scraper bundle and can fall back to the standalone Scrapr engine when upstream sites change their layouts.
+- **OTA Patching**: Scraper logic can update via GitHub commits without waiting for a new npm release. Run `/update` or `/rollback` to manage versions.
+- **Playlist & Album Queue**: Pasting a YouTube playlist, Spotify album, or Apple Music collection shows track numbers and titles, letting you download everything sequentially or pick individual tracks.
+- **Local Storage**: Configuration and history stay on your machine in `~/.mori`. No analytics or telemetry.
 
 ---
 
-## 📄 License
+## License
 
-Licensed under the [GNU General Public License v3.0](https://github.com/coflyn/Mori/blob/main/LICENSE).
+Licensed under the [GNU General Public License v3.0](https://github.com/coflyn/Mori/blob/main/LICENSE).  
 Part of the **[Mori](https://github.com/coflyn/Mori)** project.
