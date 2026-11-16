@@ -1062,10 +1062,10 @@ h1 {
 
 .download-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  max-width: 860px;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1040px;
   margin-inline: auto;
-  gap: 18px;
+  gap: 16px;
   text-align: left;
 }
 .download-card {
@@ -1680,7 +1680,8 @@ h1 {
     grid-template-columns: 1fr;
   }
   .download-grid {
-    max-width: 100%;
+    grid-template-columns: 1fr;
+    max-width: 480px;
   }
   .nav-links {
     display: none;

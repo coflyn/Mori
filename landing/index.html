@@ -114,7 +114,7 @@
                 "name": "Does it keep working when a platform updates and breaks scrapers?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes. Mori uses OTA (Over-The-Air) hot-patching to push scraper updates in the background without requiring you to reinstall the app. When a platform changes its API, the fix arrives silently."
+                  "text": "Yes. Mori includes built-in server mirrors and dual-engine fallback. If an upstream platform changes its layout, backup scrapers take over automatically until a patch is released on GitHub."
                 }
               },
               {
@@ -306,7 +306,7 @@
             >
           </div>
           <p class="hero-platforms-hint" id="hero-platforms-hint">
-            <span>Android &middot; iOS &middot; macOS &middot; Windows</span>
+            <span>Android &middot; iOS &middot; CLI (macOS, Linux, Windows)</span>
             <span class="hero-hint-sep" aria-hidden="true">&bull;</span>
             <a href="#download" class="hero-all-platforms"
               >All formats &darr;</a
@@ -328,9 +328,9 @@
       <section class="section-compare" aria-labelledby="compare-heading">
         <div class="container">
           <header class="section-header">
-            <h2 id="compare-heading">Built different</h2>
+            <h2 id="compare-heading">How Mori compares</h2>
             <p>
-              No sketchy redirects, no pop-up casinos, no middleman servers.
+              No redirects, pop-up ads, or middleman servers.
             </p>
           </header>
 
@@ -341,25 +341,24 @@
               >
               <ul class="compare-list" role="list">
                 <li>
-                  Bombarded with pop-up ads and deceptive download buttons
+                  Pop-up ads and deceptive download buttons
                 </li>
                 <li>Routes your traffic through slow, ad-injected servers</li>
                 <li>Can log download history and track IP addresses</li>
                 <li>
-                  Frequent scraper downtime when web domains get taken down
+                  Frequent downtime when ad-supported proxy servers get blocked
                 </li>
               </ul>
             </div>
             <div class="compare-card compare-card--good">
               <span class="compare-badge compare-badge--good">Mori</span>
               <ul class="compare-list" role="list">
-                <li>100% ad-free, zero tracking, open source under GPL-3.0</li>
-                <li>Runs entirely on your device with native speed</li>
+                <li>Ad-free, zero tracking, open source under GPL-3.0</li>
+                <li>Runs directly on your device with native download speeds</li>
                 <li>
-                  Background downloads with screen off, playlists, and batch
-                  queue
+                  Background downloads with screen off, full playlists, and batch queue
                 </li>
-                <li>OTA hot-patching updates scraper engines silently</li>
+                <li>Dual-engine architecture with backup server mirrors</li>
               </ul>
             </div>
           </div>
@@ -373,8 +372,8 @@
       >
         <div class="container">
           <header class="section-header">
-            <h2 id="how-heading">Three taps. Done.</h2>
-            <p>No setup, no accounts. Copy a link and Mori handles the rest.</p>
+            <h2 id="how-heading">How it works</h2>
+            <p>No setup or accounts required. Copy a link and Mori extracts the media.</p>
           </header>
           <ol class="steps" role="list">
             <li class="step">
@@ -392,20 +391,18 @@
               <div class="step-body">
                 <h3>Open Mori</h3>
                 <p>
-                  Mori detects the link from your clipboard the moment you open
-                  the app. On Android, tap Share in any app and pick Mori
-                  directly without switching screens.
+                  Mori reads the link from your clipboard on launch. On Android,
+                  you can also share directly to Mori from any app share menu.
                 </p>
               </div>
             </li>
             <li class="step">
               <div class="step-num" aria-hidden="true">3</div>
               <div class="step-body">
-                <h3>Pick quality and save</h3>
+                <h3>Save to storage</h3>
                 <p>
-                  Choose HD video, MP3 audio, or full photo gallery. Files go
-                  straight to your gallery or music folder, organized and
-                  complete.
+                  Choose HD video, MP3 audio, or full photo galleries. Files go
+                  straight to your device storage once fully downloaded.
                 </p>
               </div>
             </li>
@@ -418,11 +415,11 @@
           <h2 id="features-heading" class="sr-only">Features</h2>
           <div class="features-grid">
             <div class="feature-lead">
-              <h3>One app for everything you save</h3>
+              <h3>Media download features</h3>
               <p>
-                Playlists, albums, photo galleries, full HD video.
-                Batch-download a whole Spotify playlist in one tap. Files only
-                appear in your gallery once they are 100% complete.
+                Download full playlists, multi-image galleries, and video streams.
+                Files are kept in temporary storage while downloading and only moved to
+                your gallery once 100% complete.
               </p>
               <ul class="feature-checklist" role="list">
                 <li>
@@ -553,14 +550,14 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   >
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </div>
-                <h4>OTA Hot-Patching</h4>
+                <h4>Background Downloads</h4>
                 <p>
-                  Scraper engines update silently when platforms change their
-                  API. No app reinstall needed.
+                  Download queues and large playlists continue running with your screen turned off.
                 </p>
               </div>
               <div class="feature-card">
@@ -598,7 +595,9 @@
         <div class="container">
           <header class="section-header">
             <h2 id="platforms-heading">16 platforms. One app.</h2>
-            <p>If you can open it, Mori can save it.</p>
+            <p>
+              Supported natively on Android and iOS. For desktop and terminal users, the companion CLI extends support to 27 platforms including cloud drives, file hosts, anime, and manga.
+            </p>
           </header>
           <div class="platforms-grid" role="list">
             <div class="platform-item" role="listitem">
@@ -763,8 +762,8 @@
       >
         <div class="container">
           <header class="section-header">
-            <h2 id="screenshots-heading">Clean by design</h2>
-            <p>The app you open every day, not one you tolerate.</p>
+            <h2 id="screenshots-heading">App interface</h2>
+            <p>Simple interface focused on fast downloading without visual clutter.</p>
           </header>
 
           <div
@@ -1045,13 +1044,13 @@
                   data-index="14"
                   role="group"
                   aria-roledescription="slide"
-                  aria-label="15 of 15: About & OTA Scrapers"
-                  data-title="About & OTA Scrapers"
-                  data-desc="Check app versioning and receive silent Over-The-Air scraper core updates without reinstalling."
+                  aria-label="15 of 15: About & Settings"
+                  data-title="About & Settings"
+                  data-desc="Check app versioning, view open source licenses, and access documentation."
                 >
                   <img
                     src="assets/ss15.jpeg"
-                    alt="Mori about and over-the-air scraper core version screen"
+                    alt="Mori about and settings screen"
                     loading="lazy"
                     draggable="false"
                   />
@@ -1160,47 +1159,6 @@
             </a>
 
             <a
-              href="https://www.npmjs.com/package/@coflyn/mori"
-              class="download-card"
-              target="_blank"
-              rel="noopener"
-              aria-label="Run Mori CLI on Desktop via npm"
-              data-dl-card="cli"
-            >
-              <div class="dl-icon-box" aria-hidden="true">
-                <svg class="dl-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-12-3h4v1H8v-1zm0-3l3-2.5L8 9v2.5z"
-                  />
-                </svg>
-              </div>
-              <div class="dl-info">
-                <div class="dl-header">
-                  <span class="dl-platform">CLI (Desktop & Server)</span>
-                  <span class="dl-badge">NPM</span>
-                </div>
-                <span class="dl-file" data-dl-file="cli"
-                  >npx @coflyn/mori</span
-                >
-              </div>
-              <div class="dl-arrow" aria-hidden="true">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5l7 7-7 7" />
-                </svg>
-              </div>
-            </a>
-
-            <a
               href="https://github.com/coflyn/Mori/releases"
               class="download-card"
               target="_blank"
@@ -1222,6 +1180,47 @@
                 </div>
                 <span class="dl-file" data-dl-file="ios"
                   >Mori v4.6.0.ipa (AltStore / TrollStore)</span
+                >
+              </div>
+              <div class="dl-arrow" aria-hidden="true">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </a>
+
+            <a
+              href="https://www.npmjs.com/package/@coflyn/mori"
+              class="download-card"
+              target="_blank"
+              rel="noopener"
+              aria-label="Run Mori CLI on Desktop via npm"
+              data-dl-card="cli"
+            >
+              <div class="dl-icon-box" aria-hidden="true">
+                <svg class="dl-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-12-3h4v1H8v-1zm0-3l3-2.5L8 9v2.5z"
+                  />
+                </svg>
+              </div>
+              <div class="dl-info">
+                <div class="dl-header">
+                  <span class="dl-platform">CLI (Desktop & Server)</span>
+                  <span class="dl-badge">NPM</span>
+                </div>
+                <span class="dl-file" data-dl-file="cli"
+                  >npx @coflyn/mori</span
                 >
               </div>
               <div class="dl-arrow" aria-hidden="true">
@@ -1379,10 +1378,10 @@
               >
                 <div class="faq-answer-inner">
                   <p>
-                    Yes. Mori uses OTA (Over-The-Air) hot-patching to push
-                    scraper updates in the background without requiring you to
-                    reinstall the app. When a platform changes its API, the fix
-                    arrives silently.
+                    Yes. Mori includes built-in server mirrors and dual-engine
+                    fallback. If an upstream platform changes its layout, backup
+                    scrapers take over automatically until a patch is released on
+                    GitHub.
                   </p>
                 </div>
               </dd>
@@ -1507,6 +1506,43 @@
                       >CONTRIBUTING.md</a
                     >. The mobile app is built with Vanilla JS and Capacitor,
                     with a companion Node.js CLI for desktop.
+                  </p>
+                </div>
+              </dd>
+            </div>
+            <div class="faq-item">
+              <dt>
+                <button
+                  class="faq-question"
+                  aria-expanded="false"
+                  aria-controls="faq-cli"
+                  id="faq-btn-cli"
+                >
+                  Is there a desktop or command-line version?<svg
+                    class="faq-chevron"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              </dt>
+              <dd
+                id="faq-cli"
+                class="faq-answer"
+                role="region"
+                aria-labelledby="faq-btn-cli"
+              >
+                <div class="faq-answer-inner">
+                  <p>
+                    Yes. You can run Mori directly in your terminal using
+                    <code>npx @coflyn/mori</code> on macOS, Linux, or Windows without installing anything permanently.
+                    The CLI supports all 16 mobile platforms plus 11 additional file hosts, resolvers, and comic/anime downloads.
                   </p>
                 </div>
               </dd>
