@@ -127,6 +127,22 @@ function truncateText(str, max = 72) {
 }
 
 function formatStreamItem(d, i, allDownloads = []) {
+  const cleanTrack = (d.title || d.type || "")
+    .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP|COVER)\]/gi, "")
+    .trim();
+
+  const isGeneric =
+    !cleanTrack ||
+    /^(mp3|audio|music|photo|image|video|link|default)$/i.test(cleanTrack) ||
+    /^\d+p$/i.test(cleanTrack);
+
+  if (!isGeneric && (/^\d+\.\s+/.test(cleanTrack) || d.title)) {
+    return {
+      label: d.title || cleanTrack,
+      hint: (d.type || "").toLowerCase().includes("mp4") ? "video" : "audio",
+    };
+  }
+
   const typeStr = (d.type || "").toLowerCase();
   const qualityStr = (d.quality || "").trim();
 
@@ -390,10 +406,24 @@ async function processDownloadItem({ item, meta, outputDir, index, total }) {
         ? "jpg"
         : "mp4");
 
+  const cleanTrack = (item.title || item.type || "")
+    .replace(/\s*\[(MP3|MP4|JPG|PNG|WEBP|COVER)\]/gi, "")
+    .trim();
+  const isGenericTrack =
+    !cleanTrack ||
+    /^(mp3|audio|music|photo|image|video|link|default)$/i.test(cleanTrack) ||
+    /^\d+p$/i.test(cleanTrack);
+
+  const trackTitle =
+    !isGenericTrack && (/^\d+\.\s+/.test(cleanTrack) || item.title)
+      ? item.title || cleanTrack
+      : null;
+
   let baseTitle = rawFilename
     ? path.basename(rawFilename, path.extname(rawFilename))
-    : (meta.title || "Media");
-  if (total > 1) {
+    : trackTitle || meta.title || "Media";
+
+  if (total > 1 && !trackTitle) {
     baseTitle = `${baseTitle}_${index + 1}`;
   }
   const filename = sanitizeFilename(baseTitle, ext);
@@ -445,7 +475,7 @@ async function processDownloadItem({ item, meta, outputDir, index, total }) {
     );
     addToHistory({
       url: meta.url || "",
-      title: meta.title || "Media",
+      title: trackTitle || meta.title || "Media",
       platform: meta.platform || "unknown",
       filename: path.basename(destPath),
       path: destPath,
@@ -636,37 +666,102 @@ async function handleScrapeAndDownload(targetUrl, options) {
     return false;
   }
 
-  if (options.audio) {
-    const audioItem =
-      downloads.find(
-        (d) =>
-          d.type?.toLowerCase().includes("mp3") ||
-          d.type?.toLowerCase().includes("audio") ||
-          d.type?.toLowerCase().includes("music"),
-      ) || downloads[0];
+  const isPlaylistOrAlbum =
+    media.type === "playlist" ||
+    media.type === "album" ||
+    /playlist|album/i.test(targetUrl || "") ||
+    /playlist|album/i.test(media.sourceUrl || "") ||
+    /playlist|album/i.test(media.originalUrl || "") ||
+    (typeof media.title === "string" &&
+      /\((Playlist|Album)\)/i.test(media.title));
 
-    p.log.message(
-      `${pc.bold("● Audio Stream:")} ${pc.white(audioItem.type || "MP3")}`,
+  const hasTrackNumbers = downloads.some((dl) =>
+    /^\d+\.\s+/.test((dl.type || dl.title || "").trim()),
+  );
+
+  const isPlaylistCollection =
+    (isPlaylistOrAlbum || hasTrackNumbers) && downloads.length > 1;
+
+  if (isPlaylistCollection) {
+    const audioTracks = downloads.filter(
+      (d) =>
+        !d.type?.toLowerCase().includes("cover") &&
+        !d.type?.toLowerCase().includes("photo"),
+    );
+    const candidateTracks = audioTracks.length > 0 ? audioTracks : downloads;
+
+    let itemsToDownload = candidateTracks;
+
+    if (!options.yes) {
+      const choice = await p.select({
+        message: `Playlist / Album detected (${candidateTracks.length} tracks):`,
+        options: [
+          {
+            value: "all",
+            label: `Download All (${candidateTracks.length} tracks)`,
+          },
+          {
+            value: "custom",
+            label: "Select specific tracks...",
+          },
+          {
+            value: "cancel",
+            label: pc.dim("Cancel"),
+          },
+        ],
+      });
+
+      if (p.isCancel(choice) || choice === "cancel") {
+        p.cancel("Cancelled.");
+        return false;
+      }
+
+      if (choice === "custom") {
+        const selectedIndices = await p.multiselect({
+          message: "Select tracks to download:",
+          options: candidateTracks.map((d, i) => {
+            const item = formatStreamItem(d, i, candidateTracks);
+            return {
+              value: i,
+              label: item.label,
+            };
+          }),
+          required: true,
+        });
+
+        if (p.isCancel(selectedIndices)) {
+          p.cancel("Cancelled.");
+          return false;
+        }
+
+        itemsToDownload = selectedIndices.map((idx) => candidateTracks[idx]);
+      }
+    }
+
+    p.log.info(
+      `${pc.bold("● Playlist Queue:")} Downloading ${itemsToDownload.length} track(s)...`,
     );
 
-    await processDownloadItem({
-      item: audioItem,
-      meta: media,
-      outputDir,
-      index: 0,
-      total: 1,
-    });
-    return true;
-  }
+    let successCount = 0;
+    for (let i = 0; i < itemsToDownload.length; i++) {
+      const item = itemsToDownload[i];
+      const streamInfo = formatStreamItem(item, i, itemsToDownload);
+      p.log.step(
+        `${pc.bold(`[${i + 1}/${itemsToDownload.length}]`)} ${streamInfo.label}`,
+      );
+      const ok = await processDownloadItem({
+        item,
+        meta: media,
+        outputDir,
+        index: i,
+        total: itemsToDownload.length,
+      });
+      if (ok) successCount++;
+    }
 
-  if (options.yes) {
-    await processDownloadItem({
-      item: downloads[0],
-      meta: media,
-      outputDir,
-      index: 0,
-      total: 1,
-    });
+    p.log.success(
+      `${pc.bold("✔ Playlist completed:")} [${successCount}/${itemsToDownload.length}] tracks saved to ${pc.dim(outputDir)}`,
+    );
     return true;
   }
 
@@ -726,7 +821,11 @@ async function handleScrapeAndDownload(targetUrl, options) {
     let downloadAudioAlso = false;
 
     if (!albumFormat) {
-      const albumOptions = [
+      if (options.yes) {
+        albumFormat = "all";
+        downloadAudioAlso = audioDownloads.length > 0;
+      } else {
+        const albumOptions = [
         {
           value: "all",
           label: `Download All (${photoDownloads.length} individual images)`,
@@ -827,6 +926,7 @@ async function handleScrapeAndDownload(targetUrl, options) {
         albumFormat = "all";
       }
     }
+  }
 
     if (albumFormat === "pdf") {
       const s = p.spinner();
@@ -990,6 +1090,40 @@ async function handleScrapeAndDownload(targetUrl, options) {
 
     return true;
   } else {
+    if (options.audio) {
+      const audioItem =
+        downloads.find(
+          (d) =>
+            d.type?.toLowerCase().includes("mp3") ||
+            d.type?.toLowerCase().includes("audio") ||
+            d.type?.toLowerCase().includes("music"),
+        ) || downloads[0];
+
+      p.log.message(
+        `${pc.bold("● Audio Stream:")} ${pc.white(audioItem.type || "MP3")}`,
+      );
+
+      await processDownloadItem({
+        item: audioItem,
+        meta: media,
+        outputDir,
+        index: 0,
+        total: 1,
+      });
+      return true;
+    }
+
+    if (options.yes) {
+      await processDownloadItem({
+        item: downloads[0],
+        meta: media,
+        outputDir,
+        index: 0,
+        total: 1,
+      });
+      return true;
+    }
+
     let selectedItem = downloads[0];
 
     if (downloads.length > 1) {
