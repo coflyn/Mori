@@ -1,0 +1,122 @@
+/* brat.css — Brat Generator: the artwork runs in lime, everything else stays Mori. */
+
+.brat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brat-field-label,
+.brat-slider-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.brat-textarea {
+  width: 100%;
+  min-height: 74px;
+  padding: 14px 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.45;
+  resize: none;
+  outline: none;
+  transition: var(--transition);
+}
+
+.brat-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0px var(--primary);
+}
+
+.brat-hint,
+.brat-note {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.brat-preview {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.brat-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  background: #8ace00;
+}
+
+.brat-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.brat-meta-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.brat-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+}
+
+.brat-slider-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 48px;
+  align-items: center;
+  gap: 12px;
+}
+
+.brat-slider {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--text-main);
+  cursor: pointer;
+}
+
+.brat-slider-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+  text-align: right;
+}
+
+.brat-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.brat-actions .tool-btn-primary,
+.brat-actions .tool-btn-secondary {
+  padding: 14px;
+}
+
+.brat-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

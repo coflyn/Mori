@@ -21,6 +21,12 @@ import {
   toDomainLabel,
 } from "./usernameChecker.js";
 import { saveBlobToMori } from "./storageHelper.js";
+import {
+  createBratPng,
+  createBratGif,
+  renderBratFrame,
+  normalizeBratText,
+} from "./bratGenerator.js";
 
 let activeToolSubView = null;
 const toolCleanups = [];
@@ -163,6 +169,7 @@ export function initTools() {
   initExtractorController();
   initPdfCompressorController();
   initUsernameCheckerController();
+  initBratController();
 }
 
 function capitalize(s) {
@@ -1724,5 +1731,119 @@ function initUsernameCheckerController() {
       runBtn.disabled = false;
       runBtn.innerHTML = `<span>${t("btn-check-username") || "Check Availability"}</span>`;
     }
+  });
+}
+
+// -------------------------------------------------------------
+// 9. Brat Generator Controller
+// -------------------------------------------------------------
+function initBratController() {
+  const canvas = document.getElementById("bratCanvas");
+  if (!canvas) return;
+
+  const input = document.getElementById("bratTextInput");
+  const blurSlider = document.getElementById("bratBlurSlider");
+  const blurValue = document.getElementById("bratBlurValue");
+  const scaleSlider = document.getElementById("bratScaleSlider");
+  const scaleValue = document.getElementById("bratScaleValue");
+  const pngBtn = document.getElementById("bratPngBtn");
+  const gifBtn = document.getElementById("bratGifBtn");
+  const gifLabel = document.getElementById("bratGifLabel");
+
+  let frameRequest = 0;
+
+  const readOptions = () => ({
+    blur: Number(blurSlider?.value ?? 2),
+    textScale: Number(scaleSlider?.value ?? 100) / 100,
+  });
+
+  const drawPreview = () => {
+    frameRequest = 0;
+    renderBratFrame(canvas.getContext("2d"), input?.value, {
+      ...readOptions(),
+      size: canvas.width,
+    });
+  };
+
+  const schedulePreview = () => {
+    if (frameRequest) return;
+    frameRequest = requestAnimationFrame(drawPreview);
+  };
+
+  const syncSliders = () => {
+    if (blurValue) blurValue.textContent = readOptions().blur.toFixed(1);
+    if (scaleValue) scaleValue.textContent = `${scaleSlider?.value ?? 100}%`;
+  };
+
+  const buildFileName = (extension) => {
+    const slug = normalizeBratText(input?.value)
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 24);
+    if (!slug || slug === "brat") return `brat.${extension}`;
+    return `brat-${slug}.${extension}`;
+  };
+
+  const saveBrat = async (result, extension) => {
+    const caption = result.text.replace(/\n+/g, " ").slice(0, 60);
+    await saveBlobToMori(result.blob, buildFileName(extension), "Download/Mori", {
+      title: `brat (${caption})`,
+      type: "IMAGE",
+      tool: "brat-generator",
+      thumbnail: result.previewUrl,
+    });
+  };
+
+  input?.addEventListener("input", schedulePreview);
+  blurSlider?.addEventListener("input", () => {
+    syncSliders();
+    schedulePreview();
+  });
+  scaleSlider?.addEventListener("input", () => {
+    syncSliders();
+    schedulePreview();
+  });
+
+  pngBtn?.addEventListener("click", async () => {
+    triggerHaptic("medium");
+    pngBtn.disabled = true;
+    try {
+      const result = await createBratPng(input?.value, readOptions());
+      await saveBrat(result, "png");
+    } catch (err) {
+      showToast(err.message || t("err-brat-export"));
+    } finally {
+      pngBtn.disabled = false;
+    }
+  });
+
+  gifBtn?.addEventListener("click", async () => {
+    triggerHaptic("medium");
+    gifBtn.disabled = true;
+    try {
+      const result = await createBratGif(
+        input?.value,
+        readOptions(),
+        (current, total) => {
+          if (gifLabel) {
+            gifLabel.textContent = t("brat-rendering-gif", { current, total });
+          }
+        },
+      );
+      await saveBrat(result, "gif");
+    } catch (err) {
+      showToast(err.message || t("err-brat-export"));
+    } finally {
+      gifBtn.disabled = false;
+      if (gifLabel) gifLabel.textContent = t("brat-save-gif");
+    }
+  });
+
+  syncSliders();
+  drawPreview();
+
+  toolCleanups.push(() => {
+    if (frameRequest) cancelAnimationFrame(frameRequest);
+    frameRequest = 0;
   });
 }
