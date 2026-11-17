@@ -3,6 +3,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { fileURLToPath } from "url";
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
@@ -53,7 +54,14 @@ import {
   downloadScraprEngineVersion,
 } from "./engine.js";
 
-const APP_VERSION = "1.2.0";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+let APP_VERSION = "1.2.2";
+try {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "package.json"), "utf8"),
+  );
+  if (pkg.version) APP_VERSION = pkg.version;
+} catch (_) {}
 
 function isNewerVersion(latest, current) {
   if (!latest || !current) return false;
