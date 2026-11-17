@@ -756,7 +756,78 @@
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
                 </div>
               </div>
+
+              <!-- Card 9: Brat Generator -->
+              <div class="tool-card" data-tool="brat">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M5 4v3h5.5v12h3V7H19V4H5zm11 12h4v4h-4v-4zM4 16h4v4H4v-4z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-brat-title">Brat Generator</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-brat-desc">Type anything, get a brat-style cover. Save a PNG or a looping GIF.</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Sub-View 9: Brat Generator View -->
+          <div id="toolBratView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-brat-title">Brat Generator</h3>
+                <p data-i18n="tool-brat-subtitle">Lowercase, tight, a little blurry. PNG and GIF.</p>
+              </div>
+            </div>
+
+            <div class="brat-field">
+              <label class="brat-field-label" for="bratTextInput" data-i18n="brat-text-label">Cover text</label>
+              <textarea id="bratTextInput" class="brat-textarea" rows="2" maxlength="140" placeholder="brat" autocomplete="off" spellcheck="false">brat</textarea>
+              <p class="brat-hint" data-i18n="brat-text-hint">Line breaks split the cover. Text is always lowercase.</p>
+            </div>
+
+            <div class="brat-preview">
+              <canvas id="bratCanvas" class="brat-canvas" width="1080" height="1080" role="img" data-i18n-aria="brat-preview-aria"></canvas>
+              <div class="brat-preview-meta">
+                <span class="brat-meta-value">1080 × 1080 px</span>
+                <span class="brat-meta-note" data-i18n="brat-meta-note">updates as you type</span>
+              </div>
+            </div>
+
+            <div class="brat-controls">
+              <div class="brat-slider-row">
+                <label for="bratBlurSlider" class="brat-slider-label" data-i18n="brat-blur">Blur</label>
+                <input id="bratBlurSlider" class="brat-slider" type="range" min="0" max="8" step="0.5" value="2" />
+                <span id="bratBlurValue" class="brat-slider-value">2.0</span>
+              </div>
+              <div class="brat-slider-row">
+                <label for="bratScaleSlider" class="brat-slider-label" data-i18n="brat-scale">Scale</label>
+                <input id="bratScaleSlider" class="brat-slider" type="range" min="70" max="130" step="5" value="100" />
+                <span id="bratScaleValue" class="brat-slider-value">100%</span>
+              </div>
+            </div>
+
+            <div class="brat-actions">
+              <button type="button" id="bratPngBtn" class="tool-btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                <span id="bratPngLabel" data-i18n="brat-save-png">Save PNG</span>
+              </button>
+              <button type="button" id="bratGifBtn" class="tool-btn-secondary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11 6v12l8.5-6L11 6zM4 6h2v12H4z"/></svg>
+                <span id="bratGifLabel" data-i18n="brat-save-gif">Save GIF</span>
+              </button>
+            </div>
+
+            <p class="brat-note" data-i18n="brat-note">PNG exports at 1080 px. GIF exports at 720 px, 12 frames, looping forever.</p>
           </div>
 
           <!-- Sub-View 1: Sniffer View -->
