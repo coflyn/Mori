@@ -30,14 +30,16 @@ Save videos, photos, and audio from 16 platforms with built-in media tools. No w
 ## Screenshots
 
 <p align="center">
-  <img src="assets/1.webp" width="30%">
-  <img src="assets/2.webp" width="30%">
-  <img src="assets/3.webp" width="30%">
+  <img src="assets/1.webp" width="24%">
+  <img src="assets/2.webp" width="24%">
+  <img src="assets/3.webp" width="24%">
+  <img src="assets/4.webp" width="24%">
 </p>
 <p align="center">
-  <img src="assets/4.webp" width="30%">
-  <img src="assets/5.webp" width="30%">
-  <img src="assets/6.webp" width="30%">
+  <img src="assets/5.webp" width="24%">
+  <img src="assets/6.webp" width="24%">
+  <img src="assets/7.webp" width="24%">
+  <img src="assets/8.webp" width="24%">
 </p>
 
 ---
