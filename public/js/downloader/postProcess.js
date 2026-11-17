@@ -66,10 +66,18 @@ export async function handlePostDownload({
     }),
   );
 
-  if (window.MoriMainBridge?.scanMediaFile) {
-    try {
-      window.MoriMainBridge.scanMediaFile(savedUri || savedFile.path);
-    } catch (_) {}
+  const shouldSaveToPhotos =
+    localStorage.getItem("mori_save_to_photos") !== "false";
+  if (shouldSaveToPhotos) {
+    if (window.MoriMainBridge?.saveToCameraRoll) {
+      try {
+        window.MoriMainBridge.saveToCameraRoll(savedUri || savedFile.path);
+      } catch (_) {}
+    } else if (window.MoriMainBridge?.scanMediaFile) {
+      try {
+        window.MoriMainBridge.scanMediaFile(savedUri || savedFile.path);
+      } catch (_) {}
+    }
   }
 
   const displayFolder = targetFolder.startsWith("/") ? targetFolder : `/${targetFolder}`;

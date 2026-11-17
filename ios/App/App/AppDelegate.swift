@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import Capacitor
+import Photos
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -54,6 +55,17 @@ final class MoriBridgeManager: NSObject, WKScriptMessageHandler {
                     window.webkit.messageHandlers.moriNativeBridge.postMessage({ action: 'openSnifferBrowser', url: String(url || '') });
                 }
             };
+            window.MoriMainBridge.saveToCameraRoll = function(path) {
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.moriNativeBridge) {
+                    window.webkit.messageHandlers.moriNativeBridge.postMessage({ action: 'saveToCameraRoll', path: String(path || '') });
+                }
+            };
+            window.MoriMainBridge.scanMediaFile = function(path) {
+                var enabled = localStorage.getItem('mori_save_to_photos') !== 'false';
+                if (enabled && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.moriNativeBridge) {
+                    window.webkit.messageHandlers.moriNativeBridge.postMessage({ action: 'saveToCameraRoll', path: String(path || '') });
+                }
+            };
         })();
         """
         let userScript = WKUserScript(source: bridgeScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
@@ -68,7 +80,118 @@ final class MoriBridgeManager: NSObject, WKScriptMessageHandler {
 
         if action == "openSnifferBrowser", let url = dict["url"] as? String {
             openSnifferBrowser(initialUrl: url)
+        } else if action == "saveToCameraRoll", let path = dict["path"] as? String {
+            saveToCameraRoll(rawPath: path)
         }
+    }
+
+    private func saveToCameraRoll(rawPath: String) {
+        guard let fileUrl = resolveFileURL(from: rawPath) else {
+            print("[MoriBridge] saveToCameraRoll: file not found for path: \(rawPath)")
+            return
+        }
+
+        let ext = fileUrl.pathExtension.lowercased()
+        let isVideo = ["mp4", "mov", "m4v", "3gp"].contains(ext)
+        let isPhoto = ["jpg", "jpeg", "png", "webp", "gif", "heic", "bmp"].contains(ext)
+
+        guard isVideo || isPhoto else {
+            print("[MoriBridge] saveToCameraRoll: skipping unsupported media extension: .\(ext)")
+            return
+        }
+
+        func executeSave() {
+            PHPhotoLibrary.shared().performChanges({
+                if isVideo {
+                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: fileUrl)
+                } else {
+                    PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: fileUrl)
+                }
+            }) { success, error in
+                if success {
+                    print("[MoriBridge] Successfully saved \(fileUrl.lastPathComponent) to Camera Roll.")
+                } else if let error = error {
+                    print("[MoriBridge] Failed to save to Camera Roll: \(error.localizedDescription)")
+                }
+            }
+        }
+
+        if #available(iOS 14, *) {
+            PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+                if status == .authorized || status == .limited {
+                    executeSave()
+                } else {
+                    print("[MoriBridge] Photo library authorization denied/restricted: \(status.rawValue)")
+                }
+            }
+        } else {
+            PHPhotoLibrary.requestAuthorization { status in
+                if status == .authorized {
+                    executeSave()
+                } else {
+                    print("[MoriBridge] Photo library authorization denied: \(status.rawValue)")
+                }
+            }
+        }
+    }
+
+    private func resolveFileURL(from rawPath: String) -> URL? {
+        let trimmed = rawPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return nil }
+
+        let fileManager = FileManager.default
+
+        // 1. Direct file:// URL handling
+        if trimmed.lowercased().hasPrefix("file://") {
+            if let url = URL(string: trimmed), fileManager.fileExists(atPath: url.path) {
+                return url
+            }
+            let stripped = trimmed.replacingOccurrences(of: "file://", with: "")
+            let decoded = stripped.removingPercentEncoding ?? stripped
+            if fileManager.fileExists(atPath: decoded) {
+                return URL(fileURLWithPath: decoded)
+            }
+            if fileManager.fileExists(atPath: stripped) {
+                return URL(fileURLWithPath: stripped)
+            }
+        }
+
+        // 2. Direct absolute path handling
+        let decoded = trimmed.removingPercentEncoding ?? trimmed
+        if fileManager.fileExists(atPath: decoded) {
+            return URL(fileURLWithPath: decoded)
+        }
+        if fileManager.fileExists(atPath: trimmed) {
+            return URL(fileURLWithPath: trimmed)
+        }
+
+        // 3. Sandbox standard directories fallback
+        let searchDirs: [FileManager.SearchPathDirectory] = [
+            .documentDirectory,
+            .cachesDirectory,
+            .applicationSupportDirectory
+        ]
+
+        let cleanRel = decoded.replacingOccurrences(of: "^/+", with: "", options: .regularExpression)
+        for dirType in searchDirs {
+            if let baseDir = fileManager.urls(for: dirType, in: .userDomainMask).first {
+                let cand1 = baseDir.appendingPathComponent(cleanRel)
+                if fileManager.fileExists(atPath: cand1.path) {
+                    return cand1
+                }
+                let strippedPrefix = cleanRel.replacingOccurrences(of: "^(?i)(documents|download)/+", with: "", options: .regularExpression)
+                let cand2 = baseDir.appendingPathComponent("Download").appendingPathComponent(strippedPrefix)
+                if fileManager.fileExists(atPath: cand2.path) {
+                    return cand2
+                }
+                let cand3 = baseDir.appendingPathComponent(strippedPrefix)
+                if fileManager.fileExists(atPath: cand3.path) {
+                    return cand3
+                }
+            }
+        }
+
+        return nil
     }
 
     private func openSnifferBrowser(initialUrl: String) {

@@ -220,6 +220,26 @@ export function initBehaviorSettings() {
     });
   }
 
+  // Save to Photos (Camera Roll) Toggle
+  const saveToPhotosToggle = document.getElementById("saveToPhotosToggle");
+  if (saveToPhotosToggle) {
+    if (!isNativePlatform) {
+      const savePhotosItem = saveToPhotosToggle.closest(".settings-item");
+      if (savePhotosItem) savePhotosItem.style.display = "none";
+    }
+    saveToPhotosToggle.checked =
+      localStorage.getItem("mori_save_to_photos") !== "false";
+    saveToPhotosToggle.addEventListener("change", (e) => {
+      localStorage.setItem("mori_save_to_photos", e.target.checked);
+      const lang = translations[currentLang] || translations.en;
+      showToast(
+        e.target.checked
+          ? lang["toast-savephotos-on"] || "Save to Photos enabled"
+          : lang["toast-savephotos-off"] || "Save to Photos disabled",
+      );
+    });
+  }
+
   // Keep Screen Awake
   const keepAwakeToggle = document.getElementById("keepAwakeToggle");
   if (keepAwakeToggle) {

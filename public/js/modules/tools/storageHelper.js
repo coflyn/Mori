@@ -89,8 +89,14 @@ export async function saveBlobToMori(blob, fileName, folder = "Download/Mori", m
           });
 
           const fullSavedPath = `${targetFolder}/${fileName}`;
-          if (window.MoriMainBridge?.scanMediaFile) {
-            window.MoriMainBridge.scanMediaFile(fullSavedPath);
+          const shouldSaveToPhotos =
+            localStorage.getItem("mori_save_to_photos") !== "false";
+          if (shouldSaveToPhotos) {
+            if (window.MoriMainBridge?.saveToCameraRoll) {
+              window.MoriMainBridge.saveToCameraRoll(fullSavedPath);
+            } else if (window.MoriMainBridge?.scanMediaFile) {
+              window.MoriMainBridge.scanMediaFile(fullSavedPath);
+            }
           }
           let savedUri = fullSavedPath;
           try {
