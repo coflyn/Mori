@@ -1,5 +1,6 @@
 {
   "name": "mori",
+  "private": true,
   "version": "4.6.0",
   "description": "",
   "main": "index.js",
