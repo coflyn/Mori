@@ -224,6 +224,7 @@ export default {
   "label-wipedata": "مسح جميع البيانات",
   "lang-ar": "العربية",
   "lang-en": "الإنجليزية",
+  "lang-es": "الإسبانية",
   "lang-hi": "الهندية",
   "lang-id": "الإندونيسية",
   "lang-ja": "اليابانية",

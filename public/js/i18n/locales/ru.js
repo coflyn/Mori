@@ -224,6 +224,7 @@ export default {
   "label-wipedata": "Стереть все данные",
   "lang-ar": "Арабский",
   "lang-en": "Английский",
+  "lang-es": "Испанский",
   "lang-hi": "Хинди",
   "lang-id": "Индонезийский",
   "lang-ja": "Японский",

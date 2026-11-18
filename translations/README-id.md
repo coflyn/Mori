@@ -139,7 +139,7 @@ Fitur CLI:
 - Simpan carousel foto langsung jadi file PDF buat dibaca offline.
 - Kunci keamanan tambahan dengan PIN atau sidik jari/Face ID untuk riwayat dan pengaturan.
 - Download tetap jalan di latar belakang (background) dengan proteksi wake-lock.
-- Tersedia dalam 9 bahasa (Inggris, Indonesia, Jepang, Korea, Mandarin Sederhana, Arab dengan tata letak RTL, Rusia, Tagalog, Hindi).
+- Tersedia dalam 10 bahasa (Inggris, Indonesia, Jepang, Korea, Mandarin Sederhana, Arab dengan tata letak RTL, Rusia, Tagalog, Hindi, Spanyol).
 - Berjalan 100% lokal di perangkat kamu tanpa akun, iklan, ataupun pelacak.
 
 ---

@@ -343,6 +343,7 @@ export function updateLanguageUI() {
       ru: "Русский",
       tl: "Tagalog",
       hi: "हिन्दी",
+      es: "Español",
     };
     currentLangDisplay.textContent = langNames[currentLang] || "English";
   }
@@ -382,6 +383,7 @@ export function switchLanguage(lang) {
   else if (currentLang === "ru") msg = "Язык обновлен";
   else if (currentLang === "tl") msg = "Na-update ang wika";
   else if (currentLang === "hi") msg = "भाषा अपडेट हो गई";
+  else if (currentLang === "es") msg = "Idioma actualizado";
   showToast(msg);
 }
 

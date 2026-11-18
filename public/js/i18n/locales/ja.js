@@ -241,6 +241,7 @@
   "label-wipedata": "すべてのデータを消去",
   "lang-ar": "アラビア語",
   "lang-en": "英語",
+  "lang-es": "スペイン語",
   "lang-hi": "ヒンディー語",
   "lang-id": "インドネシア語",
   "lang-ja": "日本語",

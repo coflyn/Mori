@@ -7,6 +7,7 @@ import ar from "./locales/ar.js";
 import ru from "./locales/ru.js";
 import tl from "./locales/tl.js";
 import hi from "./locales/hi.js";
+import es from "./locales/es.js";
 
 export const translations = {
   en,
@@ -18,6 +19,7 @@ export const translations = {
   ru,
   tl,
   hi,
+  es,
 };
 export const SUPPORTED_LANGS = [
   "en",
@@ -29,6 +31,7 @@ export const SUPPORTED_LANGS = [
   "ru",
   "tl",
   "hi",
+  "es",
 ];
 
 /**
@@ -52,6 +55,7 @@ export function detectSystemLanguage() {
     if (l.startsWith("ru")) return "ru";
     if (l.startsWith("tl") || l.startsWith("fil")) return "tl";
     if (l.startsWith("hi")) return "hi";
+    if (l.startsWith("es")) return "es";
     if (l.startsWith("en")) return "en";
   }
   return "en";

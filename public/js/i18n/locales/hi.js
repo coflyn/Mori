@@ -224,6 +224,7 @@ export default {
   "label-wipedata": "सभी डेटा मिटाएं",
   "lang-ar": "अरबी",
   "lang-en": "अंग्रेज़ी",
+  "lang-es": "स्पेनिश",
   "lang-hi": "हिन्दी",
   "lang-id": "इंडोनेशियाई",
   "lang-ja": "जापानी",
