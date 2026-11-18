@@ -804,6 +804,13 @@
             </div>
 
             <div class="brat-controls">
+              <div class="brat-color-row">
+                <label for="bratBgColor" class="brat-slider-label" data-i18n="brat-background">Background</label>
+                <span class="brat-color-field">
+                  <input id="bratBgColor" class="brat-color-input" type="color" value="#ffffff" />
+                  <span id="bratBgValue" class="brat-color-value">#FFFFFF</span>
+                </span>
+              </div>
               <div class="brat-slider-row">
                 <label for="bratBlurSlider" class="brat-slider-label" data-i18n="brat-blur">Blur</label>
                 <input id="bratBlurSlider" class="brat-slider" type="range" min="0" max="8" step="0.5" value="2" />
@@ -827,7 +834,7 @@
               </button>
             </div>
 
-            <p class="brat-note" data-i18n="brat-note">PNG exports at 1080 px. GIF exports at 720 px, 12 frames, looping forever.</p>
+            <p class="brat-note" data-i18n="brat-note">PNG exports at 1080 px. GIF reveals the words one by one at 720 px, looping forever.</p>
           </div>
 
           <!-- Sub-View 1: Sniffer View -->

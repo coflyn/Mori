@@ -1,4 +1,4 @@
-/* brat.css — Brat Generator: the artwork runs in lime, everything else stays Mori. */
+/* brat.css — Brat Generator: the artwork keeps its own palette, everything else stays Mori. */
 
 .brat-field {
   display: flex;
@@ -55,7 +55,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
-  background: #8ace00;
+  background: #ffffff;
 }
 
 .brat-preview-meta {
@@ -82,6 +82,41 @@
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-l, 8px);
+}
+
+.brat-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brat-color-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brat-color-input {
+  width: 46px;
+  height: 32px;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  cursor: pointer;
+}
+
+.brat-color-value {
+  min-width: 64px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-main);
+  text-align: right;
 }
 
 .brat-slider-row {
