@@ -139,7 +139,7 @@ CLI features:
 - Photo carousel to PDF export for offline reading.
 - Optional PIN and biometric lock for history and settings.
 - Background downloads with wake-lock support.
-- Available in 9 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL layout, Russian, Tagalog, Hindi).
+- Available in 10 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL layout, Russian, Tagalog, Hindi, Spanish).
 - Runs entirely on-device with no accounts, ads, or tracking.
 
 ---
@@ -249,8 +249,8 @@ Mori/
 │   │   │   ├── storage.js      # Filesystem persistence and cleanup
 │   │   │   ├── postProcess.js  # MediaScanner and notification triggers
 │   │   │   └── index.js        # Downloader module entry
-│   │   ├── i18n/               # Multi-language translations (9 languages + RTL support)
-│   │   │   ├── locales/        # Locale dictionaries (en, id, ja, ko, zh, ar, ru, tl, hi)
+│   │   ├── i18n/               # Multi-language translations (10 languages + RTL support)
+│   │   │   ├── locales/        # Locale dictionaries (en, id, ja, ko, zh, ar, ru, tl, hi, es)
 │   │   │   └── index.js        # Translation loader and t() helper
 │   │   ├── modules/            # Core business logic & application state
 │   │   │   ├── authManager.js  # PIN passcode and biometric lock

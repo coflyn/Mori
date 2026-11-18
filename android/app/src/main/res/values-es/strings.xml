@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_channel_download">Descarga en segundo plano de Mori</string>
+    <string name="notif_channel_download_desc">Mantiene Mori activo mientras se descargan archivos</string>
+    <string name="notif_channel_complete">Descargas de Mori</string>
+    <string name="notif_channel_complete_desc">Notificaciones de descargas de Mori</string>
+    <string name="notif_downloading">Descargando contenido…</string>
+    <string name="notif_downloader_title">Descargador Mori</string>
+    <string name="notif_complete">Descarga completada ✓</string>
+    <string name="notif_failed">Error en la descarga</string>
+    <string name="notif_media">Contenido</string>
+    <string name="notif_failed_reason">Error</string>
+    <string name="sniff_hint">Introduce una URL…</string>
+    <string name="sniff_count">Detectar (%1$d)</string>
+    <string name="sniff_page_title">Página detectada en vivo</string>
+</resources>

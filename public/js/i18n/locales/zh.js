@@ -228,6 +228,7 @@ export default {
   "label-wipedata": "清除所有数据",
   "lang-ar": "阿拉伯语",
   "lang-en": "英语",
+  "lang-es": "西班牙语",
   "lang-hi": "印地语",
   "lang-id": "印尼语",
   "lang-ja": "日语",

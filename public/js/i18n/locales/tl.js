@@ -224,6 +224,7 @@ export default {
   "label-wipedata": "Burahin Lahat ng Data",
   "lang-ar": "Arabe",
   "lang-en": "Ingles",
+  "lang-es": "Espanyol",
   "lang-hi": "Hindi",
   "lang-id": "Indonesian",
   "lang-ja": "Hapon",

@@ -36,7 +36,7 @@ Thank you for your interest in contributing to **Mori**! Whether you want to fix
 * Clearly specify your **Platform & OS version** (Android / macOS / Windows / iOS), **Mori Version**, and the **Source URL** causing the error.
 
 ### 2. Translating & Localization (`public/js/i18n/`)
-Mori supports 9 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL, Russian, Tagalog, and Hindi). If you want to refine translations or add a new locale, edit the dictionary files in `public/js/i18n/`.
+Mori supports 10 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL, Russian, Tagalog, Hindi, and Spanish). If you want to refine translations or add a new locale, edit the dictionary files in `public/js/i18n/`.
 
 Localized documentation: Simplified Chinese ([translations/README-zh-CN.md](translations/README-zh-CN.md) / [translations/GUIDE-zh-CN.md](translations/GUIDE-zh-CN.md)) and Indonesian ([translations/README-id.md](translations/README-id.md) / [translations/GUIDE-id.md](translations/GUIDE-id.md)). Missing keys fall back to English.
 
@@ -183,7 +183,7 @@ zip -r "Mori.ipa" Payload && rm -rf Payload build
 
 ## 🌐 Contributing Translations (i18n)
 
-Mori supports multiple languages out-of-the-box (`en`, `id`, `ja`, `ko`, `zh`, `ar`, `ru`, `tl`, `hi`). All language strings are modularized into individual locale files located in:
+Mori supports multiple languages out-of-the-box (`en`, `id`, `ja`, `ko`, `zh`, `ar`, `ru`, `tl`, `hi`, `es`). All language strings are modularized into individual locale files located in:
 
 ```
 public/js/i18n/
@@ -196,7 +196,8 @@ public/js/i18n/
 │   ├── ar.js        # العربية (Arabic with RTL)
 │   ├── ru.js        # Русский (Russian)
 │   ├── tl.js        # Tagalog (Filipino)
-│   └── hi.js        # हिन्दी (Hindi)
+│   ├── hi.js        # हिन्दी (Hindi)
+│   └── es.js        # Español (Spanish)
 └── index.js         # Translation registry & fallback helper
 ```
 

@@ -190,6 +190,7 @@ public class ShareActivity extends AppCompatActivity {
                 else if (l.startsWith("ru")) defaultLang = "ru";
                 else if (l.startsWith("tl") || l.startsWith("fil")) defaultLang = "tl";
                 else if (l.startsWith("hi")) defaultLang = "hi";
+                else if (l.startsWith("es")) defaultLang = "es";
             }
         } catch (Exception ignored) {}
         String lang = prefs.getString("mori_lang", defaultLang);
