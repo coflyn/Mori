@@ -5,10 +5,12 @@ const DEFAULT_BACKGROUND = "#ffffff";
 const TEXT_COLOR = "#000000";
 const NARROW_STACK =
   '"Arial Narrow", "Liberation Sans Narrow", "Nimbus Sans Narrow", "Roboto Condensed", sans-serif';
+const FONT_WEIGHT = 400;
+const TEXT_MARGIN = 0.06;
 const PNG_SIZE = 1080;
 const GIF_SIZE = 720;
-const GIF_STEP_MS = 170;
-const GIF_HOLD_FRAMES = 10;
+const GIF_STEP_MS = 220;
+const GIF_HOLD_FRAMES = 8;
 const REVEAL_STEPS = 16;
 const RAMP_STEPS = 128;
 const LINE_HEIGHT = 0.84;
@@ -57,9 +59,9 @@ function resolveSqueeze() {
     if (!probe) {
       hasNarrowFace = false;
     } else {
-      probe.font = `700 48px ${NARROW_STACK}`;
+      probe.font = `${FONT_WEIGHT} 48px ${NARROW_STACK}`;
       const narrowWidth = probe.measureText("abcdefghijklmnopqrstuvwxyz").width;
-      probe.font = "700 48px sans-serif";
+      probe.font = `${FONT_WEIGHT} 48px sans-serif`;
       const plainWidth = probe.measureText("abcdefghijklmnopqrstuvwxyz").width;
       hasNarrowFace = narrowWidth < plainWidth * 0.97;
     }
@@ -95,14 +97,14 @@ function measureLine(ctx, text, tracking) {
 }
 
 function fitFontSize(ctx, lines, size, squeeze) {
-  const maxWidth = size * 0.88;
+  const maxWidth = size * (1 - TEXT_MARGIN * 2);
   const maxHeight = size * 0.78;
   let low = size * 0.04;
   let high = size * 0.9;
 
   for (let i = 0; i < 12; i++) {
     const mid = (low + high) / 2;
-    ctx.font = `700 ${mid}px ${NARROW_STACK}`;
+    ctx.font = `${FONT_WEIGHT} ${mid}px ${NARROW_STACK}`;
     const tracking = mid * TRACKING;
     const widest = Math.max(
       ...lines.map((line) => measureLine(ctx, line, tracking) * squeeze),
@@ -121,16 +123,15 @@ function layoutCover(ctx, text, size, { textScale = 1 } = {}) {
   const fontSize = fitFontSize(ctx, lines, size, squeeze) * textScale;
   const tracking = fontSize * TRACKING;
 
-  ctx.font = `700 ${fontSize}px ${NARROW_STACK}`;
+  ctx.font = `${FONT_WEIGHT} ${fontSize}px ${NARROW_STACK}`;
 
   const lineStep = fontSize * LINE_HEIGHT;
   const blockTop = (size - lines.length * lineStep) / 2;
   const words = [];
 
   lines.forEach((line, lineIndex) => {
-    const lineWidth = (measureLine(ctx, line, tracking) + tracking) * squeeze;
     const baseline = blockTop + lineStep * lineIndex + fontSize * 0.78;
-    let cursor = (size - lineWidth) / 2;
+    let cursor = size * TEXT_MARGIN;
     let word = null;
 
     for (const char of line) {
@@ -151,31 +152,20 @@ function layoutCover(ctx, text, size, { textScale = 1 } = {}) {
   return { fontSize, tracking, squeeze, words };
 }
 
-function drawWords(
-  ctx,
-  layout,
-  { reveal = Infinity, incomingCount = 0, incomingAlpha = 1 } = {},
-) {
-  ctx.font = `700 ${layout.fontSize}px ${NARROW_STACK}`;
+function drawWords(ctx, layout, { reveal = Infinity } = {}) {
+  ctx.font = `${FONT_WEIGHT} ${layout.fontSize}px ${NARROW_STACK}`;
   ctx.fillStyle = TEXT_COLOR;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
   layout.words.forEach((word, index) => {
-    let alpha = 0;
-    if (index < reveal) alpha = 1;
-    else if (index < reveal + incomingCount) alpha = incomingAlpha;
-    if (alpha <= 0) return;
-
-    ctx.globalAlpha = alpha;
+    if (index >= reveal) return;
     let x = word.x;
     for (const char of word.text) {
       ctx.fillText(char, x, word.baseline);
       x += (ctx.measureText(char).width + layout.tracking) * layout.squeeze;
     }
   });
-
-  ctx.globalAlpha = 1;
 }
 
 /**
@@ -191,8 +181,6 @@ export function renderBratFrame(
     textScale = 1,
     background = DEFAULT_BACKGROUND,
     reveal = Infinity,
-    incomingCount = 0,
-    incomingAlpha = 1,
   } = {},
 ) {
   const text = normalizeBratText(rawText);
@@ -204,7 +192,7 @@ export function renderBratFrame(
   layerCtx.setTransform(1, 0, 0, 1, 0, 0);
   layerCtx.clearRect(0, 0, layerSize, layerSize);
   const layout = layoutCover(layerCtx, text, layerSize, { textScale });
-  drawWords(layerCtx, layout, { reveal, incomingCount, incomingAlpha });
+  drawWords(layerCtx, layout, { reveal });
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, size, size);
@@ -302,14 +290,10 @@ function buildRevealSteps(wordCount) {
   const steps = [];
 
   for (let revealed = 0; revealed < wordCount; revealed += step) {
-    const next = Math.min(wordCount, revealed + step);
-    steps.push({ reveal: revealed, incomingCount: next - revealed, incomingAlpha: 0.4 });
-    steps.push({ reveal: next, incomingCount: 0, incomingAlpha: 1 });
+    steps.push({ reveal: Math.min(wordCount, revealed + step) });
   }
 
-  for (let i = 0; i < GIF_HOLD_FRAMES; i++) {
-    steps.push({ reveal: wordCount, incomingCount: 0, incomingAlpha: 1 });
-  }
+  for (let i = 0; i < GIF_HOLD_FRAMES; i++) steps.push({ reveal: wordCount });
 
   return steps;
 }
