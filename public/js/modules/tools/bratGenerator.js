@@ -1,20 +1,24 @@
 // bratGenerator.js — Renders brat-style covers and exports PNG or looping GIF.
 import { encodeGif } from "./gifEncoder.js";
 
-const LIME = "#8ACE00";
-const LIME_RGB = [138, 206, 0];
-const FONT_STACK =
-  '"Arial Narrow", Arial, "Helvetica Neue", Helvetica, sans-serif';
+const DEFAULT_BACKGROUND = "#ffffff";
+const TEXT_COLOR = "#000000";
+const NARROW_STACK =
+  '"Arial Narrow", "Liberation Sans Narrow", "Nimbus Sans Narrow", "Roboto Condensed", sans-serif';
 const PNG_SIZE = 1080;
 const GIF_SIZE = 720;
-const GIF_FRAME_COUNT = 12;
-const GIF_FRAME_MS = 80;
-const RAMP_STEPS = 64;
-const LINE_HEIGHT = 0.86;
+const GIF_STEP_MS = 170;
+const GIF_HOLD_FRAMES = 10;
+const REVEAL_STEPS = 16;
+const RAMP_STEPS = 128;
+const LINE_HEIGHT = 0.84;
+const TRACKING = -0.05;
+const NARROW_SQUEEZE = 0.86;
 const MAX_LINES = 5;
 const MAX_CHARS = 140;
 
-let scratchCanvas = null;
+let textLayer = null;
+let hasNarrowFace = null;
 
 function makeThumbnail(source) {
   const thumb = document.createElement("canvas");
@@ -23,17 +27,44 @@ function makeThumbnail(source) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(source, 0, 0, 160, 160);
-  // PNG keeps the flat lime sharp and stays under the 10k history thumbnail cap.
+  // PNG keeps the flat background sharp and stays under the 10k history thumbnail cap.
   return thumb.toDataURL("image/png");
 }
 
-function getScratch(size) {
-  if (!scratchCanvas) scratchCanvas = document.createElement("canvas");
-  if (scratchCanvas.width !== size || scratchCanvas.height !== size) {
-    scratchCanvas.width = size;
-    scratchCanvas.height = size;
+function getTextLayer(size) {
+  if (!textLayer) textLayer = document.createElement("canvas");
+  if (textLayer.width !== size || textLayer.height !== size) {
+    textLayer.width = size;
+    textLayer.height = size;
   }
-  return scratchCanvas;
+  return textLayer;
+}
+
+function normalizeColor(value) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(String(value ?? "").trim());
+  return match ? `#${match[1].toLowerCase()}` : DEFAULT_BACKGROUND;
+}
+
+function colorToRgb(color) {
+  const value = parseInt(color.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+// Android and iOS ship no Arial Narrow, so squeeze the fallback to keep the condensed look.
+function resolveSqueeze() {
+  if (hasNarrowFace === null) {
+    const probe = document.createElement("canvas").getContext("2d");
+    if (!probe) {
+      hasNarrowFace = false;
+    } else {
+      probe.font = `700 48px ${NARROW_STACK}`;
+      const narrowWidth = probe.measureText("abcdefghijklmnopqrstuvwxyz").width;
+      probe.font = "700 48px sans-serif";
+      const plainWidth = probe.measureText("abcdefghijklmnopqrstuvwxyz").width;
+      hasNarrowFace = narrowWidth < plainWidth * 0.97;
+    }
+  }
+  return hasNarrowFace ? 1 : NARROW_SQUEEZE;
 }
 
 export function normalizeBratText(raw) {
@@ -63,7 +94,7 @@ function measureLine(ctx, text, tracking) {
   return Math.max(0, width - tracking);
 }
 
-function fitFontSize(ctx, lines, size) {
+function fitFontSize(ctx, lines, size, squeeze) {
   const maxWidth = size * 0.88;
   const maxHeight = size * 0.78;
   let low = size * 0.04;
@@ -71,9 +102,11 @@ function fitFontSize(ctx, lines, size) {
 
   for (let i = 0; i < 12; i++) {
     const mid = (low + high) / 2;
-    ctx.font = `700 ${mid}px ${FONT_STACK}`;
-    const tracking = mid * -0.035;
-    const widest = Math.max(...lines.map((line) => measureLine(ctx, line, tracking)));
+    ctx.font = `700 ${mid}px ${NARROW_STACK}`;
+    const tracking = mid * TRACKING;
+    const widest = Math.max(
+      ...lines.map((line) => measureLine(ctx, line, tracking) * squeeze),
+    );
     const blockHeight = lines.length * mid * LINE_HEIGHT;
     if (widest <= maxWidth && blockHeight <= maxHeight) low = mid;
     else high = mid;
@@ -82,67 +115,104 @@ function fitFontSize(ctx, lines, size) {
   return low;
 }
 
-function drawCover(ctx, text, size, { textScale = 1, phase = null } = {}) {
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = LIME;
-  ctx.fillRect(0, 0, size, size);
-
+function layoutCover(ctx, text, size, { textScale = 1 } = {}) {
+  const squeeze = resolveSqueeze();
   const lines = text.split("\n");
-  const fontSize = fitFontSize(ctx, lines, size) * textScale;
-  const tracking = fontSize * -0.035;
+  const fontSize = fitFontSize(ctx, lines, size, squeeze) * textScale;
+  const tracking = fontSize * TRACKING;
 
-  ctx.font = `700 ${fontSize}px ${FONT_STACK}`;
-  ctx.fillStyle = "#000000";
+  ctx.font = `700 ${fontSize}px ${NARROW_STACK}`;
+
+  const lineStep = fontSize * LINE_HEIGHT;
+  const blockTop = (size - lines.length * lineStep) / 2;
+  const words = [];
+
+  lines.forEach((line, lineIndex) => {
+    const lineWidth = (measureLine(ctx, line, tracking) + tracking) * squeeze;
+    const baseline = blockTop + lineStep * lineIndex + fontSize * 0.78;
+    let cursor = (size - lineWidth) / 2;
+    let word = null;
+
+    for (const char of line) {
+      if (char === " ") {
+        if (word) words.push(word);
+        word = null;
+        cursor += (ctx.measureText(" ").width + tracking) * squeeze;
+        continue;
+      }
+      if (!word) word = { text: "", x: cursor, baseline };
+      word.text += char;
+      cursor += (ctx.measureText(char).width + tracking) * squeeze;
+    }
+
+    if (word) words.push(word);
+  });
+
+  return { fontSize, tracking, squeeze, words };
+}
+
+function drawWords(
+  ctx,
+  layout,
+  { reveal = Infinity, incomingCount = 0, incomingAlpha = 1 } = {},
+) {
+  ctx.font = `700 ${layout.fontSize}px ${NARROW_STACK}`;
+  ctx.fillStyle = TEXT_COLOR;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
-  const widths = lines.map((line) => measureLine(ctx, line, tracking));
-  const lineStep = fontSize * LINE_HEIGHT;
-  const blockTop = (size - lines.length * lineStep) / 2;
+  layout.words.forEach((word, index) => {
+    let alpha = 0;
+    if (index < reveal) alpha = 1;
+    else if (index < reveal + incomingCount) alpha = incomingAlpha;
+    if (alpha <= 0) return;
 
-  if (phase !== null) {
-    const driftX = Math.sin(phase) * size * 0.006;
-    const driftY = Math.sin(phase * 2 + 0.7) * size * 0.008;
-    const breathe = 1 + Math.sin(phase * 1.5 + 0.4) * 0.014;
-    ctx.translate(size / 2 + driftX, size / 2 + driftY);
-    ctx.scale(breathe, breathe);
-    ctx.translate(-size / 2, -size / 2);
-  }
-
-  lines.forEach((line, index) => {
-    let x = (size - widths[index]) / 2;
-    const baseline = blockTop + lineStep * index + fontSize * 0.78;
-    for (const char of line) {
-      ctx.fillText(char, x, baseline);
-      x += ctx.measureText(char).width + tracking;
+    ctx.globalAlpha = alpha;
+    let x = word.x;
+    for (const char of word.text) {
+      ctx.fillText(char, x, word.baseline);
+      x += (ctx.measureText(char).width + layout.tracking) * layout.squeeze;
     }
   });
 
-  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 /**
- * Draws one cover into a context. Soft focus comes from rendering small and
- * scaling up, which avoids relying on ctx.filter across WebViews.
+ * Draws one cover into a context. Soft letter edges come from rendering the
+ * text small and scaling it up, which avoids relying on ctx.filter across WebViews.
  */
 export function renderBratFrame(
   ctx,
   rawText,
-  { size = PNG_SIZE, blur = 2, textScale = 1, phase = null } = {},
+  {
+    size = PNG_SIZE,
+    blur = 2,
+    textScale = 1,
+    background = DEFAULT_BACKGROUND,
+    reveal = Infinity,
+    incomingCount = 0,
+    incomingAlpha = 1,
+  } = {},
 ) {
   const text = normalizeBratText(rawText);
   const detail = 1 / (1 + Math.max(0, blur) * 0.4);
-  const scratchSize = Math.max(96, Math.round(size * Math.min(1, detail)));
-  const offscreen = getScratch(scratchSize);
-  const offCtx = offscreen.getContext("2d");
+  const layerSize = Math.max(96, Math.round(size * Math.min(1, detail)));
+  const layer = getTextLayer(layerSize);
+  const layerCtx = layer.getContext("2d");
 
-  drawCover(offCtx, text, scratchSize, { textScale, phase });
+  layerCtx.setTransform(1, 0, 0, 1, 0, 0);
+  layerCtx.clearRect(0, 0, layerSize, layerSize);
+  const layout = layoutCover(layerCtx, text, layerSize, { textScale });
+  drawWords(layerCtx, layout, { reveal, incomingCount, incomingAlpha });
 
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = normalizeColor(background);
+  ctx.fillRect(0, 0, size, size);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.clearRect(0, 0, size, size);
-  ctx.drawImage(offscreen, 0, 0, size, size);
+  ctx.drawImage(layer, 0, 0, size, size);
 
   return text;
 }
@@ -154,7 +224,6 @@ export function createBratPng(rawText, options = {}) {
   const text = renderBratFrame(ctx, rawText, {
     ...options,
     size: PNG_SIZE,
-    phase: null,
   });
 
   return new Promise((resolve, reject) => {
@@ -174,18 +243,18 @@ export function createBratPng(rawText, options = {}) {
   });
 }
 
-// Every pixel is black blended into lime, so a 64-step ramp covers the art.
-function buildRampPalette() {
+// Every pixel is a blend of the text and background colours, so the ramp follows that line.
+function buildRampPalette(textRgb, backgroundRgb) {
   const palette = [];
   for (let i = 0; i < RAMP_STEPS; i++) {
     const t = i / (RAMP_STEPS - 1);
     palette.push([
-      Math.round(LIME_RGB[0] * t),
-      Math.round(LIME_RGB[1] * t),
-      Math.round(LIME_RGB[2] * t),
+      Math.round(textRgb[0] + (backgroundRgb[0] - textRgb[0]) * t),
+      Math.round(textRgb[1] + (backgroundRgb[1] - textRgb[1]) * t),
+      Math.round(textRgb[2] + (backgroundRgb[2] - textRgb[2]) * t),
     ]);
   }
-  while (palette.length < 256) palette.push([...LIME_RGB]);
+  while (palette.length < 256) palette.push([...backgroundRgb]);
   return palette;
 }
 
@@ -228,28 +297,47 @@ function indexPixels(data, palette) {
   return indices;
 }
 
+function buildRevealSteps(wordCount) {
+  const step = Math.max(1, Math.ceil(wordCount / REVEAL_STEPS));
+  const steps = [];
+
+  for (let revealed = 0; revealed < wordCount; revealed += step) {
+    const next = Math.min(wordCount, revealed + step);
+    steps.push({ reveal: revealed, incomingCount: next - revealed, incomingAlpha: 0.4 });
+    steps.push({ reveal: next, incomingCount: 0, incomingAlpha: 1 });
+  }
+
+  for (let i = 0; i < GIF_HOLD_FRAMES; i++) {
+    steps.push({ reveal: wordCount, incomingCount: 0, incomingAlpha: 1 });
+  }
+
+  return steps;
+}
+
 export async function createBratGif(rawText, options = {}, onProgress) {
+  const text = normalizeBratText(rawText);
+  const background = normalizeColor(options.background);
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = GIF_SIZE;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const palette = buildRampPalette();
+  const palette = buildRampPalette(colorToRgb(TEXT_COLOR), colorToRgb(background));
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const steps = buildRevealSteps(wordCount);
   const frames = [];
-  const baseBlur = Math.max(0, Number(options.blur ?? 2));
-  let text = "brat";
 
-  for (let i = 0; i < GIF_FRAME_COUNT; i++) {
-    const phase = (i / GIF_FRAME_COUNT) * Math.PI * 2;
-    text = renderBratFrame(ctx, rawText, {
-      textScale: options.textScale ?? 1,
+  for (let i = 0; i < steps.length; i++) {
+    renderBratFrame(ctx, text, {
+      ...options,
+      background,
       size: GIF_SIZE,
-      phase,
-      blur: Math.max(0, baseBlur + Math.sin(phase) * 0.5),
+      blur: Math.max(0, Number(options.blur ?? 2)),
+      ...steps[i],
     });
 
     const { data } = ctx.getImageData(0, 0, GIF_SIZE, GIF_SIZE);
     frames.push(indexPixels(data, palette));
 
-    if (onProgress) onProgress(i + 1, GIF_FRAME_COUNT);
+    if (onProgress) onProgress(i + 1, steps.length);
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
@@ -258,14 +346,15 @@ export async function createBratGif(rawText, options = {}, onProgress) {
     height: GIF_SIZE,
     frames,
     palette,
-    delayMs: GIF_FRAME_MS,
+    delayMs: GIF_STEP_MS,
   });
 
   return {
     blob,
     width: GIF_SIZE,
     height: GIF_SIZE,
-    frames: GIF_FRAME_COUNT,
+    frames: frames.length,
+    words: wordCount,
     text,
     previewUrl: makeThumbnail(canvas),
   };

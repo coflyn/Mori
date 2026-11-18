@@ -1742,6 +1742,8 @@ function initBratController() {
   if (!canvas) return;
 
   const input = document.getElementById("bratTextInput");
+  const bgColor = document.getElementById("bratBgColor");
+  const bgValue = document.getElementById("bratBgValue");
   const blurSlider = document.getElementById("bratBlurSlider");
   const blurValue = document.getElementById("bratBlurValue");
   const scaleSlider = document.getElementById("bratScaleSlider");
@@ -1755,6 +1757,7 @@ function initBratController() {
   const readOptions = () => ({
     blur: Number(blurSlider?.value ?? 2),
     textScale: Number(scaleSlider?.value ?? 100) / 100,
+    background: bgColor?.value || "#ffffff",
   });
 
   const drawPreview = () => {
@@ -1773,6 +1776,7 @@ function initBratController() {
   const syncSliders = () => {
     if (blurValue) blurValue.textContent = readOptions().blur.toFixed(1);
     if (scaleValue) scaleValue.textContent = `${scaleSlider?.value ?? 100}%`;
+    if (bgValue) bgValue.textContent = readOptions().background.toUpperCase();
   };
 
   const buildFileName = (extension) => {
@@ -1795,6 +1799,10 @@ function initBratController() {
   };
 
   input?.addEventListener("input", schedulePreview);
+  bgColor?.addEventListener("input", () => {
+    syncSliders();
+    schedulePreview();
+  });
   blurSlider?.addEventListener("input", () => {
     syncSliders();
     schedulePreview();
