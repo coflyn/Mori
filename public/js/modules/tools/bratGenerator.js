@@ -11,7 +11,6 @@ const PNG_SIZE = 1080;
 const GIF_SIZE = 720;
 const GIF_STEP_MS = 220;
 const GIF_HOLD_FRAMES = 8;
-const REVEAL_STEPS = 16;
 const RAMP_STEPS = 128;
 const LINE_HEIGHT = 0.84;
 const TRACKING = -0.05;
@@ -286,15 +285,11 @@ function indexPixels(data, palette) {
 }
 
 function buildRevealSteps(wordCount) {
-  const step = Math.max(1, Math.ceil(wordCount / REVEAL_STEPS));
   const steps = [];
-
-  for (let revealed = 0; revealed < wordCount; revealed += step) {
-    steps.push({ reveal: Math.min(wordCount, revealed + step) });
+  for (let revealed = 1; revealed <= wordCount; revealed++) {
+    steps.push({ reveal: revealed });
   }
-
   for (let i = 0; i < GIF_HOLD_FRAMES; i++) steps.push({ reveal: wordCount });
-
   return steps;
 }
 
