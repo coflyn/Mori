@@ -159,11 +159,20 @@ function drawWords(ctx, layout, { reveal = Infinity } = {}) {
 
   layout.words.forEach((word, index) => {
     if (index >= reveal) return;
-    let x = word.x;
+
+    // Scale the glyphs as well as their advance, otherwise a squeezed advance
+    // makes the characters overlap instead of looking condensed.
+    ctx.save();
+    ctx.translate(word.x, 0);
+    if (layout.squeeze !== 1) ctx.scale(layout.squeeze, 1);
+
+    let x = 0;
     for (const char of word.text) {
       ctx.fillText(char, x, word.baseline);
-      x += (ctx.measureText(char).width + layout.tracking) * layout.squeeze;
+      x += ctx.measureText(char).width + layout.tracking;
     }
+
+    ctx.restore();
   });
 }
 
