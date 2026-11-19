@@ -1,107 +1,107 @@
 # Contributing to Mori
 
-Thank you for your interest in contributing to **Mori**! Whether you want to fix bugs, add UI features, expand language translations, or improve documentation, your help is welcome.
+Mori is a free, open-source media utility built with web technologies and native platform bridges. Contributions are welcome, but please read these guidelines before opening an issue or pull request.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-1. [Code of Conduct & Etiquette](#-code-of-conduct--etiquette)
-2. [How Can I Contribute?](#-how-can-i-contribute)
-3. [Development & Build Guide](#-development--build-guide)
+1. [Code of Conduct & Project Principles](#code-of-conduct--project-principles)
+2. [How to Contribute](#how-to-contribute)
+3. [Development & Build Guide](#development--build-guide)
    * [Prerequisites](#prerequisites)
    * [Initial Setup](#initial-setup)
-   * [Building for Android](#-building-for-android)
-   * [Building for Desktop (macOS & Windows)](#-building-for-desktop-macos--windows)
-   * [Building for iOS](#-building-for-ios)
-4. [Architecture & Scraper Engine](#-architecture--scraper-engine)
-5. [Contributing Translations (i18n)](#-contributing-translations-i18n)
-6. [CSS & Styling Architecture](#-css--styling-architecture-publiccss)
-7. [Submitting a Pull Request](#-submitting-a-pull-request)
+   * [Building for Android](#building-for-android)
+   * [Building for iOS](#building-for-ios)
+4. [Architecture & Scraper Engine](#architecture--scraper-engine)
+5. [Contributing Translations (i18n)](#contributing-translations-i18n)
+6. [CSS Architecture](#css-architecture)
+7. [Submitting a Pull Request](#submitting-a-pull-request)
 
 ---
 
-## 🤝 Code of Conduct & Etiquette
+## Code of Conduct & Project Principles
 
-* **Be Respectful**: Treat everyone in the community with courtesy and respect.
-* **Keep it Clean**: Mori is a free, ad-free, and tracker-free application. We will strictly reject any PR that introduces telemetry, ads, trackers, or monetization schemes.
-* **Respect Copyleft**: Mori is licensed under **GPL-3.0**. All code contributions must honor this copyleft license.
-
----
-
-## 💡 How Can I Contribute?
-
-### 1. Reporting Bugs & Requesting Features
-* Check existing [GitHub Issues](https://github.com/coflyn/Mori/issues) before opening a new one to prevent duplicates.
-* Clearly specify your **Platform & OS version** (Android / macOS / Windows / iOS), **Mori Version**, and the **Source URL** causing the error.
-
-### 2. Translating & Localization (`public/js/i18n/`)
-Mori supports 10 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL, Russian, Tagalog, Hindi, and Spanish). If you want to refine translations or add a new locale, edit the dictionary files in `public/js/i18n/`.
-
-Localized documentation: Simplified Chinese ([translations/README-zh-CN.md](translations/README-zh-CN.md) / [translations/GUIDE-zh-CN.md](translations/GUIDE-zh-CN.md)) and Indonesian ([translations/README-id.md](translations/README-id.md) / [translations/GUIDE-id.md](translations/GUIDE-id.md)). Missing keys fall back to English.
-
-### 3. Frontend & UI Enhancements
-Feel free to refine the CSS design system, optimize MoriPlayer controls, enhance glassmorphism effects, or add responsive styling.
+- **No trackers or ads**: Mori is completely free, ad-free, and tracker-free. Any pull request introducing telemetry, advertising, analytics, or monetization will be rejected.
+- **Copyleft license**: Mori is licensed under GPL-3.0. All submitted code must be compatible with this license.
+- **No unverified AI code dumps**: If you use an AI tool to assist your work, you must test the build on an actual device or emulator first. Do not submit untested code, broken endpoints, partial translations, or personal debug CI workflows expecting maintainers to clean them up.
+- **Respect**: Treat everyone with courtesy and constructive communication.
 
 ---
 
-## 🛠️ Development & Build Guide
+## How to Contribute
+
+### Reporting Bugs & Requesting Features
+- Search existing [GitHub Issues](https://github.com/coflyn/Mori/issues) first to avoid duplicate reports.
+- Include your platform, OS version, Mori version, and the target URL that triggered the issue.
+
+### Translating & Localization
+Mori supports 10 languages: English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic (RTL), Russian, Tagalog, Hindi, and Spanish. To add or fix translations, edit dictionary files in `public/js/i18n/locales/`.
+
+Documentation is available in:
+- Simplified Chinese: [translations/README-zh-CN.md](translations/README-zh-CN.md) / [translations/GUIDE-zh-CN.md](translations/GUIDE-zh-CN.md)
+- Indonesian: [translations/README-id.md](translations/README-id.md) / [translations/GUIDE-id.md](translations/GUIDE-id.md)
+- Spanish: [translations/README-es.md](translations/README-es.md) / [translations/GUIDE-es.md](translations/GUIDE-es.md)
+
+Missing translation keys fall back to English automatically.
+
+### UI & Core Improvements
+Contributions to player controls, performance, accessibility, responsive layout, and tools are welcome. Keep additions aligned with Mori's core purpose as a media downloader and local utility.
+
+---
+
+## Development & Build Guide
 
 ### Prerequisites
 
-* **Node.js**: `v18.x` or higher (Node `v20+` recommended)
-* **npm**: `v9.x` or higher
-* **Git**: Installed and configured
+- **Node.js**: v18 or later (v20+ recommended)
+- **npm**: v9 or later
+- **Git**
 
-#### Platform-Specific Requirements:
-* **Android**: Android Studio, Android SDK (API 34+), NDK (`28.2+`), Java 17.
-* **iOS**: macOS with Xcode 15+ and CocoaPods (`gem install cocoapods`).
+Platform requirements:
+- **Android**: Android Studio, Android SDK (API 34+), NDK 28.2+, Java 17 or 21.
+- **iOS**: macOS with Xcode 15+ and CocoaPods (`gem install cocoapods`).
 
 ---
 
 ### Initial Setup
 
-1. **Clone your fork**:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/Mori.git
-   cd Mori
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/YOUR_USERNAME/Mori.git
+cd Mori
+npm install
+```
 
 ---
 
-### 📱 Building for Android
+### Building for Android
 
-Mori uses **CapacitorJS** paired with a native **OkHttp** bridge (`MainActivity.java`) to handle network requests and bypass WebView CORS restrictions.
+Mori uses Capacitor with a native OkHttp bridge (`MainActivity.java`) to execute network requests outside WebView CORS constraints.
 
-#### Single-Command Build
+#### Build Commands
 
 ```bash
 # Build Debug APK
 npm run build:android
 
-# Build Signed Release APK (Requires keystore configured below)
+# Build Signed Release APK
 npm run build:android:release
 ```
 
-Output location: `android/app/build/outputs/apk/release/Mori v{VERSION}.apk`
+Output: `android/app/build/outputs/apk/release/Mori v{VERSION}.apk` (or debug folder for debug builds).
 
-#### Manual Build Steps
+#### Manual Steps
 
 ```bash
-# 1. Sync web assets to Android
+# Sync web assets to Android project
 npx cap sync android
 
-# 2. Compile via Gradle
+# Build via Gradle
 cd android
 ./gradlew assembleRelease
 ```
 
-#### Setting Up Signing Keystore (One-Time)
+#### Generating Keystore (One-Time)
 
 ```bash
 keytool -genkey -v -keystore android/app/release.keystore -alias mori \
@@ -132,7 +132,7 @@ android {
 
 ---
 
-### 🍎 Building for iOS
+### Building for iOS
 
 #### Running on Simulator or Physical Device
 
@@ -143,47 +143,43 @@ npx cap sync ios
 # 2. Open Xcode workspace
 npx cap open ios
 
-# 3. Select target device and press Run (Cmd + R)
+# 3. Select target device and run (Cmd + R)
 ```
 
-#### Building Unsigned IPA (For Sideloading via AltStore / TrollStore)
+#### Building Unsigned IPA (AltStore, TrollStore, Scarlet)
 
 ```bash
-# Single-command build
+# Script command
 npm run build:ios:ipa
 ```
 
-**Manual steps:**
+Manual steps:
 ```bash
-# 1. Sync assets
 npx cap sync ios
 
-# 2. Compile archive without code signing
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
   -sdk iphoneos -archivePath build/Mori.xcarchive archive \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 
-# 3. Package into IPA
 mkdir -p Payload && cp -r build/Mori.xcarchive/Products/Applications/App.app Payload/
 zip -r "Mori.ipa" Payload && rm -rf Payload build
 ```
 
 ---
 
-## ⚙️ Architecture & Scraper Engine
+## Architecture & Scraper Engine
 
-* **Frontend**: Vanilla ES6 JavaScript + modern CSS design system located in `public/`.
-* **Scraper Runtime**: The core scraping engine is compiled via esbuild into `public/js/scrapers/bundle.js` as an IIFE bundle containing all 16 platform engines.
-* **HTTP Layer**: Cross-origin requests are routed through `public/js/scrapers/httpHelper.js`, utilizing native OkHttp on Android and native Rust HTTP on Desktop to bypass CORS.
+- **Frontend**: Vanilla ES6 JavaScript with a modular CSS system under `public/`.
+- **Scraper Runtime**: Core scraping modules compile via esbuild into `public/js/scrapers/bundle.js` as a standalone IIFE bundle covering all supported platforms.
+- **HTTP Layer**: Requests flow through `public/js/scrapers/httpHelper.js`, calling CapacitorHttp to bypass CORS without relying on third-party proxy servers.
 
-> [!NOTE]
-> **Scraper Core Contributions**: The scraper sources are maintained privately in `src-scrapers/` to deter low-effort ad-injected clones and scrapers abuse. The public repository runs from the precompiled `public/js/scrapers/bundle.js`. Honest developers who wish to fix broken endpoints or suggest scraper algorithms are encouraged to discuss them in an issue or PR with the author.
+The scraper source files are maintained under `src-scrapers/` and compiled to `public/js/scrapers/bundle.js`. If an endpoint breaks or requires algorithm updates, open an issue or draft PR describing the request flow and data structure.
 
 ---
 
-## 🌐 Contributing Translations (i18n)
+## Contributing Translations (i18n)
 
-Mori supports multiple languages out-of-the-box (`en`, `id`, `ja`, `ko`, `zh`, `ar`, `ru`, `tl`, `hi`, `es`). All language strings are modularized into individual locale files located in:
+Mori supports 10 languages:
 
 ```
 public/js/i18n/
@@ -198,66 +194,54 @@ public/js/i18n/
 │   ├── tl.js        # Tagalog (Filipino)
 │   ├── hi.js        # हिन्दी (Hindi)
 │   └── es.js        # Español (Spanish)
-└── index.js         # Translation registry & fallback helper
+└── index.js         # Translation registry & loader
 ```
 
-### Improving an Existing Language
-1. Open the relevant file in `public/js/i18n/locales/<lang>.js`.
-2. Update the translation value for the desired key.
-3. Verify the changes by switching to that language in Mori Settings.
+### Updating an Existing Language
+1. Edit strings in `public/js/i18n/locales/<lang>.js`.
+2. Keep placeholders (`${...}`, `{platform}`) and line breaks intact.
+3. Test by switching language in Settings.
 
 ### Adding a New Language
-1. Create a new locale file in `public/js/i18n/locales/<new_code>.js` (e.g. `es.js` for Spanish).
-2. Copy the key structure from `en.js` and translate the values.
-3. Import and register the new locale in `public/js/i18n/index.js`:
-   ```javascript
-   import es from "./locales/es.js";
-   export const translations = { ..., es };
-   ```
-4. Add the language name to `langNames` in `public/js/modules/settings/language.js` and the language option in `public/index.html`.
-
-> [!TIP]
-> **Safe Fallback**: If a key is not yet translated in your locale, Mori automatically falls back to English (`en`), preventing blank text or broken UI.
+1. Create `public/js/i18n/locales/<lang_code>.js` following `en.js` structure.
+2. Register the locale in `public/js/i18n/index.js`.
+3. Add native string mappings to `android/app/src/main/res/values-<lang>/strings.xml` if relevant.
+4. Add the language entry to `public/index.html` and `public/js/modules/settings/language.js`.
+5. Update language references in README files.
 
 ---
 
-## 🎨 CSS & Styling Architecture (`public/css/`)
+## CSS Architecture
 
-Mori's stylesheet is modularized into domain-focused files under `public/css/`:
+Styles are separated into focused modules under `public/css/`:
 
 ```
 public/css/
-├── variables.css    # Design tokens, themes (dark/light), font, speed, glass, corner presets
-├── base.css         # Reset, body typography, layout wrappers, bottom navigation
-├── components.css   # Reusable buttons, custom toasts, floating progress toasts, badges
-├── home.css         # Main URL input bar, batch input, skeleton loader, media cards
-├── history.css      # History items, summary stats card, thumbnail overlay & spinners
-├── settings.css     # Menu lists, subpage slide transitions, dropdowns, live BG controls
-├── modals.css       # Universal modal backdrops, PIN keypad, guide, confirm, batch modal
-├── rtl.css          # Right-to-Left (RTL) overrides for Arabic layout
-└── style.css        # Master stylesheet entry point importing all modules
+├── variables.css    # Design tokens, themes (dark/light), font, speed, corner presets
+├── base.css         # Reset, typography, layout wrappers, bottom navigation
+├── components.css   # Buttons, toasts, progress bars, badges
+├── home.css         # URL input, batch queue, skeleton loaders, media cards
+├── history.css      # History items, summary stats, thumbnail overlays
+├── settings.css     # Menu lists, subpage slide transitions, dropdowns
+├── modals.css       # Modals, PIN keypad, confirm dialogs, batch manager
+├── rtl.css          # Right-to-Left layout overrides for Arabic
+└── style.css        # Entry stylesheet importing all modules
 ```
 
-When modifying styles:
-- Edit the specific component/page file instead of cluttering a single file.
-- Design tokens and CSS custom properties live in `variables.css`.
-- Ensure all interactive controls support both dark and light themes.
+Guidelines:
+- Edit the relevant component stylesheet rather than appending everything to `style.css`.
+- Use design tokens from `variables.css`.
+- Ensure all components look correct in both dark and light modes.
 
 ---
 
-## 🚀 Submitting a Pull Request
+## Submitting a Pull Request
 
-1. Fork the repo and create a descriptive branch:
+1. Create a feature branch:
    ```bash
    git checkout -b feat/your-feature-name
    ```
-2. Keep your commits clean and follow conventional commit syntax (`feat: ...`, `fix: ...`, `docs: ...`).
-3. Ensure the project builds cleanly without lint or syntax errors.
-4. Push to your fork and submit a Pull Request to `main`.
-5. Describe what your PR changes, why it is needed, and how it was verified.
-
----
-
-Developed with ❤️ by coflyn.  
-GitHub: https://github.com/coflyn  
-Instagram: @\_coflyn
+2. Write concise commit messages following conventional commits (`feat:`, `fix:`, `docs:`, `i18n:`).
+3. Test your build locally (both web and Android/iOS if touching native code).
+4. Do not include personal build files, temporary keys, or test workflows in your PR.
+5. Push to your fork and open a PR against `main` explaining what changed, why, and how you tested it.
