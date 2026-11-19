@@ -1,6 +1,6 @@
 # Mori 安装与使用指南
 
-English: [GUIDE.md](../GUIDE.md) · Bahasa Indonesia: [GUIDE-id.md](GUIDE-id.md)
+English: [GUIDE.md](../GUIDE.md) · Bahasa Indonesia: [GUIDE-id.md](GUIDE-id.md) · Español: [GUIDE-es.md](GUIDE-es.md)
 
 这份指南说明如何在 Android、iOS 和桌面（CLI）上安装 Mori、侧载、排查问题，以及日常怎么用。
 

@@ -1,6 +1,6 @@
 # Panduan Instalasi & Penggunaan Mori
 
-English: [GUIDE.md](../GUIDE.md) · 简体中文：[GUIDE-zh-CN.md](GUIDE-zh-CN.md)
+English: [GUIDE.md](../GUIDE.md) · 简体中文：[GUIDE-zh-CN.md](GUIDE-zh-CN.md) · Español: [GUIDE-es.md](GUIDE-es.md)
 
 Panduan lengkap instalasi, sideload, cara pakai, dan troubleshooting Mori di Android, iOS, dan Desktop (CLI).
 

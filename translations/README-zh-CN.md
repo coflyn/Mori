@@ -4,7 +4,7 @@
 
 <h1 align="center">Mori</h1>
 <p align="center"><em>随处保存，想下就下。</em></p>
-<p align="center"><a href="../README.md">English</a> · <strong>简体中文</strong> · <a href="README-id.md">Bahasa Indonesia</a></p>
+<p align="center"><a href="../README.md">English</a> · <strong>简体中文</strong> · <a href="README-id.md">Bahasa Indonesia</a> · <a href="README-es.md">Español</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-v4.6.0-brown?style=flat-square" alt="Version">
