@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.1] - 2026-11-21
+
+### Added
+
+- Direct camera roll save on iOS using native Photos framework (`saveToCameraRoll`) (#27).
+- Spanish (es) localization with full translation support (#30).
+- Simplified Chinese (zh) share link extraction code parser (#26).
+- Multilingual documentation: added Indonesian (`id`), Simplified Chinese (`zh-CN`), and Spanish (`es`) README and installation guides with language switchers.
+- Aligned all 9 locale dictionaries to 630 translation keys and added native Android Indonesian string resources (`values-in`).
+
+### Fixed
+
+- Fixed iOS automatic page zoom when tapping input or paste bar (#31).
+- Fixed Bilibili stream download failures and 403 access denied responses (#31).
+- Fixed History and Gallery memory usage and UI freezing with disk-cached thumbnails and paginated rendering.
+- Fixed playlist downloads and dynamic package version resolution in Mori CLI (`v1.2.2`).
+
+---
+
 ## [4.6.0] - 2026-11-14
 
 ### Added

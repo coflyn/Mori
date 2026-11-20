@@ -7,7 +7,7 @@
 <p align="center"><strong>English</strong> · <a href="translations/README-zh-CN.md">简体中文</a> · <a href="translations/README-id.md">Bahasa Indonesia</a> · <a href="translations/README-es.md">Español</a></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.6.0-brown?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v4.6.1-brown?style=flat-square" alt="Version">
   <a href="https://www.npmjs.com/package/@coflyn/mori"><img src="https://img.shields.io/npm/v/@coflyn/mori?style=flat-square&color=CB3837&logo=npm&logoColor=white" alt="NPM Version"></a>
   <img src="https://img.shields.io/github/downloads/coflyn/Mori/total?style=flat-square&color=blue" alt="Downloads">
   <img src="https://img.shields.io/github/stars/coflyn/Mori?style=flat-square&color=gold" alt="Stars">
