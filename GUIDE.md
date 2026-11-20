@@ -1,46 +1,38 @@
-# Mori Installation & User Guide
+# Mori installation and user guide
 
-简体中文：[GUIDE-zh-CN.md](translations/GUIDE-zh-CN.md) · Bahasa Indonesia: [GUIDE-id.md](translations/GUIDE-id.md) · Español: [GUIDE-es.md](translations/GUIDE-es.md)
+Translations: [简体中文](translations/GUIDE-zh-CN.md) · [Bahasa Indonesia](translations/GUIDE-id.md) · [Español](translations/GUIDE-es.md)
 
-This guide covers everything you need to know about installing, sideloading, troubleshooting, and getting the most out of Mori on Android, iOS, and Desktop (CLI).
+Updates and announcements: [WhatsApp Channel](https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A)
 
-> 💬 **Official Community & Updates**: Join our official [WhatsApp Channel](https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A) for release announcements, news, and community discussions.
+## Download releases
 
----
+Download binaries from [GitHub Releases](https://github.com/coflyn/Mori/releases) or install via npm.
 
-## 📥 Download Official Releases
-
-Always download official Mori release binaries directly from the **[GitHub Releases](https://github.com/coflyn/Mori/releases)** page or install via **npm**.
-
-| Platform | Recommended Asset | Installation Method |
+| Platform | File | Method |
 | :--- | :--- | :--- |
-| **Android** | `Mori v{VERSION}.apk` | Direct Sideload / Install |
-| **iOS** | `Mori v{VERSION}.ipa` | Sideload (AltStore / TrollStore / Scarlet) |
-| **CLI (Desktop & Server)** | `@coflyn/mori` | `npx @coflyn/mori` / `npm i -g @coflyn/mori` |
+| Android | `Mori v{VERSION}.apk` | Direct install |
+| iOS | `Mori v{VERSION}.ipa` | Sideload (AltStore, TrollStore, Scarlet) |
+| Desktop CLI | `@coflyn/mori` | `npx @coflyn/mori` or `npm i -g @coflyn/mori` |
 
----
+## Android installation
 
-## 📱 Android Installation & Troubleshooting
+### Standard install
+1. Download `Mori v{VERSION}.apk`.
+2. Open the APK and tap Install.
+3. Grant storage permissions when prompted.
 
-### Standard Installation
-1. Download `Mori v{VERSION}.apk` on your phone.
-2. Open the downloaded APK and tap **Install**.
-3. Grant storage permissions when prompted so Mori can save media to your device.
+### Blocked by Play Protect
+Mori is distributed outside Google Play without commercial certificates, so Play Protect may show a warning:
+1. Tap More Details.
+2. Tap Install Anyway.
+3. You can verify the APK on [VirusTotal](https://www.virustotal.com/) before installing.
 
-### "Blocked by Play Protect" Warning
-Because Mori is an open-source application distributed outside the Google Play Store without commercial certificates, Google Play Protect may display an advisory prompt:
-1. Tap **"More Details"**.
-2. Tap **"Install Anyway"**.
-3. *(Optional)* Scan the `.apk` on **[VirusTotal](https://www.virustotal.com/)** for complete peace of mind.
+## Desktop CLI
 
----
-
-## 💻 Desktop (macOS, Windows, Linux) via CLI
-
-Desktop users can run Mori directly using the universal CLI without manual setup or native installers:
+Run Mori from the terminal:
 
 ```bash
-# Run directly without installation
+# Run directly
 npx @coflyn/mori
 
 # Or install globally
@@ -48,70 +40,51 @@ npm install -g @coflyn/mori
 mori
 ```
 
-Refer to the main [CLI Documentation](cli/README.md) for full commands, flags, and options.
+See [CLI documentation](cli/README.md) for available commands and flags.
+
+## iOS sideloading
+
+Install `Mori v{VERSION}.ipa` using one of these tools:
+
+### AltStore or Sideloadly
+Works on any iOS version without jailbreak. Requires a computer for setup.
+1. Install [AltStore](https://altstore.io/) or [Sideloadly](https://sideloadly.io/) on your computer.
+2. Download `Mori v{VERSION}.ipa`.
+3. Connect your iPhone via USB and install the IPA with your Apple ID.
+4. AltStore refreshes signatures every 7 days over Wi-Fi.
+
+### TrollStore
+For iOS 14.0 to 16.6.1 and iOS 17.0.
+1. Open the downloaded IPA in TrollStore.
+2. Tap Install. It installs permanently without the 7-day refresh requirement.
+
+### Scarlet or Esign
+Direct on-device install using enterprise certificates, no computer required.
+1. Open Scarlet or Esign on your iPhone.
+2. Import `Mori v{VERSION}.ipa` and tap Sign & Install.
+
+## Usage
+
+1. One-tap download:
+   Copy a link from any supported platform, open Mori, tap Analyze, select format, then tap Download.
+2. Share sheet (Android):
+   Tap Share in TikTok, Instagram, or YouTube, then select Mori to download without leaving the app.
+3. Batch downloads:
+   Paste multiple URLs separated by newlines or spaces into the input box.
+4. Playlists and albums:
+   Paste a Spotify, Apple Music, or YouTube playlist link, then tap Download All.
+5. Combine images to PDF:
+   For multi-image posts, select Combine into Single PDF to export the images as one file.
+6. App lock:
+   Enable PIN or biometric lock under Settings > General > App Lock.
+
+## Privacy
+
+Mori has no ads, analytics, or background tracking. Network requests and file saving run on your device. You can verify any release binary on [VirusTotal](https://www.virustotal.com/).
 
 ---
 
-## 📲 iOS Sideloading Guide
-
-Since Mori is not distributed on the Apple App Store, iOS users can install `Mori v{VERSION}.ipa` using any of the following sideloading tools:
-
-### Option 1: AltStore / Sideloadly (Recommended for all iOS versions)
-* **Best for:** Devices running any modern iOS version without jailbreak.
-* **Requirements:** A PC or Mac for initial installation.
-* **Steps:**
-  1. Install [AltStore](https://altstore.io/) or [Sideloadly](https://sideloadly.io/) on your computer.
-  2. Download `Mori v{VERSION}.ipa`.
-  3. Connect your iPhone via USB and select the IPA to install with your free Apple ID.
-  4. *Note:* App signatures refresh every 7 days automatically when on the same Wi-Fi.
-
-### Option 2: TrollStore (Permanent - No Expire)
-* **Best for:** Compatible iOS versions (iOS 14.0 – 16.6.1 / 17.0).
-* **Steps:**
-  1. Open the downloaded `Mori v{VERSION}.ipa` directly in TrollStore.
-  2. Tap **Install**. It installs permanently without 7-day expiration or computer refresh.
-
-### Option 3: Scarlet / Esign (On-Device Direct Install)
-* **Best for:** Direct installation without a PC using enterprise developer certificates.
-* **Steps:**
-  1. Open Scarlet or Esign on your iPhone.
-  2. Import `Mori v{VERSION}.ipa` and tap **Sign & Install**.
-
----
-
-## 💡 How to Use Mori
-
-1. **One-Tap Download**:
-   - Copy a video/photo/music link from any of the 14 supported apps.
-   - Open Mori (or tap the **Paste** button). Mori auto-detects copied links.
-   - Tap **Analyze** → Choose format/quality → Tap **Download**.
-2. **Quick Save via Share Menu (Android)**:
-   - In TikTok, Instagram, or YouTube, tap **Share** → Select **Mori**.
-   - Mori opens a quick overlay to download the media without leaving your current app.
-3. **Multi-Link Batch Mode**:
-   - Paste several URLs (separated by newlines or spaces) in the input box.
-   - Mori queues and analyzes them automatically.
-4. **Download Entire Playlists / Albums**:
-   - Paste a Spotify, Apple Music, or YouTube playlist link.
-   - Tap **Download All** to download all tracks in sequence with automatic retry for failed items.
-5. **Photo-to-PDF Gallery Export**:
-   - When viewing a multi-photo post (Instagram, TikTok Slides, RedNote), select **Combine into Single PDF** to export the entire album into a single PDF document.
-6. **Privacy PIN & Biometric Lock**:
-   - Go to **Settings** → **General** → **App Lock**.
-   - Set a 4-digit PIN or enable Fingerprint / Face ID to keep your downloads private.
-
----
-
-## 🔒 Safety & Privacy Verification
-
-Mori is **100% ad-free, open-source, and contains zero trackers or telemetry**.
-* All parsing, HTTP requests, and file saving execute **directly on your device**.
-* No data is sent to external servers or third parties.
-* You can scan any binary on **[VirusTotal](https://www.virustotal.com/)** before installation.
-
----
-
-Developed with ❤️ by coflyn.  
+Developed by coflyn.  
 WhatsApp Channel: https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A  
 GitHub: https://github.com/coflyn  
 Instagram: @\_coflyn
