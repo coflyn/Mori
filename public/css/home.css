@@ -19,7 +19,7 @@ input[type="text"] {
   border: 1px solid var(--primary);
   border-radius: var(--radius-xl);
   color: var(--text-main);
-  font-size: 1rem;
+  font-size: 16px;
   outline: none;
   text-overflow: ellipsis;
   white-space: nowrap;

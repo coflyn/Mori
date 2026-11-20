@@ -24,7 +24,7 @@ export function cleanDownloadUrl(actualDownloadUrl) {
 /**
  * Builds appropriate Referer, Origin, and User-Agent headers for specific platforms
  */
-export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
+export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url, customHeaders = {}) {
   const isYtmp3GG =
     actualDownloadUrl.includes("ytmp3.gg") ||
     actualDownloadUrl.includes("convert1s.com") ||
@@ -104,9 +104,12 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
     downloadHeaders["Referer"] =
       (sourceUrl || url || "").includes("bilibili.com") ||
       (sourceUrl || url || "").includes("b23.tv") ||
-      actualDownloadUrl.includes("bilivideo.com")
+      actualDownloadUrl.includes("bilivideo.com") ||
+      actualDownloadUrl.includes("akamaized.net")
         ? "https://www.bilibili.com/"
         : "https://www.bilibili.tv/";
+    downloadHeaders["Origin"] = "https://www.bilibili.com";
+    downloadHeaders["User-Agent"] = "Bilibili/1.0";
   }
 
   if (isPinterest) {
@@ -192,7 +195,7 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
     downloadHeaders["Origin"] = "https://www." + _PH_DOM;
   }
 
-  // Universal Fallback: For sniffer & unlisted platforms, set Referer, Origin, Range, and Cookie
+  // Universal Fallback: For sniffer & unlisted platforms, set Referer, Origin, and Cookie
   if (!downloadHeaders["Referer"]) {
     try {
       const refTarget = sourceUrl || actualDownloadUrl;
@@ -202,10 +205,6 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
         downloadHeaders["Origin"] = parsed.origin;
       }
     } catch (_) {}
-  }
-
-  if (!downloadHeaders["Range"]) {
-    downloadHeaders["Range"] = "bytes=0-";
   }
 
   if (!downloadHeaders["Cookie"]) {
@@ -221,6 +220,10 @@ export function buildDownloadHeaders(actualDownloadUrl, sourceUrl, url) {
         if (cookies) downloadHeaders["Cookie"] = cookies;
       }
     } catch (_) {}
+  }
+
+  if (customHeaders && typeof customHeaders === "object") {
+    Object.assign(downloadHeaders, customHeaders);
   }
 
   return downloadHeaders;

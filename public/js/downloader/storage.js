@@ -88,7 +88,7 @@ export async function saveToStorage({
 
           const tempSaved = await Filesystem.downloadFile(dlOpts);
           if (tempSaved) {
-            // Guard against saving 200-byte HTML 403 error pages as video files
+            // Guard against saving small HTML error / 403 access denied pages as video files
             const stat = await Filesystem.stat({
               path: fullPath + "/" + tempFileName,
               directory: dir,
@@ -99,6 +99,29 @@ export async function saveToStorage({
                 directory: dir,
               }).catch(() => {});
               throw new Error(`Downloaded file too small (${stat.size} bytes), CDN access denied`);
+            }
+            if (stat && typeof stat.size === "number" && stat.size > 0 && stat.size < 250000) {
+              try {
+                const head = await Filesystem.readFile({
+                  path: fullPath + "/" + tempFileName,
+                  directory: dir,
+                  length: 512,
+                });
+                const headStr = typeof head?.data === "string" ? head.data : "";
+                if (
+                  /<(!doctype|html|head|title>access denied)/i.test(headStr) ||
+                  headStr.includes("Access Denied") ||
+                  headStr.includes("403 Forbidden")
+                ) {
+                  await Filesystem.deleteFile({
+                    path: fullPath + "/" + tempFileName,
+                    directory: dir,
+                  }).catch(() => {});
+                  throw new Error(`Downloaded file is an HTML error page (${stat.size} bytes), CDN access denied`);
+                }
+              } catch (readErr) {
+                if (readErr.message?.includes("CDN access denied")) throw readErr;
+              }
             }
 
             onSaving?.();
@@ -151,8 +174,9 @@ export async function saveToStorage({
                 (httpRes.status === 200 || httpRes.status === 206) &&
                 httpRes.data &&
                 typeof httpRes.data === "string" &&
-                !httpRes.data.startsWith("<!") &&
-                !httpRes.data.startsWith("<html")
+                !/^(<!|<html|<head)/i.test(httpRes.data.trim()) &&
+                !httpRes.data.includes("Access Denied") &&
+                !httpRes.data.includes("403 Forbidden")
               ) {
                 onSaving?.();
                 await Filesystem.writeFile({

@@ -461,6 +461,7 @@ export async function startNativeDownload(
       actualDownloadUrl,
       sourceUrl,
       url,
+      meta?.headers,
     );
 
     const { savedFile, successfulDir, cancelled } = await saveToStorage({

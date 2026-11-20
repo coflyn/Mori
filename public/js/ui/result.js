@@ -946,6 +946,7 @@ export function renderResult(result, originalUrl) {
                     targetBtn,
                     result.sourceUrl || originalUrl,
                     false, // don't reset cancel flag between tracks
+                    { headers: item.headers },
                   );
                 } catch (err) {
                   console.error("Download track error:", err);
@@ -1150,6 +1151,8 @@ export function renderResult(result, originalUrl) {
           itemTitle,
           e.currentTarget,
           result.sourceUrl || originalUrl,
+          true,
+          { headers: dl.headers },
         );
         if (res && res.success && failedIndices.includes(index)) {
           failedIndices = failedIndices.filter((idx) => idx !== index);

@@ -23,6 +23,7 @@ button,
 select,
 textarea {
   font-family: inherit;
+  font-size: 16px;
 }
 
 html,
