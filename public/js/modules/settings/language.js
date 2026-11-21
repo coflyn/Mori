@@ -90,12 +90,22 @@ export function setupCustomSelect(selectId, storageKey, textId, menuId) {
       select.closest(".settings-item")?.classList.add("active-dropdown");
       menu.classList.remove("open-up");
 
-      const rect = menu.getBoundingClientRect();
+      const selectRect = select.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - selectRect.bottom - 16;
+      const spaceAbove = selectRect.top - 16;
 
-      // Flip upward if overflowing bottom
-      if (rect.bottom > viewportHeight - 20) {
+      // Flip upward only if overflowing bottom AND there is more space above
+      if (menuRect.bottom > viewportHeight - 16 && spaceAbove > spaceBelow) {
         menu.classList.add("open-up");
+      }
+
+      // Ensure active item is visible in scrollable dropdown
+      const activeVal = localStorage.getItem(storageKey) || defaultFallback;
+      const activeItem = menu.querySelector(`[data-value="${activeVal}"]`);
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: "nearest" });
       }
     } else {
       select.closest(".settings-item")?.classList.remove("active-dropdown");

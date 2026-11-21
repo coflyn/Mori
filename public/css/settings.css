@@ -260,11 +260,30 @@
   border-radius: 12px;
   width: auto;
   min-width: 160px;
+  max-height: min(280px, 45vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--primary-rgb, 120, 120, 120), 0.3) transparent;
   z-index: 99999 !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
   animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto !important;
+}
+
+.dropdown-menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(var(--primary-rgb, 120, 120, 120), 0.3);
+  border-radius: 4px;
 }
 
 .dropdown-menu.open-up {

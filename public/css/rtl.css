@@ -39,8 +39,6 @@
 }
 
 [dir="rtl"] .dropdown-menu {
-  right: auto;
-  left: 0;
   text-align: right;
 }
 
