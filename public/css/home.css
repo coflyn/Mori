@@ -356,14 +356,57 @@ input[type="text"]:focus {
   padding: 20px;
 }
 
-.info-wrapper h2 {
+.result-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.result-title-row h2 {
   font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
   overflow-wrap: break-word;
   word-break: break-word;
+  flex: 1;
+}
+
+.copy-caption-btn {
+  background: rgba(var(--primary-rgb, 120, 120, 120), 0.08);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-m, 6px);
+  color: var(--text-main);
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: -3px;
+}
+
+.copy-caption-btn:hover {
+  background: rgba(var(--primary-rgb, 120, 120, 120), 0.16);
+  transform: translateY(-1px);
+}
+
+.copy-caption-btn:active {
+  transform: scale(0.92);
+}
+
+.copy-caption-btn.copied {
+  background: var(--primary);
+  color: var(--bg-color, #fff);
+  border-color: var(--primary);
+}
+
+.copy-caption-btn svg {
+  display: block;
 }
 
 .download-options {

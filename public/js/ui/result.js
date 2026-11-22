@@ -11,6 +11,7 @@ import {
   Filesystem,
   CapacitorHttp,
   CHROME_UA,
+  copyToClipboard,
 } from "../utils/index.js";
 import {
   currentLang,
@@ -774,6 +775,26 @@ export function renderResult(result, originalUrl) {
     .replace(/\s{2,}/g, " ")
     .trim();
   if (resultTitle) resultTitle.textContent = truncate(cleanTitleText, 80);
+
+  const copyCaptionBtn = document.getElementById("copyCaptionBtn");
+  if (copyCaptionBtn) {
+    const rawCaption = (result.title || "").trim();
+    if (rawCaption) {
+      copyCaptionBtn.classList.remove("hidden");
+      copyCaptionBtn.onclick = async (e) => {
+        e.stopPropagation();
+        await copyToClipboard(rawCaption);
+        copyCaptionBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+        copyCaptionBtn.classList.add("copied");
+        setTimeout(() => {
+          copyCaptionBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
+          copyCaptionBtn.classList.remove("copied");
+        }, 1500);
+      };
+    } else {
+      copyCaptionBtn.classList.add("hidden");
+    }
+  }
 
   if (downloadList) {
     const isPlaylistOrAlbum =
