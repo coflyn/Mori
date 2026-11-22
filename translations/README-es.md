@@ -221,6 +221,16 @@ Mori está protegido bajo la [Licencia Pública General de GNU v3.0 (GPL-3.0)](.
 
 ---
 
+## Historial de Estrellas
+
+<p align="center">
+  <a href="https://star-history.com/#coflyn/Mori&Date">
+    <img src="https://api.star-history.com/svg?repos=coflyn/Mori&type=Date" alt="Star History Chart" width="100%" />
+  </a>
+</p>
+
+---
+
 Desarrollado por coflyn.  
 Canal de WhatsApp: https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A  
 GitHub: https://github.com/coflyn  

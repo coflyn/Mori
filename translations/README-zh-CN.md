@@ -225,6 +225,16 @@ Mori 使用 [GNU 通用公共许可证 v3.0（GPL-3.0）](../LICENSE)。
 
 ---
 
+## Star 增长历史
+
+<p align="center">
+  <a href="https://star-history.com/#coflyn/Mori&Date">
+    <img src="https://api.star-history.com/svg?repos=coflyn/Mori&type=Date" alt="Star History Chart" width="100%" />
+  </a>
+</p>
+
+---
+
 由 coflyn 开发。  
 WhatsApp 频道：https://whatsapp.com/channel/0029VbDXoqs6mYPSVp4UcT2A  
 GitHub：https://github.com/coflyn  
