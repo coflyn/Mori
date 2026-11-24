@@ -1,6 +1,6 @@
-/* Right-to-Left (RTL) Layout Overrides (Arabic, etc.) */
+/* Right-to-Left (RTL) Layout Overrides (Arabic, Kurdish, etc.) */
 
-/* Arabic Language Support */
+/* Arabic & Kurdish Language Support */
 [dir="rtl"] {
   text-align: right;
 }
