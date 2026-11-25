@@ -158,6 +158,7 @@ Tab Tools menyediakan berbagai alat praktis yang berjalan langsung di perangkat 
 | Anime Scene Search | Pencarian | Mencari judul anime, nomor episode, dan menit adegan dari potongan gambar screenshot memakai trace.moe. |
 | TikTok Profile Lookup | Pencarian | Melihat informasi akun publik, statistik, jumlah followers, dan download foto profil HD. |
 | Shortlink Resolver | Pengurai Link | Membuka dan mengekstrak link tujuan asli dari pemendek link dan gateway iklan yang didukung. |
+| Video FPS Converter | Utilitas Offline | Mengubah dan menyesuaikan frame rate (FPS) video (15, 24, 30, 60 FPS) dengan akselerasi perangkat keras. |
 
 ---
 

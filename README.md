@@ -158,6 +158,7 @@ The Tools tab provides client-side utilities that run locally on your device:
 | Anime Scene Search | Lookup | Reverse searches anime screenshots using trace.moe to find anime titles, episode numbers, and timestamps. |
 | TikTok Profile Lookup | Lookup | Displays public profile information, stats, follower counts, and avatars. |
 | Shortlink Resolver | URL Resolver | Resolves target URLs from supported ad gateways and shorteners. |
+| Video FPS Converter | Offline Utility | Converts and resamples video frame rate (15, 24, 30, 60 FPS) with hardware-accelerated MediaRecorder encoding. |
 
 ---
 

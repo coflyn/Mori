@@ -158,6 +158,7 @@ La pestaña Herramientas ofrece utilidades locales que se ejecutan directamente 
 | Buscador de escenas de anime | Consulta | Búsqueda inversa de capturas de anime a través de trace.moe para identificar título, número de episodio y minuto exacto. |
 | Consulta de perfiles de TikTok | Consulta | Muestra información pública, estadísticas, cantidad de seguidores y foto de perfil. |
 | Resolvedor de enlaces acortados | Resolvedor de URL | Extrae el enlace final a partir de acortadores y pasarelas de publicidad compatibles. |
+| Conversor de FPS de vídeo | Utilidad local | Convierte y remuestrea la tasa de fotogramas (15, 24, 30, 60 FPS) mediante MediaRecorder acelerado por hardware. |
 
 ---
 
