@@ -14,6 +14,7 @@ import { findTikTokUser } from "./tiktokFinder.js";
 import { searchAnimeScene, formatTimestamp } from "./animeSearch.js";
 import { convertImage } from "./imageConverter.js";
 import { extractAudioFromVideoFile } from "./audioExtractor.js";
+import { convertVideoFps, getVideoInfo } from "./fpsConverter.js";
 import { compressPdfFile } from "./pdfCompressor.js";
 import {
   checkAllUsernames,
@@ -161,6 +162,7 @@ export function initTools() {
   initAnimeSearchController();
   initConverterController();
   initExtractorController();
+  initFpsConverterController();
   initPdfCompressorController();
   initUsernameCheckerController();
 }
@@ -1726,3 +1728,190 @@ function initUsernameCheckerController() {
     }
   });
 }
+
+// -------------------------------------------------------------
+// 9. Video FPS Converter Controller
+// -------------------------------------------------------------
+function initFpsConverterController() {
+  const dropzone = document.getElementById("fpsDropzone");
+  const fileInput = document.getElementById("fpsFileInput");
+  const optionsCard = document.getElementById("fpsOptionsCard");
+  const previewVideo = document.getElementById("fpsPreviewVideo");
+  const videoName = document.getElementById("fpsVideoName");
+  const videoDetails = document.getElementById("fpsVideoDetails");
+  const fpsChips = document.querySelectorAll("#fpsChips .tool-chip");
+  const fpsCustomSlider = document.getElementById("fpsCustomSlider");
+  const fpsCustomInput = document.getElementById("fpsCustomInput");
+  const runBtn = document.getElementById("fpsRunBtn");
+  const loader = document.getElementById("fpsLoader");
+  const loaderText = document.getElementById("fpsLoaderText");
+  const resultCard = document.getElementById("fpsResultCard");
+  const resultVideo = document.getElementById("fpsResultVideo");
+  const resultDetails = document.getElementById("fpsResultDetails");
+  const saveBtn = document.getElementById("fpsSaveBtn");
+
+  let selectedVideoFile = null;
+  let selectedFps = 30;
+  let convertedVideoBlob = null;
+  let convertedExt = "mp4";
+
+  function setFps(targetVal) {
+    const val = Math.max(1, Math.min(120, parseInt(targetVal, 10) || 30));
+    selectedFps = val;
+    if (fpsCustomSlider) fpsCustomSlider.value = val;
+    if (fpsCustomInput) fpsCustomInput.value = val;
+
+    fpsChips.forEach((chip) => {
+      const chipFps = parseInt(chip.getAttribute("data-fps"), 10);
+      if (chipFps === val) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+  }
+
+  dropzone?.addEventListener("click", () => {
+    triggerHaptic("light");
+    fileInput?.click();
+  });
+
+  dropzone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+  });
+
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith("video/")) {
+      handleVideoSelected(file);
+    }
+  });
+
+  fileInput?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleVideoSelected(file);
+    }
+  });
+
+  async function handleVideoSelected(file) {
+    selectedVideoFile = file;
+    const url = trackObjectUrl(URL.createObjectURL(file));
+    if (previewVideo) {
+      previewVideo.src = url;
+    }
+    if (videoName) {
+      videoName.textContent = file.name;
+    }
+    if (videoDetails) {
+      videoDetails.textContent = formatBytes(file.size);
+      try {
+        const info = await getVideoInfo(file);
+        videoDetails.textContent = `${info.width} × ${info.height} · ${formatTimestamp(info.duration)} · ${formatBytes(file.size)}`;
+      } catch (_) {}
+    }
+    optionsCard?.classList.remove("hidden");
+    resultCard?.classList.add("hidden");
+  }
+
+  fpsChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      const target = chip.getAttribute("data-fps");
+      setFps(target);
+    });
+  });
+
+  fpsCustomSlider?.addEventListener("input", (e) => {
+    setFps(e.target.value);
+  });
+
+  fpsCustomInput?.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value, 10);
+    if (!isNaN(val)) {
+      setFps(val);
+    }
+  });
+
+  fpsCustomInput?.addEventListener("change", () => {
+    setFps(fpsCustomInput.value || 30);
+  });
+
+  runBtn?.addEventListener("click", async () => {
+    if (!selectedVideoFile) return;
+    triggerHaptic("medium");
+
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (loaderText) {
+      loaderText.textContent = `${t("loader-fps") || "Re-encoding video frames at target FPS..."} 0%`;
+    }
+
+    try {
+      const res = await convertVideoFps(selectedVideoFile, {
+        targetFps: selectedFps,
+        onProgress: (pct) => {
+          if (loaderText) {
+            loaderText.textContent = `${t("loader-fps") || "Re-encoding video frames at target FPS..."} ${pct}%`;
+          }
+        },
+      });
+
+      convertedVideoBlob = res.blob;
+      convertedExt = res.ext || "mp4";
+      if (resultVideo) {
+        resultVideo.src = trackObjectUrl(URL.createObjectURL(res.blob));
+      }
+      if (resultDetails) {
+        resultDetails.textContent = `${res.fps} FPS · ${res.width} × ${res.height} · ${formatBytes(res.convertedSize)} · ${res.ext.toUpperCase()}`;
+      }
+
+      resultCard?.classList.remove("hidden");
+      showToast(t("toast-fps-converted"));
+    } catch (err) {
+      showToast(err.message || t("err-convert-fps"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  });
+
+  saveBtn?.addEventListener("click", async () => {
+    if (!convertedVideoBlob) return;
+    triggerHaptic("medium");
+    const baseName = (selectedVideoFile?.name || "video").replace(/\.[^/.]+$/, "");
+    const fileName = `${baseName}_${selectedFps}fps.${convertedExt}`;
+    saveBtn.disabled = true;
+    await saveBlobToMori(convertedVideoBlob, fileName, "Download/Mori", {
+      title: `${baseName} (${selectedFps} FPS)`,
+      type: "VIDEO",
+      tool: "fps-converter",
+    });
+    saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedVideoFile = null;
+    convertedVideoBlob = null;
+    if (fileInput) fileInput.value = "";
+    if (previewVideo) {
+      previewVideo.pause();
+      if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+      }
+      previewVideo.src = "";
+    }
+    if (resultVideo) {
+      resultVideo.pause();
+      if (resultVideo.src && resultVideo.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(resultVideo.src); } catch (_) {}
+      }
+      resultVideo.src = "";
+    }
+    optionsCard?.classList.add("hidden");
+    resultCard?.classList.add("hidden");
+    setFps(30);
+  });
+}
+
