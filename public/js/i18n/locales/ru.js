@@ -223,6 +223,7 @@ export default {
   "label-whatsapp-channel": "Канал WhatsApp",
   "label-wipedata": "Стереть все данные",
   "lang-ar": "Арабский",
+  "lang-ckb": "Курдский",
   "lang-en": "Английский",
   "lang-es": "Испанский",
   "lang-hi": "Хинди",
