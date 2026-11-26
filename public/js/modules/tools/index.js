@@ -15,6 +15,7 @@ import { searchAnimeScene, formatTimestamp } from "./animeSearch.js";
 import { convertImage } from "./imageConverter.js";
 import { extractAudioFromVideoFile } from "./audioExtractor.js";
 import { convertVideoFps, getVideoInfo } from "./fpsConverter.js";
+import { compressVideo, estimateCompressedSize } from "./videoCompressor.js";
 import { compressPdfFile } from "./pdfCompressor.js";
 import {
   checkAllUsernames,
@@ -163,6 +164,7 @@ export function initTools() {
   initConverterController();
   initExtractorController();
   initFpsConverterController();
+  initVideoCompressorController();
   initPdfCompressorController();
   initUsernameCheckerController();
 }
@@ -1912,6 +1914,222 @@ function initFpsConverterController() {
     optionsCard?.classList.add("hidden");
     resultCard?.classList.add("hidden");
     setFps(30);
+  });
+}
+
+// -------------------------------------------------------------
+// 10. Video Compressor Controller
+// -------------------------------------------------------------
+function initVideoCompressorController() {
+  const dropzone = document.getElementById("compressorDropzone");
+  const fileInput = document.getElementById("compressorFileInput");
+  const optionsCard = document.getElementById("compressorOptionsCard");
+  const previewVideo = document.getElementById("compressorPreviewVideo");
+  const videoName = document.getElementById("compressorVideoName");
+  const videoDetails = document.getElementById("compressorVideoDetails");
+  const levelChips = document.querySelectorAll("#compressorLevelChips .tool-chip");
+  const originalSizeVal = document.getElementById("compressorOriginalSizeVal");
+  const estimatedSizeVal = document.getElementById("compressorEstimatedSizeVal");
+  const savingsBadge = document.getElementById("compressorSavingsBadge");
+  const customGroup = document.getElementById("compressorCustomGroup");
+  const scaleChips = document.querySelectorAll("#compressorScaleChips .tool-chip");
+  const scaleVal = document.getElementById("compressorScaleVal");
+  const bitrateSlider = document.getElementById("compressorBitrateSlider");
+  const bitrateVal = document.getElementById("compressorBitrateVal");
+  const muteAudioCheckbox = document.getElementById("compressorMuteAudio");
+  const runBtn = document.getElementById("compressorRunBtn");
+  const loader = document.getElementById("compressorLoader");
+  const loaderText = document.getElementById("compressorLoaderText");
+  const resultCard = document.getElementById("compressorResultCard");
+  const resultVideo = document.getElementById("compressorResultVideo");
+  const resultDetails = document.getElementById("compressorResultDetails");
+  const saveBtn = document.getElementById("compressorSaveBtn");
+
+  let selectedFile = null;
+  let selectedLevel = "medium";
+  let customScale = 0.75;
+  let customBitrate = 2_200_000;
+  let videoDuration = 1;
+  let compressedBlob = null;
+  let compressedExt = "mp4";
+
+  function refreshEstimate() {
+    if (!selectedFile) return;
+    const est = estimateCompressedSize(selectedFile.size, videoDuration, selectedLevel, {
+      scale: customScale,
+      bitrate: customBitrate,
+      muteAudio: muteAudioCheckbox?.checked || false,
+    });
+    if (originalSizeVal) originalSizeVal.textContent = formatBytes(selectedFile.size);
+    if (estimatedSizeVal) estimatedSizeVal.textContent = `~${formatBytes(est.estimatedBytes)}`;
+    if (savingsBadge) {
+      const savedBytes = Math.max(0, selectedFile.size - est.estimatedBytes);
+      savingsBadge.textContent = `-${est.percentReduction}% (Est. Save ~${formatBytes(savedBytes)})`;
+    }
+  }
+
+  dropzone?.addEventListener("click", () => {
+    triggerHaptic("light");
+    fileInput?.click();
+  });
+
+  dropzone?.addEventListener("dragover", (e) => e.preventDefault());
+
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith("video/")) {
+      handleVideoSelected(file);
+    }
+  });
+
+  fileInput?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleVideoSelected(file);
+    }
+  });
+
+  async function handleVideoSelected(file) {
+    selectedFile = file;
+    const url = trackObjectUrl(URL.createObjectURL(file));
+    if (previewVideo) previewVideo.src = url;
+    if (videoName) videoName.textContent = file.name;
+    if (videoDetails) {
+      videoDetails.textContent = formatBytes(file.size);
+      try {
+        const info = await getVideoInfo(file);
+        videoDuration = info.duration || 1;
+        videoDetails.textContent = `${info.width} × ${info.height} · ${formatTimestamp(info.duration)} · ${formatBytes(file.size)}`;
+      } catch (_) {}
+    }
+    refreshEstimate();
+    optionsCard?.classList.remove("hidden");
+    resultCard?.classList.add("hidden");
+  }
+
+  levelChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      levelChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      selectedLevel = chip.getAttribute("data-level") || "medium";
+      if (selectedLevel === "custom") {
+        customGroup?.classList.remove("hidden");
+      } else {
+        customGroup?.classList.add("hidden");
+      }
+      refreshEstimate();
+    });
+  });
+
+  scaleChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      scaleChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      customScale = parseFloat(chip.getAttribute("data-scale") || "0.75");
+      if (scaleVal) scaleVal.textContent = `${Math.round(customScale * 100)}%`;
+      refreshEstimate();
+    });
+  });
+
+  bitrateSlider?.addEventListener("input", (e) => {
+    const kbps = parseInt(e.target.value, 10);
+    customBitrate = kbps * 1000;
+    if (bitrateVal) bitrateVal.textContent = `${(kbps / 1000).toFixed(1)} Mbps`;
+    refreshEstimate();
+  });
+
+  muteAudioCheckbox?.addEventListener("change", () => {
+    triggerHaptic("light");
+    refreshEstimate();
+  });
+
+  runBtn?.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    triggerHaptic("medium");
+
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (loaderText) {
+      loaderText.textContent = `${t("loader-compress-video") || "Compressing video..."} 0%`;
+    }
+
+    try {
+      const res = await compressVideo(selectedFile, {
+        level: selectedLevel,
+        scale: customScale,
+        targetBitrate: customBitrate,
+        muteAudio: muteAudioCheckbox?.checked || false,
+        onProgress: (pct) => {
+          if (loaderText) {
+            loaderText.textContent = `${t("loader-compress-video") || "Compressing video..."} ${pct}%`;
+          }
+        },
+      });
+
+      compressedBlob = res.blob;
+      compressedExt = res.ext || "mp4";
+
+      if (resultVideo) {
+        resultVideo.src = trackObjectUrl(URL.createObjectURL(res.blob));
+      }
+      if (resultDetails) {
+        resultDetails.textContent = `${formatBytes(res.originalSize)} → ${formatBytes(res.compressedSize)} (-${res.percentSaved}%) · ${res.width} × ${res.height} · ${res.ext.toUpperCase()}`;
+      }
+
+      resultCard?.classList.remove("hidden");
+      showToast(t("toast-video-compressed"));
+    } catch (err) {
+      showToast(err.message || t("err-compress-video"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  });
+
+  saveBtn?.addEventListener("click", async () => {
+    if (!compressedBlob) return;
+    triggerHaptic("medium");
+    const baseName = (selectedFile?.name || "video").replace(/\.[^/.]+$/, "");
+    const fileName = `${baseName}_compressed.${compressedExt}`;
+    saveBtn.disabled = true;
+    await saveBlobToMori(compressedBlob, fileName, "Download/Mori", {
+      title: `${baseName} (Compressed)`,
+      type: "VIDEO",
+      tool: "video-compressor",
+    });
+    saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedFile = null;
+    compressedBlob = null;
+    if (fileInput) fileInput.value = "";
+    if (previewVideo) {
+      previewVideo.pause();
+      if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+      }
+      previewVideo.src = "";
+    }
+    if (resultVideo) {
+      resultVideo.pause();
+      if (resultVideo.src && resultVideo.src.startsWith("blob:")) {
+        try { URL.revokeObjectURL(resultVideo.src); } catch (_) {}
+      }
+      resultVideo.src = "";
+    }
+    optionsCard?.classList.add("hidden");
+    resultCard?.classList.add("hidden");
+    customGroup?.classList.add("hidden");
+    selectedLevel = "medium";
+    levelChips.forEach((c) => {
+      if (c.getAttribute("data-level") === "medium") c.classList.add("active");
+      else c.classList.remove("active");
+    });
+    if (muteAudioCheckbox) muteAudioCheckbox.checked = false;
   });
 }
 

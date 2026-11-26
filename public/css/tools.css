@@ -1323,3 +1323,122 @@
   letter-spacing: 0.5px;
 }
 
+/* Video Compressor Styles */
+.compressor-level-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.compressor-level-grid .tool-chip {
+  min-width: 0;
+  height: 42px;
+  border-radius: var(--radius-l, 8px);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.compressor-estimate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-color);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  padding: 12px 14px;
+}
+
+.compressor-estimate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compressor-size-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compressor-size-box .label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.compressor-size-box .val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-main);
+}
+
+.compressor-size-box .val.highlight {
+  color: var(--primary);
+}
+
+.compressor-arrow-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.compressor-badge-row {
+  display: flex;
+  align-items: center;
+}
+
+.compressor-savings-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-main);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-s, 4px);
+  padding: 3px 8px;
+}
+
+.compressor-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-l, 8px);
+  cursor: pointer;
+  user-select: none;
+}
+
+.compressor-toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.compressor-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compressor-toggle-info .title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.compressor-toggle-info .desc {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+
