@@ -227,6 +227,7 @@ export default {
   "label-whatsapp-channel": "WhatsApp 频道",
   "label-wipedata": "清除所有数据",
   "lang-ar": "阿拉伯语",
+  "lang-ckb": "库尔德语",
   "lang-en": "英语",
   "lang-es": "西班牙语",
   "lang-hi": "印地语",

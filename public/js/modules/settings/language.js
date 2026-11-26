@@ -345,6 +345,7 @@ export function updateLanguageUI() {
   if (currentLangDisplay) {
     const langNames = {
       en: "English",
+      ckb: "کوردی",
       id: "Indonesia",
       ja: "日本語",
       ko: "한국어",
@@ -361,9 +362,9 @@ export function updateLanguageUI() {
   document.documentElement.lang = currentLang;
   document.documentElement.setAttribute(
     "dir",
-    currentLang === "ar" ? "rtl" : "ltr",
+  currentLang === "ar" || currentLang === "ckb" ? "rtl" : "ltr",
   );
-
+  
   updateCustomSelectsUI();
   updateGreeting();
   setUtilsState({ currentLang });
@@ -386,6 +387,7 @@ export function switchLanguage(lang) {
 
   let msg = "Language updated";
   if (currentLang === "id") msg = "Bahasa diperbarui";
+  else if (currentLang === "ckb") msg = "زمان بەسەرکەوتوویی گۆڕا";
   else if (currentLang === "ja") msg = "言語を更新しました";
   else if (currentLang === "ko") msg = "언어가 변경되었습니다";
   else if (currentLang === "zh") msg = "语言已更新";

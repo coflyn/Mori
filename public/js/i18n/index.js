@@ -1,4 +1,5 @@
 import en from "./locales/en.js";
+import ckb from "./locales/ckb.js";
 import id from "./locales/id.js";
 import ja from "./locales/ja.js";
 import ko from "./locales/ko.js";
@@ -11,6 +12,7 @@ import es from "./locales/es.js";
 
 export const translations = {
   en,
+  ckb,
   id,
   ja,
   ko,
@@ -23,6 +25,7 @@ export const translations = {
 };
 export const SUPPORTED_LANGS = [
   "en",
+  "ckb",  
   "id",
   "ja",
   "ko",
@@ -51,6 +54,7 @@ export function detectSystemLanguage() {
     if (l.startsWith("id") || l.startsWith("in")) return "id";
     if (l.startsWith("ja")) return "ja";
     if (l.startsWith("ko")) return "ko";
+    if (l.startsWith("ckb") || l.startsWith("ku")) return "ckb";
     if (l.startsWith("ar")) return "ar";
     if (l.startsWith("ru")) return "ru";
     if (l.startsWith("tl") || l.startsWith("fil")) return "tl";

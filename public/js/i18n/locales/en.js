@@ -227,6 +227,7 @@ export default {
   "label-whatsapp-channel": "WhatsApp Channel",
   "label-wipedata": "Wipe All Data",
   "lang-ar": "Arabic",
+  "lang-ckb": "Kurdish",
   "lang-en": "English",
   "lang-es": "Spanish",
   "lang-hi": "Hindi",

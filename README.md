@@ -139,7 +139,7 @@ CLI features:
 - Photo carousel to PDF export for offline reading.
 - Optional PIN and biometric lock for history and settings.
 - Background downloads with wake-lock support.
-- Available in 10 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic with RTL layout, Russian, Tagalog, Hindi, Spanish).
+- Available in 11 languages (English, Indonesian, Japanese, Korean, Simplified Chinese, Arabic & Kurdish with RTL layout, Russian, Tagalog, Hindi, Spanish).
 - Runs entirely on-device with no accounts, ads, or tracking.
 
 ---
@@ -238,7 +238,7 @@ Mori/
 │   │   ├── history.css         # History layout, summary stats card, and actions bar
 │   │   ├── settings.css        # Settings menu list and sub-page transitions
 │   │   ├── modals.css          # Modal overlays, PIN keypad, and info dialogs
-│   │   ├── rtl.css             # Right-to-Left (RTL) language overrides for Arabic
+│   │   ├── rtl.css             # Right-to-Left (RTL) language overrides for Arabic & Kurdish
 │   │   └── style.css           # Master stylesheet entry point
 │   ├── js/
 │   │   ├── app.js              # Application entry point and startup lifecycle
