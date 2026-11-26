@@ -150,6 +150,7 @@ Tab Tools menyediakan berbagai alat praktis yang berjalan langsung di perangkat 
 
 | Tools | Jenis | Fungsi |
 | :--- | :--- | :--- |
+| Video Compressor | Utilitas Offline | Memperkecil ukuran video dengan akselerasi perangkat keras, preset kompresi, bitrate/skala kustom, dan opsi buang audio. |
 | Media Sniffer | Sniffer Jaringan | Browser khusus dalam aplikasi buat menangkap link stream video, audio, dan HLS (.m3u8) sambil otomatis memblokir iklan dan pelacak. |
 | Video to Audio Extractor | Utilitas Offline | Mengambil audio dari video lokal (MP4, MKV, WebM, MOV) dan mengubahnya jadi WAV atau MP3 via Web Audio API. |
 | Image Converter & Scaler | Utilitas Offline | Mengonversi dan mengubah ukuran gambar antarformat WebP, JPG, dan PNG lengkap dengan slider kualitas dan resolusi. |
@@ -158,6 +159,7 @@ Tab Tools menyediakan berbagai alat praktis yang berjalan langsung di perangkat 
 | Anime Scene Search | Pencarian | Mencari judul anime, nomor episode, dan menit adegan dari potongan gambar screenshot memakai trace.moe. |
 | TikTok Profile Lookup | Pencarian | Melihat informasi akun publik, statistik, jumlah followers, dan download foto profil HD. |
 | Shortlink Resolver | Pengurai Link | Membuka dan mengekstrak link tujuan asli dari pemendek link dan gateway iklan yang didukung. |
+| Video FPS Converter | Utilitas Offline | Mengubah dan menyesuaikan frame rate (FPS) video (15, 24, 30, 60 FPS) dengan akselerasi perangkat keras. |
 
 ---
 

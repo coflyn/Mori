@@ -632,7 +632,25 @@
             </div>
 
             <div class="tools-grid">
-              <!-- Card 1: Video to Audio Extractor -->
+              <!-- Card 1: Video Compressor -->
+              <div class="tool-card" data-tool="compressor">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zm-6 3.5l-3-3h2V8h2v3h2l-3 3z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-compressor-title">Video Compressor</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-compressor-desc">Reduce video file size while maintaining visual quality</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 2: Video to Audio Extractor -->
               <div class="tool-card" data-tool="extractor">
                 <div class="tool-card-icon">
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -650,7 +668,25 @@
                 </div>
               </div>
 
-              <!-- Card 2: Image Converter -->
+              <!-- Card 3: Video FPS Converter -->
+              <div class="tool-card" data-tool="fps">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.28-10.43zM10.59 15.41a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-fps-title">Video FPS Converter</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-fps-desc">Change video frame rate (15, 24, 30, 60, Custom FPS)</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 4: Image Converter -->
               <div class="tool-card" data-tool="converter">
                 <div class="tool-card-icon">
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -668,79 +704,7 @@
                 </div>
               </div>
 
-              <!-- Card 3: Web Media Sniffer -->
-              <div class="tool-card" data-tool="sniffer">
-                <div class="tool-card-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                  </svg>
-                </div>
-                <div class="tool-card-info">
-                  <div class="tool-card-title-row">
-                    <h3 class="tool-card-title" data-i18n="tool-sniffer-title">Web Media Sniffer</h3>
-                  </div>
-                  <p class="tool-card-desc" data-i18n="tool-sniffer-desc">Extract videos, audios, and images from any webpage</p>
-                </div>
-                <div class="tool-card-chevron">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-              </div>
-
-              <!-- Card 4: TikTok Finder -->
-              <div class="tool-card" data-tool="tiktok">
-                <div class="tool-card-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88C7.55 15.8 9.68 15 12 15s4.45.8 6.14 2.12C16.43 19.18 14.03 20 12 20z"/>
-                  </svg>
-                </div>
-                <div class="tool-card-info">
-                  <div class="tool-card-title-row">
-                    <h3 class="tool-card-title" data-i18n="tool-tiktok-title">TikTok User Finder</h3>
-                  </div>
-                  <p class="tool-card-desc" data-i18n="tool-tiktok-desc">Look up creation date, HD avatar, numeric ID, and public stats</p>
-                </div>
-                <div class="tool-card-chevron">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-              </div>
-
-              <!-- Card 5: Username Checker -->
-              <div class="tool-card" data-tool="username">
-                <div class="tool-card-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10h5v-2h-5c-4.34 0-8-3.66-8-8s3.66-8 8-8 8 3.66 8 8v1.43c0 .79-.71 1.57-1.5 1.57s-1.5-.78-1.5-1.57V12c0-2.76-2.24-5-5-5s-5 2.24-5 5 2.24 5 5 5c1.38 0 2.64-.56 3.54-1.47.65.89 1.77 1.47 2.96 1.47 1.97 0 3.5-1.6 3.5-3.57V12c0-5.52-4.48-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
-                  </svg>
-                </div>
-                <div class="tool-card-info">
-                  <div class="tool-card-title-row">
-                    <h3 class="tool-card-title" data-i18n="tool-username-title">Username Checker</h3>
-                  </div>
-                  <p class="tool-card-desc" data-i18n="tool-username-desc">Check handle availability across 20+ platforms</p>
-                </div>
-                <div class="tool-card-chevron">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-              </div>
-
-              <!-- Card 6: Anime Scene Search -->
-              <div class="tool-card" data-tool="anime">
-                <div class="tool-card-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                    <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
-                  </svg>
-                </div>
-                <div class="tool-card-info">
-                  <div class="tool-card-title-row">
-                    <h3 class="tool-card-title" data-i18n="tool-anime-title">Anime Scene Search</h3>
-                  </div>
-                  <p class="tool-card-desc" data-i18n="tool-anime-desc">Trace back the anime title, episode, and scene clip from any image</p>
-                </div>
-                <div class="tool-card-chevron">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-              </div>
-
-              <!-- Card 7: PDF Compressor -->
+              <!-- Card 5: PDF Compressor -->
               <div class="tool-card" data-tool="pdf">
                 <div class="tool-card-icon">
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -758,7 +722,25 @@
                 </div>
               </div>
 
-              <!-- Card 8: SFLGL Skipper -->
+              <!-- Card 6: Web Media Sniffer -->
+              <div class="tool-card" data-tool="sniffer">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-sniffer-title">Web Media Sniffer</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-sniffer-desc">Extract videos, audios, and images from any webpage</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 7: Safelinku Resolver -->
               <div class="tool-card" data-tool="sflgl">
                 <div class="tool-card-icon">
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -770,6 +752,60 @@
                     <h3 class="tool-card-title" data-i18n="tool-sflgl-title">Safelinku Resolver</h3>
                   </div>
                   <p class="tool-card-desc" data-i18n="tool-sflgl-desc">Resolve Safelinku & sfl.gl shortlinks directly to target destination</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 8: Anime Scene Search -->
+              <div class="tool-card" data-tool="anime">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-anime-title">Anime Scene Search</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-anime-desc">Trace back the anime title, episode, and scene clip from any image</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 9: TikTok Finder -->
+              <div class="tool-card" data-tool="tiktok">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88C7.55 15.8 9.68 15 12 15s4.45.8 6.14 2.12C16.43 19.18 14.03 20 12 20z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-tiktok-title">TikTok User Finder</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-tiktok-desc">Look up creation date, HD avatar, numeric ID, and public stats</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card 10: Username Checker -->
+              <div class="tool-card" data-tool="username">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10h5v-2h-5c-4.34 0-8-3.66-8-8s3.66-8 8-8 8 3.66 8 8v1.43c0 .79-.71 1.57-1.5 1.57s-1.5-.78-1.5-1.57V12c0-2.76-2.24-5-5-5s-5 2.24-5 5 2.24 5 5 5c1.38 0 2.64-.56 3.54-1.47.65.89 1.77 1.47 2.96 1.47 1.97 0 3.5-1.6 3.5-3.57V12c0-5.52-4.48-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-username-title">Username Checker</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-username-desc">Check handle availability across 20+ platforms</p>
                 </div>
                 <div class="tool-card-chevron">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
@@ -1197,6 +1233,208 @@
             </div>
 
             <div id="usernameCheckerGrid" class="username-results-grid"></div>
+          </div>
+
+          <!-- Sub-View 9: Video FPS Converter View -->
+          <div id="toolFpsView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-fps-title">Video FPS Converter</h3>
+                <p data-i18n="tool-fps-subtitle">Convert video frame rate with hardware acceleration</p>
+              </div>
+            </div>
+
+            <div class="tool-file-dropzone" id="fpsDropzone">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.28-10.43zM10.59 15.41a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"/></svg>
+              <p class="dropzone-text" data-i18n="dropzone-video">Tap to choose video</p>
+              <span class="dropzone-hint">MP4, WebM, MKV, MOV</span>
+            </div>
+            <input type="file" id="fpsFileInput" accept="video/*" class="hidden" />
+
+            <!-- FPS Options Card -->
+            <div id="fpsOptionsCard" class="tool-result-card hidden">
+              <div class="tool-video-preview-wrap">
+                <video id="fpsPreviewVideo" controls preload="metadata"></video>
+                <div class="tool-file-meta-info">
+                  <span id="fpsVideoName" class="val">-</span>
+                  <span id="fpsVideoDetails" class="sub">-</span>
+                </div>
+              </div>
+
+              <div class="tool-config-group">
+                <div class="tool-config-label-row">
+                  <span class="tool-config-label" data-i18n="label-target-fps">Target Frame Rate (FPS)</span>
+                  <div class="fps-input-pill">
+                    <input type="number" id="fpsCustomInput" min="1" max="120" value="30" aria-label="Target FPS" />
+                    <span class="fps-unit">FPS</span>
+                  </div>
+                </div>
+                <input type="range" id="fpsCustomSlider" min="1" max="120" value="30" step="1" class="tool-slider" />
+                <div class="tool-chip-group fps-presets-grid" id="fpsChips">
+                  <button type="button" class="tool-chip" data-fps="15" data-i18n="fps-15">15 FPS</button>
+                  <button type="button" class="tool-chip" data-fps="24" data-i18n="fps-24">24 FPS</button>
+                  <button type="button" class="tool-chip active" data-fps="30" data-i18n="fps-30">30 FPS</button>
+                  <button type="button" class="tool-chip" data-fps="60" data-i18n="fps-60">60 FPS</button>
+                </div>
+              </div>
+
+              <button type="button" id="fpsRunBtn" class="tool-execute-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.28-10.43zM10.59 15.41a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"/></svg>
+                <span data-i18n="btn-convert-fps">Convert FPS</span>
+              </button>
+            </div>
+
+            <div id="fpsLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span id="fpsLoaderText" data-i18n="loader-fps">Re-encoding video frames at target FPS...</span>
+            </div>
+
+            <!-- FPS Result Card -->
+            <div id="fpsResultCard" class="tool-result-card hidden">
+              <div class="tool-success-header">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                <h4 data-i18n="title-fps-complete">FPS Converted</h4>
+              </div>
+
+              <div class="tool-video-preview-wrap">
+                <video id="fpsResultVideo" controls></video>
+                <div class="tool-file-meta-info">
+                  <span id="fpsResultDetails" class="val">-</span>
+                </div>
+              </div>
+
+              <div class="sflgl-action-row">
+                <button type="button" id="fpsSaveBtn" class="tool-btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  <span data-i18n="btn-save-video">Save Video</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-View 10: Video Compressor View -->
+          <div id="toolCompressorView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-compressor-title">Video Compressor</h3>
+                <p data-i18n="tool-compressor-subtitle">Reduce video file size while maintaining visual quality</p>
+              </div>
+            </div>
+
+            <div class="tool-file-dropzone" id="compressorDropzone">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zm-6 3.5l-3-3h2V8h2v3h2l-3 3z"/></svg>
+              <p class="dropzone-text" data-i18n="dropzone-video">Tap to choose video</p>
+              <span class="dropzone-hint">MP4, WebM, MKV, MOV</span>
+            </div>
+            <input type="file" id="compressorFileInput" accept="video/*" class="hidden" />
+
+            <!-- Options Card -->
+            <div id="compressorOptionsCard" class="tool-result-card hidden">
+              <div class="tool-video-preview-wrap">
+                <video id="compressorPreviewVideo" controls preload="metadata"></video>
+                <div class="tool-file-meta-info">
+                  <span id="compressorVideoName" class="val">-</span>
+                  <span id="compressorVideoDetails" class="sub">-</span>
+                </div>
+              </div>
+
+              <!-- Estimated Output Card -->
+              <div class="compressor-estimate-card" id="compressorEstimateCard">
+                <div class="compressor-estimate-row">
+                  <div class="compressor-size-box">
+                    <span class="label" data-i18n="label-current-size">Original</span>
+                    <span class="val" id="compressorOriginalSizeVal">-</span>
+                  </div>
+                  <div class="compressor-arrow-box">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z"/></svg>
+                  </div>
+                  <div class="compressor-size-box">
+                    <span class="label" data-i18n="label-estimated-size">Estimated</span>
+                    <span class="val highlight" id="compressorEstimatedSizeVal">-</span>
+                  </div>
+                </div>
+                <div class="compressor-badge-row">
+                  <span id="compressorSavingsBadge" class="compressor-savings-pill">-50% (Est. Save ~0 MB)</span>
+                </div>
+              </div>
+
+              <div class="tool-config-group">
+                <span class="tool-config-label" data-i18n="label-compression-level">Compression Level</span>
+                <div class="tool-chip-group compressor-level-grid" id="compressorLevelChips">
+                  <button type="button" class="tool-chip" data-level="low" data-i18n="compressor-level-low">High Quality (-30%)</button>
+                  <button type="button" class="tool-chip active" data-level="medium" data-i18n="compressor-level-medium">Balanced (-50%)</button>
+                  <button type="button" class="tool-chip" data-level="high" data-i18n="compressor-level-high">Small Size (-75%)</button>
+                  <button type="button" class="tool-chip" data-level="custom" data-i18n="compressor-level-custom">Custom</button>
+                </div>
+              </div>
+
+              <!-- Custom Config Group (collapsible) -->
+              <div class="tool-config-group hidden" id="compressorCustomGroup">
+                <div class="tool-config-label-row">
+                  <span class="tool-config-label" data-i18n="label-scale">Resolution Scale</span>
+                  <span id="compressorScaleVal" class="tool-config-val">75%</span>
+                </div>
+                <div class="tool-chip-group" id="compressorScaleChips">
+                  <button type="button" class="tool-chip" data-scale="1.0">100%</button>
+                  <button type="button" class="tool-chip active" data-scale="0.75">75%</button>
+                  <button type="button" class="tool-chip" data-scale="0.5">50%</button>
+                  <button type="button" class="tool-chip" data-scale="0.36">36%</button>
+                </div>
+
+                <div class="tool-config-label-row" style="margin-top: 6px;">
+                  <span class="tool-config-label" data-i18n="label-bitrate">Video Bitrate</span>
+                  <span id="compressorBitrateVal" class="tool-config-val">2.2 Mbps</span>
+                </div>
+                <input type="range" id="compressorBitrateSlider" min="500" max="8000" value="2200" step="100" class="tool-slider" />
+              </div>
+
+              <!-- Mute Audio Toggle Row -->
+              <label class="compressor-toggle-row">
+                <input type="checkbox" id="compressorMuteAudio" />
+                <div class="compressor-toggle-info">
+                  <span class="title" data-i18n="label-compressor-mute">Remove Audio</span>
+                  <span class="desc" data-i18n="label-compressor-mute-hint">Save extra ~2 MB</span>
+                </div>
+              </label>
+
+              <button type="button" id="compressorRunBtn" class="tool-execute-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zm-6 3.5l-3-3h2V8h2v3h2l-3 3z"/></svg>
+                <span data-i18n="btn-compress-video">Compress Video</span>
+              </button>
+            </div>
+
+            <div id="compressorLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span id="compressorLoaderText" data-i18n="loader-compress-video">Compressing video...</span>
+            </div>
+
+            <!-- Result Card -->
+            <div id="compressorResultCard" class="tool-result-card hidden">
+              <div class="tool-success-header">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                <h4 data-i18n="title-compressor-complete">Video Compressed</h4>
+              </div>
+
+              <div class="tool-video-preview-wrap">
+                <video id="compressorResultVideo" controls></video>
+                <div class="tool-file-meta-info">
+                  <span id="compressorResultDetails" class="val">-</span>
+                </div>
+              </div>
+
+              <div class="sflgl-action-row">
+                <button type="button" id="compressorSaveBtn" class="tool-btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  <span data-i18n="btn-save-video">Save Video</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
