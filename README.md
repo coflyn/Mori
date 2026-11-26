@@ -150,6 +150,7 @@ The Tools tab provides client-side utilities that run locally on your device:
 
 | Tool | Type | Description |
 | :--- | :--- | :--- |
+| Video Compressor | Offline Utility | Reduces video file size using hardware acceleration with customizable resolution, bitrate, presets, and audio stripping. |
 | Media Sniffer | Network Sniffer | Live in-app browser that intercepts video, audio, and HLS (.m3u8) streams while blocking ads and trackers. |
 | Video to Audio Extractor | Offline Utility | Decodes local video files (MP4, MKV, WebM, MOV) into WAV or MP3 audio using the Web Audio API. |
 | Image Converter & Scaler | Offline Utility | Converts and resizes images between WebP, JPG, and PNG with adjustable quality and resolution scaling. |
@@ -275,6 +276,7 @@ Mori/
 │   │   │   │   ├── storageHelper.js   # File export and MediaScanner indexing
 │   │   │   │   ├── tiktokFinder.js    # TikTok profile lookup
 │   │   │   │   ├── usernameChecker.js # Multi-platform username checker
+│   │   │   │   ├── videoCompressor.js # Hardware-accelerated local video compressor
 │   │   │   │   └── index.js           # Tools router
 │   │   │   └── update.js       # GitHub release checker & in-app APK updater
 │   │   ├── scrapers/           # Scraper runtime loader & HTTP helper

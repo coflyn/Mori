@@ -150,6 +150,7 @@ Tab Tools menyediakan berbagai alat praktis yang berjalan langsung di perangkat 
 
 | Tools | Jenis | Fungsi |
 | :--- | :--- | :--- |
+| Video Compressor | Utilitas Offline | Memperkecil ukuran video dengan akselerasi perangkat keras, preset kompresi, bitrate/skala kustom, dan opsi buang audio. |
 | Media Sniffer | Sniffer Jaringan | Browser khusus dalam aplikasi buat menangkap link stream video, audio, dan HLS (.m3u8) sambil otomatis memblokir iklan dan pelacak. |
 | Video to Audio Extractor | Utilitas Offline | Mengambil audio dari video lokal (MP4, MKV, WebM, MOV) dan mengubahnya jadi WAV atau MP3 via Web Audio API. |
 | Image Converter & Scaler | Utilitas Offline | Mengonversi dan mengubah ukuran gambar antarformat WebP, JPG, dan PNG lengkap dengan slider kualitas dan resolusi. |

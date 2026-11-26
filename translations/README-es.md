@@ -150,6 +150,7 @@ La pestaña Herramientas ofrece utilidades locales que se ejecutan directamente 
 
 | Herramienta | Tipo | Descripción |
 | :--- | :--- | :--- |
+| Compresor de vídeo | Utilidad local | Reduce el tamaño del archivo de vídeo con aceleración por hardware, niveles predefinidos, tasa de bits personalizable y eliminación de audio. |
 | Capturador de medios | Inspector de red | Navegador integrado que detecta transmisiones de vídeo, audio y HLS (.m3u8), bloqueando publicidad y rastreadores. |
 | Extractor de vídeo a audio | Utilidad local | Convierte vídeos locales (MP4, MKV, WebM, MOV) a audio WAV o MP3 mediante la Web Audio API. |
 | Conversor y escalador de imágenes | Utilidad local | Convierte y redimensiona imágenes entre WebP, JPG y PNG con control de calidad y resolución. |
