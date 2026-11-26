@@ -223,6 +223,7 @@ export default {
   "label-whatsapp-channel": "WhatsApp 채널",
   "label-wipedata": "모든 데이터 초기화",
   "lang-ar": "아랍어",
+  "lang-ckb": "쿠르드어",
   "lang-en": "영어",
   "lang-es": "스페인어",
   "lang-hi": "힌디어",
