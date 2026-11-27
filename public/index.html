@@ -722,6 +722,42 @@
                 </div>
               </div>
 
+              <!-- Card: Images to PDF -->
+              <div class="tool-card" data-tool="img2pdf">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71zM14 9c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-img2pdf-title">Images to PDF</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-img2pdf-desc">Convert multiple photos or images into a single PDF document</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card: PDF to Images -->
+              <div class="tool-card" data-tool="pdf2img">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-6.5-4.5l-2.5 3.01L9.5 13l-2.5 3.5h10l-3.5-4.5z"/>
+                  </svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-pdf2img-title">PDF to Images</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-pdf2img-desc">Convert PDF pages into high quality JPG or PNG images</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
               <!-- Card 6: Web Media Sniffer -->
               <div class="tool-card" data-tool="sniffer">
                 <div class="tool-card-icon">
@@ -1190,6 +1226,144 @@
                 <button type="button" id="pdfSaveBtn" class="tool-btn-primary">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
                   <span data-i18n="btn-save-pdf">Save PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-View: Images to PDF View -->
+          <div id="toolImg2pdfView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-img2pdf-title">Images to PDF</h3>
+                <p data-i18n="tool-img2pdf-subtitle">Combine multiple pictures into one PDF document</p>
+              </div>
+            </div>
+
+            <div class="tool-file-dropzone" id="img2pdfDropzone">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+              <p class="dropzone-text" data-i18n="dropzone-img2pdf">Tap to choose images</p>
+              <span class="dropzone-hint" data-i18n="hint-img2pdf">Select one or more JPG, PNG, WebP photos</span>
+            </div>
+            <input type="file" id="img2pdfFileInput" accept="image/*" multiple class="hidden" />
+
+            <!-- Options Card -->
+            <div id="img2pdfOptionsCard" class="tool-result-card hidden">
+              <div class="tool-file-meta-info" style="border: 1px solid var(--border-color); border-radius: var(--radius-l, 6px);">
+                <span id="img2pdfFileSummary" class="val">-</span>
+                <span id="img2pdfFileList" class="sub">-</span>
+              </div>
+
+              <div class="tool-config-group">
+                <span class="tool-config-label" data-i18n="label-page-fit">Page Sizing</span>
+                <div class="tool-chip-group" id="img2pdfFitChips">
+                  <button type="button" class="tool-chip active" data-fit="fit" data-i18n="fit-original">Fit (Original)</button>
+                  <button type="button" class="tool-chip" data-fit="a4" data-i18n="fit-a4">A4 Standard</button>
+                </div>
+              </div>
+
+              <button type="button" id="img2pdfRunBtn" class="tool-execute-btn" data-i18n="btn-img2pdf-convert">
+                <span>Convert to PDF</span>
+              </button>
+            </div>
+
+            <div id="img2pdfLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span id="img2pdfLoaderText" data-i18n="loader-img2pdf">Creating PDF document...</span>
+            </div>
+
+            <!-- Result Card -->
+            <div id="img2pdfResultCard" class="tool-result-card hidden">
+              <div class="tool-success-header">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                <h4 data-i18n="title-img2pdf-complete">PDF Created Successfully</h4>
+              </div>
+
+              <div class="tool-file-meta-info" style="border: 1px solid var(--border-color); border-radius: var(--radius-l, 6px);">
+                <span id="img2pdfResultMeta" class="val">-</span>
+              </div>
+
+              <div class="sflgl-action-row">
+                <button type="button" id="img2pdfSaveBtn" class="tool-btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  <span data-i18n="btn-save-pdf">Save PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-View: PDF to Images View -->
+          <div id="toolPdf2imgView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back" data-i18n-aria="aria-back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-pdf2img-title">PDF to Images</h3>
+                <p data-i18n="tool-pdf2img-subtitle">Extract pages into high resolution images</p>
+              </div>
+            </div>
+
+            <div class="tool-file-dropzone" id="pdf2imgDropzone">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
+              <p class="dropzone-text" data-i18n="dropzone-pdf2img">Tap to choose PDF</p>
+              <span class="dropzone-hint" data-i18n="hint-pdf2img">Extract all pages to JPG or PNG</span>
+            </div>
+            <input type="file" id="pdf2imgFileInput" accept="application/pdf" class="hidden" />
+
+            <!-- Options Card -->
+            <div id="pdf2imgOptionsCard" class="tool-result-card hidden">
+              <div class="tool-file-meta-info" style="border: 1px solid var(--border-color); border-radius: var(--radius-l, 6px);">
+                <span id="pdf2imgFileName" class="val">-</span>
+                <span id="pdf2imgFileDetails" class="sub">-</span>
+              </div>
+
+              <div class="tool-config-group">
+                <span class="tool-config-label" data-i18n="label-output-format">Output Format</span>
+                <div class="tool-chip-group" id="pdf2imgFormatChips">
+                  <button type="button" class="tool-chip active" data-format="image/jpeg">JPG</button>
+                  <button type="button" class="tool-chip" data-format="image/png">PNG</button>
+                </div>
+              </div>
+
+              <div class="tool-config-group">
+                <span class="tool-config-label" data-i18n="label-render-scale">Resolution</span>
+                <div class="tool-chip-group" id="pdf2imgScaleChips">
+                  <button type="button" class="tool-chip active" data-scale="1.5" data-i18n="scale-standard">Standard (1.5x)</button>
+                  <button type="button" class="tool-chip" data-scale="2.0" data-i18n="scale-hd">HD (2.0x)</button>
+                </div>
+              </div>
+
+              <button type="button" id="pdf2imgRunBtn" class="tool-execute-btn" data-i18n="btn-pdf2img-extract">
+                <span>Extract Pages</span>
+              </button>
+            </div>
+
+            <div id="pdf2imgLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span id="pdf2imgLoaderText" data-i18n="loader-pdf2img">Extracting PDF pages...</span>
+            </div>
+
+            <!-- Result Card -->
+            <div id="pdf2imgResultCard" class="tool-result-card hidden">
+              <div class="tool-success-header">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                <h4 data-i18n="title-pdf2img-complete">Pages Extracted</h4>
+              </div>
+
+              <div class="tool-file-meta-info" style="border: 1px solid var(--border-color); border-radius: var(--radius-l, 6px);">
+                <span id="pdf2imgResultMeta" class="val">-</span>
+              </div>
+
+              <div id="pdf2imgPagesContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;"></div>
+
+              <div class="sflgl-action-row">
+                <button type="button" id="pdf2imgSaveAllBtn" class="tool-btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  <span data-i18n="btn-save-all-images">Save All Images</span>
                 </button>
               </div>
             </div>

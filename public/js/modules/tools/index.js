@@ -17,6 +17,8 @@ import { extractAudioFromVideoFile } from "./audioExtractor.js";
 import { convertVideoFps, getVideoInfo } from "./fpsConverter.js";
 import { compressVideo, estimateCompressedSize } from "./videoCompressor.js";
 import { compressPdfFile } from "./pdfCompressor.js";
+import { imagesToPdf } from "./imageToPdf.js";
+import { pdfToImages } from "./pdfToImage.js";
 import {
   checkAllUsernames,
   CHECKER_PLATFORMS,
@@ -166,6 +168,8 @@ export function initTools() {
   initFpsConverterController();
   initVideoCompressorController();
   initPdfCompressorController();
+  initImg2pdfController();
+  initPdf2imgController();
   initUsernameCheckerController();
 }
 
@@ -301,9 +305,7 @@ function initSnifferController() {
         else c.classList.remove("active");
       });
       renderSnifferResults(formattedData, activeFilter);
-      showToast(
-        t("toast-sniff-captured", { count: formattedData.total }),
-      );
+      showToast(t("toast-sniff-captured", { count: formattedData.total }));
     } catch (e) {
       console.warn("Live sniffer parsing error:", e);
     }
@@ -623,9 +625,7 @@ function initSflglController() {
   }
 }
 
-// -------------------------------------------------------------
 // 3. TikTok User Finder Controller
-// -------------------------------------------------------------
 function initTiktokFinderController() {
   const input = document.getElementById("tiktokFinderInput");
   const pasteBtn = document.getElementById("tiktokFinderPasteBtn");
@@ -894,9 +894,7 @@ function initTiktokFinderController() {
   }
 }
 
-// -------------------------------------------------------------
 // 4. Anime Scene Search Controller (trace.moe)
-// -------------------------------------------------------------
 function initAnimeSearchController() {
   const urlInput = document.getElementById("animeUrlInput");
   const pasteBtn = document.getElementById("animePasteBtn");
@@ -1144,9 +1142,7 @@ function formatBytes(bytes) {
   return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-// -------------------------------------------------------------
 // 5. Image Converter Controller
-// -------------------------------------------------------------
 function initConverterController() {
   const dropzone = document.getElementById("converterDropzone");
   const fileInput = document.getElementById("converterFileInput");
@@ -1325,9 +1321,7 @@ function initConverterController() {
   });
 }
 
-// -------------------------------------------------------------
 // 6. Video to Audio Extractor Controller
-// -------------------------------------------------------------
 function initExtractorController() {
   const dropzone = document.getElementById("extractorDropzone");
   const fileInput = document.getElementById("extractorFileInput");
@@ -1472,9 +1466,7 @@ function initExtractorController() {
   });
 }
 
-// -------------------------------------------------------------
 // 7. PDF Compressor Controller
-// -------------------------------------------------------------
 function initPdfCompressorController() {
   const dropzone = document.getElementById("pdfDropzone");
   const fileInput = document.getElementById("pdfFileInput");
@@ -1610,9 +1602,7 @@ function initPdfCompressorController() {
   });
 }
 
-// -------------------------------------------------------------
 // 8. Username Checker Controller
-// -------------------------------------------------------------
 function initUsernameCheckerController() {
   const input = document.getElementById("usernameCheckerInput");
   const pasteBtn = document.getElementById("usernameCheckerPasteBtn");
@@ -1651,7 +1641,8 @@ function initUsernameCheckerController() {
 
     if (summaryCard) summaryCard.classList.remove("hidden");
     if (targetLabel) targetLabel.textContent = `@${cleanUser}`;
-    if (takenBadge) takenBadge.textContent = t("username-taken-count", { count: 0 });
+    if (takenBadge)
+      takenBadge.textContent = t("username-taken-count", { count: 0 });
     if (availableBadge)
       availableBadge.textContent = t("username-available-count", { count: 0 });
 
@@ -1709,7 +1700,9 @@ function initUsernameCheckerController() {
         }
 
         if (takenBadge)
-          takenBadge.textContent = t("username-taken-count", { count: takenCount });
+          takenBadge.textContent = t("username-taken-count", {
+            count: takenCount,
+          });
         if (availableBadge)
           availableBadge.textContent = t("username-available-count", {
             count: availableCount,
@@ -1731,9 +1724,7 @@ function initUsernameCheckerController() {
   });
 }
 
-// -------------------------------------------------------------
 // 9. Video FPS Converter Controller
-// -------------------------------------------------------------
 function initFpsConverterController() {
   const dropzone = document.getElementById("fpsDropzone");
   const fileInput = document.getElementById("fpsFileInput");
@@ -1882,7 +1873,10 @@ function initFpsConverterController() {
   saveBtn?.addEventListener("click", async () => {
     if (!convertedVideoBlob) return;
     triggerHaptic("medium");
-    const baseName = (selectedVideoFile?.name || "video").replace(/\.[^/.]+$/, "");
+    const baseName = (selectedVideoFile?.name || "video").replace(
+      /\.[^/.]+$/,
+      "",
+    );
     const fileName = `${baseName}_${selectedFps}fps.${convertedExt}`;
     saveBtn.disabled = true;
     await saveBlobToMori(convertedVideoBlob, fileName, "Download/Mori", {
@@ -1900,14 +1894,18 @@ function initFpsConverterController() {
     if (previewVideo) {
       previewVideo.pause();
       if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(previewVideo.src);
+        } catch (_) {}
       }
       previewVideo.src = "";
     }
     if (resultVideo) {
       resultVideo.pause();
       if (resultVideo.src && resultVideo.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(resultVideo.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(resultVideo.src);
+        } catch (_) {}
       }
       resultVideo.src = "";
     }
@@ -1917,9 +1915,7 @@ function initFpsConverterController() {
   });
 }
 
-// -------------------------------------------------------------
 // 10. Video Compressor Controller
-// -------------------------------------------------------------
 function initVideoCompressorController() {
   const dropzone = document.getElementById("compressorDropzone");
   const fileInput = document.getElementById("compressorFileInput");
@@ -1927,12 +1923,18 @@ function initVideoCompressorController() {
   const previewVideo = document.getElementById("compressorPreviewVideo");
   const videoName = document.getElementById("compressorVideoName");
   const videoDetails = document.getElementById("compressorVideoDetails");
-  const levelChips = document.querySelectorAll("#compressorLevelChips .tool-chip");
+  const levelChips = document.querySelectorAll(
+    "#compressorLevelChips .tool-chip",
+  );
   const originalSizeVal = document.getElementById("compressorOriginalSizeVal");
-  const estimatedSizeVal = document.getElementById("compressorEstimatedSizeVal");
+  const estimatedSizeVal = document.getElementById(
+    "compressorEstimatedSizeVal",
+  );
   const savingsBadge = document.getElementById("compressorSavingsBadge");
   const customGroup = document.getElementById("compressorCustomGroup");
-  const scaleChips = document.querySelectorAll("#compressorScaleChips .tool-chip");
+  const scaleChips = document.querySelectorAll(
+    "#compressorScaleChips .tool-chip",
+  );
   const scaleVal = document.getElementById("compressorScaleVal");
   const bitrateSlider = document.getElementById("compressorBitrateSlider");
   const bitrateVal = document.getElementById("compressorBitrateVal");
@@ -1955,13 +1957,20 @@ function initVideoCompressorController() {
 
   function refreshEstimate() {
     if (!selectedFile) return;
-    const est = estimateCompressedSize(selectedFile.size, videoDuration, selectedLevel, {
-      scale: customScale,
-      bitrate: customBitrate,
-      muteAudio: muteAudioCheckbox?.checked || false,
-    });
-    if (originalSizeVal) originalSizeVal.textContent = formatBytes(selectedFile.size);
-    if (estimatedSizeVal) estimatedSizeVal.textContent = `~${formatBytes(est.estimatedBytes)}`;
+    const est = estimateCompressedSize(
+      selectedFile.size,
+      videoDuration,
+      selectedLevel,
+      {
+        scale: customScale,
+        bitrate: customBitrate,
+        muteAudio: muteAudioCheckbox?.checked || false,
+      },
+    );
+    if (originalSizeVal)
+      originalSizeVal.textContent = formatBytes(selectedFile.size);
+    if (estimatedSizeVal)
+      estimatedSizeVal.textContent = `~${formatBytes(est.estimatedBytes)}`;
     if (savingsBadge) {
       const savedBytes = Math.max(0, selectedFile.size - est.estimatedBytes);
       savingsBadge.textContent = `-${est.percentReduction}% (Est. Save ~${formatBytes(savedBytes)})`;
@@ -2110,14 +2119,18 @@ function initVideoCompressorController() {
     if (previewVideo) {
       previewVideo.pause();
       if (previewVideo.src && previewVideo.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(previewVideo.src);
+        } catch (_) {}
       }
       previewVideo.src = "";
     }
     if (resultVideo) {
       resultVideo.pause();
       if (resultVideo.src && resultVideo.src.startsWith("blob:")) {
-        try { URL.revokeObjectURL(resultVideo.src); } catch (_) {}
+        try {
+          URL.revokeObjectURL(resultVideo.src);
+        } catch (_) {}
       }
       resultVideo.src = "";
     }
@@ -2133,3 +2146,332 @@ function initVideoCompressorController() {
   });
 }
 
+// 11. Images to PDF Controller
+function initImg2pdfController() {
+  const dropzone = document.getElementById("img2pdfDropzone");
+  const fileInput = document.getElementById("img2pdfFileInput");
+  const optionsCard = document.getElementById("img2pdfOptionsCard");
+  const summaryEl = document.getElementById("img2pdfFileSummary");
+  const listEl = document.getElementById("img2pdfFileList");
+  const fitChips = document.querySelectorAll("#img2pdfFitChips .tool-chip");
+  const runBtn = document.getElementById("img2pdfRunBtn");
+  const loader = document.getElementById("img2pdfLoader");
+  const loaderText = document.getElementById("img2pdfLoaderText");
+  const resultCard = document.getElementById("img2pdfResultCard");
+  const resultMetaEl = document.getElementById("img2pdfResultMeta");
+  const saveBtn = document.getElementById("img2pdfSaveBtn");
+
+  let selectedFiles = [];
+  let selectedFit = "fit";
+  let generatedPdfBlob = null;
+
+  dropzone?.addEventListener("click", () => {
+    triggerHaptic("light");
+    fileInput?.click();
+  });
+
+  dropzone?.addEventListener("dragover", (e) => e.preventDefault());
+
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files || []).filter(
+      (f) =>
+        f.type.startsWith("image/") ||
+        /\.(jpe?g|png|webp|avif|gif)$/i.test(f.name),
+    );
+    if (files.length > 0) handleFilesSelected(files);
+  });
+
+  fileInput?.addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []).filter(
+      (f) =>
+        f.type.startsWith("image/") ||
+        /\.(jpe?g|png|webp|avif|gif)$/i.test(f.name),
+    );
+    if (files.length > 0) handleFilesSelected(files);
+  });
+
+  function handleFilesSelected(files) {
+    selectedFiles = files;
+    const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
+    if (summaryEl) {
+      summaryEl.textContent = t("img2pdf-selected-count", {
+        count: files.length,
+      });
+    }
+    if (listEl) {
+      listEl.textContent = `${formatBytes(totalBytes)} • ${files
+        .map((f) => f.name)
+        .slice(0, 3)
+        .join(", ")}${files.length > 3 ? "..." : ""}`;
+    }
+    optionsCard?.classList.remove("hidden");
+    resultCard?.classList.add("hidden");
+  }
+
+  fitChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      fitChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      selectedFit = chip.getAttribute("data-fit") || "fit";
+    });
+  });
+
+  runBtn?.addEventListener("click", async () => {
+    if (!selectedFiles.length) return;
+    triggerHaptic("medium");
+
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (loaderText) loaderText.textContent = t("loader-img2pdf");
+
+    try {
+      const res = await imagesToPdf(selectedFiles, {
+        pageSize: selectedFit,
+        onProgress: (cur, tot) => {
+          if (loaderText) {
+            loaderText.textContent = t("loader-img2pdf-page", {
+              current: cur,
+              total: tot,
+            });
+          }
+        },
+      });
+
+      generatedPdfBlob = res.blob;
+
+      if (resultMetaEl) {
+        resultMetaEl.textContent = t("img2pdf-result-meta", {
+          pages: res.numPages,
+          size: formatBytes(res.size),
+        });
+      }
+
+      resultCard?.classList.remove("hidden");
+      showToast(t("toast-img2pdf-done"));
+    } catch (err) {
+      showToast(err.message || t("err-img2pdf"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  });
+
+  saveBtn?.addEventListener("click", async () => {
+    if (!generatedPdfBlob) return;
+    triggerHaptic("medium");
+    const baseName = (selectedFiles[0]?.name || "images").replace(
+      /\.[^/.]+$/,
+      "",
+    );
+    const fileName = `${baseName}_mori.pdf`;
+    saveBtn.disabled = true;
+    await saveBlobToMori(generatedPdfBlob, fileName, "Download/Mori", {
+      title: `${baseName} (PDF)`,
+      type: "PDF",
+      tool: "image-to-pdf",
+    });
+    saveBtn.disabled = false;
+  });
+
+  toolCleanups.push(() => {
+    selectedFiles = [];
+    generatedPdfBlob = null;
+    if (fileInput) fileInput.value = "";
+    resultCard?.classList.add("hidden");
+    optionsCard?.classList.add("hidden");
+  });
+}
+
+// 12. PDF to Images Controller
+function initPdf2imgController() {
+  const dropzone = document.getElementById("pdf2imgDropzone");
+  const fileInput = document.getElementById("pdf2imgFileInput");
+  const optionsCard = document.getElementById("pdf2imgOptionsCard");
+  const fileNameEl = document.getElementById("pdf2imgFileName");
+  const fileDetailsEl = document.getElementById("pdf2imgFileDetails");
+  const formatChips = document.querySelectorAll(
+    "#pdf2imgFormatChips .tool-chip",
+  );
+  const scaleChips = document.querySelectorAll("#pdf2imgScaleChips .tool-chip");
+  const runBtn = document.getElementById("pdf2imgRunBtn");
+  const loader = document.getElementById("pdf2imgLoader");
+  const loaderText = document.getElementById("pdf2imgLoaderText");
+  const resultCard = document.getElementById("pdf2imgResultCard");
+  const resultMetaEl = document.getElementById("pdf2imgResultMeta");
+  const pagesContainer = document.getElementById("pdf2imgPagesContainer");
+  const saveAllBtn = document.getElementById("pdf2imgSaveAllBtn");
+
+  let selectedPdfFile = null;
+  let selectedFormat = "image/jpeg";
+  let selectedScale = 1.5;
+  let extractedPages = [];
+
+  dropzone?.addEventListener("click", () => {
+    triggerHaptic("light");
+    fileInput?.click();
+  });
+
+  dropzone?.addEventListener("dragover", (e) => e.preventDefault());
+
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (
+      file &&
+      (file.type === "application/pdf" || file.name.endsWith(".pdf"))
+    ) {
+      handlePdfSelected(file);
+    }
+  });
+
+  fileInput?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) handlePdfSelected(file);
+  });
+
+  function handlePdfSelected(file) {
+    selectedPdfFile = file;
+    if (fileNameEl) fileNameEl.textContent = file.name;
+    if (fileDetailsEl) fileDetailsEl.textContent = formatBytes(file.size);
+    optionsCard?.classList.remove("hidden");
+    resultCard?.classList.add("hidden");
+  }
+
+  formatChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      formatChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      selectedFormat = chip.getAttribute("data-format") || "image/jpeg";
+    });
+  });
+
+  scaleChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      scaleChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      selectedScale = parseFloat(chip.getAttribute("data-scale")) || 1.5;
+    });
+  });
+
+  runBtn?.addEventListener("click", async () => {
+    if (!selectedPdfFile) return;
+    triggerHaptic("medium");
+
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (loaderText) loaderText.textContent = t("loader-pdf2img");
+
+    try {
+      const res = await pdfToImages(selectedPdfFile, {
+        format: selectedFormat,
+        scale: selectedScale,
+        onProgress: (cur, tot) => {
+          if (loaderText) {
+            loaderText.textContent = t("loader-pdf2img-page", {
+              current: cur,
+              total: tot,
+            });
+          }
+        },
+      });
+
+      extractedPages = res.pages;
+
+      if (resultMetaEl) {
+        resultMetaEl.textContent = t("pdf2img-result-meta", {
+          pages: res.numPages,
+          size: formatBytes(res.totalSize),
+        });
+      }
+
+      if (pagesContainer) {
+        pagesContainer.innerHTML = "";
+        extractedPages.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "tool-file-meta-info";
+          row.style.cssText =
+            "display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-m, 6px);";
+
+          const label = document.createElement("span");
+          label.className = "val";
+          label.textContent = t("label-pdf-page-num", { num: p.pageNum });
+
+          const pageSaveBtn = document.createElement("button");
+          pageSaveBtn.type = "button";
+          pageSaveBtn.className = "tool-btn-secondary";
+          pageSaveBtn.style.cssText =
+            "padding: 6px 12px; font-size: 0.75rem; flex: 0 0 auto;";
+          pageSaveBtn.textContent = t("btn-save-image");
+          pageSaveBtn.addEventListener("click", async () => {
+            triggerHaptic("light");
+            const ext = selectedFormat === "image/png" ? "png" : "jpg";
+            const baseName = (selectedPdfFile?.name || "document").replace(
+              /\.[^/.]+$/,
+              "",
+            );
+            const fileName = `${baseName}_page_${p.pageNum}.${ext}`;
+            pageSaveBtn.disabled = true;
+            await saveBlobToMori(p.blob, fileName, "Download/Mori", {
+              title: `${baseName} (Page ${p.pageNum})`,
+              type: "Image",
+              tool: "pdf-to-image",
+            });
+            pageSaveBtn.disabled = false;
+          });
+
+          row.appendChild(label);
+          row.appendChild(pageSaveBtn);
+          pagesContainer.appendChild(row);
+        });
+      }
+
+      resultCard?.classList.remove("hidden");
+      showToast(t("toast-pdf2img-done"));
+    } catch (err) {
+      showToast(err.message || t("err-pdf2img"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  });
+
+  saveAllBtn?.addEventListener("click", async () => {
+    if (!extractedPages.length) return;
+    triggerHaptic("medium");
+    saveAllBtn.disabled = true;
+    const ext = selectedFormat === "image/png" ? "png" : "jpg";
+    const baseName = (selectedPdfFile?.name || "document").replace(
+      /\.[^/.]+$/,
+      "",
+    );
+
+    try {
+      for (const p of extractedPages) {
+        const fileName = `${baseName}_page_${p.pageNum}.${ext}`;
+        await saveBlobToMori(p.blob, fileName, "Download/Mori", {
+          title: `${baseName} (Page ${p.pageNum})`,
+          type: "Image",
+          tool: "pdf-to-image",
+        });
+      }
+      showToast(t("toast-all-images-saved"));
+    } catch (err) {
+      showToast(err.message || "Failed to save images");
+    } finally {
+      saveAllBtn.disabled = false;
+    }
+  });
+
+  toolCleanups.push(() => {
+    selectedPdfFile = null;
+    extractedPages = [];
+    if (pagesContainer) pagesContainer.innerHTML = "";
+    if (fileInput) fileInput.value = "";
+    resultCard?.classList.add("hidden");
+    optionsCard?.classList.add("hidden");
+  });
+}
